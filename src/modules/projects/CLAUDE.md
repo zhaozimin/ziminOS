@@ -2,7 +2,7 @@
 
 > L2 | 父级: ../../CLAUDE.md
 
-项目管理模块，V1 唯一的功能模块，也是后续模块的样板。三个移植文件（createProject / cardInit / transitions）逐段对应课程原有的三份 QuickAdd 脚本，移植只允许三类替换：inputPrompt → core/modals，QuickAdd 注入的 settings → ZiminosSettings，QuickAdd.obsidian 解构 → 直接 import；其余逻辑连同守卫与错误文案原样保留。
+项目管理模块是 ziminOS 的第一块业务能力，也是 inspiration 等后续模块的架构样板。三个移植文件（createProject / cardInit / transitions）逐段对应课程原有的三份 QuickAdd 脚本，移植只允许三类替换：inputPrompt → core/modals，QuickAdd 注入的 settings → ZiminosSettings，QuickAdd.obsidian 解构 → 直接 import；其余逻辑连同守卫与错误文案原样保留。
 
 ## 成员清单
 

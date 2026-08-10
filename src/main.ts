@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 obsidian 的 Plugin 基类；依赖 ./core/guard 的 SelfWriteGuard、./core/types 的
  *          DEFAULT_SETTINGS 与 ZiminosSettings/ZiminosContext 契约；依赖 ./settings 的 ZiminosSettingTab；
- *          依赖 ./modules/projects 的 initializeVault 与五个注册函数
+ *          依赖 ./modules/projects 的 initializeVault 与五个注册函数、./modules/inspiration 的灵感命令注册函数
  *          （createProject/cardInit×2/transitions/updatedMaintainer）
  * [OUTPUT]: 默认导出 ZiminosPlugin，即 Obsidian 加载 main.js 时实例化的插件入口类
  * [POS]: 插件唯一入口与唯一装配点。它只做三件事：把磁盘上的设置读成一个对象、把这个对象连同
@@ -16,6 +16,7 @@ import { Plugin } from 'obsidian';
 import { SelfWriteGuard } from './core/guard';
 import { DEFAULT_SETTINGS } from './core/types';
 import type { ZiminosContext, ZiminosSettings } from './core/types';
+import { registerInspirationCaptureCommand } from './modules/inspiration/capture';
 import { registerCardAutoInit, registerCardInitCommand } from './modules/projects/cardInit';
 import { registerCreateProjectCommand } from './modules/projects/createProject';
 import { initializeVault } from './modules/projects/init';
@@ -29,7 +30,7 @@ import { ZiminosSettingTab } from './settings';
 
 /**
  * 开荒命令。它是唯一在 main.ts 里直接注册的命令——
- * 因为开荒横跨全库骨架，不专属于任何一个功能模块；其余六条命令都由各自模块自行注册。
+ * 因为开荒横跨全库骨架，不专属于任何一个功能模块；其余命令都由各自模块自行注册。
  */
 const INIT_VAULT_COMMAND = {
     id: 'init-vault',
@@ -82,6 +83,7 @@ export default class ZiminosPlugin extends Plugin {
         registerCardAutoInit(ctx);
         registerTransitionCommands(ctx);
         registerUpdatedMaintainer(ctx);
+        registerInspirationCaptureCommand(ctx);
 
         // ============================================================
         // 挂载设置页：它是「人主导」这条红线的操作面，放在最后保证挂载时上下文已完备

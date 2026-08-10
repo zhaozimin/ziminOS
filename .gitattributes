@@ -4,3 +4,7 @@
 /vault/.obsidian/plugins/obsidian-style-settings/manifest.json -text -diff
 /vault/.obsidian/plugins/obsidian-style-settings/styles.css -text -diff
 /vault/.obsidian/plugins/obsidian-style-settings/LICENSE.md -text -diff
+/vault/.obsidian/plugins/dataview/main.js -text -diff
+/vault/.obsidian/plugins/dataview/manifest.json -text -diff
+/vault/.obsidian/plugins/dataview/styles.css -text -diff
+/vault/.obsidian/plugins/dataview/LICENSE.txt -text -diff

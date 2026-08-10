@@ -58,6 +58,11 @@ git clone --depth 1 "https://github.com/zhaozimin/ziminOS.git" "$install_staging
 ```text
 施工源/vault/.obsidian/plugins/ziminos/manifest.json
 施工源/vault/.obsidian/plugins/ziminos/main.js
+施工源/vault/.obsidian/plugins/dataview/manifest.json
+施工源/vault/.obsidian/plugins/dataview/main.js
+施工源/vault/.obsidian/plugins/dataview/styles.css
+施工源/vault/.obsidian/plugins/dataview/LICENSE.txt
+施工源/vault/.obsidian/plugins/dataview/SOURCE.md
 施工源/vault/.obsidian/plugins/obsidian-style-settings/manifest.json
 施工源/vault/.obsidian/plugins/obsidian-style-settings/main.js
 施工源/vault/.obsidian/plugins/obsidian-style-settings/styles.css
@@ -70,7 +75,7 @@ git clone --depth 1 "https://github.com/zhaozimin/ziminOS.git" "$install_staging
 施工源/vault/.obsidian/snippets/ziminos-quote-semantic-colors.css
 ```
 
-任一缺失就停止并说明仓库不完整。ziminOS、Minimal 与 Style Settings 的运行产物已全部在 `vault/` 中；不要运行 `npm install` / `npm run build`，不要安装 Node.js，也不要去 Obsidian 商店或网络另行下载主题/插件。禁止额外安装 QuickAdd、Linter 等非系统组件。
+任一缺失就停止并说明仓库不完整。ziminOS、Dataview、Minimal 与 Style Settings 的运行产物已全部在 `vault/` 中；不要运行 `npm install` / `npm run build`，不要安装 Node.js，也不要去 Obsidian 商店或网络另行下载主题/插件。禁止额外安装 QuickAdd、Linter 等非系统组件。
 
 ## 三、原地搭建当前工作区
 
@@ -86,18 +91,25 @@ cp -R "$install_staging_dir/repo/vault/." "$vault_root/"
 
 ### 升级
 
-先读取新旧 ziminOS `manifest.json` 的版本号。若目标已有 Style Settings `data.json`，先记录它的 SHA-256；验证阶段必须证明该值未变。
+先读取新旧 ziminOS `manifest.json` 的版本号。若目标已有 Dataview 或 Style Settings `data.json`，分别记录 SHA-256；验证阶段必须证明这些用户设置一个字节都未变。
 
 先补齐目录，再只更新明确归 ziminOS 管理的运行文件：
 
 ```bash
 mkdir -p "$vault_root/.obsidian/plugins/ziminos"
+mkdir -p "$vault_root/.obsidian/plugins/dataview"
 mkdir -p "$vault_root/.obsidian/plugins/obsidian-style-settings"
 mkdir -p "$vault_root/.obsidian/themes/Minimal"
 mkdir -p "$vault_root/.obsidian/snippets"
 
 cp "$install_staging_dir/repo/vault/.obsidian/plugins/ziminos/manifest.json" "$vault_root/.obsidian/plugins/ziminos/manifest.json"
 cp "$install_staging_dir/repo/vault/.obsidian/plugins/ziminos/main.js" "$vault_root/.obsidian/plugins/ziminos/main.js"
+
+cp "$install_staging_dir/repo/vault/.obsidian/plugins/dataview/manifest.json" "$vault_root/.obsidian/plugins/dataview/manifest.json"
+cp "$install_staging_dir/repo/vault/.obsidian/plugins/dataview/main.js" "$vault_root/.obsidian/plugins/dataview/main.js"
+cp "$install_staging_dir/repo/vault/.obsidian/plugins/dataview/styles.css" "$vault_root/.obsidian/plugins/dataview/styles.css"
+cp "$install_staging_dir/repo/vault/.obsidian/plugins/dataview/LICENSE.txt" "$vault_root/.obsidian/plugins/dataview/LICENSE.txt"
+cp "$install_staging_dir/repo/vault/.obsidian/plugins/dataview/SOURCE.md" "$vault_root/.obsidian/plugins/dataview/SOURCE.md"
 
 cp "$install_staging_dir/repo/vault/.obsidian/plugins/obsidian-style-settings/manifest.json" "$vault_root/.obsidian/plugins/obsidian-style-settings/manifest.json"
 cp "$install_staging_dir/repo/vault/.obsidian/plugins/obsidian-style-settings/main.js" "$vault_root/.obsidian/plugins/obsidian-style-settings/main.js"
@@ -112,11 +124,12 @@ cp "$install_staging_dir/repo/vault/.obsidian/themes/Minimal/LICENSE" "$vault_ro
 cp "$install_staging_dir/repo/vault/.obsidian/snippets/ziminos-quote-semantic-colors.css" "$vault_root/.obsidian/snippets/ziminos-quote-semantic-colors.css"
 ```
 
-然后按下列所有权规则处理三份用户配置：
+然后按下列所有权规则处理四份用户配置：
 
-1. Style Settings `data.json`：目标不存在时才从施工源复制；已存在则一个字节都不得改。
-2. `community-plugins.json`：解析现有 JSON 数组，仅追加缺失的 `ziminos` 与 `obsidian-style-settings`；保留原顺序、原插件和用户状态。文件不存在时才复制施工源默认文件。
-3. `appearance.json`：解析现有 JSON 对象，把 `ziminos-quote-semantic-colors` 合并进 `enabledCssSnippets`。`cssTheme` 缺失或为空时设为 `Minimal`；若用户已选其他非空主题则保留。文件不存在时才复制施工源默认文件。
+1. Dataview `data.json`：施工源不提供默认设置文件；目标存在时原样保留，不得创建或覆盖。DataviewJS 因此保持插件上游默认关闭，用户已有选择仍归用户所有。
+2. Style Settings `data.json`：目标不存在时才从施工源复制；已存在则一个字节都不得改。
+3. `community-plugins.json`：解析现有 JSON 数组，仅追加缺失的 `ziminos`、`dataview` 与 `obsidian-style-settings`；保留原顺序、原插件和用户状态。文件不存在时才复制施工源默认文件。
+4. `appearance.json`：解析现有 JSON 对象，把 `ziminos-quote-semantic-colors` 合并进 `enabledCssSnippets`。`cssTheme` 缺失或为空时设为 `Minimal`；若用户已选其他非空主题则保留。文件不存在时才复制施工源默认文件。
 
 使用 Agent 自身的 JSON 读写能力做结构化合并；禁止用字符串替换破坏 JSON，禁止整份覆盖用户已有配置。不得改动 Markdown 笔记、其他 CSS、其他主题或其他插件。
 
@@ -133,14 +146,15 @@ README.md
 
 - `$vault_root/.obsidian/plugins/ziminos/main.js` 存在。
 - `$vault_root/.obsidian/plugins/ziminos/manifest.json` 存在。
+- `$vault_root/.obsidian/plugins/dataview/main.js` 存在，版本为 0.5.68。
 - `$vault_root/.obsidian/plugins/obsidian-style-settings/main.js` 存在，`data.json` 是合法 JSON 对象。
 - `$vault_root/.obsidian/themes/Minimal/theme.css` 存在，版本为 9.0.2。
 - `$vault_root/.obsidian/snippets/ziminos-quote-semantic-colors.css` 存在。
-- `$vault_root/.obsidian/community-plugins.json` 包含 `ziminos` 与 `obsidian-style-settings`。
+- `$vault_root/.obsidian/community-plugins.json` 包含 `ziminos`、`dataview` 与 `obsidian-style-settings`。
 - `$vault_root/.obsidian/appearance.json` 的全新安装默认主题为 `Minimal`，并启用 `ziminos-quote-semantic-colors`。
 - `$vault_root` 内不存在 `.git/`、`src/`、`docs/`、`skill/`、`vault/`、`node_modules/` 或 `package.json`。
 
-升级模式还要确认：升级前已存在的 Style Settings `data.json` SHA-256 不变；用户原有插件 ID、非空自选主题、其他 CSS 片段与 Markdown 笔记全部仍在。
+升级模式还要确认：升级前已存在的 Dataview / Style Settings `data.json` SHA-256 不变；用户原有插件 ID、非空自选主题、其他 CSS 片段与 Markdown 笔记全部仍在。
 
 若发现开发文件，说明安装错误；由 Agent 修正，不让用户判断哪些文件该删。
 
@@ -164,15 +178,15 @@ esac
 > 已经把当前文件夹搭建成你的个人知识管理系统。
 >
 > 现在直接用 Obsidian 打开这个文件夹，然后：
-> 1. Obsidian 询问信任时，点「信任作者并启用插件」。Minimal 主题、Style Settings 和默认配色已就位。
-> 2. 打开设置，在左边找到 ziminOS，点「初始化」。
+> 1. Obsidian 询问信任时，点「信任作者并启用插件」。Dataview、Minimal 主题、Style Settings 和默认配色已就位。
+> 2. 打开设置，在左边找到 ziminOS，点「初始化」。「记录灵感」命令及其自定义设置已经就位。
 > 3. 看到「开荒完成 ✅」后，跟着笔记库里的 README 使用。
 
 不要再给用户一个新的文件夹路径，不要提临时源码位置，不要让他寻找 `vault/` 子目录。
 
 升级完成后输出：
 
-> 当前笔记库里的 ziminOS 已从 v旧版本更新到 v新版本，外观包也已补齐。你的笔记、自定义配色和其他插件都没有被覆盖，重新加载 Obsidian 后即可生效。
+> 当前笔记库里的 ziminOS 已从 v旧版本更新到 v新版本，Dataview 和外观包也已补齐。你的笔记、自定义配色和其他插件都没有被覆盖，重新加载 Obsidian 后即可生效。
 
 ## 红线
 
@@ -180,6 +194,6 @@ esac
 - 不在当前工作区克隆 GitHub 仓库。
 - 不让用户打开仓库或仓库内的 `vault/`。
 - 不删除或覆盖用户笔记。
-- 只交付仓库已锁定的 ziminOS、Minimal、Style Settings 与 ziminOS CSS；不临时下载或安装任何额外软件、插件或主题。
-- 全新安装可播种默认配色；升级绝不覆盖用户 Style Settings `data.json`、非空自选主题或额外插件。
+- 只交付仓库已锁定的 ziminOS、Dataview、Minimal、Style Settings 与 ziminOS CSS；不临时下载或安装任何额外软件、插件或主题。
+- 全新安装可播种默认配色；升级绝不覆盖用户 Dataview / Style Settings `data.json`、非空自选主题或额外插件。
 - 判断不了当前目录是否安全时停止，不要猜。

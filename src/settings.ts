@@ -1,17 +1,20 @@
 /**
- * [INPUT]: 依赖 obsidian 的 PluginSettingTab 基类与 Setting 构建器；依赖 ./core/types 的
- *          ZiminosContext/ZiminosSettings/DEFAULT_SETTINGS；依赖 ./modules/projects/init 的 initializeVault
+ * [INPUT]: 依赖 obsidian 的 PluginSettingTab 基类与 Setting 构建器；依赖 ./core/constants 的
+ *          灵感默认值/插入位置、./core/types 的 ZiminosContext/DEFAULT_SETTINGS，
+ *          依赖 ./modules/projects/init 的 initializeVault
  * [OUTPUT]: 对外提供 ZiminosSettingTab，由 main.ts 在装配末尾挂载
  * [POS]: 插件唯一的图形界面，也是「人主导」这条红线的具象化——开荒只在用户按下按钮时发生，
  *        两个自动行为的开关随时可以关掉。它只读写 ctx.settings 并调 ctx.saveSettings，
  *        不持有任何自己的状态：面板每次 display 都从设置对象重新渲染，因此外部改动天然可见。
- *        四个分区的排列顺序即学员的使用顺序：先开荒，再决定自动化，其次才是目录与时间格式，
- *        最后是模块清单——它如实展示插件内的项目管理与由 vault 交付的外观包，
+ *        五个分区的排列顺序即学员的使用顺序：先开荒，再决定自动化与灵感落点，
+ *        其次才是项目目录与时间格式，最后是模块清单——它如实展示插件内的业务模块与外观包，
  *        同时为后续模块预留可见挂载位
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { PluginSettingTab, Setting } from 'obsidian';
+import { INSPIRATION_DEFAULTS, INSPIRATION_INSERT_POSITIONS } from './core/constants';
+import type { InspirationInsertPosition } from './core/constants';
 import { DEFAULT_SETTINGS } from './core/types';
 import type { ZiminosContext } from './core/types';
 import { initializeVault } from './modules/projects/init';
@@ -33,6 +36,18 @@ const TEXTS = {
     autoCardDesc: '在项目或领域目录里新建空笔记时，自动补齐标准字段，并链回它所属的 MOC。关掉后可用命令「初始化当前卡片」手动登记。',
     autoUpdatedName: '自动维护 updated 时间',
     autoUpdatedDesc: '改完带 YAML 的笔记、停手两秒后，自动记下这次修改时间。没有 YAML 的笔记一个字都不动。',
+
+    inspirationHeading: '灵感收集',
+    inspirationFolderName: '文件夹',
+    inspirationFolderDesc: '灵感笔记放在哪个文件夹。相对于笔记库根目录。',
+    inspirationFileName: '笔记名称',
+    inspirationFileDesc: '灵感写入哪一篇笔记；没写 .md 时会自动补齐。',
+    inspirationTargetHeading: '定位标题',
+    inspirationTargetDesc: '选择标题插入时，用它定位具体区域。可写“灵感集”或完整 Markdown 标题。',
+    inspirationPositionName: '插入位置',
+    inspirationPositionDesc: '决定新灵感写在标题区或整篇正文的头尾。正文顶部会自动避开 YAML。',
+    inspirationFormatName: '单条格式',
+    inspirationFormatDesc: '必须保留 {{content}}；还可使用 {{date}}、{{time}}、{{datetime}}。',
 
     advancedHeading: '高级设置（一般不用改）',
 
@@ -73,11 +88,12 @@ interface ModuleEntry {
 }
 
 /**
- * 静态模块清单。项目管理由插件运行，外观包由 vault 中锁定的主题、
- * 辅助插件与自有 CSS 协同提供；清单只展示交付状态，不在 ziminOS 内重新实现第三方能力。
+ * 静态模块清单。项目管理与灵感写入由插件运行，查询视图和外观由 vault 中锁定的第三方组件
+ * 与自有 CSS 协同提供；清单只展示交付状态，不在 ziminOS 内重新实现第三方能力。
  */
 const SYSTEM_MODULES: readonly ModuleEntry[] = [
     { name: '📦 项目管理 v1', status: '运行中', running: true },
+    { name: '💡 灵感收集 v1', status: 'Dataview 未完成任务视图已就绪', running: true },
     { name: '👥 人脉管理', status: '敬请期待', running: false },
     { name: '📔 日记复盘', status: '敬请期待', running: false },
     { name: '🎨 外观包 v1', status: 'Minimal + Style Settings 已就绪', running: true },
@@ -109,6 +125,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
 
         this.renderInitSection(containerEl);
         this.renderAutomationSection(containerEl);
+        this.renderInspirationSection(containerEl);
         this.renderAdvancedSection(containerEl);
         this.renderModulesSection(containerEl);
     }
@@ -187,7 +204,101 @@ export class ZiminosSettingTab extends PluginSettingTab {
     }
 
     // ============================================================
-    // 三、高级
+    // 三、灵感收集
+    // ============================================================
+
+    /** 灵感区直接展示常用自定义项；这些字段就是「记录灵感」命令的下一次运行参数 */
+    private renderInspirationSection(containerEl: HTMLElement): void {
+        new Setting(containerEl).setName(TEXTS.inspirationHeading).setHeading();
+
+        this.renderInspirationTextField(
+            containerEl,
+            'inspirationFolder',
+            TEXTS.inspirationFolderName,
+            TEXTS.inspirationFolderDesc,
+            INSPIRATION_DEFAULTS.folder,
+        );
+        this.renderInspirationTextField(
+            containerEl,
+            'inspirationFileName',
+            TEXTS.inspirationFileName,
+            TEXTS.inspirationFileDesc,
+            INSPIRATION_DEFAULTS.fileName,
+        );
+        this.renderInspirationTextField(
+            containerEl,
+            'inspirationHeading',
+            TEXTS.inspirationTargetHeading,
+            TEXTS.inspirationTargetDesc,
+            INSPIRATION_DEFAULTS.heading,
+        );
+
+        new Setting(containerEl)
+            .setName(TEXTS.inspirationPositionName)
+            .setDesc(TEXTS.inspirationPositionDesc)
+            .addDropdown((dropdown) => {
+                dropdown
+                    .addOption('heading-top', '标题下方（新内容在前）')
+                    .addOption('heading-bottom', '标题区末尾（新内容在后）')
+                    .addOption('file-top', '正文顶部')
+                    .addOption('file-bottom', '正文底部')
+                    .setValue(this.normalizeInspirationPosition(this.ctx.settings.inspirationInsertPosition))
+                    .onChange(async (value) => {
+                        const position = this.normalizeInspirationPosition(value);
+
+                        this.ctx.settings.inspirationInsertPosition = position;
+                        await this.ctx.saveSettings();
+                    });
+            });
+
+        new Setting(containerEl)
+            .setName(TEXTS.inspirationFormatName)
+            .setDesc(TEXTS.inspirationFormatDesc)
+            .addTextArea((textArea) => {
+                textArea
+                    .setPlaceholder(INSPIRATION_DEFAULTS.format)
+                    .setValue(this.ctx.settings.inspirationFormat)
+                    .onChange(async (value) => {
+                        this.ctx.settings.inspirationFormat = value;
+                        await this.ctx.saveSettings();
+                    });
+                textArea.inputEl.rows = 3;
+                textArea.inputEl.style.width = '100%';
+            });
+    }
+
+    /** 灵感目录/文件/标题三个文本设置共用同一条即时落盘路径 */
+    private renderInspirationTextField(
+        containerEl: HTMLElement,
+        key: 'inspirationFolder' | 'inspirationFileName' | 'inspirationHeading',
+        name: string,
+        desc: string,
+        fallback: string,
+    ): void {
+        new Setting(containerEl)
+            .setName(name)
+            .setDesc(desc)
+            .addText((text) => {
+                text.setPlaceholder(fallback)
+                    .setValue(this.ctx.settings[key])
+                    .onChange(async (value) => {
+                        this.ctx.settings[key] = value;
+                        await this.ctx.saveSettings();
+                    });
+            });
+    }
+
+    /** 防御手改 data.json 产生的未知枚举值，设置面板与写入模块保持同一回落策略 */
+    private normalizeInspirationPosition(value: string): InspirationInsertPosition {
+        const candidate = value as InspirationInsertPosition;
+
+        return INSPIRATION_INSERT_POSITIONS.includes(candidate)
+            ? candidate
+            : INSPIRATION_DEFAULTS.insertPosition;
+    }
+
+    // ============================================================
+    // 四、高级
     // ============================================================
 
     /**
@@ -231,7 +342,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
     }
 
     // ============================================================
-    // 四、系统模块
+    // 五、系统模块
     // ============================================================
 
     /** 模块区：纯展示，没有任何控件。未上线的模块以禁用态呈现，看得见但点不动 */
