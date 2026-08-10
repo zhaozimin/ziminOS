@@ -1,8 +1,8 @@
 {
   "id": "ziminos",
   "name": "ziminOS",
-  "version": "0.1.0",
-  "minAppVersion": "1.9.0",
+  "version": "0.2.0",
+  "minAppVersion": "1.13.0",
   "description": "个人知识管理一键开荒管家：PARA 骨架、项目 MOC、卡片自动登记、项目状态流转。",
   "author": "zhaozimin",
   "authorUrl": "https://edu.zhaozimin.com",
