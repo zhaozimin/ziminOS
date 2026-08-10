@@ -1,155 +1,143 @@
 ---
 name: ziminos-vault-setup
-description: 在用户电脑上搭建或升级 ziminOS 个人知识管理笔记库。当用户要求「搭建/开荒 Obsidian 笔记库」「装一个 ziminOS」「更新 ziminOS 插件」，或把 ziminOS 仓库地址丢过来让你装到本机时使用。
+description: 在用户已经创建并命名一个文件夹、再用桌面 Agent 打开该文件夹后，根据 ziminOS GitHub 仓库把当前工作区原地搭建或升级为 Obsidian 个人知识管理笔记库。用户发送仓库地址并说「按照这个仓库搭建我的个人知识管理系统」「搭建/开荒 Obsidian 笔记库」「安装/更新 ziminOS」时使用；不询问名称或安装路径，不创建子级笔记库，不把源码仓库克隆到当前工作区。
 ---
 
-# ziminOS 笔记库搭建
+# ziminOS 当前工作区安装
 
-你的任务只有一件：把本仓库的 `vault/` 模板，安全地放到用户指定的位置，让他能用 Obsidian 打开它。
+把 Agent 当前打开的工作区视为最终 Obsidian 笔记库。用户已经在打开工作区之前完成了文件夹创建与命名，不要再替他创建另一层目录。
 
-你**不负责**教学、不负责改插件代码、不负责替用户点 Obsidian 里的按钮。装完，把收尾话术念给他听，任务结束。
+## 成功模型
 
----
+安装前：
 
-## 前置检查
-
-开工前确认两件事，任何一件不满足就停下来告诉用户，别硬着头皮往下走。
-
-1. 本仓库已经在本地。若用户只给了地址（`https://github.com/zhaozimin/ziminOS`），先 `git clone` 到一个临时位置，记住这个路径，下文称 `<仓库>`。
-2. `<仓库>/vault/.obsidian/plugins/ziminos/main.js` 存在。
-
-`main.js` 是插件的构建产物，正常情况下已经提交入库。如果它不在，说明仓库不完整——告诉用户需要先在仓库里跑一次：
-
-```bash
-npm install && npm run build
+```text
+文件夹 A/    ← 用户已创建、已命名、桌面 Agent 正在这里工作
 ```
 
-**没有 main.js 就不要复制。** 装出一个没有管家的空壳库，比不装更糟。
+全新安装后、尚未在 Obsidian 内初始化时：
 
----
-
-## 第一步：问用户两件事
-
-一次问清，别来回拉扯：
-
-1. **库放在哪里？** 默认 `~/Documents/`
-2. **库叫什么名字？** 默认 `ziminOS`
-
-两个答案拼起来就是目标路径，下文称 `<目标库>`。按默认值就是 `~/Documents/ziminOS`。
-
-用户说「随便」「你决定」，就用默认值，并把最终路径念给他确认。
-
----
-
-## 第二步：判断安装模式
-
-检查 `<目标库>` 的状态，对号入座。**三种情况，三条路，不许混着走。**
-
-| 目标路径的状态 | 模式 | 你要做什么 |
-| --- | --- | --- |
-| 不存在，或存在但是空目录 | **全新安装** | 把 `vault/` 整体复制过去 |
-| 存在，且含有 `.obsidian/plugins/ziminos/` | **升级** | 只覆盖两个文件，其余一概不碰 |
-| 存在，非空，但不含 `.obsidian/plugins/ziminos/` | **停下** | 向用户说明，一个字节都不许写 |
-
-判断用只读命令，别用任何会创建目录的命令去「试探」：
-
-```bash
-ls -a "<目标库>" 2>/dev/null
-ls -a "<目标库>/.obsidian/plugins/ziminos" 2>/dev/null
+```text
+文件夹 A/    ← 仍是同一个目录
+├── .obsidian/
+└── README.md
 ```
 
-如果 `<目标库>` 存在但是个文件而不是目录，按第三种情况处理：停下。
+用户随后直接用 Obsidian 打开文件夹 A。不得生成 `文件夹 A/另一个名称/`，也不得让用户打开源码仓库里的 `vault/`。
 
----
+## 一、锁定当前工作区
 
-### 模式 A：全新安装
-
-```bash
-mkdir -p "<目标库>"
-cp -R "<仓库>/vault/." "<目标库>/"
-```
-
-源路径结尾的 `/.` 是必须的——它保证隐藏目录 `.obsidian` 一起被复制。写成 `vault/*` 会漏掉整个配置目录，装出一个没有插件的裸库。
-
-复制完验一眼：
+把当前工作目录的真实绝对路径记为唯一目标：
 
 ```bash
-ls -a "<目标库>"
+vault_root="$(pwd -P)"
 ```
 
-应该同时看到 `.obsidian` 和 `README.md`。两样都在，才算成功。
+不要询问系统名称或安装位置。当前目录的文件夹名就是用户已经确定的系统名称；不要重命名它，也不要在里面新建笔记库子目录。
 
-然后跳到第三步，念**全新安装**的收尾话术。
+执行只读安全检查：
 
----
+1. 若当前目录是 `/`、用户主目录、“文档/Documents”根目录、桌面根目录或其他宽泛目录，停止并让用户重新用 Agent 打开专门创建的文件夹 A。
+2. 若当前目录含 `src/`、`vault/`、`skill/` 和 `package.json` 等 ziminOS 源码仓库特征，说明 Agent 打开错了目录，停止；不要把源码仓库改造成笔记库。
+3. 若当前目录不存在 `.obsidian/plugins/ziminos/`，则除系统自动生成的 `.DS_Store` 外必须为空；非空就停止，不覆盖任何文件。
+4. 若当前目录已经存在 `.obsidian/plugins/ziminos/`，进入升级模式。
 
-### 模式 B：升级
+## 二、在工作区外取得施工源
 
-用户已经有一个 ziminOS 库，里面全是他的笔记。你只换管家，不动他的家。
-
-**只允许覆盖这两个文件，一个不多：**
+若用户只给出 GitHub 地址，把仓库浅克隆到系统临时目录。临时目录必须位于当前工作区之外：
 
 ```bash
-cp "<仓库>/vault/.obsidian/plugins/ziminos/manifest.json" "<目标库>/.obsidian/plugins/ziminos/manifest.json"
-cp "<仓库>/vault/.obsidian/plugins/ziminos/main.js"       "<目标库>/.obsidian/plugins/ziminos/main.js"
+install_staging_dir="$(mktemp -d /tmp/ziminos-install.XXXXXX)"
+git clone --depth 1 "https://github.com/zhaozimin/ziminOS.git" "$install_staging_dir/repo"
 ```
 
-**不许**碰 `<目标库>` 下的任何 `.md` 文件。
-**不许**碰 `data.json`（那是用户的插件设置，覆盖了他的开荒记录和自定义目录就没了）。
-**不许**碰 `app.json`、`appearance.json`、`templates.json`、`community-plugins.json`（那是他调过的偏好）。
-**不许**碰 `README.md`（他可能写了自己的话）。
-**不许**顺手「整理」「清理」「同步」任何其他东西。
+把 `$install_staging_dir/repo` 记为施工源。禁止在 `$vault_root` 内执行 `git clone`，禁止把仓库根目录复制进 `$vault_root`。
 
-复制前后，把 `manifest.json` 里的 `version` 字段念给用户，让他知道从哪一版升到了哪一版。
+确认下面两个文件都存在：
 
-然后跳到第三步，念**升级**的收尾话术。
+```text
+施工源/vault/.obsidian/plugins/ziminos/manifest.json
+施工源/vault/.obsidian/plugins/ziminos/main.js
+```
 
----
+任一缺失就停止并说明仓库不完整。不要运行 `npm install` 或 `npm run build`，不要安装 Node.js、QuickAdd、Linter、主题或任何额外插件。
 
-### 模式 C：停下
-
-目标路径已经有东西了，但那不是 ziminOS 库——可能是用户的另一个笔记库，也可能是他随便什么文件夹。
-
-**一个字节都不要写。** 原样告诉用户：
-
-> 这个位置已经有东西了，而且看起来不是 ziminOS 笔记库。我不会往里写任何文件。
-> 你可以换一个新的空文件夹，或者告诉我这确实是你想覆盖的位置——但我建议你先自己看一眼里面是什么。
-
-等他给出新路径，回到第一步。他若坚持要装进这个已有目录，也**不要**直接照办：让他自己先把目录清空或改名，你只往空目录里装。
-
----
-
-## 第三步：收尾话术
-
-装完之后，把下面的话原样念给用户。不要改写，不要缩写，不要替他省步骤。
+## 三、原地搭建当前工作区
 
 ### 全新安装
 
-> 装好了。接下来三步，你自己操作：
->
-> 1. 打开 Obsidian，选「打开文件夹作为仓库」，选中刚才这个文件夹。
-> 2. Obsidian 会弹窗问你信不信任，点「信任作者并启用插件」。
-> 3. 打开设置，在左边找到 ziminOS，点「初始化」。
->
-> 看到「开荒完成 ✅」就成了。之后跟着库里的 README 走。
+只把施工源中 `vault/` 的内部内容复制到当前工作区根目录，包括隐藏的 `.obsidian`：
+
+```bash
+cp -R "$install_staging_dir/repo/vault/." "$vault_root/"
+```
+
+这里的 `/.` 不得省略。禁止复制仓库根目录，禁止生成 `$vault_root/vault/`，禁止生成任何以用户系统名称命名的子目录。
 
 ### 升级
 
-> 插件已经更新到 vX.Y.Z。
->
-> 回到 Obsidian，退出再重新打开（或者在「设置 → 第三方插件」里把 ziminOS 的开关关掉再打开），新版本就生效了。
->
-> **不需要**再点「初始化」——你的笔记和设置都在，一个没动。
+先读取新旧 `manifest.json` 的版本号，然后只覆盖两个插件文件：
 
----
+```bash
+cp "$install_staging_dir/repo/vault/.obsidian/plugins/ziminos/manifest.json" "$vault_root/.obsidian/plugins/ziminos/manifest.json"
+cp "$install_staging_dir/repo/vault/.obsidian/plugins/ziminos/main.js" "$vault_root/.obsidian/plugins/ziminos/main.js"
+```
+
+不得改动 Markdown 笔记、`data.json`、Obsidian 配置、主题或其他插件。
+
+## 四、验证当前工作区
+
+全新安装后检查 `$vault_root` 顶层。除安装前已存在的 `.DS_Store` 外，只允许：
+
+```text
+.obsidian/
+README.md
+```
+
+确认：
+
+- `$vault_root/.obsidian/plugins/ziminos/main.js` 存在。
+- `$vault_root/.obsidian/plugins/ziminos/manifest.json` 存在。
+- `$vault_root/.obsidian/community-plugins.json` 只声明 `ziminos`。
+- `$vault_root` 内不存在 `.git/`、`src/`、`docs/`、`skill/`、`vault/`、`node_modules/` 或 `package.json`。
+
+若发现开发文件，说明安装错误；由 Agent 修正，不让用户判断哪些文件该删。
+
+## 五、清理临时施工源
+
+无论成功或失败，都清理本次创建的临时目录。删除前必须验证它匹配 `/tmp/ziminos-install.*`，只删除这个精确目录：
+
+```bash
+case "$install_staging_dir" in
+    /tmp/ziminos-install.*) find "$install_staging_dir" -depth -delete ;;
+    *) echo "拒绝清理非 ziminOS 临时目录：$install_staging_dir" >&2; exit 1 ;;
+esac
+```
+
+不得删除 `$vault_root`，不得删除用户提供的任何目录，不在当前工作区旁留下源码仓库、压缩包或安装脚本。
+
+## 六、交付给用户
+
+全新安装完成后输出：
+
+> 已经把当前文件夹搭建成你的个人知识管理系统。
+>
+> 现在直接用 Obsidian 打开这个文件夹，然后：
+> 1. Obsidian 询问信任时，点「信任作者并启用插件」。
+> 2. 打开设置，在左边找到 ziminOS，点「初始化」。
+> 3. 看到「开荒完成 ✅」后，跟着笔记库里的 README 使用。
+
+不要再给用户一个新的文件夹路径，不要提临时源码位置，不要让他寻找 `vault/` 子目录。
+
+升级完成后输出：
+
+> 当前笔记库里的 ziminOS 已从 v旧版本更新到 v新版本。你的笔记和设置都没有改动，重新加载 Obsidian 插件后即可生效。
 
 ## 红线
 
-以下四条，任何情况下都不许越。用户催、用户说「没事你随便弄」、你自己觉得「顺手清一下更整洁」，都不算理由。
-
-1. **不得删除或覆盖用户的笔记文件。** 任何 `.md` 文件（除了全新安装时随模板一起铺进空目录的那份 README）都不许动。
-2. **不得改动 `<目标库>` 以外的任何路径。** 仓库本身只读，用户的其他目录一概不碰。
-3. **升级模式只覆盖 `plugins/ziminos/` 下的 `manifest.json` 与 `main.js`。** 别的文件一律保持原样。
-4. **不许使用 `rm -rf` 或任何递归删除。** 这个任务从头到尾只需要 `mkdir` 和 `cp`，用不上删除。
-
-判断不了就停下来问用户。停下来永远是对的，猜错一次可能毁掉他几年的笔记。
+- 当前工作区就是最终笔记库，不另建目录。
+- 不在当前工作区克隆 GitHub 仓库。
+- 不让用户打开仓库或仓库内的 `vault/`。
+- 不删除或覆盖用户笔记。
+- 不安装运行 ziminOS 不需要的软件、插件或主题。
+- 判断不了当前目录是否安全时停止，不要猜。
