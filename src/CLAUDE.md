@@ -7,7 +7,7 @@
 ## 成员清单
 
 main.ts: 插件入口与唯一装配点。loadData 以默认值打底合并出设置对象 → 装配 ZiminosContext（app / plugin / settings / saveSettings / 全局唯一的 SelfWriteGuard）→ 注册横跨全库的 init-vault 命令 → 依次调用五个模块注册函数 → 挂载设置页。全部事件与定时器经 registerEvent / register 托管，故 onunload 无需手写清理。
-settings.ts: 设置页 ZiminosSettingTab，四区依学员使用顺序排列——开荒按钮（desc 由 initializedAt 是否为空翻面）、两个自动化开关、details 折叠的目录与时间格式、静态模块清单。它不持有任何自己的状态，每次 display 都从 ctx.settings 重新渲染。
+settings.ts: 设置页 ZiminosSettingTab，四区依学员使用顺序排列——开荒按钮（desc 由 initializedAt 是否为空翻面）、两个自动化开关、details 折叠的目录与时间格式、静态模块清单。清单区分插件运行的项目管理与 vault 交付的外观包，不在此重写第三方能力；页面不持有自身状态，每次 display 都从 ctx.settings 重新渲染。
 core/: 无业务语义的基础设施层，被所有功能模块单向依赖，自己不认识任何模块。
 modules/projects/: V1 唯一的功能模块，项目管理的全部业务逻辑住在这里。
 

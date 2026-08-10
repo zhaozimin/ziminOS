@@ -1087,7 +1087,7 @@ var SYSTEM_MODULES = [
   { name: "\u{1F4E6} \u9879\u76EE\u7BA1\u7406 v1", status: "\u8FD0\u884C\u4E2D", running: true },
   { name: "\u{1F465} \u4EBA\u8109\u7BA1\u7406", status: "\u656C\u8BF7\u671F\u5F85", running: false },
   { name: "\u{1F4D4} \u65E5\u8BB0\u590D\u76D8", status: "\u656C\u8BF7\u671F\u5F85", running: false },
-  { name: "\u{1F3A8} \u7F8E\u5316\u5305", status: "\u656C\u8BF7\u671F\u5F85", running: false }
+  { name: "\u{1F3A8} \u5916\u89C2\u5305 v1", status: "Minimal + Style Settings \u5DF2\u5C31\u7EEA", running: true }
 ];
 var ZiminosSettingTab = class extends import_obsidian9.PluginSettingTab {
   constructor(ctx) {

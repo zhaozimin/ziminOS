@@ -1,6 +1,6 @@
 # ziminOS
 
-> 一句话：一个能自己开荒的 Obsidian 笔记库——把 PARA 骨架、项目 MOC、卡片登记、归档流转全部交给脚本，人只负责想事情。
+> 一句话：一个能自己开荒、开箱就好看的 Obsidian 笔记库——把 PARA 骨架、项目 MOC、卡片登记、归档流转交给 ziminOS，外观交给独立的 Minimal 与 Style Settings。
 
 > **给桌面智能体：** 如果用户已经创建并命名一个文件夹、用你打开该文件夹后要求按照本仓库搭建个人知识管理系统，立即读取并严格执行 [`skill/SKILL.md`](skill/SKILL.md)。当前工作区就是最终 Obsidian 笔记库；不要询问名称或路径，不要创建子目录，不要在当前工作区克隆本仓库，只把 `vault/` 的内部内容直接铺到当前工作区根目录。
 
@@ -16,17 +16,14 @@ ziminOS 不是一个插件，是三样东西咬合在一起。
                           │
                           │ 照着装
                           ▼
-                      vault/  笔记库模板
-                      （学员拿到手的「家」：PARA 六件套 + 一份新手导游）
+                      vault/  笔记库成品
+                      （学员的「家」：系统配置 + 外观包 + 新手导游）
                           │
-                          │ 家里住着
-                          ▼
-                      ziminos 插件
-                      （管家：开荒 · 建项目 · 登记卡片 · 归档流转）
-                       源码在 src/，产物在 vault/.obsidian/plugins/ziminos/main.js
+                          ├─ ziminos 插件：开荒 · 建项目 · 登记卡片 · 归档流转
+                          └─ 外观包：Minimal · Style Settings · 默认配色 · ziminOS CSS
 ```
 
-**手册**负责把家搭起来，**家**负责收纳，**管家**负责干重复的活。三者各司其职，谁也不越界。
+**手册**负责把家搭起来，**家**负责收纳，**ziminOS** 负责系统工作流，**外观包**保持独立运行。它们一起交付，但不把第三方代码揉进 ziminOS。
 
 ---
 
@@ -73,7 +70,9 @@ AI 参与的地方只有一处：装库那一次，桌面智能体照着 `skill/
 
 4. 安装完成后，直接用 Obsidian 打开同一个文件夹。
 
-智能体不会再问名称或安装路径，也不会创建另一层文件夹。它会在工作区外临时读取仓库，只把真正有用的笔记库内容放进当前文件夹；你不会看到 `src`、`docs`、`package.json` 等开发文件，也不需要安装 Node、QuickAdd、Linter、主题或其他插件。之后跟着笔记库里的 `README.md` 走三步，一分钟开荒完成。
+智能体不会再问名称或安装路径，也不会创建另一层文件夹。它会在工作区外临时读取仓库，只把真正有用的笔记库内容放进当前文件夹；你不会看到 `src`、`docs`、`package.json` 等开发文件，也不需要安装 Node、QuickAdd 或 Linter。Minimal、Style Settings、默认配色和 CSS 已经在成品库中。之后跟着笔记库里的 `README.md` 走三步，一分钟开荒完成。
+
+请使用 Obsidian 1.13.0 或更高版本。
 
 想学得更系统：**https://edu.zhaozimin.com**
 
@@ -103,13 +102,15 @@ ziminOS/
 ├── CLAUDE.md                 GEB L1 项目宪法：全局地图与技术栈
 ├── README.md                 你正在看的这份
 ├── LICENSE                   MIT
+├── .gitattributes            保护第三方发布资产的原始校验值
 ├── docs/
-│   └── 设计规格书.md          V1 实施的唯一事实源，实现与它冲突以它为准
+│   ├── 设计规格书.md          V1 实施的唯一事实源，实现与它冲突以它为准
+│   └── 第三方组件.md          外观包版本、来源、校验和升级边界
 ├── skill/
 │   └── SKILL.md              施工手册，给桌面智能体读
 ├── vault/                    笔记库模板，学员拿到手的「家」
 │   ├── README.md             库内新手导游
-│   └── .obsidian/            库配置 + 插件产物（manifest.json / main.js）
+│   └── .obsidian/            库配置 + ziminOS + Minimal + Style Settings + CSS
 ├── src/
 │   ├── main.ts               插件入口与唯一装配点
 │   ├── settings.ts           设置页
@@ -124,4 +125,6 @@ ziminOS/
 
 ## License
 
-MIT · Copyright (c) 2026 zhaozimin
+ziminOS：MIT · Copyright (c) 2026 zhaozimin。
+
+随库交付的 Minimal 为 MIT，Style Settings 为 GPL-3.0；完整来源、版本、校验值与许可证见 [`docs/第三方组件.md`](docs/%E7%AC%AC%E4%B8%89%E6%96%B9%E7%BB%84%E4%BB%B6.md)。

@@ -6,7 +6,8 @@
  *        两个自动行为的开关随时可以关掉。它只读写 ctx.settings 并调 ctx.saveSettings，
  *        不持有任何自己的状态：面板每次 display 都从设置对象重新渲染，因此外部改动天然可见。
  *        四个分区的排列顺序即学员的使用顺序：先开荒，再决定自动化，其次才是目录与时间格式，
- *        最后是模块清单——它承诺 ziminOS 会继续长大，为后续模块预留了可见的挂载位
+ *        最后是模块清单——它如实展示插件内的项目管理与由 vault 交付的外观包，
+ *        同时为后续模块预留可见挂载位
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -72,14 +73,14 @@ interface ModuleEntry {
 }
 
 /**
- * 静态模块清单。V1 只有项目管理一个模块真正在跑，
- * 其余三行是对学员的承诺：ziminOS 是会长大的操作系统，不是一次性脚本包。
+ * 静态模块清单。项目管理由插件运行，外观包由 vault 中锁定的主题、
+ * 辅助插件与自有 CSS 协同提供；清单只展示交付状态，不在 ziminOS 内重新实现第三方能力。
  */
 const SYSTEM_MODULES: readonly ModuleEntry[] = [
     { name: '📦 项目管理 v1', status: '运行中', running: true },
     { name: '👥 人脉管理', status: '敬请期待', running: false },
     { name: '📔 日记复盘', status: '敬请期待', running: false },
-    { name: '🎨 美化包', status: '敬请期待', running: false },
+    { name: '🎨 外观包 v1', status: 'Minimal + Style Settings 已就绪', running: true },
 ];
 
 // ============================================================

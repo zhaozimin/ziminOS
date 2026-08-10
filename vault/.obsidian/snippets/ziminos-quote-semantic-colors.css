@@ -1,0 +1,45 @@
+/* ============================================================
+ * [INPUT]: 依赖 Obsidian CM6 编辑视图的 cm-quote 行级类，依赖 Minimal 主题与
+ *          Style Settings data.json 提供的 bold/italic/code/link 语义变量
+ * [OUTPUT]: 对外提供 Live Preview 引用块内的语义色恢复（加粗/斜体/行内代码/
+ *          双链/空双链/外链），声明层零硬编码颜色
+ * [POS]: ziminOS 外观包的自有局部修复，与第三方主题/插件独立运行；
+ *        阅读视图语义色本就正常，本片段只修编辑视图
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ * ============================================================
+ * 问题：Obsidian 编辑视图（Live Preview）会把引用行统一染成
+ *      引用文字色，同权重规则盖掉了加粗、斜体、链接的语义色。
+ * 本片段只做一件事：在引用块内部，把语义色还给它们。
+ * 颜色全部来自官方变量，跟随你的 Style Settings 配置，改色不用动这里。
+ * ============================================================ */
+
+/* 加粗 → 警示红 */
+.markdown-source-view.mod-cm6 .cm-quote.cm-strong {
+  color: var(--bold-color);
+}
+
+/* 斜体 → 安静的蓝 */
+.markdown-source-view.mod-cm6 .cm-quote.cm-em {
+  color: var(--italic-color);
+}
+
+/* 行内代码 → 绿 */
+.markdown-source-view.mod-cm6 .cm-quote.cm-inline-code {
+  color: var(--code-normal);
+}
+
+/* 实体双链 → 金 */
+.markdown-source-view.mod-cm6 .cm-quote.cm-hmd-internal-link {
+  color: var(--link-color);
+}
+
+/* 空双链 → 发灰的红 */
+.markdown-source-view.mod-cm6 .cm-quote.cm-hmd-internal-link.is-unresolved {
+  color: var(--link-unresolved-color);
+}
+
+/* 外链 → 青 */
+.markdown-source-view.mod-cm6 .cm-quote.cm-link,
+.markdown-source-view.mod-cm6 .cm-quote.cm-url {
+  color: var(--link-external-color);
+}

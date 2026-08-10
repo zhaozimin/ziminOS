@@ -1,0 +1,6 @@
+# 上游发布资产必须保持官方原始字节，否则供应链 SHA-256 校验失效。
+/vault/.obsidian/themes/Minimal/** -text -diff
+/vault/.obsidian/plugins/obsidian-style-settings/main.js -text -diff
+/vault/.obsidian/plugins/obsidian-style-settings/manifest.json -text -diff
+/vault/.obsidian/plugins/obsidian-style-settings/styles.css -text -diff
+/vault/.obsidian/plugins/obsidian-style-settings/LICENSE.md -text -diff
