@@ -45,7 +45,7 @@ const TEXTS = {
     inspirationTargetHeading: '定位标题',
     inspirationTargetDesc: '选择标题插入时，用它定位具体区域。可写“灵感集”或完整 Markdown 标题。',
     inspirationPositionName: '插入位置',
-    inspirationPositionDesc: '决定新灵感写在标题区或整篇正文的头尾。正文顶部会自动避开 YAML。',
+    inspirationPositionDesc: '决定新灵感写在标题区或整篇正文的头尾。置顶会自动避开 YAML、页面标题和 Dataview 筛选区。',
     inspirationFormatName: '单条格式',
     inspirationFormatDesc: '必须保留 {{content}}；还可使用 {{date}}、{{time}}、{{datetime}}。',
 

@@ -75,7 +75,7 @@ async function captureInspiration(ctx: ZiminosContext): Promise<void> {
             ctx.guard.mark(target.path);
             targetEntry = await ctx.app.vault.create(
                 target.path,
-                buildInitialInspirationContent(entry, target.position, target.heading, target.path),
+                buildInitialInspirationContent(entry, target.heading, target.path),
             );
         } else {
             if (!(targetEntry instanceof TFile) || targetEntry.extension.toLowerCase() !== 'md') {
@@ -88,6 +88,7 @@ async function captureInspiration(ctx: ZiminosContext): Promise<void> {
                     entry,
                     target.position,
                     target.heading,
+                    target.path,
                 );
 
                 // 纯文本校验全部成功后、process 真正写盘前再登记，失败流程不制造虚假的自写窗口

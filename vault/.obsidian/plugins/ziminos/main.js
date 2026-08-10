@@ -324,39 +324,47 @@ function renderInspirationEntry(format, inspiration, timeParts) {
     }
   );
 }
-function buildInitialInspirationContent(entry, position, heading, targetPath) {
+function buildInitialInspirationContent(entry, heading, targetPath) {
   const filter = buildDataviewTaskQuery(targetPath);
-  if (isHeadingPosition(position)) return `${filter}
-
-${heading}
-${entry}
-`;
-  return `${filter}
+  return `${heading}
+${filter}
 
 ${entry}
 `;
 }
 function buildDataviewTaskQuery(targetPath) {
+  return buildDataviewTaskQueryVersion(targetPath, true);
+}
+function buildDataviewTaskQueryVersion(targetPath, includeMtimeGroup) {
   const escapedPath = targetPath.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-  return [
+  const lines = [
     "```dataview",
     "task",
     "from",
     `    "${escapedPath}"`,
     "where",
-    "    !completed",
-    "```"
-  ].join("\n");
+    "    !completed"
+  ];
+  if (includeMtimeGroup) {
+    lines.push(
+      "group by",
+      '    "\u6700\u540E\u66F4\u65B0 \xB7 " + dateformat(file.mtime, "yyyy-MM-dd HH:mm")'
+    );
+  }
+  lines.push("```");
+  return lines.join("\n");
 }
-function insertInspiration(content, entry, position, heading) {
+function insertInspiration(content, entry, position, heading, targetPath) {
   var _a, _b, _c, _d;
   const lineEnding = content.includes("\r\n") ? "\r\n" : "\n";
   const lines = content.split(/\r?\n/);
   const entryLines = entry.split(/\r?\n/);
+  normalizeSystemHeader(lines, heading, targetPath);
   switch (position) {
     case "heading-top": {
       const headingIndex = findHeadingIndex(lines, heading);
-      lines.splice(headingIndex + 1, 0, ...entryLines);
+      const insertionIndex = findHeadingContentStart(lines, headingIndex);
+      lines.splice(insertionIndex, 0, ...entryLines);
       break;
     }
     case "heading-bottom": {
@@ -385,9 +393,6 @@ function insertInspiration(content, entry, position, heading) {
   }
   return lines.join(lineEnding);
 }
-function isHeadingPosition(position) {
-  return position === "heading-top" || position === "heading-bottom";
-}
 function findHeadingIndex(lines, heading) {
   const index = lines.findIndex((line) => line.trim() === heading);
   if (index === -1) {
@@ -403,8 +408,53 @@ function findHeadingSectionEnd(lines, headingIndex, headingLevel) {
   }
   return lines.length;
 }
+function findHeadingContentStart(lines, headingIndex) {
+  const queryStart = skipBlankLines(lines, headingIndex + 1);
+  if (!isDataviewFence(lines[queryStart])) return headingIndex + 1;
+  return skipBlankLines(lines, findDataviewFenceEnd(lines, queryStart) + 1);
+}
+function normalizeSystemHeader(lines, heading, targetPath) {
+  var _a, _b;
+  const bodyStart = findMarkdownBodyStart(lines);
+  let headingIndex = bodyStart;
+  let queryStart = bodyStart;
+  if (((_a = lines[bodyStart]) == null ? void 0 : _a.trim()) === heading) {
+    queryStart = skipBlankLines(lines, bodyStart + 1);
+  } else if (isDataviewFence(lines[bodyStart])) {
+    const legacyQueryEnd = findDataviewFenceEnd(lines, bodyStart);
+    headingIndex = skipBlankLines(lines, legacyQueryEnd + 1);
+  } else {
+    return;
+  }
+  if (((_b = lines[headingIndex]) == null ? void 0 : _b.trim()) !== heading || !isDataviewFence(lines[queryStart])) return;
+  const queryEnd = findDataviewFenceEnd(lines, queryStart);
+  const actualQuery = lines.slice(queryStart, queryEnd + 1).join("\n");
+  const currentQuery = buildDataviewTaskQuery(targetPath);
+  const legacyQuery = buildDataviewTaskQueryVersion(targetPath, false);
+  if (actualQuery !== currentQuery && actualQuery !== legacyQuery) return;
+  const systemEnd = Math.max(headingIndex, queryEnd);
+  const contentStart = skipBlankLines(lines, systemEnd + 1);
+  lines.splice(
+    bodyStart,
+    contentStart - bodyStart,
+    heading,
+    ...currentQuery.split("\n"),
+    ""
+  );
+}
 function findBodyStart(lines) {
-  var _a, _b, _c, _d;
+  var _a, _b;
+  const bodyStart = findMarkdownBodyStart(lines);
+  let queryStart = bodyStart;
+  if (/^#{1,6}\s+/.test((_b = (_a = lines[bodyStart]) == null ? void 0 : _a.trim()) != null ? _b : "")) {
+    const candidate = skipBlankLines(lines, bodyStart + 1);
+    if (isDataviewFence(lines[candidate])) queryStart = candidate;
+  }
+  if (!isDataviewFence(lines[queryStart])) return bodyStart;
+  return skipBlankLines(lines, findDataviewFenceEnd(lines, queryStart) + 1);
+}
+function findMarkdownBodyStart(lines) {
+  var _a;
   let bodyStart = 0;
   if (((_a = lines[0]) == null ? void 0 : _a.trim()) === "---") {
     const closingIndex = lines.findIndex(
@@ -415,18 +465,25 @@ function findBodyStart(lines) {
     }
     bodyStart = closingIndex + 1;
   }
-  while (bodyStart < lines.length && !((_b = lines[bodyStart]) == null ? void 0 : _b.trim())) bodyStart += 1;
-  if (((_c = lines[bodyStart]) == null ? void 0 : _c.trim().toLowerCase()) === "```dataview") {
-    const closingIndex = lines.findIndex(
-      (line, index) => index > bodyStart && line.trim() === "```"
-    );
-    if (closingIndex === -1) {
-      throw new Error("\u76EE\u6807\u7B14\u8BB0\u9876\u90E8\u7684 Dataview \u67E5\u8BE2\u6CA1\u6709\u95ED\u5408\uFF0C\u672A\u5199\u5165\u4EFB\u4F55\u5185\u5BB9\u3002");
-    }
-    bodyStart = closingIndex + 1;
-    while (bodyStart < lines.length && !((_d = lines[bodyStart]) == null ? void 0 : _d.trim())) bodyStart += 1;
+  return skipBlankLines(lines, bodyStart);
+}
+function isDataviewFence(line) {
+  return (line == null ? void 0 : line.trim().toLowerCase()) === "```dataview";
+}
+function findDataviewFenceEnd(lines, start) {
+  const closingIndex = lines.findIndex(
+    (line, index) => index > start && line.trim() === "```"
+  );
+  if (closingIndex === -1) {
+    throw new Error("\u76EE\u6807\u7B14\u8BB0\u9876\u90E8\u7684 Dataview \u67E5\u8BE2\u6CA1\u6709\u95ED\u5408\uFF0C\u672A\u5199\u5165\u4EFB\u4F55\u5185\u5BB9\u3002");
   }
-  return bodyStart;
+  return closingIndex;
+}
+function skipBlankLines(lines, start) {
+  var _a;
+  let index = start;
+  while (index < lines.length && !((_a = lines[index]) == null ? void 0 : _a.trim())) index += 1;
+  return index;
 }
 
 // src/modules/inspiration/capture.ts
@@ -462,7 +519,7 @@ async function captureInspiration(ctx) {
       ctx.guard.mark(target.path);
       targetEntry = await ctx.app.vault.create(
         target.path,
-        buildInitialInspirationContent(entry, target.position, target.heading, target.path)
+        buildInitialInspirationContent(entry, target.heading, target.path)
       );
     } else {
       if (!(targetEntry instanceof import_obsidian4.TFile) || targetEntry.extension.toLowerCase() !== "md") {
@@ -473,7 +530,8 @@ async function captureInspiration(ctx) {
           content,
           entry,
           target.position,
-          target.heading
+          target.heading,
+          target.path
         );
         ctx.guard.mark(target.path);
         return updatedContent;
@@ -1345,7 +1403,7 @@ var TEXTS = {
   inspirationTargetHeading: "\u5B9A\u4F4D\u6807\u9898",
   inspirationTargetDesc: "\u9009\u62E9\u6807\u9898\u63D2\u5165\u65F6\uFF0C\u7528\u5B83\u5B9A\u4F4D\u5177\u4F53\u533A\u57DF\u3002\u53EF\u5199\u201C\u7075\u611F\u96C6\u201D\u6216\u5B8C\u6574 Markdown \u6807\u9898\u3002",
   inspirationPositionName: "\u63D2\u5165\u4F4D\u7F6E",
-  inspirationPositionDesc: "\u51B3\u5B9A\u65B0\u7075\u611F\u5199\u5728\u6807\u9898\u533A\u6216\u6574\u7BC7\u6B63\u6587\u7684\u5934\u5C3E\u3002\u6B63\u6587\u9876\u90E8\u4F1A\u81EA\u52A8\u907F\u5F00 YAML\u3002",
+  inspirationPositionDesc: "\u51B3\u5B9A\u65B0\u7075\u611F\u5199\u5728\u6807\u9898\u533A\u6216\u6574\u7BC7\u6B63\u6587\u7684\u5934\u5C3E\u3002\u7F6E\u9876\u4F1A\u81EA\u52A8\u907F\u5F00 YAML\u3001\u9875\u9762\u6807\u9898\u548C Dataview \u7B5B\u9009\u533A\u3002",
   inspirationFormatName: "\u5355\u6761\u683C\u5F0F",
   inspirationFormatDesc: "\u5FC5\u987B\u4FDD\u7559 {{content}}\uFF1B\u8FD8\u53EF\u4F7F\u7528 {{date}}\u3001{{time}}\u3001{{datetime}}\u3002",
   advancedHeading: "\u9AD8\u7EA7\u8BBE\u7F6E\uFF08\u4E00\u822C\u4E0D\u7528\u6539\uFF09",
