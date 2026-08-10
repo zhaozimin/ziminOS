@@ -1,10 +1,11 @@
 /**
  * [INPUT]: 依赖 obsidian 导出的 moment，依赖 ./constants 的 UID_FORMAT 与 DEFAULT_DATETIME_FORMAT
  * [OUTPUT]: 对外提供 nowStamp（按设置格式取当前时间）、nowUid（17 位本地时间 UID）、
- *           nowStampAndUid（同一时刻同时派生时间戳与 UID）及其返回类型 StampAndUid
+ *           nowStampAndUid（同一时刻派生时间戳与 UID）、nowLocalDateTimeParts（同一时刻派生
+ *           日期/分钟/自定义时间）及对应返回类型
  * [POS]: core 的时间口径统一处，同时是 dateTimeFormat 设置项的守门人——
  *        设置页刻意不做校验，空值回落在此收敛为唯一一处，调用方传原值即可，无从遗漏。
- *        原始三份脚本里存在两套实现（手写 padStart 与 moment），此处统一为 moment 一种
+ *        原始脚本里存在手写 padStart 与 moment 两套实现，此处统一为 moment 一种
  *        （输出字符串完全一致，属消重而非行为改变）；原脚本「同一时刻派生 created 与 UID」
  *        的原子性由 nowStampAndUid 承载，跨秒边界下两个字段不会各说各话。
  *        全仓库禁止再就地 new Date() 拼时间，格式必须走这里，dateTimeFormat 设置才真正生效
@@ -25,6 +26,13 @@ export interface StampAndUid {
     readonly stamp: string;
     /** 17 位本地时间 UID，写入 UID */
     readonly uid: string;
+}
+
+/** 同一时刻派生出的模板时间变量，避免跨分钟边界时一条灵感出现互相矛盾的日期与时间 */
+export interface LocalDateTimeParts {
+    readonly date: string;
+    readonly time: string;
+    readonly datetime: string;
 }
 
 /**
@@ -76,5 +84,19 @@ export function nowStampAndUid(format: string): StampAndUid {
     return {
         stamp: now.format(normalizeDateTimeFormat(format)),
         uid: now.format(UID_FORMAT),
+    };
+}
+
+/**
+ * 为可配置文本模板一次性生成三个本地时间变量。
+ * date/time 是稳定的短格式，datetime 跟随插件 dateTimeFormat 设置。
+ */
+export function nowLocalDateTimeParts(format: string): LocalDateTimeParts {
+    const now = momentFactory();
+
+    return {
+        date: now.format('YYYY-MM-DD'),
+        time: now.format('HH:mm'),
+        datetime: now.format(normalizeDateTimeFormat(format)),
     };
 }

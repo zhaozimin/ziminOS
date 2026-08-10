@@ -2,6 +2,7 @@
  * [INPUT]: 无。本文件不 import 任何模块，是 core 层依赖图的最底层叶子
  * [OUTPUT]: 对外提供 PARA 目录常量 FOLDERS/INIT_FOLDERS、笔记路径常量 NAV_FILE/TEMPLATE_FILES、
  *           卡片字段序 CARD_FIELDS 与其字段类型 CardField、时间格式 DEFAULT_DATETIME_FORMAT/UID_FORMAT、
+ *           灵感收集默认值/命令/插入位置，
  *           自写抑制窗口 SELF_WRITE_WINDOW_MS，以及项目生命周期状态机 TRANSITIONS/STATUS_LABELS
  *           及其类型 ProjectStatus/TransitionAction/FolderRole/ProjectTransition
  * [POS]: 全仓库唯一的常量源。规格要求「禁魔法字符串」，任何目录名、字段名、状态名、时间格式
@@ -46,6 +47,36 @@ export const NAV_FILE = `${FOLDERS.system}/导航.md`;
 export const TEMPLATE_FILES = {
     moc: `${FOLDERS.template}/MOC 模板.md`,
     card: `${FOLDERS.template}/卡片笔记模板.md`,
+} as const;
+
+// ============================================================
+// 灵感收集
+// ============================================================
+
+/** 灵感可以落在标题区或整篇正文的头尾；值会持久化到插件设置，禁止随意改名 */
+export const INSPIRATION_INSERT_POSITIONS = [
+    'heading-top',
+    'heading-bottom',
+    'file-top',
+    'file-bottom',
+] as const;
+
+/** 灵感插入位置，由可持久化值直接推导，设置页与写入模块共用 */
+export type InspirationInsertPosition = (typeof INSPIRATION_INSERT_POSITIONS)[number];
+
+/** 全新库的灵感收集默认值；老库升级时由 DEFAULT_SETTINGS 自动补齐 */
+export const INSPIRATION_DEFAULTS = {
+    folder: FOLDERS.inbox,
+    fileName: '灵感集.md',
+    heading: '# 灵感集',
+    insertPosition: 'heading-top' as InspirationInsertPosition,
+    format: '- [ ]  {{content}} [[{{date}}]] {{time}}',
+} as const;
+
+/** 命令面板入口；不预占系统快捷键，用户可在 Obsidian 快捷键设置里自由绑定 */
+export const INSPIRATION_COMMAND = {
+    id: 'capture-inspiration',
+    name: '记录灵感',
 } as const;
 
 // ============================================================
