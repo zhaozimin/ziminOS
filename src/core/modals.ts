@@ -1,14 +1,19 @@
 /**
- * [INPUT]: 依赖 obsidian 的 Modal 基类、ButtonComponent 与 App 类型
- * [OUTPUT]: 对外提供 TextInputOptions 配置与 TextInputModal 弹窗类（openAndGetValue）
+ * [INPUT]: 依赖 obsidian 的 Modal/FuzzySuggestModal 基类、ButtonComponent 与 App 类型
+ * [OUTPUT]: 对外提供 TextInputOptions 配置与 TextInputModal 弹窗类（openAndGetValue），
+ *           以及 ChoiceModal 选择弹窗（openAndGetChoice）
  * [POS]: core 的唯一人机问答通道，取代原脚本对 QuickAdd inputPrompt 的依赖。
  *        它把「弹窗生命周期」翻译成一个 Promise：有输入返回文本，取消返回 null，
  *        调用方因此可以用一条 if 判断中止流程，无需关心 DOM 与事件。
- *        样式只用 Obsidian 原生组件与极少量内联样式，V1 不引入 styles.css
+ *        两个弹窗的分工是一条纪律而非口味：凡取值来自封闭集合（分层、方向、去/来、状态、
+ *        产品、渠道、选人）一律走 ChoiceModal。实测证据是硬的——用自由文本问「今天做了什么」，
+ *        34 篇日记收到 34 个「123123」类垃圾，而垃圾能通过一切非空校验并作为事实进入汇总表。
+ *        枚举让垃圾在语法上不可能产生，这比任何校验都可靠。
+ *        样式只用 Obsidian 原生组件与极少量内联样式，不引入 styles.css
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { ButtonComponent, Modal } from 'obsidian';
+import { ButtonComponent, FuzzySuggestModal, Modal } from 'obsidian';
 import type { App } from 'obsidian';
 
 /** 文本输入弹窗的配置 */
@@ -101,6 +106,73 @@ export class TextInputModal extends Modal {
 
     /** 唯一结算点，保证 Promise 只被兑现一次 */
     private settle(value: string | null): void {
+        if (this.settled) return;
+
+        this.settled = true;
+
+        const resolve = this.resolver;
+        this.resolver = null;
+
+        if (resolve) resolve(value);
+    }
+}
+
+/** 选择弹窗的配置 */
+export interface ChoiceOptions<T> {
+    /** 提问语，显示在搜索框的占位处 */
+    title: string;
+    /** 候选项 */
+    items: readonly T[];
+    /** 候选项怎么显示成一行文字 */
+    labelOf: (item: T) => string;
+}
+
+/**
+ * 从封闭集合里选一个。
+ *
+ * 与 TextInputModal 共守同一条取消语义：选中返回那一项，Esc / 遮罩 / 关闭一律返回 null，
+ * 调用方仍然只需一条 if 就能中止整条流程，不必为「选择」再学一套写法。
+ */
+export class ChoiceModal<T> extends FuzzySuggestModal<T> {
+    private readonly options: ChoiceOptions<T>;
+
+    private resolver: ((value: T | null) => void) | null = null;
+
+    private settled = false;
+
+    constructor(app: App, options: ChoiceOptions<T>) {
+        super(app);
+        this.options = options;
+        this.setPlaceholder(options.title);
+    }
+
+    /** 打开弹窗并等待用户作答：选中返回该项，取消返回 null */
+    openAndGetChoice(): Promise<T | null> {
+        return new Promise<T | null>((resolve) => {
+            this.resolver = resolve;
+            this.open();
+        });
+    }
+
+    getItems(): T[] {
+        return [...this.options.items];
+    }
+
+    getItemText(item: T): string {
+        return this.options.labelOf(item);
+    }
+
+    onChooseItem(item: T): void {
+        // 选中后基类会关闭弹窗，onClose 里的兜底结算因此自然失效
+        this.settle(item);
+    }
+
+    onClose(): void {
+        this.settle(null);
+    }
+
+    /** 唯一结算点，保证 Promise 只被兑现一次 */
+    private settle(value: T | null): void {
         if (this.settled) return;
 
         this.settled = true;

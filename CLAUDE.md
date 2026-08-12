@@ -1,4 +1,4 @@
-# ziminOS - 让零基础学员一键长出能管项目、收灵感且带完整外观的 Obsidian 个人知识管理系统
+# ziminOS - 让零基础学员一键长出能管项目、收灵感、经营人脉、逐级复盘且带完整外观的 Obsidian 个人知识管理系统
 
 TypeScript 7.0 + esbuild 0.28 + Obsidian API 1.13（manifest minAppVersion 1.13.0）+ Dataview 0.5.68 + Minimal 9.0.2 + Style Settings 1.0.9
 
@@ -9,8 +9,12 @@ docs/ - 设计规格与第三方组件锁定记录；代码、交付物与规格
 skill/ - SKILL.md 桌面智能体交付契约；当前工作区就是用户已命名的笔记库，源码只在外部临时目录施工
 vault/ - 笔记库成品模板；同一交付物内独立放置 ziminOS、Dataview、Minimal、Style Settings、默认配色与自有 CSS
 vault/.obsidian/plugins/ziminos/ - 插件安装位；manifest.json 是版本号事实源，main.js 是刻意入库的构建产物
-src/ - 插件源码 (2子目录: core 无业务的基础设施、modules 含 projects 项目管理与 inspiration 灵感收集)
+src/ - 插件源码 (2子目录: core 无业务的基础设施与视图引擎、modules 含 setup 开荒、projects 项目管理、inspiration 灵感收集、review 五级复盘、contacts 人脉与客户)
 </directory>
+
+<views>
+V2 起全部二十一个视图由插件自渲染：笔记里只留一行 ```ziminos 代码块 + 视图名，逻辑住在 main.js。库内零 JS 文件，DataviewJS 保持关闭，升级只换 main.js 即全库生效。重算由 metadataCache 变更事件驱动，无定时器、无轮询。Dataview 仍随库交付，它的活儿只剩灵感集那条 TASK 查询。
+</views>
 
 <config>
 AGENTS.md - 智能体任务路由；安装请求强制进入 skill/SKILL.md，开发请求进入项目规格
@@ -20,6 +24,7 @@ esbuild.config.mjs - 唯一构建出口；产物直接写入 vault 插件目录�
 .gitignore - 只忽略 node_modules 与 .DS_Store；main.js 不忽略，学员克隆即可用
 .gitattributes - 锁定 Dataview、Minimal、Style Settings 发布资产的原始字节，防止 Git 换行/格式化破坏 SHA-256
 docs/第三方组件.md - Dataview / Minimal / Style Settings 的版本、上游、校验和升级边界
+docs/设计规格书-V2.md - 人脉与复盘（v0.4.0）的唯一事实源；与 V1 规格并存，交集处以它为准
 </config>
 
 <delivery>

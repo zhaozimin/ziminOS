@@ -1,6 +1,7 @@
 /**
  * [INPUT]: 依赖 obsidian 的 TFolder、normalizePath 与 App 类型
- * [OUTPUT]: 对外提供 ensureFolderPath（逐级建目录）与 normalizeFolderPath（规范化设置里的目录路径）
+ * [OUTPUT]: 对外提供 ensureFolderPath（逐级建目录）、normalizeFolderPath（规范化设置里的目录路径）
+ *           与 isInFolder（路径归属判定）
  * [POS]: core 的目录安全层，是所有会创建目录的模块（开荒、建项目、项目搬移）的共同入口。
  *        它的存在只为守住一条底线：绝不覆盖用户已有的同名文件——遇到就抛错中止，
  *        由调用方转成 Notice 呈现，插件本身永远不做破坏性写入
@@ -47,4 +48,18 @@ export function normalizeFolderPath(value: string | undefined, fallback: string)
     const path = (candidate || fallback).replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
 
     return normalizePath(path);
+}
+
+/**
+ * 判断某个路径是否落在指定目录（含其全部子目录）内。
+ *
+ * 必须带上分隔符再比前缀：裸 startsWith 会让 `04-archives-old/` 被当成 `04-archives/` 的内部，
+ * 而归档判定是「这个人还算不算数」的开关，误判一次整组人会从名录里消失。
+ */
+export function isInFolder(path: string, folder: string): boolean {
+    const base = folder.replace(/\/+$/, '');
+
+    if (!base) return true;
+
+    return path === base || path.startsWith(`${base}/`);
 }

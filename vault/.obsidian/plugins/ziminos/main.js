@@ -28,7 +28,10 @@ __export(main_exports, {
   default: () => ZiminosPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian11 = require("obsidian");
+var import_obsidian18 = require("obsidian");
+
+// src/core/codeblock.ts
+var import_obsidian2 = require("obsidian");
 
 // src/core/constants.ts
 var FOLDERS = {
@@ -37,6 +40,7 @@ var FOLDERS = {
   areas: "02-areas",
   resources: "03-resources",
   archives: "04-archives",
+  diary: "05-diary",
   system: "90-system",
   template: "90-system/Template"
 };
@@ -49,11 +53,17 @@ var INIT_FOLDERS = [
   FOLDERS.system,
   FOLDERS.template
 ];
+var CONTACT_FOLDER = `${FOLDERS.areas}/\u4EBA\u8109`;
+var CLIENT_FOLDER = `${FOLDERS.areas}/\u5BA2\u6237`;
 var NAV_FILE = `${FOLDERS.system}/\u5BFC\u822A.md`;
 var TEMPLATE_FILES = {
   moc: `${FOLDERS.template}/MOC \u6A21\u677F.md`,
-  card: `${FOLDERS.template}/\u5361\u7247\u7B14\u8BB0\u6A21\u677F.md`
+  card: `${FOLDERS.template}/\u5361\u7247\u7B14\u8BB0\u6A21\u677F.md`,
+  person: `${FOLDERS.template}/\u4EBA\u8109\u6A21\u677F.md`,
+  client: `${FOLDERS.template}/\u5BA2\u6237\u6A21\u677F.md`
 };
+var CONTACT_MOC = `${CONTACT_FOLDER}/\u4EBA\u8109MOC.md`;
+var CLIENT_MOC = `${CLIENT_FOLDER}/\u5BA2\u6237MOC.md`;
 var INSPIRATION_INSERT_POSITIONS = [
   "heading-top",
   "heading-bottom",
@@ -122,6 +132,524 @@ var STATUS_LABELS = {
   done: "\u5DF2\u5B8C\u6210",
   dropped: "\u5DF2\u653E\u5F03"
 };
+var FIELDS = {
+  aliases: "aliases",
+  description: "description",
+  created: "created",
+  updated: "updated",
+  tags: "tags",
+  uid: "UID",
+  type: "type",
+  status: "status",
+  up: "up",
+  /** 归档时刻。由状态流转命令与 status 同一次写入，是「本月完成了什么」唯一可信的时间事实 */
+  archived: "archived",
+  /** 项目→人的商业契约标记：写下它等于宣告「我欠这个人一个交付」 */
+  client: "client",
+  /** 项目→人的同行标记：一起做的，无交付债务 */
+  with: "with",
+  tier: "tier",
+  direction: "direction",
+  gift: "gift",
+  address: "address",
+  get: "get",
+  birthday: "birthday",
+  source: "source",
+  contact: "contact",
+  homepage: "homepage",
+  /** 复盘主题：主题链的唯一入口，五级各写一句 */
+  theme: "theme",
+  /** 复盘周期锚点，YYYY-MM-DD 定宽字符串；日记没有此字段，它的锚点是文件名 */
+  periodStart: "period_start"
+};
+var NOTE_TYPES = {
+  project: "project",
+  area: "area",
+  /** 人脉档案：认识的人，有生日有脾气有人情往来 */
+  person: "person",
+  /** 付费用户：陌生人买你的东西，你只知道渠道与联系方式，是与 person 并列的独立物种 */
+  client: "client",
+  diary: "diary",
+  weekly: "weekly",
+  monthly: "monthly",
+  quarterly: "quarterly",
+  yearly: "yearly"
+};
+var DAY_FORMAT = "YYYY-MM-DD";
+var PERIODS = {
+  daily: {
+    key: "daily",
+    type: NOTE_TYPES.diary,
+    label: "\u65E5\u8BB0",
+    commandName: "\u6253\u5F00\u4ECA\u5929\u7684\u65E5\u8BB0",
+    commandId: "open-diary",
+    folder: `${FOLDERS.diary}/01-daily`,
+    titleFormat: DAY_FORMAT,
+    startOfUnit: "day",
+    stepUnit: "day",
+    parent: "weekly",
+    parentAlias: "\u672C\u5468"
+  },
+  weekly: {
+    key: "weekly",
+    type: NOTE_TYPES.weekly,
+    label: "\u5468\u8BB0",
+    commandName: "\u6253\u5F00\u672C\u5468\u590D\u76D8",
+    commandId: "open-weekly",
+    folder: `${FOLDERS.diary}/02-weekly`,
+    // GGGG 是 ISO 周所属年，与 WW 配对才不会在跨年周上错位
+    titleFormat: "GGGG-[W]WW",
+    startOfUnit: "isoWeek",
+    stepUnit: "week",
+    parent: "monthly",
+    parentAlias: "\u672C\u6708"
+  },
+  monthly: {
+    key: "monthly",
+    type: NOTE_TYPES.monthly,
+    label: "\u6708\u8BB0",
+    commandName: "\u6253\u5F00\u672C\u6708\u590D\u76D8",
+    commandId: "open-monthly",
+    folder: `${FOLDERS.diary}/03-monthly`,
+    titleFormat: "YYYY-MM",
+    startOfUnit: "month",
+    stepUnit: "month",
+    parent: "quarterly",
+    parentAlias: "\u672C\u5B63"
+  },
+  quarterly: {
+    key: "quarterly",
+    type: NOTE_TYPES.quarterly,
+    label: "\u5B63\u8BB0",
+    commandName: "\u6253\u5F00\u672C\u5B63\u590D\u76D8",
+    commandId: "open-quarterly",
+    folder: `${FOLDERS.diary}/04-quarterly`,
+    titleFormat: "YYYY-[Q]Q",
+    startOfUnit: "quarter",
+    stepUnit: "quarter",
+    parent: "yearly",
+    parentAlias: "\u672C\u5E74"
+  },
+  yearly: {
+    key: "yearly",
+    type: NOTE_TYPES.yearly,
+    label: "\u5E74\u8BB0",
+    commandName: "\u6253\u5F00\u672C\u5E74\u590D\u76D8",
+    commandId: "open-yearly",
+    folder: `${FOLDERS.diary}/05-yearly`,
+    titleFormat: "YYYY",
+    startOfUnit: "year",
+    stepUnit: "year",
+    parent: null,
+    parentAlias: ""
+  }
+};
+var DIARY_FOLDERS = [
+  FOLDERS.diary,
+  PERIODS.daily.folder,
+  PERIODS.weekly.folder,
+  PERIODS.monthly.folder,
+  PERIODS.quarterly.folder,
+  PERIODS.yearly.folder
+];
+var DIARY_LOG_HEADING = "## \u4ECA\u5929\u505A\u4E86\u4EC0\u4E48";
+var THEME_COMMAND = {
+  id: "write-theme",
+  name: "\u5199\u590D\u76D8\u4E3B\u9898"
+};
+var CONTACT_TIERS = ["\u5BC6", "\u8FD1", "\u719F", "\u8FDC"];
+var TIER_LIMITS = {
+  \u5BC6: 7,
+  \u8FD1: 30,
+  \u719F: 90,
+  \u8FDC: 365
+};
+var TIER_FALLBACK_LIMIT = 365;
+var CONTACT_DIRECTIONS = ["\u5411\u4E0A", "\u5E73\u884C", "\u5411\u4E0B"];
+var LEDGER = {
+  separator: "\uFF5C",
+  /** 第二段必须是它们之一，否则这行不是账本行 */
+  kinds: ["\u53BB", "\u6765"],
+  /** 第四段的合法取值；写了别的以 ⚠️ 前缀暴露，不静默吞掉 */
+  statuses: ["\u4E24\u6E05", "\u6211\u6B20", "\u4ED6\u6B20"],
+  /** 第四段省略即两清——两清是最常见的情形，让最常见的写法最短 */
+  defaultStatus: "\u4E24\u6E05"
+};
+var PAYMENT_FIELDS = {
+  product: "\u4EA7\u54C1",
+  amount: "\u91D1\u989D",
+  date: "\u65E5\u671F"
+};
+var CLIENT_PAYMENT_HEADING = "## \u4ED8\u8D39\u4E0E\u4EA4\u4ED8";
+var PROJECT_PAYMENT_HEADING = "## \u6536\u6B3E";
+var CLIENT_COMMANDS = {
+  setup: { id: "setup-clients", name: "\u521D\u59CB\u5316\u5BA2\u6237\u6A21\u5757" },
+  create: { id: "create-client", name: "\u65B0\u5EFA\u5BA2\u6237" },
+  payment: { id: "add-payment", name: "\u589E\u52A0\u4ED8\u8D39" },
+  receipt: { id: "record-receipt", name: "\u8BB0\u6536\u6B3E" }
+};
+var CONTACT_COMMANDS = {
+  create: { id: "create-contact", name: "\u65B0\u5EFA\u4EBA\u8109" },
+  favor: { id: "record-favor", name: "\u8BB0\u4EBA\u60C5" }
+};
+var VIEW_BLOCK_LANG = "ziminos";
+var VIEW_REFRESH_DEBOUNCE_MS = 200;
+
+// src/core/table.ts
+function noteLink(file, display) {
+  return { path: file.path, display: display != null ? display : file.basename };
+}
+function isNoteLink(cell) {
+  return typeof cell === "object" && cell !== null && !(cell instanceof HTMLElement) && "path" in cell;
+}
+function renderTable(app, el, sourcePath, headers, rows) {
+  const table = el.createEl("table", { cls: "ziminos-view-table" });
+  const headRow = table.createEl("thead").createEl("tr");
+  for (const header of headers) {
+    headRow.createEl("th", { text: header });
+  }
+  const body = table.createEl("tbody");
+  for (const row of rows) {
+    const tr = body.createEl("tr");
+    for (const cell of row) {
+      renderCell(app, tr.createEl("td"), sourcePath, cell);
+    }
+  }
+}
+function renderCell(app, td, sourcePath, cell) {
+  if (cell === null || cell === void 0) {
+    td.setText("\u2014");
+    return;
+  }
+  if (cell instanceof HTMLElement) {
+    td.appendChild(cell);
+    return;
+  }
+  if (isNoteLink(cell)) {
+    renderNoteLink(app, td, sourcePath, cell);
+    return;
+  }
+  renderRichText(td, String(cell));
+}
+function renderNoteLink(app, parent, sourcePath, link) {
+  const anchor = parent.createEl("a", {
+    cls: "internal-link",
+    text: link.display,
+    href: link.path
+  });
+  anchor.setAttribute("data-href", link.path);
+  anchor.addEventListener("click", (event) => {
+    event.preventDefault();
+    void app.workspace.openLinkText(link.path, sourcePath, event.ctrlKey || event.metaKey);
+  });
+}
+function renderEmpty(el, message) {
+  const paragraph = el.createEl("p", { cls: "ziminos-view-empty" });
+  paragraph.style.color = "var(--text-muted)";
+  renderRichText(paragraph, `\u{1F4ED} ${message}`);
+}
+function renderNote(el, message) {
+  const paragraph = el.createEl("p");
+  paragraph.style.color = "var(--text-muted)";
+  paragraph.style.fontSize = "0.9em";
+  renderRichText(paragraph, message);
+}
+function renderHeading(el, level, text) {
+  el.createEl(level === 3 ? "h3" : "h4", { text });
+}
+function renderSummary(el, text) {
+  renderRichText(el.createEl("p"), text);
+}
+function renderRichText(parent, text) {
+  const segments = text.split("**");
+  segments.forEach((segment, position) => {
+    if (!segment) return;
+    if (position % 2 === 1) parent.createEl("strong", { text: segment });
+    else parent.appendText(segment);
+  });
+}
+
+// src/core/vaultIndex.ts
+var import_obsidian = require("obsidian");
+var LIST_MARKER = /^\s*(?:[-*+]|\d+[.)])\s+(?:\[(.)\]\s*)?/;
+var WIKILINK = /\[\[([^\]]+)\]\]/g;
+var VaultIndex = class {
+  constructor(app) {
+    /** 修订号。变更事件只递增它，不做任何重建工作，因此事件回调恒为 O(1) */
+    this.revision = 0;
+    /** 反向链接索引构建时的修订号，与当前修订号不等即视为过期 */
+    this.backlinksRevision = -1;
+    this.backlinks = null;
+    /** 按 type 分组的笔记，同一次渲染里一张 MOC 要问四五遍，缓存一次省四五遍全库遍历 */
+    this.typesRevision = -1;
+    this.types = null;
+    /**
+     * 列表行缓存。它刻意不随修订号整体作废——每条记录自带 mtime，
+     * 改一篇日记不该让另外九十七篇重新读盘。
+     */
+    this.listCache = /* @__PURE__ */ new Map();
+    this.app = app;
+  }
+  /** 宣告索引已过期。只递增计数，重建推迟到下一次查询 */
+  invalidate() {
+    this.revision += 1;
+  }
+  /** 全库 Markdown 笔记 */
+  allNotes() {
+    return this.app.vault.getMarkdownFiles();
+  }
+  /** 某篇笔记的 frontmatter；没有 YAML 时返回 undefined */
+  frontmatterOf(file) {
+    var _a;
+    return (_a = this.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter;
+  }
+  /**
+   * 取 frontmatter 里某个字段的原始值。
+   * 视图对字段的一切访问都走这里，好处是「笔记没有 YAML」与「有 YAML 但没这个字段」
+   * 在调用侧收敛成同一个 undefined，不必每处各写一次可选链。
+   */
+  fieldOf(file, field) {
+    var _a;
+    return (_a = this.frontmatterOf(file)) == null ? void 0 : _a[field];
+  }
+  /**
+   * 全库 type 为指定值的笔记。
+   *
+   * 身份靠 type 认，不靠文件夹——学员重命名目录、改分层、用英文目录名，视图一个都不用改。
+   * type 在 Obsidian 里可能被写成字符串也可能被写成单元素列表，两种都认。
+   */
+  notesOfType(type) {
+    var _a;
+    if (!this.types || this.typesRevision !== this.revision) {
+      const grouped = /* @__PURE__ */ new Map();
+      for (const file of this.allNotes()) {
+        for (const value of toStringList(this.fieldOf(file, "type"))) {
+          const bucket = grouped.get(value);
+          if (bucket) bucket.push(file);
+          else grouped.set(value, [file]);
+        }
+      }
+      this.types = grouped;
+      this.typesRevision = this.revision;
+    }
+    return (_a = this.types.get(type)) != null ? _a : [];
+  }
+  /**
+   * 链到指定文件的全部笔记。
+   *
+   * 用一次全库遍历建反向表而不是逐个正查：一张名录有上百个人，
+   * 逐个去 resolvedLinks 里正查是「人数 × 全库」，建一次表是「全库」，
+   * 而这张表在同一次渲染里被所有视图共用。
+   */
+  backlinksOf(file) {
+    var _a;
+    if (!this.backlinks || this.backlinksRevision !== this.revision) {
+      const map = /* @__PURE__ */ new Map();
+      const resolved = this.app.metadataCache.resolvedLinks;
+      for (const sourcePath of Object.keys(resolved)) {
+        const source = this.app.vault.getAbstractFileByPath(sourcePath);
+        if (!(source instanceof import_obsidian.TFile)) continue;
+        for (const targetPath of Object.keys(resolved[sourcePath])) {
+          const bucket = map.get(targetPath);
+          if (bucket) bucket.push(source);
+          else map.set(targetPath, [source]);
+        }
+      }
+      this.backlinks = map;
+      this.backlinksRevision = this.revision;
+    }
+    return (_a = this.backlinks.get(file.path)) != null ? _a : [];
+  }
+  /**
+   * 把一段 wikilink 原文解析成它真正指向的文件。
+   *
+   * 这是全库唯一允许的链接比对方式。`[[张三]]`、`[[张三|老张]]`、`[[02-areas/人脉/张三]]`、
+   * `[[张三#约定]]` 指向同一篇笔记，任何基于文件名的字符串匹配都会在其中某一种上失手——
+   * 而失手的表现是视图静默少一行，不报错、不留痕。
+   */
+  resolve(linktext, sourcePath) {
+    const path = linktext.split("#")[0].replace(/\\$/, "").trim();
+    if (!path) return null;
+    return this.app.metadataCache.getFirstLinkpathDest(path, sourcePath);
+  }
+  /**
+   * 读出一篇笔记的全部列表行。
+   *
+   * metadataCache 的 listItems 只给位置与复选框，不给文本，所以必须回磁盘取一次原文。
+   * 调用方永远只对「反链指向我的那几篇日记」调它，不扫全库——
+   * 一份人情账本要读的通常是几十篇日记，不是几千篇笔记。
+   */
+  async listLinesOf(file) {
+    var _a, _b;
+    const cached = this.listCache.get(file.path);
+    if (cached && cached.mtime === file.stat.mtime) return cached.lines;
+    const items = (_b = (_a = this.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.listItems) != null ? _b : [];
+    const lines = items.length ? parseListLines(await this.app.vault.cachedRead(file), items) : [];
+    this.listCache.set(file.path, { mtime: file.stat.mtime, lines });
+    return lines;
+  }
+};
+function parseListLines(content, items) {
+  var _a;
+  const parsed = [];
+  for (const item of items) {
+    const raw = content.slice(item.position.start.offset, item.position.end.offset);
+    const marker = LIST_MARKER.exec(raw);
+    const text = raw.slice((_a = marker == null ? void 0 : marker[0].length) != null ? _a : 0).replace(/\s*\n\s*/g, " ").trim();
+    const box = typeof item.task === "string" ? item.task : marker == null ? void 0 : marker[1];
+    parsed.push({
+      text,
+      isTask: typeof box === "string",
+      checked: typeof box === "string" && box.trim().toLowerCase() === "x",
+      links: extractLinks(text),
+      line: item.position.start.line
+    });
+  }
+  return parsed;
+}
+function extractLinks(text) {
+  const links = [];
+  WIKILINK.lastIndex = 0;
+  let match = WIKILINK.exec(text);
+  while (match) {
+    const linktext = match[1].split("|")[0].replace(/\\$/, "").trim();
+    if (linktext) links.push(linktext);
+    match = WIKILINK.exec(text);
+  }
+  return links;
+}
+function toStringList(value) {
+  if (value === null || value === void 0) return [];
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item != null ? item : "").trim()).filter((item) => item.length > 0);
+  }
+  const text = String(value).trim();
+  return text ? [text] : [];
+}
+function toText(value) {
+  if (value === null || value === void 0) return "";
+  return String(value).trim();
+}
+function toBoolean(value) {
+  if (typeof value === "boolean") return value;
+  const text = toText(value).toLowerCase();
+  return text === "true" || text === "yes" || text === "\u662F";
+}
+
+// src/core/codeblock.ts
+function registerViewCodeBlock(ctx, views) {
+  const host = new ViewHost(ctx, views);
+  ctx.plugin.registerEvent(ctx.app.metadataCache.on("changed", () => host.notifyChanged()));
+  ctx.plugin.registerEvent(ctx.app.vault.on("delete", () => host.notifyChanged()));
+  ctx.plugin.registerEvent(ctx.app.vault.on("rename", () => host.notifyChanged()));
+  ctx.plugin.register(() => host.dispose());
+  ctx.plugin.registerMarkdownCodeBlockProcessor(
+    VIEW_BLOCK_LANG,
+    (source, el, blockCtx) => {
+      blockCtx.addChild(new ViewBlock(el, host, parseBlock(source), blockCtx.sourcePath));
+    }
+  );
+}
+var ViewHost = class {
+  constructor(ctx, views) {
+    this.blocks = /* @__PURE__ */ new Set();
+    this.timer = null;
+    this.ctx = ctx;
+    this.index = new VaultIndex(ctx.app);
+    this.registry = new Map(views.map((view) => [view.name, view]));
+    this.names = views.map((view) => view.name);
+  }
+  contextFor(el, sourcePath, params) {
+    const found = this.ctx.app.vault.getAbstractFileByPath(sourcePath);
+    return {
+      el,
+      sourcePath,
+      host: found instanceof import_obsidian2.TFile ? found : null,
+      params,
+      index: this.index,
+      ctx: this.ctx
+    };
+  }
+  attach(block) {
+    this.blocks.add(block);
+  }
+  detach(block) {
+    this.blocks.delete(block);
+  }
+  /**
+   * 内容变了。
+   * 事件回调本身必须是 O(1)——它在每一次击键的落盘上都会被叫到，
+   * 因此这里只递增修订号并排一次防抖，真正的重建推迟到有人来问的时候。
+   */
+  notifyChanged() {
+    this.index.invalidate();
+    if (this.timer !== null) window.clearTimeout(this.timer);
+    this.timer = window.setTimeout(() => {
+      this.timer = null;
+      for (const block of this.blocks) void block.render();
+    }, VIEW_REFRESH_DEBOUNCE_MS);
+  }
+  dispose() {
+    if (this.timer !== null) window.clearTimeout(this.timer);
+    this.timer = null;
+    this.blocks.clear();
+  }
+};
+var ViewBlock = class extends import_obsidian2.MarkdownRenderChild {
+  constructor(el, host, request, sourcePath) {
+    super(el);
+    this.host = host;
+    this.request = request;
+    this.sourcePath = sourcePath;
+  }
+  onload() {
+    this.host.attach(this);
+    void this.render();
+  }
+  onunload() {
+    this.host.detach(this);
+  }
+  /**
+   * 重画一次。
+   * 三条兜底缺一不可：块里没写名字、名字不认识、视图自己抛错——
+   * 任何一种都必须画出一句中文说明，绝不能留一个空白块让学员以为系统坏了。
+   */
+  async render() {
+    this.containerEl.empty();
+    if (!this.request.name) {
+      renderEmpty(this.containerEl, "\u8FD9\u4E2A ziminos \u4EE3\u7801\u5757\u6CA1\u5199\u89C6\u56FE\u540D\u3002\u7B2C\u4E00\u884C\u5199\u89C6\u56FE\u540D\u5373\u53EF\uFF0C\u4F8B\u5982\u300C\u4EBA\u8109\u540D\u5F55\u300D\u3002");
+      return;
+    }
+    const definition = this.host.registry.get(this.request.name);
+    if (!definition) {
+      renderEmpty(this.containerEl, `\u6CA1\u6709\u540D\u4E3A\u300C${this.request.name}\u300D\u7684\u89C6\u56FE\u3002`);
+      renderNote(this.containerEl, `\u53EF\u7528\u89C6\u56FE\uFF1A${this.host.names.join(" \xB7 ")}`);
+      return;
+    }
+    try {
+      await definition.render(
+        this.host.contextFor(this.containerEl, this.sourcePath, this.request.params)
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.containerEl.empty();
+      renderEmpty(this.containerEl, `\u89C6\u56FE\u300C${this.request.name}\u300D\u6E32\u67D3\u5931\u8D25\uFF1A${message}`);
+    }
+  }
+};
+function parseBlock(source) {
+  var _a;
+  const lines = source.split("\n").map((line) => line.trim()).filter(Boolean);
+  const params = {};
+  for (const line of lines.slice(1)) {
+    const separator = line.search(/[:：]/);
+    if (separator <= 0) continue;
+    const key = line.slice(0, separator).trim();
+    const value = line.slice(separator + 1).trim();
+    if (key) params[key] = value;
+  }
+  return { name: (_a = lines[0]) != null ? _a : "", params };
+}
 
 // src/core/guard.ts
 var SelfWriteGuard = class {
@@ -165,16 +693,101 @@ var DEFAULT_SETTINGS = {
   inspirationHeading: INSPIRATION_DEFAULTS.heading,
   inspirationInsertPosition: INSPIRATION_DEFAULTS.insertPosition,
   inspirationFormat: INSPIRATION_DEFAULTS.format,
+  diaryFolder: FOLDERS.diary,
+  contactFolder: CONTACT_FOLDER,
+  clientFolder: CLIENT_FOLDER,
+  clientSources: "B\u7AD9,\u6296\u97F3,\u5C0F\u7EA2\u4E66,\u516C\u4F17\u53F7,\u670B\u53CB\u4ECB\u7ECD,\u5176\u4ED6",
+  clientProducts: "\u8BFE\u7A0B,\u54A8\u8BE2,\u966A\u8DD1",
   initializedAt: ""
 };
 
-// src/modules/inspiration/capture.ts
-var import_obsidian4 = require("obsidian");
+// src/core/time.ts
+var import_obsidian3 = require("obsidian");
+var momentFactory = import_obsidian3.moment;
+function normalizeDateTimeFormat(value) {
+  const candidate = typeof value === "string" ? value.trim() : "";
+  return candidate || DEFAULT_DATETIME_FORMAT;
+}
+function nowStamp(format) {
+  return momentFactory().format(normalizeDateTimeFormat(format));
+}
+function nowStampAndUid(format) {
+  const now = momentFactory();
+  return {
+    stamp: now.format(normalizeDateTimeFormat(format)),
+    uid: now.format(UID_FORMAT)
+  };
+}
+function nowLocalDateTimeParts(format) {
+  const now = momentFactory();
+  return {
+    date: now.format(DAY_FORMAT),
+    time: now.format("HH:mm"),
+    datetime: now.format(normalizeDateTimeFormat(format))
+  };
+}
+function today() {
+  return momentFactory().format(DAY_FORMAT);
+}
+function dayText(value) {
+  if (value === null || value === void 0) return null;
+  if (value instanceof Date) {
+    const time = value.getTime();
+    return Number.isNaN(time) ? null : momentFactory(time).format(DAY_FORMAT);
+  }
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? momentFactory(value).format(DAY_FORMAT) : null;
+  }
+  const text = String(value).trim();
+  return /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(0, 10) : null;
+}
+function dayOfMillis(millis) {
+  return momentFactory(millis).format(DAY_FORMAT);
+}
+function dayOfTitle(title) {
+  return momentFactory(title, DAY_FORMAT, true).isValid() ? title : null;
+}
+function shiftDay(day, amount, unit) {
+  const parsed = momentFactory(day, DAY_FORMAT, true);
+  if (!parsed.isValid()) return day;
+  return parsed.add(amount, unit).format(DAY_FORMAT);
+}
+function daysBetween(from, to) {
+  if (!from || !to) return null;
+  const start = momentFactory(from, DAY_FORMAT, true);
+  const end = momentFactory(to, DAY_FORMAT, true);
+  if (!start.isValid() || !end.isValid()) return null;
+  return Math.round(end.diff(start, "days"));
+}
+function currentPeriodTitle(period) {
+  return momentFactory().format(period.titleFormat);
+}
+function periodStartOf(period, title) {
+  const parsed = momentFactory(title, period.titleFormat, true);
+  if (!parsed.isValid()) return null;
+  return parsed.startOf(period.startOfUnit).format(DAY_FORMAT);
+}
+function periodNeighbours(period, title, parentPeriod) {
+  const parsed = momentFactory(title, period.titleFormat, true);
+  if (!parsed.isValid()) return null;
+  const prev = parsed.clone().subtract(1, period.stepUnit).format(period.titleFormat);
+  const next = parsed.clone().add(1, period.stepUnit).format(period.titleFormat);
+  if (!parentPeriod) return { prev, next, parent: null };
+  const anchor = parsed.clone().startOf(period.startOfUnit);
+  const parent = (period.key === "weekly" ? anchor.add(3, "days") : anchor).format(
+    parentPeriod.titleFormat
+  );
+  return { prev, next, parent };
+}
+function titleOfDay(day, period) {
+  const parsed = momentFactory(day, DAY_FORMAT, true);
+  return parsed.isValid() ? parsed.format(period.titleFormat) : null;
+}
 
 // src/core/folders.ts
-var import_obsidian = require("obsidian");
+var import_obsidian4 = require("obsidian");
 async function ensureFolderPath(app, folderPath) {
-  const normalizedFolderPath = (0, import_obsidian.normalizePath)(folderPath);
+  const normalizedFolderPath = (0, import_obsidian4.normalizePath)(folderPath);
   const pathParts = normalizedFolderPath.split("/").filter(Boolean);
   let currentPath = "";
   for (const pathPart of pathParts) {
@@ -184,7 +797,7 @@ async function ensureFolderPath(app, folderPath) {
       await app.vault.createFolder(currentPath);
       continue;
     }
-    if (!(existingEntry instanceof import_obsidian.TFolder)) {
+    if (!(existingEntry instanceof import_obsidian4.TFolder)) {
       throw new Error(`\u65E0\u6CD5\u521B\u5EFA\u6587\u4EF6\u5939\uFF0C\u56E0\u4E3A\u540C\u4E00\u8DEF\u5F84\u4E0B\u5DF2\u7ECF\u5B58\u5728\u6587\u4EF6\uFF1A${currentPath}`);
     }
   }
@@ -192,12 +805,663 @@ async function ensureFolderPath(app, folderPath) {
 function normalizeFolderPath(value, fallback) {
   const candidate = typeof value === "string" ? value.trim() : "";
   const path = (candidate || fallback).replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
-  return (0, import_obsidian.normalizePath)(path);
+  return (0, import_obsidian4.normalizePath)(path);
+}
+function isInFolder(path, folder) {
+  const base = folder.replace(/\/+$/, "");
+  if (!base) return true;
+  return path === base || path.startsWith(`${base}/`);
+}
+
+// src/modules/contacts/identity.ts
+function archiveFolderOf(ctx) {
+  return normalizeFolderPath(ctx.settings.archiveFolder, FOLDERS.archives);
+}
+function isLivePath(archiveFolder, path) {
+  return !isInFolder(path, archiveFolder);
+}
+function liveNotesOfType(ctx, type) {
+  var _a, _b;
+  const archive = archiveFolderOf(ctx);
+  const matched = [];
+  for (const file of ctx.app.vault.getMarkdownFiles()) {
+    if (!isLivePath(archive, file.path)) continue;
+    const declared = (_b = (_a = ctx.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter) == null ? void 0 : _b[FIELDS.type];
+    const values = Array.isArray(declared) ? declared : [declared];
+    if (values.some((value) => String(value != null ? value : "").trim() === type)) matched.push(file);
+  }
+  return matched.sort((left, right) => left.basename.localeCompare(right.basename, "zh"));
+}
+function descriptionOf(ctx, file) {
+  var _a, _b;
+  const value = (_b = (_a = ctx.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter) == null ? void 0 : _b[FIELDS.description];
+  return String(value != null ? value : "").trim();
+}
+function lastContactDayOf(view, person) {
+  let latest = null;
+  for (const source of view.index.backlinksOf(person)) {
+    const day = dayOfTitle(source.basename);
+    if (day && (!latest || day > latest)) latest = day;
+  }
+  return latest;
+}
+
+// src/modules/contacts/ledger.ts
+function diaryNotes(view) {
+  const found = [];
+  for (const file of view.index.allNotes()) {
+    const day = dayOfTitle(file.basename);
+    if (day) found.push({ file, day });
+  }
+  return found;
+}
+function mentions(view, line, diaryPath, target) {
+  return line.links.some((link) => {
+    var _a;
+    return ((_a = view.index.resolve(link, diaryPath)) == null ? void 0 : _a.path) === target.path;
+  });
+}
+function isLedgerLine(line) {
+  if (line.isTask) return false;
+  const segments = line.text.split(LEDGER.separator);
+  return segments.length >= 3 && LEDGER.kinds.includes(segments[1].trim());
+}
+async function collectLedger(view, resolvePerson) {
+  const entries = [];
+  for (const { file, day } of diaryNotes(view)) {
+    for (const line of await view.index.listLinesOf(file)) {
+      if (!isLedgerLine(line)) continue;
+      const segments = line.text.split(LEDGER.separator).map((part) => part.trim());
+      const owner = firstResolved(view, segments[0], file.path);
+      if (!owner || !resolvePerson(owner)) continue;
+      const status = segments[3] || LEDGER.defaultStatus;
+      entries.push({
+        diary: file,
+        day,
+        person: owner,
+        kind: segments[1],
+        item: segments[2],
+        status,
+        legal: LEDGER.statuses.includes(status)
+      });
+    }
+  }
+  return entries.sort((left, right) => right.day.localeCompare(left.day));
+}
+function firstResolved(view, segment, sourcePath) {
+  for (const link of extractLinks(segment)) {
+    const resolved = view.index.resolve(link, sourcePath);
+    if (resolved) return resolved;
+  }
+  return null;
+}
+
+// src/modules/contacts/circleViews.ts
+var UNGROUPED = "\u672A\u5F52\u5708";
+var roster = {
+  name: "\u4EBA\u8109\u540D\u5F55",
+  render: async (view) => {
+    const people = livePeople(view);
+    if (!people.length) {
+      renderEmpty(view.el, "\u8FD8\u6CA1\u6709\u6863\u6848\u3002\u547D\u4EE4\u9762\u677F\u8FD0\u884C\u300C\u65B0\u5EFA\u4EBA\u8109\u300D\u5EFA\u7B2C\u4E00\u4E2A\u3002");
+      return;
+    }
+    const circles = /* @__PURE__ */ new Map();
+    let stale = 0;
+    for (const person of people) {
+      const row = rosterRowOf(view, person);
+      if (row.overdue) stale += 1;
+      const circle = circleOf(view, person);
+      const bucket = circles.get(circle);
+      if (bucket) bucket.push(row);
+      else circles.set(circle, [row]);
+    }
+    renderSummary(
+      view.el,
+      stale ? `\u5171 ${people.length} \u4EBA\uFF0C\u5176\u4E2D **${stale} \u4EBA**\u5DF2\u8D85\u51FA\u8BE5\u5C42\u7684\u8054\u7CFB\u8282\u594F\u3002` : `\u5171 ${people.length} \u4EBA\uFF0C\u90FD\u5728\u8054\u7CFB\u534A\u5F84\u5185\u3002`
+    );
+    const ordered = [...circles.entries()].sort((left, right) => {
+      if (left[0] === UNGROUPED) return 1;
+      if (right[0] === UNGROUPED) return -1;
+      return right[1].length - left[1].length;
+    });
+    for (const [circle, rows] of ordered) {
+      renderHeading(view.el, 3, `${circle}\uFF08${rows.length}\uFF09`);
+      if (circle === UNGROUPED) {
+        renderNote(view.el, `\u8FD9\u4E9B\u6863\u6848\u7684 \`${FIELDS.up}\` \u6CA1\u6307\u5411\u4EFB\u4F55\u5708\u5B50 MOC\uFF0C\u8865\u4E0A\u5C31\u4F1A\u5F52\u5165\u5BF9\u5E94\u7684\u7EC4\u3002`);
+      }
+      rows.sort((left, right) => left.tierRank - right.tierRank || staleness(right) - staleness(left));
+      renderTable(
+        view.ctx.app,
+        view.el,
+        view.sourcePath,
+        ["\u8C01", "\u4E00\u53E5\u8BDD", "\u5C42", "\u65B9\u5411", "\u4ED6\u80FD\u7ED9\u6211\u7684", "\u6700\u8FD1\u8054\u7CFB"],
+        rows.map((row) => [
+          noteLink(row.file),
+          toText(view.index.fieldOf(row.file, FIELDS.description)),
+          row.tier || "\u2014",
+          toText(view.index.fieldOf(row.file, FIELDS.direction)) || "\u2014",
+          toStringList(view.index.fieldOf(row.file, FIELDS.get)).join("\u3001") || "\u2014",
+          lastContactText(row)
+        ])
+      );
+    }
+  }
+};
+function rosterRowOf(view, person) {
+  var _a;
+  const tier = toText(view.index.fieldOf(person, FIELDS.tier));
+  const last = lastContactDayOf(view, person);
+  const days = last ? daysBetween(last, today()) : null;
+  const limit = (_a = TIER_LIMITS[tier]) != null ? _a : TIER_FALLBACK_LIMIT;
+  return {
+    file: person,
+    tier,
+    // 层没写或写了未知值的排在所有已知层之后，但不算错——只是还没定节奏
+    tierRank: CONTACT_TIERS.indexOf(tier) < 0 ? CONTACT_TIERS.length : CONTACT_TIERS.indexOf(tier),
+    days,
+    overdue: days === null || days > limit
+  };
+}
+function staleness(row) {
+  var _a;
+  return (_a = row.days) != null ? _a : Number.MAX_SAFE_INTEGER;
+}
+function lastContactText(row) {
+  if (row.days === null) return "\u26A0\uFE0F \u4ECE\u672A";
+  const text = row.days === 0 ? "\u4ECA\u5929" : `${row.days} \u5929\u524D`;
+  return row.overdue ? `\u26A0\uFE0F ${text}` : text;
+}
+function circleOf(view, person) {
+  var _a, _b, _c, _d;
+  for (const link of extractLinks(String((_a = view.index.fieldOf(person, FIELDS.up)) != null ? _a : ""))) {
+    return (_d = (_c = (_b = view.index.resolve(link, person.path)) == null ? void 0 : _b.basename) != null ? _c : link.split("/").pop()) != null ? _d : UNGROUPED;
+  }
+  return UNGROUPED;
+}
+var giftList = {
+  name: "\u6295\u5582\u540D\u5355",
+  render: async (view) => {
+    const rows = [];
+    for (const person of livePeople(view)) {
+      if (!toBoolean(view.index.fieldOf(person, FIELDS.gift))) continue;
+      const address = toText(view.index.fieldOf(person, FIELDS.address));
+      rows.push([
+        noteLink(person),
+        toText(view.index.fieldOf(person, FIELDS.description)),
+        address || "\u26A0\uFE0F \u8FD8\u6CA1\u586B\u5BC4\u4EF6\u4FE1\u606F"
+      ]);
+    }
+    if (!rows.length) {
+      renderEmpty(
+        view.el,
+        `\u540D\u5355\u662F\u7A7A\u7684\u3002\u6253\u5F00\u67D0\u4EBA\u7684\u6863\u6848\uFF0C\u5C5E\u6027\u91CC\u628A \`${FIELDS.gift}\` \u5199\u6210 true\u3001\`${FIELDS.address}\` \u586B\u4E0A\u6574\u4E32\u5BC4\u4EF6\u4FE1\u606F\uFF0C\u4ED6\u5C31\u4F1A\u51FA\u73B0\u5728\u8FD9\u91CC\u3002`
+      );
+      return;
+    }
+    renderTable(view.ctx.app, view.el, view.sourcePath, ["\u8C01", "\u4E00\u53E5\u8BDD", "\u5BC4\u4EF6\u4FE1\u606F"], rows);
+  }
+};
+var birthdays = {
+  name: "\u672C\u6708\u751F\u65E5",
+  render: async (view) => {
+    const now = today();
+    const month = now.slice(5, 7);
+    const upcoming = [];
+    for (const person of livePeople(view)) {
+      const birthday = dayText(view.index.fieldOf(person, FIELDS.birthday));
+      if (!birthday || birthday.slice(5, 7) !== month) continue;
+      const thisYear = `${now.slice(0, 4)}-${birthday.slice(5)}`;
+      upcoming.push({ file: person, date: birthday.slice(5), days: daysBetween(now, thisYear) });
+    }
+    if (!upcoming.length) {
+      renderEmpty(view.el, `\u8FD9\u4E2A\u6708\u6CA1\u6709\u4EBA\u8FC7\u751F\u65E5\u3002\u5728\u6863\u6848\u5C5E\u6027\u91CC\u586B \`${FIELDS.birthday}\`\uFF0C\u5230\u6708\u4EFD\u4E86\u4F1A\u81EA\u52A8\u51FA\u73B0\u3002`);
+      return;
+    }
+    upcoming.sort((left, right) => left.date.localeCompare(right.date));
+    renderTable(
+      view.ctx.app,
+      view.el,
+      view.sourcePath,
+      ["\u8C01", "\u751F\u65E5", "\u8FD8\u6709\u51E0\u5929"],
+      upcoming.map((entry) => [noteLink(entry.file), entry.date, countdownOf(entry.days)])
+    );
+  }
+};
+function countdownOf(days) {
+  if (days === null) return "\u2014";
+  if (days === 0) return "\u{1F382} \u5C31\u662F\u4ECA\u5929";
+  return days > 0 ? `\u8FD8\u6709 ${days} \u5929` : `\u5DF2\u8FC7 ${-days} \u5929`;
+}
+var balance = {
+  name: "\u4EBA\u60C5\u4F59\u989D",
+  render: async (view) => {
+    var _a;
+    const archive = archiveFolderOf(view.ctx);
+    const entries = await collectLedger(view, (owner) => isLivePath(archive, owner.path));
+    const balances = /* @__PURE__ */ new Map();
+    for (const entry of entries) {
+      if (entry.status === LEDGER.defaultStatus) continue;
+      const current = (_a = balances.get(entry.person.path)) != null ? _a : {
+        person: entry.person,
+        owed: 0,
+        owing: 0,
+        last: entry.day
+      };
+      if (entry.status === "\u6211\u6B20") current.owing += 1;
+      else if (entry.status === "\u4ED6\u6B20") current.owed += 1;
+      if (entry.day > current.last) current.last = entry.day;
+      balances.set(entry.person.path, current);
+    }
+    if (!balances.size) {
+      renderEmpty(view.el, "\u6CA1\u6709\u672A\u4E24\u6E05\u7684\u4EBA\u60C5\u3002\u547D\u4EE4\u9762\u677F\u8FD0\u884C\u300C\u8BB0\u4EBA\u60C5\u300D\u8BB0\u4E0B\u4E00\u7B14\u3002");
+      return;
+    }
+    const rows = [...balances.values()].sort(
+      (left, right) => right.owing + right.owed - (left.owing + left.owed)
+    );
+    renderSummary(view.el, `**${rows.length}** \u4E2A\u4EBA\u8FD8\u6709\u6CA1\u4E24\u6E05\u7684\u8D26\u3002`);
+    renderTable(
+      view.ctx.app,
+      view.el,
+      view.sourcePath,
+      ["\u8C01", "\u6211\u6B20\u4ED6", "\u4ED6\u6B20\u6211", "\u6700\u8FD1\u4E00\u7B14"],
+      rows.map((row) => [
+        noteLink(row.person),
+        row.owing || "\u2014",
+        row.owed || "\u2014",
+        row.last
+      ])
+    );
+  }
+};
+function livePeople(view) {
+  const archive = archiveFolderOf(view.ctx);
+  return view.index.notesOfType(NOTE_TYPES.person).filter((file) => isLivePath(archive, file.path));
+}
+var circleViews = [roster, giftList, birthdays, balance];
+
+// src/modules/contacts/clientViews.ts
+var INLINE_FIELD = /\[([^\]:]+)::([^\]]*)\]/g;
+var pending = {
+  name: "\u5F85\u4EA4\u4ED8",
+  render: async (view) => {
+    const payments = (await allPayments(view)).filter((payment) => !payment.delivered);
+    if (!payments.length) {
+      renderEmpty(view.el, "\u6CA1\u6709\u5F85\u4EA4\u4ED8\u7684\u5355\u5B50\u3002\u6536\u4E86\u94B1\u5C31\u7528\u300C\u589E\u52A0\u4ED8\u8D39\u300D\u8BB0\u4E00\u7B14\uFF0C\u4EA4\u4ED8\u5B8C\u70B9\u6389\u90A3\u4E2A\u52FE\u3002");
+      return;
+    }
+    const now = today();
+    payments.sort((left, right) => left.date.localeCompare(right.date));
+    renderSummary(view.el, `**${payments.length}** \u7B14\u8FD8\u6CA1\u4EA4\u4ED8\uFF0C\u5171 **${sum(payments)}**\u3002`);
+    renderTable(
+      view.ctx.app,
+      view.el,
+      view.sourcePath,
+      ["\u8C01", "\u4EA7\u54C1", "\u91D1\u989D", "\u4ED8\u6B3E\u65E5", "\u7B49\u4E86"],
+      payments.map((payment) => [
+        noteLink(payment.note),
+        payment.product || "\u2014",
+        payment.amount,
+        payment.date || "\u2014",
+        formatDays(daysBetween(payment.date, now))
+      ])
+    );
+  }
+};
+var sales = {
+  name: "\u9500\u552E\u5206\u6790",
+  render: async (view) => {
+    var _a, _b;
+    const payments = await allPayments(view);
+    if (!payments.length) {
+      renderEmpty(view.el, "\u8FD8\u6CA1\u6709\u4EFB\u4F55\u6D41\u6C34\u3002\u547D\u4EE4\u9762\u677F\u8FD0\u884C\u300C\u589E\u52A0\u4ED8\u8D39\u300D\u8BB0\u7B2C\u4E00\u7B14\u3002");
+      return;
+    }
+    renderSummary(view.el, `\u7D2F\u8BA1 **${payments.length}** \u7B14\uFF0C\u5171 **${sum(payments)}**\u3002`);
+    const byChannel = /* @__PURE__ */ new Map();
+    for (const payment of payments) {
+      const channel = toText(view.index.fieldOf(payment.note, FIELDS.source)) || "\u672A\u6807\u6E20\u9053";
+      const bucket = (_a = byChannel.get(channel)) != null ? _a : { people: /* @__PURE__ */ new Set(), count: 0, total: 0 };
+      bucket.people.add(payment.note.path);
+      bucket.count += 1;
+      bucket.total += payment.amount;
+      byChannel.set(channel, bucket);
+    }
+    renderHeading(view.el, 4, "\u6309\u6E20\u9053");
+    renderTable(
+      view.ctx.app,
+      view.el,
+      view.sourcePath,
+      ["\u6E20\u9053", "\u4EBA\u6570", "\u7B14\u6570", "\u91D1\u989D", "\u5BA2\u5355\u4EF7"],
+      [...byChannel.entries()].sort((left, right) => right[1].total - left[1].total).map(([channel, bucket]) => [
+        channel,
+        bucket.people.size,
+        bucket.count,
+        bucket.total,
+        Math.round(bucket.total / bucket.people.size)
+      ])
+    );
+    const byProduct = /* @__PURE__ */ new Map();
+    for (const payment of payments) {
+      const product = payment.product || "\u672A\u6807\u4EA7\u54C1";
+      const bucket = (_b = byProduct.get(product)) != null ? _b : { count: 0, total: 0 };
+      bucket.count += 1;
+      bucket.total += payment.amount;
+      byProduct.set(product, bucket);
+    }
+    renderHeading(view.el, 4, "\u6309\u4EA7\u54C1");
+    renderTable(
+      view.ctx.app,
+      view.el,
+      view.sourcePath,
+      ["\u4EA7\u54C1", "\u7B14\u6570", "\u91D1\u989D"],
+      [...byProduct.entries()].sort((left, right) => right[1].total - left[1].total).map(([product, bucket]) => [product, bucket.count, bucket.total])
+    );
+  }
+};
+var paidUsers = {
+  name: "\u4ED8\u8D39\u7528\u6237",
+  render: async (view) => {
+    var _a;
+    const payments = await allPayments(view);
+    if (!payments.length) {
+      renderEmpty(view.el, "\u8FD8\u6CA1\u6709\u4ED8\u8D39\u7528\u6237\u3002\u547D\u4EE4\u9762\u677F\u8FD0\u884C\u300C\u65B0\u5EFA\u5BA2\u6237\u300D\uFF0C\u518D\u7528\u300C\u589E\u52A0\u4ED8\u8D39\u300D\u8BB0\u4E00\u7B14\u3002");
+      return;
+    }
+    const byClient = /* @__PURE__ */ new Map();
+    for (const payment of payments) {
+      const bucket = (_a = byClient.get(payment.note.path)) != null ? _a : {
+        note: payment.note,
+        count: 0,
+        total: 0,
+        last: ""
+      };
+      bucket.count += 1;
+      bucket.total += payment.amount;
+      if (payment.date > bucket.last) bucket.last = payment.date;
+      byClient.set(payment.note.path, bucket);
+    }
+    renderTable(
+      view.ctx.app,
+      view.el,
+      view.sourcePath,
+      ["\u8C01", "\u6E20\u9053", "\u7B14\u6570", "\u7D2F\u8BA1", "\u6700\u8FD1\u4E00\u7B14"],
+      [...byClient.values()].sort((left, right) => right.total - left.total).map((bucket) => [
+        noteLink(bucket.note),
+        toText(view.index.fieldOf(bucket.note, FIELDS.source)) || "\u2014",
+        // 复购是最值得一眼看见的事实，用 ★ 标出来
+        bucket.count > 1 ? `${bucket.count} \u2605` : bucket.count,
+        bucket.total,
+        bucket.last || "\u2014"
+      ])
+    );
+  }
+};
+var openCases = {
+  name: "\u672A\u7ED3\u6848",
+  render: async (view) => {
+    var _a;
+    const now = today();
+    const rows = [];
+    for (const { project, client } of clientProjects(view)) {
+      if (toText(view.index.fieldOf(project, FIELDS.status)).toLowerCase() !== "active") continue;
+      const born = (_a = dayText(view.index.fieldOf(project, FIELDS.created))) != null ? _a : dayOfMillis(project.stat.ctime);
+      rows.push([
+        noteLink(project),
+        client ? noteLink(client) : "\u2014",
+        born,
+        formatDays(daysBetween(born, now))
+      ]);
+    }
+    if (!rows.length) {
+      renderEmpty(view.el, "\u6CA1\u6709\u672A\u7ED3\u7684\u6848\u5B50\u3002\u624B\u4E0A\u7684\u6D3B\u513F\u90FD\u4EA4\u4ED8\u5B8C\u4E86\u3002");
+      return;
+    }
+    renderSummary(view.el, `\u8FD8\u6B20 **${rows.length}** \u4E2A\u4EA4\u4ED8\u3002`);
+    renderTable(view.ctx.app, view.el, view.sourcePath, ["\u9879\u76EE", "\u5BA2\u6237", "\u5F00\u59CB", "\u5DF2\u8FDB\u884C"], rows);
+  }
+};
+var caseLibrary = {
+  name: "\u6848\u4F8B\u5E93",
+  render: async (view) => {
+    var _a, _b;
+    const rows = [];
+    const topics = /* @__PURE__ */ new Map();
+    for (const { project, client } of clientProjects(view)) {
+      if (toText(view.index.fieldOf(project, FIELDS.status)).toLowerCase() !== "done") continue;
+      const born = (_a = dayText(view.index.fieldOf(project, FIELDS.created))) != null ? _a : dayOfMillis(project.stat.ctime);
+      const closed = dayText(view.index.fieldOf(project, FIELDS.archived));
+      for (const tag of toStringList(view.index.fieldOf(project, FIELDS.tags))) {
+        topics.set(tag, ((_b = topics.get(tag)) != null ? _b : 0) + 1);
+      }
+      rows.push([
+        noteLink(project),
+        client ? noteLink(client) : "\u2014",
+        closed != null ? closed : "\u2014",
+        formatDays(daysBetween(born, closed))
+      ]);
+    }
+    if (!rows.length) {
+      renderEmpty(view.el, "\u6848\u4F8B\u5E93\u8FD8\u662F\u7A7A\u7684\u3002\u7ED3\u6848\u7684\u5BA2\u6237\u9879\u76EE\u4F1A\u81EA\u52A8\u6536\u8FDB\u6765\u3002");
+      return;
+    }
+    renderTable(view.ctx.app, view.el, view.sourcePath, ["\u9879\u76EE", "\u5BA2\u6237", "\u7ED3\u6848", "\u5386\u65F6"], rows);
+    const ranked = [...topics.entries()].sort((left, right) => right[1] - left[1]);
+    if (ranked.length) {
+      renderNote(
+        view.el,
+        `\u4E3B\u9898\u5206\u5E03\uFF1A${ranked.map(([tag, count]) => `${tag} ${count}`).join(" \xB7 ")}\u3000\uFF08\u5806\u5230\u4E09\u4E94\u4E2A\u5C31\u8BE5\u505A\u6210\u8BFE\uFF09`
+      );
+    }
+  }
+};
+var serviceClients = {
+  name: "\u670D\u52A1\u5BA2\u6237",
+  render: async (view) => {
+    var _a;
+    const stats = /* @__PURE__ */ new Map();
+    for (const { project, client } of clientProjects(view)) {
+      if (!client) continue;
+      const bucket = (_a = stats.get(client.path)) != null ? _a : { note: client, open: 0, total: 0 };
+      bucket.total += 1;
+      if (toText(view.index.fieldOf(project, FIELDS.status)).toLowerCase() === "active") {
+        bucket.open += 1;
+      }
+      stats.set(client.path, bucket);
+    }
+    if (!stats.size) {
+      renderEmpty(
+        view.el,
+        `\u8FD8\u6CA1\u6709\u670D\u52A1\u5BA2\u6237\u3002\u5728\u9879\u76EE MOC \u7684\u5C5E\u6027\u91CC\u5199 \`${FIELDS.client}: "[[\u67D0\u4EBA]]"\`\uFF0C\u4ED6\u5C31\u4F1A\u51FA\u73B0\u5728\u8FD9\u91CC\u3002`
+      );
+      return;
+    }
+    const now = today();
+    renderTable(
+      view.ctx.app,
+      view.el,
+      view.sourcePath,
+      ["\u8C01", "\u672A\u7ED3\u6848", "\u5408\u4F5C\u8FC7", "\u6700\u8FD1\u8054\u7CFB"],
+      [...stats.values()].sort((left, right) => right.open - left.open || right.total - left.total).map((bucket) => {
+        const last = lastContactDayOf(view, bucket.note);
+        const days = last ? daysBetween(last, now) : null;
+        return [
+          noteLink(bucket.note),
+          bucket.open || "\u2014",
+          bucket.total,
+          days === null ? "\u26A0\uFE0F \u4ECE\u672A" : days === 0 ? "\u4ECA\u5929" : `${days} \u5929\u524D`
+        ];
+      })
+    );
+  }
+};
+var clientPayments = {
+  name: "\u4ED8\u8D39\u4E0E\u4EA4\u4ED8",
+  render: async (view) => {
+    if (!view.host) {
+      renderEmpty(view.el, "\u8FD9\u4E2A\u89C6\u56FE\u8981\u957F\u5728\u5BA2\u6237\u6863\u6848\u4E0A\u624D\u6709\u5185\u5BB9\u3002");
+      return;
+    }
+    const payments = await paymentsOf(view, view.host);
+    if (!payments.length) {
+      renderEmpty(view.el, "\u8FD8\u6CA1\u6709\u4ED8\u8D39\u8BB0\u5F55\u3002\u547D\u4EE4\u9762\u677F\u8FD0\u884C\u300C\u589E\u52A0\u4ED8\u8D39\u300D\u8BB0\u4E00\u7B14\u3002");
+      return;
+    }
+    renderSummary(
+      view.el,
+      `**${payments.length}** \u7B14\uFF0C\u7D2F\u8BA1 **${sum(payments)}**\uFF1B\u672A\u4EA4\u4ED8 **${payments.filter((payment) => !payment.delivered).length}** \u7B14\u3002`
+    );
+    renderTable(
+      view.ctx.app,
+      view.el,
+      view.sourcePath,
+      ["\u4EA7\u54C1", "\u91D1\u989D", "\u65E5\u671F", "\u4EA4\u4ED8"],
+      payments.sort((left, right) => right.date.localeCompare(left.date)).map((payment) => [
+        payment.product || "\u2014",
+        payment.amount,
+        payment.date || "\u2014",
+        payment.delivered ? "\u2705 \u5DF2\u4EA4\u4ED8" : "\u23F3 \u5F85\u4EA4\u4ED8"
+      ])
+    );
+  }
+};
+var projectPayments = {
+  name: "\u9879\u76EE\u6536\u6B3E",
+  render: async (view) => {
+    if (!view.host) {
+      renderEmpty(view.el, "\u8FD9\u4E2A\u89C6\u56FE\u8981\u957F\u5728\u9879\u76EE MOC \u4E0A\u624D\u6709\u5185\u5BB9\u3002");
+      return;
+    }
+    const payments = await paymentsOf(view, view.host);
+    if (!payments.length) {
+      renderEmpty(view.el, "\u8FD9\u4E2A\u9879\u76EE\u8FD8\u6CA1\u6709\u6536\u6B3E\u8BB0\u5F55\u3002\u547D\u4EE4\u9762\u677F\u8FD0\u884C\u300C\u8BB0\u6536\u6B3E\u300D\u8BB0\u4E00\u7B14\u3002");
+      return;
+    }
+    const received = payments.filter((payment) => payment.delivered);
+    renderSummary(
+      view.el,
+      `\u5408\u8BA1 **${sum(payments)}**\uFF0C\u5DF2\u5230\u8D26 **${sum(received)}**\uFF0C\u672A\u5230\u8D26 **${sum(payments) - sum(received)}**\u3002`
+    );
+    renderTable(
+      view.ctx.app,
+      view.el,
+      view.sourcePath,
+      ["\u91D1\u989D", "\u65E5\u671F", "\u5230\u8D26"],
+      payments.sort((left, right) => right.date.localeCompare(left.date)).map((payment) => [
+        payment.amount,
+        payment.date || "\u2014",
+        payment.delivered ? "\u2705 \u5DF2\u5230\u8D26" : "\u23F3 \u672A\u5230\u8D26"
+      ])
+    );
+  }
+};
+async function allPayments(view) {
+  const archive = archiveFolderOf(view.ctx);
+  const collected = [];
+  for (const client of view.index.notesOfType(NOTE_TYPES.client)) {
+    if (!isLivePath(archive, client.path)) continue;
+    collected.push(...await paymentsOf(view, client));
+  }
+  return collected;
+}
+async function paymentsOf(view, note) {
+  var _a, _b;
+  const payments = [];
+  for (const line of await view.index.listLinesOf(note)) {
+    if (!line.isTask) continue;
+    const fields = inlineFieldsOf(line.text);
+    const amount = Number(fields[PAYMENT_FIELDS.amount]);
+    if (!Number.isFinite(amount)) continue;
+    payments.push({
+      note,
+      product: (_a = fields[PAYMENT_FIELDS.product]) != null ? _a : "",
+      amount,
+      date: (_b = fields[PAYMENT_FIELDS.date]) != null ? _b : "",
+      delivered: line.checked
+    });
+  }
+  return payments;
+}
+function inlineFieldsOf(text) {
+  const fields = {};
+  INLINE_FIELD.lastIndex = 0;
+  let match = INLINE_FIELD.exec(text);
+  while (match) {
+    fields[match[1].trim()] = match[2].trim();
+    match = INLINE_FIELD.exec(text);
+  }
+  return fields;
+}
+function clientProjects(view) {
+  var _a;
+  const found = [];
+  for (const project of view.index.notesOfType(NOTE_TYPES.project)) {
+    const links = extractLinks(String((_a = view.index.fieldOf(project, FIELDS.client)) != null ? _a : ""));
+    if (!links.length) continue;
+    found.push({ project, client: view.index.resolve(links[0], project.path) });
+  }
+  return found;
+}
+function sum(payments) {
+  return payments.reduce((total, payment) => total + payment.amount, 0);
+}
+function formatDays(days) {
+  return days === null ? "\u2014" : `${days} \u5929`;
+}
+var clientViews = [
+  pending,
+  sales,
+  paidUsers,
+  openCases,
+  caseLibrary,
+  serviceClients,
+  clientPayments,
+  projectPayments
+];
+
+// src/modules/contacts/client.ts
+var import_obsidian6 = require("obsidian");
+
+// src/core/markdown.ts
+var VIEW_FENCE = "```" + VIEW_BLOCK_LANG;
+var ANY_HEADING = /^#{1,6}\s/;
+var PLACEHOLDER = "-";
+function insertIntoSection(content, heading, line) {
+  const lines = content.split("\n");
+  const headingIndex = lines.findIndex((text) => text.trim() === heading);
+  if (headingIndex < 0) return `${content.replace(/\s*$/, "")}
+
+${heading}
+
+${line}
+`;
+  let sectionEnd = lines.length;
+  for (let cursor = headingIndex + 1; cursor < lines.length; cursor += 1) {
+    if (ANY_HEADING.test(lines[cursor])) {
+      sectionEnd = cursor;
+      break;
+    }
+  }
+  let insertAt = sectionEnd;
+  for (let cursor = headingIndex + 1; cursor < sectionEnd; cursor += 1) {
+    if (lines[cursor].replace(/^\s+/, "").indexOf(VIEW_FENCE) === 0) {
+      insertAt = cursor;
+      break;
+    }
+  }
+  while (insertAt > headingIndex + 1 && lines[insertAt - 1].trim() === "") insertAt -= 1;
+  if (insertAt > headingIndex + 1 && lines[insertAt - 1].trim() === PLACEHOLDER) {
+    lines[insertAt - 1] = line;
+    return lines.join("\n");
+  }
+  lines.splice(insertAt, 0, line);
+  return lines.join("\n");
 }
 
 // src/core/modals.ts
-var import_obsidian2 = require("obsidian");
-var TextInputModal = class extends import_obsidian2.Modal {
+var import_obsidian5 = require("obsidian");
+var TextInputModal = class extends import_obsidian5.Modal {
   constructor(app, options) {
     super(app);
     /** Promise 的 resolve 句柄；结算后置空，避免重复结算与引用滞留 */
@@ -233,8 +1497,8 @@ var TextInputModal = class extends import_obsidian2.Modal {
     buttonBar.style.justifyContent = "flex-end";
     buttonBar.style.gap = "8px";
     buttonBar.style.marginTop = "16px";
-    new import_obsidian2.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.close());
-    new import_obsidian2.ButtonComponent(buttonBar).setButtonText("\u786E\u8BA4").setCta().onClick(() => this.submit(inputEl.value));
+    new import_obsidian5.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.close());
+    new import_obsidian5.ButtonComponent(buttonBar).setButtonText("\u786E\u8BA4").setCta().onClick(() => this.submit(inputEl.value));
     inputEl.focus();
     inputEl.select();
   }
@@ -256,32 +1520,1047 @@ var TextInputModal = class extends import_obsidian2.Modal {
     if (resolve) resolve(value);
   }
 };
+var ChoiceModal = class extends import_obsidian5.FuzzySuggestModal {
+  constructor(app, options) {
+    super(app);
+    this.resolver = null;
+    this.settled = false;
+    this.options = options;
+    this.setPlaceholder(options.title);
+  }
+  /** 打开弹窗并等待用户作答：选中返回该项，取消返回 null */
+  openAndGetChoice() {
+    return new Promise((resolve) => {
+      this.resolver = resolve;
+      this.open();
+    });
+  }
+  getItems() {
+    return [...this.options.items];
+  }
+  getItemText(item) {
+    return this.options.labelOf(item);
+  }
+  onChooseItem(item) {
+    this.settle(item);
+  }
+  onClose() {
+    this.settle(null);
+  }
+  /** 唯一结算点，保证 Promise 只被兑现一次 */
+  settle(value) {
+    if (this.settled) return;
+    this.settled = true;
+    const resolve = this.resolver;
+    this.resolver = null;
+    if (resolve) resolve(value);
+  }
+};
 
-// src/core/time.ts
-var import_obsidian3 = require("obsidian");
-var momentFactory = import_obsidian3.moment;
-function normalizeDateTimeFormat(value) {
-  const candidate = typeof value === "string" ? value.trim() : "";
-  return candidate || DEFAULT_DATETIME_FORMAT;
+// src/modules/review/templates.ts
+var FENCE = "```";
+function viewBlock(name, params) {
+  const lines = [name];
+  for (const [key, value] of Object.entries(params != null ? params : {})) {
+    lines.push(`${key}: ${value}`);
+  }
+  return `${FENCE}${VIEW_BLOCK_LANG}
+${lines.join("\n")}
+${FENCE}`;
 }
-function nowStamp(format) {
-  return momentFactory().format(normalizeDateTimeFormat(format));
+function periodNoteContent(period, title, dateTimeFormat) {
+  var _a;
+  const { stamp, uid } = nowStampAndUid(dateTimeFormat);
+  const parent = period.parent ? PERIODS[period.parent] : null;
+  const neighbours = periodNeighbours(period, title, parent);
+  const frontmatter = [
+    "---",
+    `${FIELDS.created}: ${stamp}`,
+    `${FIELDS.updated}:`,
+    `${FIELDS.uid}: "${uid}"`,
+    `${FIELDS.type}: ${period.type}`,
+    // 日记刻意没有 period_start：文件名就是日期，多一个字段等于给同一件事两个事实源
+    ...period.key === "daily" ? [] : [`${FIELDS.periodStart}: ${(_a = periodStartOf(period, title)) != null ? _a : ""}`],
+    `${FIELDS.theme}:`,
+    "---"
+  ].join("\n");
+  const navigation = neighbours ? `<< [[${neighbours.prev}]] | [[${neighbours.next}]] >>${neighbours.parent ? `\u3000\u2191 [[${neighbours.parent}|${period.parentAlias}]]` : ""}` : "";
+  return [frontmatter, "", `# ${title}`, "", navigation, "", bodyOf(period.key), ""].join("\n");
 }
-function nowStampAndUid(format) {
-  const now = momentFactory();
+function bodyOf(key) {
+  if (key === "daily") {
+    return [
+      DIARY_LOG_HEADING,
+      "",
+      "%% \u4E00\u884C\u4E00\u4EF6\u4E8B\uFF0C\u5199\u8FC7\u7A0B\u3002\u7ED3\u8BBA\u5199\u8FDB frontmatter \u7684 theme\u2014\u2014\u508D\u665A\u7528\u547D\u4EE4\u300C\u5199\u590D\u76D8\u4E3B\u9898\u300D\u56DE\u586B\u3002",
+      "\u5468\u590D\u76D8\u53EA\u770B theme\uFF0C\u8FD9\u91CC\u662F\u7ED9\u4F60\u81EA\u5DF1\u56DE\u60F3\u7528\u7684\u3002",
+      "\u63D0\u5230\u4EBA\u5C31\u6302\u53CC\u94FE\uFF0C\u4E09\u79CD\u5199\u6CD5\u81EA\u52A8\u5206\u6D41\u5230\u4ED6\u7684\u6863\u6848\uFF1A",
+      "\u3000\u4E8B\u4EF6\uFF1A\u548C [[\u5F20\u4E09]] \u8C08\u5B9A\u4E00\u8D77\u6295\u4E00\u5BB6\u7F51\u5496",
+      "\u3000\u5F85\u529E\uFF1A- [ ] \u51FA\u7F51\u5496\u6295\u8D44\u65B9\u6848\u7ED9 [[\u5F20\u4E09]]",
+      "\u3000\u4EBA\u60C5\uFF1A- [[\u5F20\u4E09]]\uFF5C\u53BB\uFF5C\u9001\u4E86\u534A\u65A4\u751F\u666E\uFF5C\u4E24\u6E05 %%",
+      "",
+      "- ",
+      "",
+      "## \u4ECA\u65E5\u4EA7\u51FA\uFF08\u81EA\u52A8\uFF09",
+      "",
+      viewBlock("\u4ECA\u65E5\u4EA7\u51FA")
+    ].join("\n");
+  }
+  if (key === "weekly") {
+    return [
+      "## \u672C\u5468\u590D\u76D8",
+      "",
+      "%% \u5BF9\u7740\u4E0B\u9762\u4E24\u5F20\u81EA\u52A8\u8868\u56DE\u7B54\uFF0C\u4E00\u95EE\u4E00\u6BB5\uFF1A",
+      "1. \u4E03\u5929\u7684\u4E3B\u9898\u8FDE\u8D77\u6765\uFF0C\u6211\u8FD9\u5468\u771F\u6B63\u5728\u63A8\u8FDB\u7684\u662F\u4EC0\u4E48\uFF1F\u548C frontmatter \u91CC\u5199\u7684 theme \u4E00\u81F4\u5417\uFF1F",
+      "2. \u54EA\u4E00\u5929\u504F\u79BB\u4E86\u4E3B\u7EBF\uFF1F\u4E3A\u4EC0\u4E48\uFF1F",
+      "3. \u4E0B\u5468\u53EA\u6539\u4E00\u4EF6\u4E8B\uFF0C\u6539\u4EC0\u4E48\uFF1F %%",
+      "",
+      "## \u672C\u5468\u6BCF\u65E5\u4E3B\u9898\uFF08\u81EA\u52A8\uFF09",
+      "",
+      viewBlock("\u4E3B\u9898\u94FE", { \u8303\u56F4: "\u5468" }),
+      "",
+      "## \u672C\u5468\u9879\u76EE\u52A8\u6001\uFF08\u81EA\u52A8\uFF09",
+      "",
+      viewBlock("\u9879\u76EE\u52A8\u6001", { \u8303\u56F4: "\u5468" })
+    ].join("\n");
+  }
+  if (key === "monthly") {
+    return [
+      "## \u672C\u6708\u590D\u76D8",
+      "",
+      "%% \u6708\u5EA6\u770B\u7ED3\u679C\uFF0C\u4E0D\u770B\u8FC7\u7A0B\uFF1A",
+      "1. \u51E0\u6761\u5468\u4E3B\u9898\u8FDE\u8D77\u6765\uFF0C\u8FD9\u4E2A\u6708\u771F\u6B63\u5B8C\u6210\u7684\u662F\u4EC0\u4E48\uFF1F\u548C theme \u4E00\u81F4\u5417\uFF1F",
+      "2. \u5B8C\u6210\u7684\u9879\u76EE\u91CC\uFF0C\u54EA\u4E00\u4E2A\u6700\u503C\u5F97\u590D\u76D8\uFF1F\u4E3A\u4EC0\u4E48\u662F\u5B83\uFF1F",
+      "3. \u4E0B\u6708\u552F\u4E00\u4F18\u5148\u7EA7\u662F\u4EC0\u4E48\uFF1F\u4E3A\u5B83\u780D\u6389\u4EC0\u4E48\uFF1F %%",
+      "",
+      "## \u672C\u6708\u5B8C\u6210\u7684\u9879\u76EE\uFF08\u81EA\u52A8\uFF09",
+      "",
+      viewBlock("\u5B8C\u6210\u7684\u9879\u76EE", { \u8303\u56F4: "\u6708" }),
+      "",
+      "## \u672C\u6708\u6BCF\u5468\u4E3B\u9898\uFF08\u81EA\u52A8\uFF09",
+      "",
+      viewBlock("\u4E3B\u9898\u94FE", { \u8303\u56F4: "\u6708" })
+    ].join("\n");
+  }
+  if (key === "quarterly") {
+    return [
+      "## \u5B63\u5EA6\u590D\u76D8",
+      "",
+      "%% \u5B63\u5EA6\u770B\u7CFB\u7EDF\uFF0C\u4E0D\u770B\u4E8B\u4EF6\uFF1A",
+      "1. \u4E09\u4E2A\u6708\u7684\u4E3B\u9898\u8FDE\u8D77\u6765\uFF0C\u4E3B\u7EBF\u662F\u5728\u63A8\u8FDB\u8FD8\u662F\u5728\u6F02\u79FB\uFF1F",
+      "2. \u5B8C\u6210\u7684\u9879\u76EE\u91CC\uFF0C\u6709\u591A\u5C11\u662F\u5B63\u521D\u5C31\u6253\u7B97\u505A\u7684\uFF1F\u504F\u79BB\u8BF4\u660E\u4E86\u4EC0\u4E48\uFF1F",
+      "3. \u4E0B\u5B63\u5EA6\u7684\u6218\u7565\u53D6\u820D\uFF1A\u505A\u4EC0\u4E48\u3001\u575A\u51B3\u4E0D\u505A\u4EC0\u4E48\uFF1F %%",
+      "",
+      "## \u672C\u5B63\u6BCF\u6708\u4E3B\u9898\uFF08\u81EA\u52A8\uFF09",
+      "",
+      viewBlock("\u4E3B\u9898\u94FE", { \u8303\u56F4: "\u5B63" }),
+      "",
+      "## \u672C\u5B63\u5B8C\u6210\u7684\u9879\u76EE\uFF08\u81EA\u52A8\uFF09",
+      "",
+      viewBlock("\u5B8C\u6210\u7684\u9879\u76EE", { \u8303\u56F4: "\u5B63" })
+    ].join("\n");
+  }
+  return [
+    "## \u5E74\u5EA6\u590D\u76D8",
+    "",
+    "%% \u4E00\u5E74\u53EA\u56DE\u7B54\u56DB\u4E2A\u95EE\u9898\uFF1A",
+    "1. \u5341\u4E8C\u4E2A\u6708\u7684\u4E3B\u9898\u8FDE\u8D77\u6765\uFF0C\u4ECA\u5E74\u7684\u4E3B\u7EBF\u662F\u4EC0\u4E48\uFF1F\u548C\u5E74\u521D\u5199\u4E0B\u7684\u4E00\u81F4\u5417\uFF1F",
+    "2. \u4E09\u5927\u5F97\u2014\u2014\u54EA\u4E09\u4EF6\u4E8B\u6700\u503C\u5F97\uFF1F\u5171\u540C\u6210\u56E0\u662F\u4EC0\u4E48\uFF1F",
+    "3. \u4E09\u5927\u5931\u2014\u2014\u54EA\u4E09\u4EF6\u4E8B\u6700\u4E8F\uFF1F\u6559\u8BAD\u5404\u4E00\u53E5\u3002",
+    "4. \u660E\u5E74\u4E3B\u9898\u5B9A\u4EC0\u4E48\uFF1F\u5B83\u8981\u6C42\u6211\u6210\u4E3A\u4EC0\u4E48\u6837\u7684\u4EBA\uFF1F %%",
+    "",
+    "## \u5E74\u5EA6\u9879\u76EE\u5168\u666F\uFF08\u81EA\u52A8\uFF09",
+    "",
+    viewBlock("\u5E74\u5EA6\u5168\u666F"),
+    "",
+    "## \u5341\u4E8C\u4E2A\u6708\u7684\u4E3B\u9898\uFF08\u81EA\u52A8\uFF09",
+    "",
+    viewBlock("\u4E3B\u9898\u94FE", { \u8303\u56F4: "\u5E74" })
+  ].join("\n");
+}
+
+// src/modules/contacts/templates.ts
+var CONTACT_MOC_LINK = `[[${basenameOf(CONTACT_MOC)}]]`;
+var CLIENT_MOC_LINK = `[[${basenameOf(CLIENT_MOC)}]]`;
+function basenameOf(path) {
+  var _a;
+  return (_a = path.replace(/\.md$/, "").split("/").pop()) != null ? _a : path;
+}
+function personNoteContent(values) {
+  const frontmatter = [
+    "---",
+    `${FIELDS.aliases}:`,
+    `${FIELDS.description}:`,
+    `${FIELDS.created}: ${values.created}`,
+    `${FIELDS.updated}:`,
+    `${FIELDS.tags}:`,
+    `${FIELDS.uid}:${values.uid ? ` "${values.uid}"` : ""}`,
+    `${FIELDS.type}:${values.type ? ` ${values.type}` : ""}`,
+    `${FIELDS.up}:${values.up ? ` "${values.up}"` : ""}`,
+    `${FIELDS.tier}:${values.tier ? ` ${values.tier}` : ""}`,
+    `${FIELDS.direction}:${values.direction ? ` ${values.direction}` : ""}`,
+    `${FIELDS.gift}:`,
+    `${FIELDS.address}:`,
+    `${FIELDS.get}:`,
+    `${FIELDS.birthday}:`,
+    "---"
+  ].join("\n");
+  return [
+    frontmatter,
+    "",
+    "## \u8054\u7CFB\u65B9\u5F0F",
+    "",
+    "## \u559C\u597D\u4E0E\u79C1\u4E8B",
+    "",
+    "## \u76F8\u5173\u9879\u76EE\uFF08\u81EA\u52A8\uFF09",
+    "",
+    viewBlock("\u76F8\u5173\u9879\u76EE"),
+    "",
+    "## \u4EBA\u60C5\u8D26\u672C\uFF08\u81EA\u52A8\uFF09",
+    "",
+    viewBlock("\u4EBA\u60C5\u8D26\u672C"),
+    "",
+    "## \u5173\u952E\u4E8B\u4EF6\uFF08\u81EA\u52A8\uFF09",
+    "",
+    viewBlock("\u5173\u952E\u4E8B\u4EF6"),
+    "",
+    "## \u5F85\u529E\uFF08\u81EA\u52A8\uFF09",
+    "",
+    viewBlock("\u5F85\u529E"),
+    ""
+  ].join("\n");
+}
+function personTemplateFile() {
+  return personNoteContent({ created: "", uid: "", type: "", up: "", tier: "", direction: "" });
+}
+function clientNoteContent(values) {
+  const frontmatter = [
+    "---",
+    `${FIELDS.aliases}:`,
+    `${FIELDS.description}:`,
+    `${FIELDS.created}: ${values.created}`,
+    `${FIELDS.updated}:`,
+    `${FIELDS.tags}:`,
+    `${FIELDS.uid}:${values.uid ? ` "${values.uid}"` : ""}`,
+    `${FIELDS.type}:${values.type ? ` ${values.type}` : ""}`,
+    `${FIELDS.source}:${values.source ? ` ${values.source}` : ""}`,
+    `${FIELDS.contact}:${values.contact ? ` ${values.contact}` : ""}`,
+    `${FIELDS.homepage}:`,
+    "---"
+  ].join("\n");
+  return [
+    frontmatter,
+    "",
+    "## \u4ED8\u8D39\u4E0E\u4EA4\u4ED8",
+    "",
+    `%% \u4E00\u7B14\u4E00\u884C\uFF0C\u672A\u52FE\uFF1D\u5F85\u4EA4\u4ED8\uFF0C\u52FE\u4E0A\uFF1D\u5DF2\u4EA4\u4ED8\u3002\u7528\u547D\u4EE4\u300C\u589E\u52A0\u4ED8\u8D39\u300D\u5199\u5165\uFF0C\u4E0D\u5FC5\u624B\u6253\uFF1A`,
+    `- [ ] [${PAYMENT_FIELDS.product}::\u8BFE\u7A0B] [${PAYMENT_FIELDS.amount}::365] [${PAYMENT_FIELDS.date}::2026-08-12] %%`,
+    "",
+    viewBlock("\u4ED8\u8D39\u4E0E\u4EA4\u4ED8"),
+    "",
+    "## \u5173\u952E\u4E8B\u4EF6\uFF08\u81EA\u52A8\uFF09",
+    "",
+    viewBlock("\u5173\u952E\u4E8B\u4EF6"),
+    "",
+    "## \u5F85\u529E\uFF08\u81EA\u52A8\uFF09",
+    "",
+    viewBlock("\u5F85\u529E"),
+    ""
+  ].join("\n");
+}
+function clientTemplateFile() {
+  return clientNoteContent({ created: "", uid: "", type: "", source: "", contact: "" });
+}
+function areaFrontmatter(description, created, uid) {
+  return [
+    "---",
+    `${FIELDS.aliases}:`,
+    `${FIELDS.description}: ${description}`,
+    `${FIELDS.created}: ${created}`,
+    `${FIELDS.updated}:`,
+    `${FIELDS.tags}:`,
+    `${FIELDS.uid}: "${uid}"`,
+    `${FIELDS.type}: ${NOTE_TYPES.area}`,
+    `${FIELDS.status}:`,
+    "---"
+  ].join("\n");
+}
+function contactMocContent(created, uid) {
+  return [
+    areaFrontmatter("\u4EBA\u8109\u9886\u57DF\u603B\u63A7\u53F0\uFF1A\u6309\u5708\u5B50\u5206\u7EC4\u7684\u540D\u5F55\u3001\u6295\u5582\u540D\u5355\u3001\u672C\u6708\u751F\u65E5\u3001\u4EBA\u60C5\u4F59\u989D", created, uid),
+    "",
+    `> \u8FD9\u91CC\u662F\u5168\u90E8\u4EBA\u7684\u7ECF\u8425\u89C6\u89D2\u3002\u5BA2\u6237\u89C6\u89D2\u53E6\u89C1 ${CLIENT_MOC_LINK}\uFF08\u8FD8\u6CA1\u6709\u7684\u8BDD\uFF0C\u547D\u4EE4\u9762\u677F\u8FD0\u884C\u300C\u521D\u59CB\u5316\u5BA2\u6237\u6A21\u5757\u300D\uFF09\u3002`,
+    "> \u4E00\u4E2A\u4EBA\u53EF\u4EE5\u540C\u65F6\u51FA\u73B0\u5728\u4E24\u5F20\u5730\u56FE\u4E0A\uFF1A\u4ED6\u786E\u5B9E\u53EF\u4EE5\u65E2\u662F\u6211\u7684\u5BA2\u6237\uFF0C\u53C8\u662F\u6211\u7684\u670B\u53CB\u3002",
+    "",
+    "## \u{1F4C7} \u540D\u5F55",
+    "",
+    viewBlock("\u4EBA\u8109\u540D\u5F55"),
+    "",
+    "## \u{1F381} \u6295\u5582\u540D\u5355",
+    "",
+    viewBlock("\u6295\u5582\u540D\u5355"),
+    "",
+    "## \u{1F382} \u672C\u6708\u751F\u65E5",
+    "",
+    viewBlock("\u672C\u6708\u751F\u65E5"),
+    "",
+    "## \u2696\uFE0F \u4EBA\u60C5\u4F59\u989D\uFF08\u672A\u4E24\u6E05\uFF09",
+    "",
+    viewBlock("\u4EBA\u60C5\u4F59\u989D"),
+    "",
+    "## \u{1F4D6} \u4F7F\u7528\u8BF4\u660E",
+    "",
+    "### \u5361\u7247\u4E0A\u6CA1\u6709\u5206\u7C7B\uFF0C\u53EA\u6709\u5F52\u5C5E",
+    "",
+    "\u4EBA\u7269\u6863\u6848\u662F\u5361\u7247\u7B14\u8BB0\uFF0C**\u5361\u7247\u4E0D\u5E26\u5206\u7C7B**\u3002\u6240\u4EE5\u8FD9\u91CC\u6CA1\u6709\u300C\u5BA2\u6237/\u751F\u6D3B/\u5DE5\u4F5C\u300D\u8FD9\u79CD\u8EAB\u4EFD\u5B57\u6BB5\uFF0C\u53D6\u800C\u4EE3\u4E4B\u7684\u662F\u4E24\u6761\u673A\u5236\uFF1A",
+    "",
+    "| \u8981\u56DE\u7B54\u7684 | \u9760\u4EC0\u4E48 |",
+    "|---|---|",
+    `| **\u4ED6\u5C5E\u4E8E\u54EA\u4E2A\u5708\u5B50** | \`${FIELDS.up}\` \u8FD9\u6761**\u5F52\u5C5E\u94FE\u63A5**\u3002\u6307\u5411\u54EA\u4E2A\u5708\u5B50 MOC\uFF0C\u540D\u5F55\u91CC\u5C31\u5F52\u5230\u54EA\u4E00\u7EC4\u3002\u60F3\u65B0\u5206\u4E00\u4E2A\u5708\u5B50\uFF08\u6BD4\u5982\u67D0\u516C\u53F8\u7684\u540C\u4E8B\uFF09\uFF0C\u5EFA\u4E00\u4E2A\u5708\u5B50 MOC\uFF0C\u628A\u90A3\u6279\u4EBA\u7684 \`${FIELDS.up}\` \u6307\u8FC7\u53BB\uFF0C\u540D\u5F55\u81EA\u52A8\u591A\u4E00\u7EC4 |`,
+    `| **\u4ED6\u662F\u4E0D\u662F\u5BA2\u6237** | **\u4E0D\u6807\u6CE8\uFF0C\u4ECE\u4E8B\u5B9E\u63A8\u65AD**\uFF1A\u540D\u4E0B\u6709 \`${FIELDS.client}\` \u6307\u5411\u4ED6\u7684\u9879\u76EE\uFF0C\u4ED6\u5C31\u662F\u5BA2\u6237\u3002\u7ED9\u8C01\u5E72\u8FC7\u6D3B\u8C01\u624D\u662F\u5BA2\u6237\uFF0C\u8FD9\u6BD4\u8D34\u6807\u7B7E\u8BDA\u5B9E |`,
+    "",
+    "\u597D\u5904\u662F\u8EAB\u4EFD\u4E0D\u518D\u4E92\u65A5\uFF1A\u540C\u4E00\u4E2A\u4EBA\u53EF\u4EE5\u65E2\u5728\u540D\u5F55\u91CC\uFF08\u7ECF\u8425\u5173\u7CFB\uFF09\uFF0C\u53C8\u5728\u5BA2\u6237\u540D\u5F55\u91CC\uFF08\u4EA4\u4ED8\u5173\u7CFB\uFF09\uFF0C\u56E0\u4E3A\u4ED6\u672C\u6765\u5C31\u662F\u4E24\u8005\u3002",
+    "",
+    "### \u6863\u6848\u653E\u54EA\u90FD\u884C",
+    "",
+    `\u89C6\u56FE**\u9760 \`${FIELDS.type}: ${NOTE_TYPES.person}\` \u8BA4\u4EBA\uFF0C\u4E0D\u9760\u6587\u4EF6\u5939**\u3002\u4F60\u628A\u6863\u6848\u632A\u53BB\u522B\u7684\u76EE\u5F55\u3001\u6539\u6389\u76EE\u5F55\u540D\u3001\u751A\u81F3\u7528\u82F1\u6587\u76EE\u5F55\u540D\uFF0C\u5341\u51E0\u4E2A\u89C6\u56FE\u4E00\u4E2A\u90FD\u4E0D\u7528\u6539\u3002`,
+    "",
+    "\u552F\u4E00\u8FD8\u8BA4\u4F4D\u7F6E\u7684\u662F**\u5F52\u6863**\uFF1A\u6863\u6848\u79FB\u8FDB\u5F52\u6863\u76EE\u5F55\u5373\u9000\u51FA\u5168\u90E8\u540D\u5F55\uFF08\u8EAB\u4EFD\u6CA1\u53D8\uFF0C\u662F\u4F60\u4E0D\u518D\u7ECF\u8425\u8FD9\u6BB5\u5173\u7CFB\u4E86\uFF09\u3002\u5F52\u6863\u76EE\u5F55\u5728\u300C\u8BBE\u7F6E \u203A ziminOS \u203A \u9AD8\u7EA7\u300D\u91CC\u6539\u4E00\u6B21\uFF0C\u5168\u90E8\u89C6\u56FE\u8DDF\u7740\u8D70\u3002",
+    "",
+    "### \u53E6\u5916\u4E09\u6761\u8F74",
+    "",
+    "| \u5C5E\u6027 | \u7BA1\u4EC0\u4E48 | \u53D6\u503C |",
+    "|---|---|---|",
+    `| \`${FIELDS.tier}\` | **\u8054\u7CFB\u8282\u594F**\uFF1A\u591A\u4E45\u8BE5\u8BF4\u53E5\u8BDD | \u5BC6=\u6BCF\u5468 / \u8FD1=\u6BCF\u6708 / \u719F=\u6BCF\u5B63 / \u8FDC=\u6BCF\u5E74 |`,
+    `| \`${FIELDS.direction}\` | **\u4F4D\u52BF**\uFF1A\u8FD9\u6BB5\u5173\u7CFB\u5F80\u54EA\u4E2A\u65B9\u5411\u4F7F\u52B2 | \u5411\u4E0A\uFF08\u8981\u7528\u5FC3\u7EF4\u62A4\uFF09/ \u5E73\u884C / \u5411\u4E0B\uFF08\u7ED9\u673A\u4F1A\uFF0C\u7ED3\u5584\u7F18\uFF09 |`,
+    `| \`${FIELDS.gift}\` | **\u4E3B\u52A8\u6295\u8D44**\uFF1A\u613F\u4E0D\u613F\u610F\u6301\u7EED\u5728\u4ED6\u8EAB\u4E0A\u82B1\u94B1\u82B1\u5FC3\u601D | \u52FE\u4E0A\u5373\u8FDB\u300C\u6295\u5582\u540D\u5355\u300D |`,
+    "",
+    "\u4E09\u8005\u4E92\u4E0D\u8574\u542B\uFF1A\u53D1\u5C0F\u662F\u300C\u5BC6 + \u5E73\u884C\u300D\u5374\u4E0D\u5728\u6295\u5582\u540D\u5355\u4E0A\uFF08\u4ED6\u4F1A\u7B11\u4F60\u89C1\u5916\uFF09\uFF1B\u5927\u5BA2\u6237\u662F\u300C\u719F + \u5411\u4E0A\u300D\u5374\u94C1\u5B9A\u5728\u540D\u5355\u4E0A\u3002\u6240\u4EE5\u662F\u4E09\u4E2A\u5B57\u6BB5\uFF0C\u4E0D\u662F\u4E00\u4E2A\u3002",
+    "",
+    `\`${FIELDS.address}\` \u5B58\u6574\u4E32\u5BC4\u4EF6\u4FE1\u606F\uFF08\u6536\u4EF6\u4EBA + \u7535\u8BDD + \u5730\u5740\uFF09\uFF0C\u7167\u7740\u590D\u5236\u5C31\u80FD\u586B\u5FEB\u9012\u5355\u3002\u5B83\u4E0D\u53C2\u4E0E\u7B5B\u9009\uFF0C\u8FDB\u5C5E\u6027\u7684\u552F\u4E00\u7406\u7531\u662F\u6295\u5582\u540D\u5355\u8981\u628A\u5B83\u805A\u5408\u6210\u4E00\u5F20\u8868\u3002`,
+    "",
+    "### \u65E5\u5E38\u4E09\u4E2A\u52A8\u4F5C",
+    "",
+    "- **\u5EFA\u6863**\uFF1A\u547D\u4EE4\u9762\u677F\u8FD0\u884C\u300C\u65B0\u5EFA\u4EBA\u8109\u300D\uFF0C\u4E09\u8FDE\u95EE\uFF08\u59D3\u540D \u2192 \u5206\u5C42 \u2192 \u65B9\u5411\uFF09\uFF0C\u5F52\u5C5E\u81EA\u52A8\u6307\u5411\u672C MOC\u3002\u6863\u6848\u5E73\u94FA\u5B58\u653E\uFF0C\u4E0D\u5EFA\u5B50\u76EE\u5F55\u3002",
+    `- **\u8FDB\u6295\u5582\u540D\u5355**\uFF1A\u6253\u5F00\u6863\u6848\uFF0C\u5C5E\u6027\u91CC\u628A \`${FIELDS.gift}\` \u5199\u6210 true\u3001\u586B\u597D \`${FIELDS.address}\`\u3002\u5E26\u7279\u4EA7\u56DE\u6765\u65F6\uFF0C\u540D\u5355\u548C\u5730\u5740\u5DF2\u7ECF\u5C31\u4F4D\u3002`,
+    "- **\u8BB0\u4E8B\u8BB0\u8D26**\uFF1A\u5168\u90E8\u5199\u8FDB**\u5F53\u5929\u65E5\u8BB0**\uFF0C\u9760\u4E00\u884C\u7684\u5F62\u6001\u81EA\u52A8\u5206\u6D41\u5230\u4ED6\u7684\u6863\u6848\uFF1A",
+    "",
+    "| \u4F60\u5199\u7684 | \u843D\u5230\u4ED6\u6863\u6848\u7684 |",
+    "|---|---|",
+    "| `\u548C [[\u5F20\u4E09]] \u53BB\u4E86\u65B0\u7586\uFF0C\u8C08\u5B9A\u4E00\u8D77\u6295\u4E00\u5BB6\u7F51\u5496` | \u5173\u952E\u4E8B\u4EF6 |",
+    "| `- [ ] \u51FA\u7F51\u5496\u6295\u8D44\u65B9\u6848\u7ED9 [[\u5F20\u4E09]]` | \u5F85\u529E |",
+    `| \`- [[\u5F20\u4E09]]${LEDGER.separator}\u53BB${LEDGER.separator}\u9001\u4E86\u534A\u65A4\u751F\u666E${LEDGER.separator}\u4E24\u6E05\` | \u4EBA\u60C5\u8D26\u672C |`,
+    "",
+    `\u8D26\u672C\u884C\u4E5F\u53EF\u4EE5\u7528\u547D\u4EE4\u300C\u8BB0\u4EBA\u60C5\u300D\u56DB\u6B65\u70B9\u9009\u5199\u5165\u3002\u624B\u5199\u65F6\u6CE8\u610F\uFF1A\u4EBA\u540D\u5FC5\u987B\u5E26 \`[[ ]]\`\uFF08\u5B83\u662F\u7D22\u5F15\uFF09\uFF0C\u5206\u9694\u7B26\u7528\u5168\u89D2 \`${LEDGER.separator}\`\uFF0C\u72B6\u6001\u53D6 ${LEDGER.statuses.join(" / ")}\uFF0C${LEDGER.defaultStatus}\u53EF\u6574\u6BB5\u7701\u7565\u3002`,
+    "",
+    "### \u540D\u5F55\u600E\u4E48\u8BFB",
+    "",
+    "\u5148\u770B\u5708\u5B50\uFF0C\u518D\u770B\u4EBA\u3002\u6BCF\u7EC4\u4E00\u5F20\u8868\u56DE\u7B54\u56DB\u4EF6\u4E8B\uFF1A\u8BA4\u8BC6\u8C01\u3001\u8C01\u80FD\u7ED9\u6211\u4EC0\u4E48\u3001\u8C01\u5728\u53D8\u51B7\u3001\u8C01\u8981\u91CD\u70B9\u7EF4\u62A4\u3002",
+    "",
+    "\u300C\u6700\u8FD1\u8054\u7CFB\u300D\u662F\u4ECE\u65E5\u8BB0\u53CD\u94FE**\u7B97\u51FA\u6765\u7684**\uFF0C\u4E0D\u7528\u624B\u586B\u2014\u2014\u4F60\u6BCF\u8BB0\u4E00\u7B14\u4EBA\u60C5\u6216\u5199\u4E00\u53E5\u65E5\u8BB0\uFF0C\u5B83\u81EA\u52A8\u5237\u65B0\u3002\u8D85\u51FA\u8BE5\u5C42\u8282\u594F\u7684\u4F1A\u6807 \u26A0\uFE0F\uFF0C\u90A3\u5C31\u662F\u8BE5\u4E3B\u52A8\u627E\u4ED6\u7684\u4FE1\u53F7\u3002\u5BF9\u5BA2\u6237\u800C\u8A00\u8FD9\u4E2A \u26A0\uFE0F \u6700\u503C\u94B1\uFF1A\u5B83\u662F\u6D41\u5931\u9884\u8B66\u3002",
+    "",
+    "### \u5E74\u68C0",
+    "",
+    `\u6BCF\u5E74\u8FC7\u4E00\u904D\u540D\u5F55\uFF1A\`${FIELDS.up}\` \u6362\u5708\uFF08\u540C\u4E8B\u53D8\u8DEF\u4EBA\u5C31\u79FB\u51FA\u90A3\u4E2A\u5708\u5B50\uFF09\u3001\`${FIELDS.tier}\` \u5347\u964D\u7EA7\u3001\`${FIELDS.direction}\` \u4FEE\u8BA2\u3001\`${FIELDS.gift}\` \u8FDB\u51FA\u3001\u4F59\u989D\u6E05\u8D26\u3002`,
+    "",
+    "\u6362\u5DE5\u4F5C\u65F6\u989D\u5916\u505A\u4E00\u4EF6\u4E8B\uFF1A\u6253\u5F00\u90A3\u4EFD\u5DE5\u4F5C\u7684\u5708\u5B50 MOC\uFF0C\u540D\u5F55\u91CC\u90A3\u4E00\u7EC4\u6574\u7EC4\u8FC7\u4E00\u904D\u2014\u2014\u7559\u4E0B\u7684\u628A\u5F52\u5C5E\u6539\u6307\u4EBA\u8109 MOC\uFF0C\u6563\u4E86\u7684\u79FB\u8FDB\u5F52\u6863\u76EE\u5F55\u3002\u4E0D\u5F52\u6863\u7684\u8BDD\u5B83\u4F1A\u4E00\u76F4\u5360\u7740\u540D\u5F55\u3002",
+    ""
+  ].join("\n");
+}
+function clientMocContent(created, uid) {
+  return [
+    areaFrontmatter(
+      "\u5BA2\u6237\u9886\u57DF\u603B\u63A7\u53F0\uFF1A\u4EA7\u54C1\u533A\uFF08\u5F85\u4EA4\u4ED8/\u9500\u552E\u5206\u6790/\u4ED8\u8D39\u7528\u6237\uFF09\uFF0B \u670D\u52A1\u533A\uFF08\u672A\u7ED3\u6848/\u6848\u4F8B\u5E93/\u670D\u52A1\u5BA2\u6237\uFF09",
+      created,
+      uid
+    ),
+    "",
+    "> \u4F60\u6709\u4E24\u6761\u4EA4\u6613\u7EBF\uFF0C\u5B83\u4EEC\u56DE\u7B54\u7684\u95EE\u9898\u4E0D\u540C\uFF0C\u6240\u4EE5\u5206\u4E24\u533A\u770B\u3002",
+    "> **\u4EA7\u54C1**\uFF1A\u964C\u751F\u4EBA\u4E70\u4F60\u7684\u4E1C\u897F\uFF0C\u4F60\u53EA\u77E5\u9053\u6E20\u9053\u548C\u8054\u7CFB\u65B9\u5F0F\u3002\u8981\u770B\u7684\u662F\u94B1\u4ECE\u54EA\u6765\u3001\u8D27\u7ED9\u4E86\u6CA1\u3002",
+    "> **\u670D\u52A1**\uFF1A\u8BA4\u8BC6\u7684\u4EBA\u627E\u4F60\u529E\u4E8B\uFF0C\u6709\u9879\u76EE\u6709\u8FC7\u7A0B\u3002\u8981\u770B\u7684\u662F\u6B20\u8C01\u7684\u6D3B\u3001\u54EA\u7C7B\u95EE\u9898\u8BE5\u505A\u6210\u8BFE\u3002",
+    "",
+    "# \u{1F6D2} \u4EA7\u54C1",
+    "",
+    "## \u{1F4E6} \u5F85\u4EA4\u4ED8",
+    "",
+    viewBlock("\u5F85\u4EA4\u4ED8"),
+    "",
+    "## \u{1F4CA} \u9500\u552E\u5206\u6790",
+    "",
+    viewBlock("\u9500\u552E\u5206\u6790"),
+    "",
+    "## \u{1F465} \u4ED8\u8D39\u7528\u6237",
+    "",
+    viewBlock("\u4ED8\u8D39\u7528\u6237"),
+    "",
+    "# \u{1F527} \u670D\u52A1",
+    "",
+    "## \u{1F4CB} \u672A\u7ED3\u6848",
+    "",
+    viewBlock("\u672A\u7ED3\u6848"),
+    "",
+    "## \u{1F4DA} \u6848\u4F8B\u5E93",
+    "",
+    viewBlock("\u6848\u4F8B\u5E93"),
+    "",
+    "## \u{1F464} \u670D\u52A1\u5BA2\u6237",
+    "",
+    viewBlock("\u670D\u52A1\u5BA2\u6237"),
+    "",
+    "# \u{1F4D6} \u4F7F\u7528\u8BF4\u660E",
+    "",
+    "## \u4E24\u6761\u4EA4\u6613\u7EBF\uFF0C\u4E24\u4E2A\u7269\u79CD",
+    "",
+    "| | \u4EA7\u54C1\u578B | \u670D\u52A1\u578B |",
+    "|---|---|---|",
+    "| **\u8C01** | \u5E73\u53F0\u4E0A\u6765\u7684\u964C\u751F\u4EBA | \u4F60\u8BA4\u8BC6\u7684\u4EBA |",
+    "| **\u4F60\u77E5\u9053\u4EC0\u4E48** | \u6E20\u9053\u3001\u8054\u7CFB\u65B9\u5F0F\u3001\u5355\u53F7\uFF0C**\u4EC5\u6B64\u800C\u5DF2** | \u5168\u5957\uFF1A\u751F\u65E5\u3001\u4F4F\u5740\u3001\u813E\u6C14\u3001\u4EBA\u60C5\u5F80\u6765 |",
+    `| **\u6863\u6848\u5728\u54EA** | \`${FIELDS.type}: ${NOTE_TYPES.client}\` | \`${FIELDS.type}: ${NOTE_TYPES.person}\`\uFF0C\u89C1 ${CONTACT_MOC_LINK} |`,
+    `| **\u6D3B\u513F\u5728\u54EA** | \u6CA1\u6709\u9879\u76EE\uFF0C\u5C31\u662F\u4E00\u7B14\u4E70\u5356\uFF0B\u4E00\u6B21\u4EA4\u4ED8 | \u4E00\u4E2A\u9879\u76EE\uFF0C\`${FIELDS.client}\` \u94FE\u63A5\u6302\u5230\u4ED6 |`,
+    "",
+    "## \u4ED8\u8D39\u600E\u4E48\u8BB0\uFF1A\u4E00\u7B14\u4E00\u6761\u4EFB\u52A1",
+    "",
+    "**\u4E00\u7B14\u4ED8\u8D39\u7684\u672C\u8D28\uFF0C\u5C31\u662F\u300C\u6211\u6B20\u4ED6\u4E00\u6B21\u4EA4\u4ED8\u300D\uFF0C\u90A3\u672C\u6765\u5C31\u662F\u4E2A\u5F85\u529E\u3002** \u6240\u4EE5\u547D\u4EE4\u5199\u5165\u7684\u662F**\u672A\u52FE\u9009**\u7684\u4EFB\u52A1\u884C\uFF0C\u4EA4\u4ED8\u5B8C\u70B9\u4E00\u4E0B\u52FE\uFF1A",
+    "",
+    "```markdown",
+    `- [x] [${PAYMENT_FIELDS.product}::\u8BFE\u7A0B] [${PAYMENT_FIELDS.amount}::365] [${PAYMENT_FIELDS.date}::2026-08-12]`,
+    `- [ ] [${PAYMENT_FIELDS.product}::\u54A8\u8BE2] [${PAYMENT_FIELDS.amount}::199] [${PAYMENT_FIELDS.date}::2026-09-01]`,
+    "```",
+    "",
+    "**\u4E09\u6761\u683C\u5F0F\u7EAA\u5F8B**\uFF0C\u6BCF\u6761\u90FD\u5728\u8EB2\u4E00\u4E2A\u771F\u5751\uFF1A",
+    "",
+    "| \u7EAA\u5F8B | \u4E3A\u4EC0\u4E48 |",
+    "|---|---|",
+    `| **\u952E\u540D\u7528\u4E2D\u6587**\uFF08${PAYMENT_FIELDS.amount}\uFF0C\u4E0D\u5199 Amount\uFF09 | \u542B\u5927\u5199\u7684\u952E\u4F1A\u88AB\u989D\u5916\u8865\u4E00\u4EFD\u5C0F\u5199\u89C4\u8303\u540D\uFF0C\u540C\u4E00\u7B14\u94B1\u5728\u904D\u5386\u6C42\u548C\u65F6\u88AB\u7B97\u4E24\u904D |`,
+    "| **\u4E00\u7B14\u5199\u4E00\u884C\uFF0C\u4E0D\u8981\u5D4C\u5957** | \u7236\u9879\u548C\u5B50\u9879\u7684\u5B57\u6BB5\u5404\u81EA\u6241\u5E73\u4E0A\u6D6E\uFF0C\u9875\u9762\u7EA7\u770B\u4E0D\u5230\u8C01\u914D\u8C01\uFF0C\u914D\u5BF9\u4E22\u5931 |",
+    "| **\u4EA7\u54C1\u540D\u5199\u5728\u503C\u91CC\uFF0C\u4E0D\u5F53\u952E\u540D** | \u5199\u6210 `[\u8BFE\u7A0B::365]` \u7684\u8BDD\uFF0C\u7B97\u603B\u6536\u5165\u5C31\u5F97\u679A\u4E3E\u6240\u6709\u4EA7\u54C1\u540D\uFF0C\u52A0\u4E00\u4E2A\u4EA7\u54C1\u8981\u6539\u6240\u6709\u67E5\u8BE2 |",
+    "",
+    `\u6E20\u9053\u4E0D\u5199\u8FDB\u6D41\u6C34\u884C\u2014\u2014\u5B83\u5C5E\u4E8E\u8FD9\u4E2A\u4EBA\u4E0D\u5C5E\u4E8E\u6BCF\u4E00\u7B14\uFF0C\u5199\u5728 frontmatter \u7684 \`${FIELDS.source}\` \u91CC\u5C31\u591F\u4E86\u3002\u4E5F**\u4E0D\u8BBE\u300C\u4ED8\u8D39\u6B21\u6570\u300D\u300C\u7D2F\u8BA1\u91D1\u989D\u300D\u5B57\u6BB5**\uFF1A\u6570\u884C\u6570\u5C31\u662F\u6B21\u6570\uFF0C\u6C42\u548C\u5C31\u662F\u7D2F\u8BA1\uFF0C\u624B\u5DE5\u7EF4\u62A4\u7684\u8BA1\u6570\u8FDF\u65E9\u548C\u6D41\u6C34\u5BF9\u4E0D\u4E0A\uFF0C\u800C\u5BF9\u4E0D\u4E0A\u7684\u90A3\u5929\u4F60\u4E0D\u4F1A\u53D1\u73B0\u3002`,
+    "",
+    "## \u4E00\u6761\u6CD5\uFF0C\u4E24\u7C7B\u6863\u6848\u90FD\u5B88",
+    "",
+    "**\u65E5\u5E38\u53D1\u751F\u7684\u4E8B\u53EA\u5199\u4E00\u5904\uFF1A\u5F53\u5929\u65E5\u8BB0\uFF0C\u53E5\u5B50\u91CC\u5E26 `[[\u5BA2\u6237\u540D]]`\u3002** \u5BA2\u6237\u6863\u6848\u7684\u300C\u5173\u952E\u4E8B\u4EF6\u300D\u548C\u300C\u5F85\u529E\u300D\u4F1A\u81EA\u5DF1\u628A\u5B83\u4EEC\u68C0\u7D22\u8FC7\u6765\uFF0C\u548C\u4EBA\u8109\u6863\u6848\u5B8C\u5168\u540C\u4E00\u5957\u673A\u5236\u3002\u6240\u4EE5\u5BA2\u6237\u6863\u6848\u91CC\u6CA1\u6709\u624B\u5199\u7684\u300C\u4ED6\u7684\u95EE\u9898\u300D\u300C\u4EA4\u4ED8\u8BB0\u5F55\u300D\u5C0F\u8282\u2014\u2014**\u4F60\u4E0D\u7528\u7EF4\u62A4\u4EFB\u4F55\u4E00\u4EFD\u6863\u6848\u7684\u6B63\u6587**\u3002",
+    "",
+    `## \`${FIELDS.client}\` \u4E0E \`${FIELDS.with}\` \u4E0D\u80FD\u4E92\u6362`,
+    "",
+    `\`${FIELDS.client}\` \u662F**\u5546\u4E1A\u5951\u7EA6\u6807\u8BB0**\uFF0C\u5199\u4E0B\u5B83\u7B49\u4E8E\u5BA3\u544A\u300C\u6211\u6B20\u8FD9\u4E2A\u4EBA\u4E00\u4E2A\u4EA4\u4ED8\u300D\u3002\u4E09\u5F20\u670D\u52A1\u533A\u7684\u8868\u5168\u9760\u5B83\u8FC7\u6EE4\uFF0C\u300C\u670D\u52A1\u5BA2\u6237\u300D\u66F4\u662F\u76F4\u63A5\u7528\u5B83\u53CD\u63A8\u8EAB\u4EFD\u2014\u2014**\u7ED9\u8C01\u5E72\u8FC7\u6D3B\u8C01\u5C31\u662F\u5BA2\u6237**\u3002\u6240\u4EE5\u670B\u53CB\u4E00\u8D77\u505A\u7684\u4E8B\u5FC5\u987B\u8D70 \`${FIELDS.with}\`\uFF0C\u5426\u5219\u670B\u53CB\u4F1A\u88AB\u65E0\u58F0\u6CE8\u518C\u6210\u5BA2\u6237\u3001\u9879\u76EE\u4F1A\u6302\u8FDB\u300C\u6211\u8FD8\u6B20\u8C01\u7684\u4EA4\u4ED8\u300D\u3001\u7ED3\u6848\u540E\u8FD8\u4F1A\u6C61\u67D3\u6848\u4F8B\u5E93\u7684\u9009\u9898\u7EDF\u8BA1\u3002`,
+    ""
+  ].join("\n");
+}
+
+// src/modules/contacts/client.ts
+var ILLEGAL_NAME = /[\\/:*?"<>|#^[\]]/;
+var MESSAGES = {
+  setupDone: "\u5BA2\u6237\u6A21\u5757\u5DF2\u5C31\u7EEA \u2705",
+  namePrompt: "\u600E\u4E48\u79F0\u547C\u4ED6\uFF1F\uFF08\u6863\u6848\u5C31\u7528\u5B83\u547D\u540D\uFF09",
+  namePlaceholder: "\u4F8B\u5982\uFF1A\u738B\u4E94",
+  illegalName: '\u79F0\u547C\u91CC\u4E0D\u80FD\u6709 \\ / : * ? " < > | # ^ [ ] \u8FD9\u4E9B\u5B57\u7B26\u3002',
+  sourcePrompt: "\u4ED6\u4ECE\u54EA\u4E2A\u6E20\u9053\u6765\uFF1F",
+  contactPrompt: "\u8054\u7CFB\u65B9\u5F0F\uFF08\u5FAE\u4FE1\u53F7\u3001\u624B\u673A\u53F7\u3001\u5E73\u53F0\u8D26\u53F7\u90FD\u884C\uFF09",
+  productPrompt: "\u4ED6\u4E70\u7684\u662F\u4EC0\u4E48\uFF1F",
+  amountPrompt: "\u591A\u5C11\u94B1\uFF1F\uFF08\u53EA\u586B\u6570\u5B57\uFF09",
+  amountInvalid: "\u91D1\u989D\u8981\u662F\u4E2A\u6570\u5B57\uFF0C\u8FD9\u7B14\u6CA1\u8BB0\u3002",
+  clientPrompt: "\u8FD9\u7B14\u4ED8\u8D39\u662F\u8C01\u7684\uFF1F",
+  projectPrompt: "\u8FD9\u7B14\u6536\u6B3E\u7B97\u54EA\u4E2A\u9879\u76EE\u7684\uFF1F",
+  noClients: "\u8FD8\u6CA1\u6709\u5BA2\u6237\u6863\u6848\u3002\u5148\u8FD0\u884C\u300C\u65B0\u5EFA\u5BA2\u6237\u300D\u5EFA\u4E00\u4E2A\u3002",
+  noProjects: `\u8FD8\u6CA1\u6709\u5BA2\u6237\u9879\u76EE\u3002\u5728\u9879\u76EE MOC \u7684\u5C5E\u6027\u91CC\u5199 \`${FIELDS.client}: "[[\u67D0\u4EBA]]"\` \u5C31\u7B97\u4E00\u4E2A\u3002`,
+  cancelled: "\u5DF2\u53D6\u6D88\u3002",
+  existsPrefix: "\u5DF2\u7ECF\u6709\u8FD9\u4EFD\u6863\u6848\u4E86\uFF0C\u76F4\u63A5\u6253\u5F00\uFF1A",
+  createdPrefix: "\u5BA2\u6237\u6863\u6848\u5DF2\u5EFA\u597D\uFF1A",
+  paidPrefix: "\u5DF2\u8BB0\u4E00\u7B14\u4ED8\u8D39\uFF1A",
+  receiptPrefix: "\u5DF2\u8BB0\u4E00\u7B14\u6536\u6B3E\uFF1A",
+  failedPrefix: "\u64CD\u4F5C\u5931\u8D25\uFF1A"
+};
+function clientSeed(ctx) {
+  const folder = normalizeFolderPath(ctx.settings.clientFolder, CLIENT_FOLDER);
+  const { stamp, uid } = nowStampAndUid(ctx.settings.dateTimeFormat);
   return {
-    stamp: now.format(normalizeDateTimeFormat(format)),
-    uid: now.format(UID_FORMAT)
+    folders: [folder],
+    notes: [
+      { path: TEMPLATE_FILES.client, content: clientTemplateFile() },
+      { path: `${folder}/${basenameOf(CLIENT_MOC)}.md`, content: clientMocContent(stamp, uid) }
+    ]
   };
 }
-function nowLocalDateTimeParts(format) {
-  const now = momentFactory();
+function registerClientCommands(ctx, applySeed2) {
+  ctx.plugin.addCommand({
+    id: CLIENT_COMMANDS.setup.id,
+    name: CLIENT_COMMANDS.setup.name,
+    callback: () => {
+      void setupClients(ctx, applySeed2);
+    }
+  });
+  ctx.plugin.addCommand({
+    id: CLIENT_COMMANDS.create.id,
+    name: CLIENT_COMMANDS.create.name,
+    callback: () => {
+      void createClient(ctx);
+    }
+  });
+  ctx.plugin.addCommand({
+    id: CLIENT_COMMANDS.payment.id,
+    name: CLIENT_COMMANDS.payment.name,
+    callback: () => {
+      void addPayment(ctx);
+    }
+  });
+  ctx.plugin.addCommand({
+    id: CLIENT_COMMANDS.receipt.id,
+    name: CLIENT_COMMANDS.receipt.name,
+    callback: () => {
+      void recordReceipt(ctx);
+    }
+  });
+}
+async function setupClients(ctx, applySeed2) {
+  try {
+    const folder = normalizeFolderPath(ctx.settings.clientFolder, CLIENT_FOLDER);
+    await applySeed2(clientSeed(ctx));
+    new import_obsidian6.Notice(MESSAGES.setupDone);
+    await ctx.app.workspace.openLinkText(`${folder}/${basenameOf(CLIENT_MOC)}.md`, "", false);
+  } catch (error) {
+    notifyFailure(error);
+  }
+}
+async function createClient(ctx) {
+  try {
+    const answer = await new TextInputModal(ctx.app, {
+      title: MESSAGES.namePrompt,
+      placeholder: MESSAGES.namePlaceholder
+    }).openAndGetValue();
+    const name = (answer != null ? answer : "").trim();
+    if (!name) {
+      new import_obsidian6.Notice(MESSAGES.cancelled);
+      return;
+    }
+    if (ILLEGAL_NAME.test(name)) {
+      new import_obsidian6.Notice(MESSAGES.illegalName);
+      return;
+    }
+    const source = await new ChoiceModal(ctx.app, {
+      title: MESSAGES.sourcePrompt,
+      items: optionsOf(ctx.settings.clientSources),
+      labelOf: (item) => item
+    }).openAndGetChoice();
+    if (!source) {
+      new import_obsidian6.Notice(MESSAGES.cancelled);
+      return;
+    }
+    const contact = await new TextInputModal(ctx.app, {
+      title: MESSAGES.contactPrompt
+    }).openAndGetValue();
+    if (contact === null) {
+      new import_obsidian6.Notice(MESSAGES.cancelled);
+      return;
+    }
+    const folder = normalizeFolderPath(ctx.settings.clientFolder, CLIENT_FOLDER);
+    const path = `${folder}/${name}.md`;
+    const existing = ctx.app.vault.getAbstractFileByPath(path);
+    if (existing instanceof import_obsidian6.TFile) {
+      new import_obsidian6.Notice(MESSAGES.existsPrefix + name);
+      await ctx.app.workspace.getLeaf(false).openFile(existing);
+      return;
+    }
+    const { stamp, uid } = nowStampAndUid(ctx.settings.dateTimeFormat);
+    const content = clientNoteContent({
+      created: stamp,
+      uid,
+      type: NOTE_TYPES.client,
+      source,
+      contact: contact.trim()
+    });
+    await ensureFolderPath(ctx.app, folder);
+    ctx.guard.mark(path);
+    const file = await ctx.app.vault.create(path, content);
+    new import_obsidian6.Notice(MESSAGES.createdPrefix + name);
+    await ctx.app.workspace.getLeaf(false).openFile(file);
+  } catch (error) {
+    notifyFailure(error);
+  }
+}
+async function addPayment(ctx) {
+  try {
+    const clients = liveNotesOfType(ctx, NOTE_TYPES.client);
+    if (!clients.length) {
+      new import_obsidian6.Notice(MESSAGES.noClients);
+      return;
+    }
+    const client = await new ChoiceModal(ctx.app, {
+      title: MESSAGES.clientPrompt,
+      items: clients,
+      labelOf: (file) => {
+        const hint = descriptionOf(ctx, file);
+        return hint ? `${file.basename}\u3000\u2014\u3000${hint}` : file.basename;
+      }
+    }).openAndGetChoice();
+    if (!client) {
+      new import_obsidian6.Notice(MESSAGES.cancelled);
+      return;
+    }
+    const product = await new ChoiceModal(ctx.app, {
+      title: MESSAGES.productPrompt,
+      items: optionsOf(ctx.settings.clientProducts),
+      labelOf: (item) => item
+    }).openAndGetChoice();
+    if (!product) {
+      new import_obsidian6.Notice(MESSAGES.cancelled);
+      return;
+    }
+    const amount = await askAmount(ctx);
+    if (amount === null) return;
+    const line = `- [ ] [${PAYMENT_FIELDS.product}::${product}] [${PAYMENT_FIELDS.amount}::${amount}] [${PAYMENT_FIELDS.date}::${today()}]`;
+    ctx.guard.mark(client.path);
+    await ctx.app.vault.process(
+      client,
+      (content) => insertIntoSection(content, CLIENT_PAYMENT_HEADING, line)
+    );
+    new import_obsidian6.Notice(`${MESSAGES.paidPrefix}${client.basename} \xB7 ${product} \xB7 ${amount}`);
+  } catch (error) {
+    notifyFailure(error);
+  }
+}
+async function recordReceipt(ctx) {
+  try {
+    const projects = clientProjects2(ctx);
+    if (!projects.length) {
+      new import_obsidian6.Notice(MESSAGES.noProjects);
+      return;
+    }
+    const project = await new ChoiceModal(ctx.app, {
+      title: MESSAGES.projectPrompt,
+      items: projects,
+      labelOf: (file) => file.basename
+    }).openAndGetChoice();
+    if (!project) {
+      new import_obsidian6.Notice(MESSAGES.cancelled);
+      return;
+    }
+    const amount = await askAmount(ctx);
+    if (amount === null) return;
+    const line = `- [ ] [${PAYMENT_FIELDS.amount}::${amount}] [${PAYMENT_FIELDS.date}::${today()}]`;
+    ctx.guard.mark(project.path);
+    await ctx.app.vault.process(
+      project,
+      (content) => insertIntoSection(content, PROJECT_PAYMENT_HEADING, line)
+    );
+    new import_obsidian6.Notice(`${MESSAGES.receiptPrefix}${project.basename} \xB7 ${amount}`);
+  } catch (error) {
+    notifyFailure(error);
+  }
+}
+function clientProjects2(ctx) {
+  var _a, _b, _c;
+  const found = [];
+  for (const file of ctx.app.vault.getMarkdownFiles()) {
+    const frontmatter = (_a = ctx.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter;
+    if (String((_b = frontmatter == null ? void 0 : frontmatter[FIELDS.type]) != null ? _b : "").trim() !== NOTE_TYPES.project) continue;
+    if (!extractLinks(String((_c = frontmatter == null ? void 0 : frontmatter[FIELDS.client]) != null ? _c : "")).length) continue;
+    found.push(file);
+  }
+  return found.sort((left, right) => left.basename.localeCompare(right.basename, "zh"));
+}
+async function askAmount(ctx) {
+  const answer = await new TextInputModal(ctx.app, {
+    title: MESSAGES.amountPrompt,
+    placeholder: "\u4F8B\u5982\uFF1A365"
+  }).openAndGetValue();
+  if (answer === null) {
+    new import_obsidian6.Notice(MESSAGES.cancelled);
+    return null;
+  }
+  const amount = Number(answer.trim());
+  if (!Number.isFinite(amount) || amount <= 0) {
+    new import_obsidian6.Notice(MESSAGES.amountInvalid);
+    return null;
+  }
+  return amount;
+}
+function optionsOf(raw) {
+  return raw.split(/[,，]/).map((item) => item.trim()).filter(Boolean);
+}
+function notifyFailure(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  new import_obsidian6.Notice(MESSAGES.failedPrefix + message);
+}
+
+// src/modules/contacts/createContact.ts
+var import_obsidian7 = require("obsidian");
+var ILLEGAL_NAME2 = /[\\/:*?"<>|#^[\]]/;
+var MESSAGES2 = {
+  namePrompt: "\u8FD9\u4E2A\u4EBA\u53EB\u4EC0\u4E48\uFF1F\uFF08\u771F\u540D\uFF0C\u6863\u6848\u5C31\u7528\u5B83\u547D\u540D\uFF09",
+  namePlaceholder: "\u4F8B\u5982\uFF1A\u5F20\u4E09",
+  cancelled: "\u5DF2\u53D6\u6D88\uFF0C\u6CA1\u6709\u5EFA\u6863\u3002",
+  illegalName: '\u59D3\u540D\u91CC\u4E0D\u80FD\u6709 \\ / : * ? " < > | # ^ [ ] \u8FD9\u4E9B\u5B57\u7B26\u3002',
+  tierPrompt: "\u591A\u4E45\u8BE5\u8DDF\u4ED6\u8BF4\u53E5\u8BDD\uFF1F",
+  directionPrompt: "\u8FD9\u6BB5\u5173\u7CFB\u5F80\u54EA\u4E2A\u65B9\u5411\u4F7F\u52B2\uFF1F",
+  existsPrefix: "\u5DF2\u7ECF\u6709\u8FD9\u4EFD\u6863\u6848\u4E86\uFF0C\u76F4\u63A5\u6253\u5F00\uFF1A",
+  donePrefix: "\u6863\u6848\u5DF2\u5EFA\u597D\uFF1A",
+  failedPrefix: "\u5EFA\u6863\u5931\u8D25\uFF1A"
+};
+var TIER_HINTS = {
+  \u5BC6: "\u6BCF\u5468\u8BF4\u53E5\u8BDD",
+  \u8FD1: "\u6BCF\u6708\u8BF4\u53E5\u8BDD",
+  \u719F: "\u6BCF\u5B63\u8BF4\u53E5\u8BDD",
+  \u8FDC: "\u6BCF\u5E74\u8BF4\u53E5\u8BDD"
+};
+var DIRECTION_HINTS = {
+  \u5411\u4E0A: "\u8981\u7528\u5FC3\u7EF4\u62A4",
+  \u5E73\u884C: "\u4E92\u76F8\u642D\u628A\u624B",
+  \u5411\u4E0B: "\u7ED9\u673A\u4F1A\uFF0C\u7ED3\u5584\u7F18"
+};
+function registerCreateContactCommand(ctx) {
+  ctx.plugin.addCommand({
+    id: CONTACT_COMMANDS.create.id,
+    name: CONTACT_COMMANDS.create.name,
+    callback: () => {
+      void createContact(ctx);
+    }
+  });
+}
+async function createContact(ctx) {
+  try {
+    const answer = await new TextInputModal(ctx.app, {
+      title: MESSAGES2.namePrompt,
+      placeholder: MESSAGES2.namePlaceholder
+    }).openAndGetValue();
+    const name = (answer != null ? answer : "").trim();
+    if (!name) {
+      new import_obsidian7.Notice(MESSAGES2.cancelled);
+      return;
+    }
+    if (ILLEGAL_NAME2.test(name)) {
+      new import_obsidian7.Notice(MESSAGES2.illegalName);
+      return;
+    }
+    const tier = await new ChoiceModal(ctx.app, {
+      title: MESSAGES2.tierPrompt,
+      items: CONTACT_TIERS,
+      labelOf: (item) => {
+        var _a;
+        return `${item}\u3000\u2014\u3000${(_a = TIER_HINTS[item]) != null ? _a : ""}`;
+      }
+    }).openAndGetChoice();
+    if (!tier) {
+      new import_obsidian7.Notice(MESSAGES2.cancelled);
+      return;
+    }
+    const direction = await new ChoiceModal(ctx.app, {
+      title: MESSAGES2.directionPrompt,
+      items: CONTACT_DIRECTIONS,
+      labelOf: (item) => {
+        var _a;
+        return `${item}\u3000\u2014\u3000${(_a = DIRECTION_HINTS[item]) != null ? _a : ""}`;
+      }
+    }).openAndGetChoice();
+    if (!direction) {
+      new import_obsidian7.Notice(MESSAGES2.cancelled);
+      return;
+    }
+    const folder = normalizeFolderPath(ctx.settings.contactFolder, CONTACT_FOLDER);
+    const path = `${folder}/${name}.md`;
+    const existing = ctx.app.vault.getAbstractFileByPath(path);
+    if (existing instanceof import_obsidian7.TFile) {
+      new import_obsidian7.Notice(MESSAGES2.existsPrefix + name);
+      await ctx.app.workspace.getLeaf(false).openFile(existing);
+      return;
+    }
+    const { stamp, uid } = nowStampAndUid(ctx.settings.dateTimeFormat);
+    const content = personNoteContent({
+      created: stamp,
+      uid,
+      type: NOTE_TYPES.person,
+      up: `[[${basenameOf(CONTACT_MOC)}]]`,
+      tier,
+      direction
+    });
+    await ensureFolderPath(ctx.app, folder);
+    ctx.guard.mark(path);
+    const file = await ctx.app.vault.create(path, content);
+    new import_obsidian7.Notice(MESSAGES2.donePrefix + name);
+    await ctx.app.workspace.getLeaf(false).openFile(file);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    new import_obsidian7.Notice(MESSAGES2.failedPrefix + message);
+  }
+}
+
+// src/modules/contacts/personViews.ts
+var MAX_ROWS = 20;
+var relatedProjects = {
+  name: "\u76F8\u5173\u9879\u76EE",
+  render: async (view) => {
+    var _a, _b;
+    if (!view.host) {
+      renderEmpty(view.el, "\u8FD9\u4E2A\u89C6\u56FE\u8981\u957F\u5728\u4EBA\u7269\u6863\u6848\u4E0A\u624D\u6709\u5185\u5BB9\u3002");
+      return;
+    }
+    const rows = [];
+    for (const project of view.index.notesOfType(NOTE_TYPES.project)) {
+      const relation = relationOf(view, project, view.host);
+      if (!relation) continue;
+      const status = toText(view.index.fieldOf(project, FIELDS.status));
+      rows.push([noteLink(project), relation, (_b = (_a = STATUS_LABELS[status]) != null ? _a : status) != null ? _b : "\u2014"]);
+    }
+    if (!rows.length) {
+      renderEmpty(
+        view.el,
+        `\u8FD8\u6CA1\u6709\u548C\u4ED6\u76F8\u5173\u7684\u9879\u76EE\u3002\u5728\u9879\u76EE MOC \u7684\u5C5E\u6027\u91CC\u5199 \`${FIELDS.client}: "[[${view.host.basename}]]"\`\uFF08\u4ED6\u59D4\u6258\u7684\uFF09\u6216 \`${FIELDS.with}\`\uFF08\u4E00\u8D77\u505A\u7684\uFF09\u3002`
+      );
+      return;
+    }
+    renderTable(view.ctx.app, view.el, view.sourcePath, ["\u9879\u76EE", "\u5173\u7CFB", "\u72B6\u6001"], rows);
+  }
+};
+function relationOf(view, project, person) {
+  if (fieldPointsTo(view, project, FIELDS.client, person)) return "\u59D4\u6258";
+  if (fieldPointsTo(view, project, FIELDS.with, person)) return "\u540C\u884C";
+  return null;
+}
+function fieldPointsTo(view, note, field, target) {
+  var _a;
+  const raw = view.index.fieldOf(note, field);
+  const values = Array.isArray(raw) ? raw : [raw];
+  for (const value of values) {
+    for (const link of extractLinks(String(value != null ? value : ""))) {
+      if (((_a = view.index.resolve(link, note.path)) == null ? void 0 : _a.path) === target.path) return true;
+    }
+  }
+  return false;
+}
+var personLedger = {
+  name: "\u4EBA\u60C5\u8D26\u672C",
+  render: async (view) => {
+    const host = view.host;
+    if (!host) {
+      renderEmpty(view.el, "\u8FD9\u4E2A\u89C6\u56FE\u8981\u957F\u5728\u4EBA\u7269\u6863\u6848\u4E0A\u624D\u6709\u5185\u5BB9\u3002");
+      return;
+    }
+    const entries = await collectLedger(view, (owner) => owner.path === host.path);
+    if (!entries.length) {
+      renderEmpty(
+        view.el,
+        `\u8FD8\u6CA1\u6709\u8D26\u3002\u547D\u4EE4\u9762\u677F\u8FD0\u884C\u300C\u8BB0\u4EBA\u60C5\u300D\uFF0C\u6216\u5728\u5F53\u5929\u65E5\u8BB0\u91CC\u5199\u4E00\u884C\uFF1A\`- [[${host.basename}]]\uFF5C\u53BB\uFF5C\u4E8B\u9879\uFF5C\u4E24\u6E05\``
+      );
+      return;
+    }
+    renderTable(
+      view.ctx.app,
+      view.el,
+      view.sourcePath,
+      ["\u65E5\u671F", "\u53BB/\u6765", "\u4E8B\u9879", "\u72B6\u6001"],
+      entries.map((entry) => [
+        noteLink(entry.diary, entry.day),
+        entry.kind,
+        entry.item,
+        entry.legal ? entry.status : `\u26A0\uFE0F ${entry.status}`
+      ])
+    );
+  }
+};
+var keyEvents = {
+  name: "\u5173\u952E\u4E8B\u4EF6",
+  render: async (view) => {
+    const host = view.host;
+    if (!host) {
+      renderEmpty(view.el, "\u8FD9\u4E2A\u89C6\u56FE\u8981\u957F\u5728\u4EBA\u7269\u6863\u6848\u4E0A\u624D\u6709\u5185\u5BB9\u3002");
+      return;
+    }
+    const rows = [];
+    let total = 0;
+    for (const source of mentionSources(view, host)) {
+      for (const line of await view.index.listLinesOf(source.file)) {
+        if (line.isTask || isLedgerLine(line)) continue;
+        if (!mentions(view, line, source.file.path, host)) continue;
+        total += 1;
+        if (rows.length < MAX_ROWS) rows.push([noteLink(source.file, source.day), line.text]);
+      }
+    }
+    if (!rows.length) {
+      renderEmpty(
+        view.el,
+        `\u8FD8\u6CA1\u6709\u548C\u4ED6\u6709\u5173\u7684\u4E8B\u3002\u5728\u5F53\u5929\u65E5\u8BB0\u91CC\u5199\u4E00\u884C\u63D0\u5230 \`[[${host.basename}]]\`\uFF0C\u8FD9\u91CC\u5C31\u4F1A\u957F\u51FA\u6765\u3002`
+      );
+      return;
+    }
+    renderTable(view.ctx.app, view.el, view.sourcePath, ["\u65E5\u671F", "\u53D1\u751F\u4E86\u4EC0\u4E48"], rows);
+    if (total > rows.length) renderNote(view.el, `\u2026\u53E6\u6709 ${total - rows.length} \u6761\u66F4\u65E9\u7684\u8BB0\u5F55`);
+  }
+};
+var openTasks = {
+  name: "\u5F85\u529E",
+  render: async (view) => {
+    const host = view.host;
+    if (!host) {
+      renderEmpty(view.el, "\u8FD9\u4E2A\u89C6\u56FE\u8981\u957F\u5728\u4EBA\u7269\u6863\u6848\u4E0A\u624D\u6709\u5185\u5BB9\u3002");
+      return;
+    }
+    const rows = [];
+    let done = 0;
+    for (const source of mentionSources(view, host)) {
+      for (const line of await view.index.listLinesOf(source.file)) {
+        if (!line.isTask) continue;
+        if (!mentions(view, line, source.file.path, host)) continue;
+        if (line.checked) done += 1;
+        else rows.push([noteLink(source.file, source.day), line.text]);
+      }
+    }
+    if (!rows.length) {
+      renderEmpty(
+        view.el,
+        done ? `\u8DDF\u4ED6\u6709\u5173\u7684\u4E8B\u90FD\u529E\u5B8C\u4E86\uFF08\u5DF2\u5B8C\u6210 ${done} \u4EF6\uFF09\u3002` : `\u6CA1\u6709\u5F85\u529E\u3002\u9700\u8981\u8DDF\u8FDB\u7684\u5171\u8BC6\u5199\u6210\u4EFB\u52A1\u884C\uFF1A\`- [ ] \u51FA\u65B9\u6848\u7ED9 [[${host.basename}]]\``
+      );
+      return;
+    }
+    renderSummary(view.el, `\u8FD8\u6B20 **${rows.length}** \u4EF6\u4E8B${done ? `\uFF08\u5DF2\u5B8C\u6210 ${done} \u4EF6\uFF09` : ""}`);
+    renderTable(view.ctx.app, view.el, view.sourcePath, ["\u65E5\u671F", "\u5F85\u529E"], rows);
+  }
+};
+function mentionSources(view, host) {
+  const sources = [];
+  for (const file of view.index.backlinksOf(host)) {
+    const day = dayOfTitle(file.basename);
+    if (!day) continue;
+    const type = toText(view.index.fieldOf(file, FIELDS.type));
+    if (type === NOTE_TYPES.person || type === NOTE_TYPES.client) continue;
+    sources.push({ file, day });
+  }
+  return sources.sort((left, right) => right.day.localeCompare(left.day));
+}
+var personViews = [
+  relatedProjects,
+  personLedger,
+  keyEvents,
+  openTasks
+];
+
+// src/modules/contacts/recordFavor.ts
+var import_obsidian8 = require("obsidian");
+var MESSAGES3 = {
+  noContacts: "\u8FD8\u6CA1\u6709\u4EFB\u4F55\u6863\u6848\u3002\u5148\u8FD0\u884C\u300C\u65B0\u5EFA\u4EBA\u8109\u300D\u5EFA\u4E00\u4E2A\uFF0C\u518D\u6765\u8BB0\u8D26\u3002",
+  personPrompt: "\u8FD9\u7B14\u4EBA\u60C5\uFF0C\u662F\u8DDF\u8C01\uFF1F",
+  kindPrompt: "\u4EBA\u60C5\u5F80\u54EA\u4E2A\u65B9\u5411\u8D70\uFF1F",
+  itemPrompt: "\u4EC0\u4E48\u4E8B\uFF1F\uFF08\u4E00\u53E5\u8BDD\uFF09",
+  itemPlaceholder: "\u4F8B\u5982\uFF1A\u9001\u4E86\u534A\u65A4\u751F\u666E",
+  statusPrompt: "\u73B0\u5728\u7B97\u6E05\u4E86\u5417\uFF1F",
+  cancelled: "\u5DF2\u53D6\u6D88\uFF0C\u6CA1\u6709\u8BB0\u8D26\u3002",
+  noDiary: "\u62FF\u4E0D\u5230\u4ECA\u5929\u7684\u65E5\u8BB0\uFF0C\u6CA1\u6709\u8BB0\u8D26\u3002",
+  donePrefix: "\u5DF2\u8BB0\u8FDB\u4ECA\u5929\u7684\u65E5\u8BB0\uFF1A",
+  failedPrefix: "\u8BB0\u4EBA\u60C5\u5931\u8D25\uFF1A"
+};
+var KIND_HINTS = {
+  \u53BB: "\u6211\u7ED9\u51FA\u53BB\u7684\uFF08\u9001\u793C\u3001\u5E2E\u5FD9\u3001\u8BF7\u5BA2\uFF09",
+  \u6765: "\u6211\u6536\u5230\u7684\uFF08\u6536\u793C\u3001\u88AB\u5E2E\u3001\u88AB\u8BF7\uFF09"
+};
+var STATUS_HINTS = {
+  \u4E24\u6E05: "\u8FD9\u7B14\u4E0D\u7528\u8BB0\u6302\u4E86",
+  \u6211\u6B20: "\u6211\u8FD8\u6B20\u4ED6\u4E00\u4EFD",
+  \u4ED6\u6B20: "\u4ED6\u8FD8\u6B20\u6211\u4E00\u4EFD"
+};
+function registerRecordFavorCommand(ctx, openDaily) {
+  ctx.plugin.addCommand({
+    id: CONTACT_COMMANDS.favor.id,
+    name: CONTACT_COMMANDS.favor.name,
+    callback: () => {
+      void recordFavor(ctx, openDaily);
+    }
+  });
+}
+async function recordFavor(ctx, openDaily) {
+  try {
+    const candidates = [
+      ...liveNotesOfType(ctx, NOTE_TYPES.person),
+      ...liveNotesOfType(ctx, NOTE_TYPES.client)
+    ];
+    if (!candidates.length) {
+      new import_obsidian8.Notice(MESSAGES3.noContacts);
+      return;
+    }
+    const person = await new ChoiceModal(ctx.app, {
+      title: MESSAGES3.personPrompt,
+      items: candidates,
+      labelOf: (file) => {
+        const hint = descriptionOf(ctx, file);
+        return hint ? `${file.basename}\u3000\u2014\u3000${hint}` : file.basename;
+      }
+    }).openAndGetChoice();
+    if (!person) {
+      new import_obsidian8.Notice(MESSAGES3.cancelled);
+      return;
+    }
+    const kind = await new ChoiceModal(ctx.app, {
+      title: MESSAGES3.kindPrompt,
+      items: LEDGER.kinds,
+      labelOf: (item2) => {
+        var _a;
+        return `${item2}\u3000\u2014\u3000${(_a = KIND_HINTS[item2]) != null ? _a : ""}`;
+      }
+    }).openAndGetChoice();
+    if (!kind) {
+      new import_obsidian8.Notice(MESSAGES3.cancelled);
+      return;
+    }
+    const answer = await new TextInputModal(ctx.app, {
+      title: MESSAGES3.itemPrompt,
+      placeholder: MESSAGES3.itemPlaceholder
+    }).openAndGetValue();
+    const item = cleanItem(answer != null ? answer : "");
+    if (!item) {
+      new import_obsidian8.Notice(MESSAGES3.cancelled);
+      return;
+    }
+    const status = await new ChoiceModal(ctx.app, {
+      title: MESSAGES3.statusPrompt,
+      items: LEDGER.statuses,
+      labelOf: (value) => {
+        var _a;
+        return `${value}\u3000\u2014\u3000${(_a = STATUS_HINTS[value]) != null ? _a : ""}`;
+      }
+    }).openAndGetChoice();
+    if (!status) {
+      new import_obsidian8.Notice(MESSAGES3.cancelled);
+      return;
+    }
+    const diary = await openDaily();
+    if (!diary) {
+      new import_obsidian8.Notice(MESSAGES3.noDiary);
+      return;
+    }
+    const line = ledgerLine(person.basename, kind, item, status);
+    ctx.guard.mark(diary.path);
+    await ctx.app.vault.process(
+      diary,
+      (content) => insertIntoSection(content, DIARY_LOG_HEADING, line)
+    );
+    new import_obsidian8.Notice(MESSAGES3.donePrefix + line);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    new import_obsidian8.Notice(MESSAGES3.failedPrefix + message);
+  }
+}
+function cleanItem(raw) {
+  return raw.replace(/\s+/g, " ").split(LEDGER.separator).join("|").trim();
+}
+function ledgerLine(name, kind, item, status) {
+  const segments = [`[[${name}]]`, kind, item];
+  if (status !== LEDGER.defaultStatus) segments.push(status);
+  return `- ${segments.join(LEDGER.separator)}`;
+}
+
+// src/modules/contacts/seed.ts
+function contactsSeed(ctx) {
+  const folder = normalizeFolderPath(ctx.settings.contactFolder, CONTACT_FOLDER);
+  const { stamp, uid } = nowStampAndUid(ctx.settings.dateTimeFormat);
   return {
-    date: now.format("YYYY-MM-DD"),
-    time: now.format("HH:mm"),
-    datetime: now.format(normalizeDateTimeFormat(format))
+    folders: [folder],
+    notes: [
+      { path: TEMPLATE_FILES.person, content: personTemplateFile() },
+      { path: `${folder}/${basenameOf(CONTACT_MOC)}.md`, content: contactMocContent(stamp, uid) }
+    ]
   };
 }
+
+// src/modules/inspiration/capture.ts
+var import_obsidian9 = require("obsidian");
 
 // src/modules/inspiration/templates.ts
 var TEMPLATE_TOKENS = {
@@ -504,14 +2783,14 @@ async function captureInspiration(ctx) {
     }).openAndGetValue();
     const inspiration = normalizeInspiration(input);
     if (!inspiration) {
-      new import_obsidian4.Notice("\u672A\u8F93\u5165\u5185\u5BB9\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
+      new import_obsidian9.Notice("\u672A\u8F93\u5165\u5185\u5BB9\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
       return;
     }
     const target = resolveInspirationTarget(ctx);
     const timeParts = nowLocalDateTimeParts(ctx.settings.dateTimeFormat);
     const entry = renderInspirationEntry(target.format, inspiration, timeParts);
     let targetEntry = ctx.app.vault.getAbstractFileByPath(target.path);
-    if (targetEntry instanceof import_obsidian4.TFolder) {
+    if (targetEntry instanceof import_obsidian9.TFolder) {
       throw new Error(`\u76EE\u6807\u8DEF\u5F84\u662F\u6587\u4EF6\u5939\uFF0C\u65E0\u6CD5\u5199\u5165\uFF1A${target.path}`);
     }
     if (!targetEntry) {
@@ -522,7 +2801,7 @@ async function captureInspiration(ctx) {
         buildInitialInspirationContent(entry, target.heading, target.path)
       );
     } else {
-      if (!(targetEntry instanceof import_obsidian4.TFile) || targetEntry.extension.toLowerCase() !== "md") {
+      if (!(targetEntry instanceof import_obsidian9.TFile) || targetEntry.extension.toLowerCase() !== "md") {
         throw new Error(`\u76EE\u6807\u8DEF\u5F84\u4E0D\u662F Markdown \u6587\u4EF6\uFF1A${target.path}`);
       }
       await ctx.app.vault.process(targetEntry, (content) => {
@@ -537,16 +2816,16 @@ async function captureInspiration(ctx) {
         return updatedContent;
       });
     }
-    new import_obsidian4.Notice(`\u5DF2\u8BB0\u5F55\u7075\u611F\uFF1A${inspiration}`);
+    new import_obsidian9.Notice(`\u5DF2\u8BB0\u5F55\u7075\u611F\uFF1A${inspiration}`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian4.Notice(`\u8BB0\u5F55\u7075\u611F\u5931\u8D25\uFF1A${message}`);
+    new import_obsidian9.Notice(`\u8BB0\u5F55\u7075\u611F\u5931\u8D25\uFF1A${message}`);
   }
 }
 function resolveInspirationTarget(ctx) {
   const folder = normalizeFolderPath(ctx.settings.inspirationFolder, INSPIRATION_DEFAULTS.folder);
   const fileName = normalizeInspirationFileName(ctx.settings.inspirationFileName);
-  const path = (0, import_obsidian4.normalizePath)(folder ? `${folder}/${fileName}` : fileName);
+  const path = (0, import_obsidian9.normalizePath)(folder ? `${folder}/${fileName}` : fileName);
   if (folder.split("/").some((part) => part === "." || part === "..")) {
     throw new Error("\u7075\u611F\u6587\u4EF6\u5939\u4E0D\u80FD\u5305\u542B . \u6216 .. \u8DEF\u5F84\u6BB5\u3002");
   }
@@ -572,7 +2851,7 @@ function normalizeInsertPosition(value) {
 }
 
 // src/modules/projects/cardInit.ts
-var import_obsidian5 = require("obsidian");
+var import_obsidian10 = require("obsidian");
 
 // src/core/frontmatter.ts
 function hasValue(value) {
@@ -629,7 +2908,7 @@ function resolveRoots(settings) {
   );
 }
 function getCardContext(filePath, roots) {
-  const normalizedFilePath = (0, import_obsidian5.normalizePath)(filePath);
+  const normalizedFilePath = (0, import_obsidian10.normalizePath)(filePath);
   for (const root of roots) {
     const prefix = `${root.path}/`;
     if (!normalizedFilePath.startsWith(prefix)) continue;
@@ -637,7 +2916,7 @@ function getCardContext(filePath, roots) {
     const pathParts = relativePath.split("/").filter(Boolean);
     if (pathParts.length < 2) return null;
     const containerName = pathParts[0];
-    const mocPath = (0, import_obsidian5.normalizePath)(`${root.path}/${containerName}/${containerName}.md`);
+    const mocPath = (0, import_obsidian10.normalizePath)(`${root.path}/${containerName}/${containerName}.md`);
     if (normalizedFilePath === mocPath) return null;
     return {
       kind: root.kind,
@@ -691,7 +2970,7 @@ async function initCard(ctx, file, opts) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian5.Notice(`\u5361\u7247\u7B14\u8BB0\u521D\u59CB\u5316\u5931\u8D25\uFF1A${message}`);
+    new import_obsidian10.Notice(`\u5361\u7247\u7B14\u8BB0\u521D\u59CB\u5316\u5931\u8D25\uFF1A${message}`);
     throw error;
   }
 }
@@ -712,7 +2991,7 @@ function registerCardAutoInit(ctx) {
     ctx.plugin.registerEvent(
       ctx.app.vault.on("create", (file) => {
         if (!ctx.settings.autoCardInit) return;
-        if (!(file instanceof import_obsidian5.TFile) || file.extension !== "md") return;
+        if (!(file instanceof import_obsidian10.TFile) || file.extension !== "md") return;
         if (ctx.guard.isRecent(file.path)) return;
         if (!getCardContext(file.path, resolveRoots(ctx.settings))) return;
         if (file.stat.size !== 0) return;
@@ -724,7 +3003,7 @@ function registerCardAutoInit(ctx) {
 }
 
 // src/modules/projects/createProject.ts
-var import_obsidian6 = require("obsidian");
+var import_obsidian11 = require("obsidian");
 
 // src/modules/projects/templates.ts
 var MOC_FIELDS = [
@@ -853,29 +3132,29 @@ async function createProject(ctx, preset) {
       title: "\u8BF7\u8F93\u5165\u65B0\u5EFA\u9879\u76EE\u7684\u540D\u79F0"
     }).openAndGetValue();
     if (projectNameInput === null || !projectNameInput.trim()) {
-      new import_obsidian6.Notice("\u672A\u8F93\u5165\u9879\u76EE\u540D\u79F0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
+      new import_obsidian11.Notice("\u672A\u8F93\u5165\u9879\u76EE\u540D\u79F0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
       return null;
     }
     const projectName = projectNameInput.trim();
     if (/[\\/]/.test(projectName)) {
-      new import_obsidian6.Notice("\u9879\u76EE\u540D\u79F0\u4E0D\u80FD\u5305\u542B\u659C\u6760\u6216\u53CD\u659C\u6760\u3002");
+      new import_obsidian11.Notice("\u9879\u76EE\u540D\u79F0\u4E0D\u80FD\u5305\u542B\u659C\u6760\u6216\u53CD\u659C\u6760\u3002");
       return null;
     }
     const descriptionInput = preset ? preset.description : await new TextInputModal(app, {
       title: "\u8BF7\u8F93\u5165\u9879\u76EE\u6982\u8FF0"
     }).openAndGetValue();
     if (descriptionInput === null) {
-      new import_obsidian6.Notice("\u5DF2\u53D6\u6D88\u8F93\u5165\u9879\u76EE\u6982\u8FF0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
+      new import_obsidian11.Notice("\u5DF2\u53D6\u6D88\u8F93\u5165\u9879\u76EE\u6982\u8FF0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
       return null;
     }
     const description = descriptionInput.trim();
-    const projectFolderPath = (0, import_obsidian6.normalizePath)(`${baseFolder}/${projectName}`);
-    const mocFilePath = (0, import_obsidian6.normalizePath)(`${projectFolderPath}/${projectName}.md`);
+    const projectFolderPath = (0, import_obsidian11.normalizePath)(`${baseFolder}/${projectName}`);
+    const mocFilePath = (0, import_obsidian11.normalizePath)(`${projectFolderPath}/${projectName}.md`);
     await ensureFolderPath(app, baseFolder);
     await ensureFolderPath(app, projectFolderPath);
     const existingMocFile = app.vault.getAbstractFileByPath(mocFilePath);
     if (existingMocFile) {
-      new import_obsidian6.Notice(`\u9879\u76EE MOC \u7B14\u8BB0\u5DF2\u7ECF\u5B58\u5728\uFF0C\u672A\u6267\u884C\u8986\u76D6\uFF1A${mocFilePath}`);
+      new import_obsidian11.Notice(`\u9879\u76EE MOC \u7B14\u8BB0\u5DF2\u7ECF\u5B58\u5728\uFF0C\u672A\u6267\u884C\u8986\u76D6\uFF1A${mocFilePath}`);
       return null;
     }
     const { stamp: created, uid } = nowStampAndUid(ctx.settings.dateTimeFormat);
@@ -896,7 +3175,7 @@ async function createProject(ctx, preset) {
         mode: "source"
       }
     });
-    if (leaf.view instanceof import_obsidian6.MarkdownView) {
+    if (leaf.view instanceof import_obsidian11.MarkdownView) {
       const editor = leaf.view.editor;
       const secondBlankLine = frontmatter.split("\n").length + 1;
       const cursorPosition = {
@@ -915,11 +3194,11 @@ async function createProject(ctx, preset) {
         );
       }
     }
-    new import_obsidian6.Notice(`\u9879\u76EE\u5DF2\u521B\u5EFA\uFF1A${projectName}`);
+    new import_obsidian11.Notice(`\u9879\u76EE\u5DF2\u521B\u5EFA\uFF1A${projectName}`);
     return mocFile;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian6.Notice(`\u521B\u5EFA\u9879\u76EE\u5931\u8D25\uFF1A${message}`);
+    new import_obsidian11.Notice(`\u521B\u5EFA\u9879\u76EE\u5931\u8D25\uFF1A${message}`);
     return null;
   }
 }
@@ -933,57 +3212,27 @@ function registerCreateProjectCommand(ctx) {
   });
 }
 
-// src/modules/projects/init.ts
-var import_obsidian7 = require("obsidian");
-var VAULT_README_PATH = "README.md";
+// src/modules/projects/seed.ts
 var FIRST_PROJECT_SUFFIX = "OS_v1";
-var MESSAGES = {
-  notEmpty: "\u68C0\u6D4B\u5230\u5DF2\u6709\u7B14\u8BB0\uFF0CziminOS \u53EA\u5728\u7A7A\u5E93\u5F00\u8352\u3002\u8BF7\u65B0\u5EFA\u4E00\u4E2A\u7A7A\u5E93\u518D\u8BD5\u3002",
+var MESSAGES4 = {
   namePrompt: "\u4F60\u7684\u540D\u5B57\uFF08\u7528\u4E8E\u521B\u5EFA\u7B2C\u4E00\u4E2A\u9879\u76EE\uFF0CEsc \u8DF3\u8FC7\uFF09",
-  namePlaceholder: "\u4F8B\u5982\uFF1A\u5C0F\u660E",
-  done: "\u5F00\u8352\u5B8C\u6210 \u2705",
-  failedPrefix: "\u521D\u59CB\u5316\u5931\u8D25\uFF1A"
+  namePlaceholder: "\u4F8B\u5982\uFF1A\u5C0F\u660E"
 };
-async function initializeVault(ctx) {
-  try {
-    const isFirstRun = ctx.settings.initializedAt === "";
-    if (isFirstRun && hasUserNotes(ctx)) {
-      new import_obsidian7.Notice(MESSAGES.notEmpty);
-      return;
-    }
-    for (const folder of INIT_FOLDERS) {
-      await ensureFolderPath(ctx.app, folder);
-    }
-    await createFileIfMissing(ctx, TEMPLATE_FILES.card, cardTemplateFile());
-    await createFileIfMissing(ctx, TEMPLATE_FILES.moc, mocTemplateFile());
-    await createFileIfMissing(ctx, NAV_FILE, navContent());
-    if (isFirstRun) {
-      await createFirstProject(ctx);
-    }
-    if (isFirstRun) {
-      ctx.settings.initializedAt = nowStamp(ctx.settings.dateTimeFormat);
-    }
-    await ctx.saveSettings();
-    new import_obsidian7.Notice(MESSAGES.done);
-    await ctx.app.workspace.openLinkText(NAV_FILE, "", false);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian7.Notice(MESSAGES.failedPrefix + message);
-  }
-}
-function hasUserNotes(ctx) {
-  const systemPrefix = `${FOLDERS.system}/`;
-  return ctx.app.vault.getMarkdownFiles().some((file) => file.path !== VAULT_README_PATH && !file.path.startsWith(systemPrefix));
-}
-async function createFileIfMissing(ctx, path, content) {
-  if (ctx.app.vault.getAbstractFileByPath(path)) return;
-  ctx.guard.mark(path);
-  await ctx.app.vault.create(path, content);
+function projectsSeed(ctx) {
+  return {
+    folders: [],
+    notes: [
+      { path: TEMPLATE_FILES.card, content: cardTemplateFile() },
+      { path: TEMPLATE_FILES.moc, content: mocTemplateFile() },
+      { path: NAV_FILE, content: navContent() }
+    ],
+    finish: () => createFirstProject(ctx)
+  };
 }
 async function createFirstProject(ctx) {
   const answer = await new TextInputModal(ctx.app, {
-    title: MESSAGES.namePrompt,
-    placeholder: MESSAGES.namePlaceholder
+    title: MESSAGES4.namePrompt,
+    placeholder: MESSAGES4.namePlaceholder
   }).openAndGetValue();
   const ownerName = (answer != null ? answer : "").trim();
   if (!ownerName) return;
@@ -994,7 +3243,7 @@ async function createFirstProject(ctx) {
 }
 
 // src/modules/projects/transitions.ts
-var import_obsidian8 = require("obsidian");
+var import_obsidian12 = require("obsidian");
 var PROJECT_TYPE = "project";
 var CONFIRM_MODAL_CLASS = "qa-project-transition-confirm";
 var TRANSITION_COMMANDS = [
@@ -1019,7 +3268,7 @@ async function runProjectTransition(ctx, action) {
   try {
     const transition = TRANSITIONS[action];
     if (!transition) {
-      new import_obsidian8.Notice(`\u672A\u77E5\u7684\u9879\u76EE\u6D41\u8F6C\u52A8\u4F5C\uFF1A${action}`);
+      new import_obsidian12.Notice(`\u672A\u77E5\u7684\u9879\u76EE\u6D41\u8F6C\u52A8\u4F5C\uFF1A${action}`);
       return;
     }
     const plan = resolveTransitionPlan(ctx, transition);
@@ -1029,15 +3278,15 @@ async function runProjectTransition(ctx, action) {
     const basePathChanged = await applyTransition(ctx, plan);
     await reopenMovedMoc(ctx, plan.targetMocPath);
     if (!basePathChanged) {
-      new import_obsidian8.Notice(
+      new import_obsidian12.Notice(
         "\u9879\u76EE\u6D41\u8F6C\u6210\u529F\uFF0C\u4F46 MOC\uFF08\u9879\u76EE\u5BFC\u822A\u7B14\u8BB0\uFF09\u4E2D\u6CA1\u6709\u627E\u5230\u9700\u8981\u66F4\u65B0\u7684 file.folder\uFF08\u6587\u4EF6\u5939\uFF09\u7B5B\u9009\u6761\u4EF6\u3002"
       );
     }
-    new import_obsidian8.Notice(
+    new import_obsidian12.Notice(
       `\u9879\u76EE\u5DF2${transition.label}\uFF1A${plan.projectName} \u2192 ${formatStatusForDisplay(transition.status)}`
     );
   } catch (error) {
-    new import_obsidian8.Notice(`\u9879\u76EE\u72B6\u6001\u6D41\u8F6C\u5931\u8D25\uFF1A${getErrorMessage(error)}`);
+    new import_obsidian12.Notice(`\u9879\u76EE\u72B6\u6001\u6D41\u8F6C\u5931\u8D25\uFF1A${getErrorMessage(error)}`);
   }
 }
 function resolveTransitionPlan(ctx, transition) {
@@ -1046,46 +3295,46 @@ function resolveTransitionPlan(ctx, transition) {
   const activeFolder = normalizeFolderPath(settings.projectFolder, DEFAULT_SETTINGS.projectFolder);
   const archiveFolder = normalizeFolderPath(settings.archiveFolder, DEFAULT_SETTINGS.archiveFolder);
   if (activeFolder === archiveFolder) {
-    new import_obsidian8.Notice("\u9879\u76EE\u76EE\u5F55\u548C\u5F52\u6863\u76EE\u5F55\u4E0D\u80FD\u8BBE\u7F6E\u4E3A\u540C\u4E00\u8DEF\u5F84\u3002");
+    new import_obsidian12.Notice("\u9879\u76EE\u76EE\u5F55\u548C\u5F52\u6863\u76EE\u5F55\u4E0D\u80FD\u8BBE\u7F6E\u4E3A\u540C\u4E00\u8DEF\u5F84\u3002");
     return null;
   }
   const sourceRoot = transition.source === "active" ? activeFolder : archiveFolder;
   const targetRoot = transition.target === "active" ? activeFolder : archiveFolder;
   const mocFile = app.workspace.getActiveFile();
-  if (!(mocFile instanceof import_obsidian8.TFile) || mocFile.extension !== "md") {
-    new import_obsidian8.Notice("\u8BF7\u5148\u6253\u5F00\u9700\u8981\u8FDB\u884C\u72B6\u6001\u6D41\u8F6C\u7684\u9879\u76EE MOC\u3002");
+  if (!(mocFile instanceof import_obsidian12.TFile) || mocFile.extension !== "md") {
+    new import_obsidian12.Notice("\u8BF7\u5148\u6253\u5F00\u9700\u8981\u8FDB\u884C\u72B6\u6001\u6D41\u8F6C\u7684\u9879\u76EE MOC\u3002");
     return null;
   }
   const projectFolder = mocFile.parent;
-  if (!(projectFolder instanceof import_obsidian8.TFolder)) {
-    new import_obsidian8.Notice("\u65E0\u6CD5\u8BC6\u522B\u5F53\u524D\u9879\u76EE\u6587\u4EF6\u5939\u3002");
+  if (!(projectFolder instanceof import_obsidian12.TFolder)) {
+    new import_obsidian12.Notice("\u65E0\u6CD5\u8BC6\u522B\u5F53\u524D\u9879\u76EE\u6587\u4EF6\u5939\u3002");
     return null;
   }
   const projectName = projectFolder.name;
-  const sourceProjectPath = (0, import_obsidian8.normalizePath)(`${sourceRoot}/${projectName}`);
-  const expectedMocPath = (0, import_obsidian8.normalizePath)(`${sourceProjectPath}/${projectName}.md`);
-  if ((0, import_obsidian8.normalizePath)(mocFile.path) !== expectedMocPath) {
-    new import_obsidian8.Notice(`\u5F53\u524D\u547D\u4EE4\u53EA\u80FD\u5728\u4EE5\u4E0B\u9879\u76EE MOC \u4E2D\u6267\u884C\uFF1A${expectedMocPath}`);
+  const sourceProjectPath = (0, import_obsidian12.normalizePath)(`${sourceRoot}/${projectName}`);
+  const expectedMocPath = (0, import_obsidian12.normalizePath)(`${sourceProjectPath}/${projectName}.md`);
+  if ((0, import_obsidian12.normalizePath)(mocFile.path) !== expectedMocPath) {
+    new import_obsidian12.Notice(`\u5F53\u524D\u547D\u4EE4\u53EA\u80FD\u5728\u4EE5\u4E0B\u9879\u76EE MOC \u4E2D\u6267\u884C\uFF1A${expectedMocPath}`);
     return null;
   }
   const frontmatter = (_a = app.metadataCache.getFileCache(mocFile)) == null ? void 0 : _a.frontmatter;
   const type = normalizeText(frontmatter == null ? void 0 : frontmatter.type);
   const currentStatus = normalizeText(frontmatter == null ? void 0 : frontmatter.status);
   if (type !== PROJECT_TYPE) {
-    new import_obsidian8.Notice("\u5F53\u524D\u7B14\u8BB0\u4E0D\u662F\u9879\u76EE MOC\uFF1A\u7F3A\u5C11 type: project\uFF08\u9879\u76EE\uFF09\u3002");
+    new import_obsidian12.Notice("\u5F53\u524D\u7B14\u8BB0\u4E0D\u662F\u9879\u76EE MOC\uFF1A\u7F3A\u5C11 type: project\uFF08\u9879\u76EE\uFF09\u3002");
     return null;
   }
   if (!transition.allowedStatuses.includes(currentStatus)) {
-    new import_obsidian8.Notice(
+    new import_obsidian12.Notice(
       `\u9879\u76EE\u5F53\u524D\u72B6\u6001\u4E3A\u201C${formatStatusForDisplay(currentStatus)}\u201D\uFF0C\u4E0D\u80FD\u6267\u884C\u201C${transition.label}\u201D\u64CD\u4F5C\u3002`
     );
     return null;
   }
-  const targetProjectPath = (0, import_obsidian8.normalizePath)(`${targetRoot}/${projectName}`);
-  const targetMocPath = (0, import_obsidian8.normalizePath)(`${targetProjectPath}/${projectName}.md`);
+  const targetProjectPath = (0, import_obsidian12.normalizePath)(`${targetRoot}/${projectName}`);
+  const targetMocPath = (0, import_obsidian12.normalizePath)(`${targetProjectPath}/${projectName}.md`);
   const existingTarget = app.vault.getAbstractFileByPath(targetProjectPath);
   if (existingTarget) {
-    new import_obsidian8.Notice(`\u76EE\u6807\u4F4D\u7F6E\u5DF2\u7ECF\u5B58\u5728\u540C\u540D\u9879\u76EE\uFF0C\u64CD\u4F5C\u5DF2\u505C\u6B62\uFF1A${targetProjectPath}`);
+    new import_obsidian12.Notice(`\u76EE\u6807\u4F4D\u7F6E\u5DF2\u7ECF\u5B58\u5728\u540C\u540D\u9879\u76EE\uFF0C\u64CD\u4F5C\u5DF2\u505C\u6B62\uFF1A${targetProjectPath}`);
     return null;
   }
   return {
@@ -1106,14 +3355,15 @@ async function applyTransition(ctx, plan) {
   const progress = {
     moved: false,
     statusChanged: false,
-    basePathChanged: false
+    basePathChanged: false,
+    previousArchived: void 0
   };
   try {
     markFolderTree(ctx, plan.projectFolder, plan.targetProjectPath);
     await app.fileManager.renameFile(plan.projectFolder, plan.targetProjectPath);
     progress.moved = true;
     const movedMoc = app.vault.getAbstractFileByPath(plan.targetMocPath);
-    if (!(movedMoc instanceof import_obsidian8.TFile)) {
+    if (!(movedMoc instanceof import_obsidian12.TFile)) {
       throw new Error(`\u79FB\u52A8\u540E\u6CA1\u6709\u627E\u5230\u9879\u76EE MOC\uFF1A${plan.targetMocPath}`);
     }
     guard.mark(movedMoc.path);
@@ -1122,6 +3372,12 @@ async function applyTransition(ctx, plan) {
         throw new Error("\u79FB\u52A8\u540E\u7684 MOC \u7F3A\u5C11 type: project\uFF08\u9879\u76EE\uFF09\u3002");
       }
       movedFrontmatter.status = plan.transition.status;
+      progress.previousArchived = movedFrontmatter[FIELDS.archived];
+      if (plan.transition.target === "archive") {
+        movedFrontmatter[FIELDS.archived] = today();
+      } else {
+        delete movedFrontmatter[FIELDS.archived];
+      }
     });
     progress.statusChanged = true;
     progress.basePathChanged = await updateMocBaseFolderPath(
@@ -1146,16 +3402,16 @@ function markFolderTree(ctx, folder, targetPath) {
   const sourcePath = folder.path;
   guard.mark(sourcePath);
   guard.mark(targetPath);
-  import_obsidian8.Vault.recurseChildren(folder, (child) => {
-    if (!(child instanceof import_obsidian8.TFile)) return;
+  import_obsidian12.Vault.recurseChildren(folder, (child) => {
+    if (!(child instanceof import_obsidian12.TFile)) return;
     const relativePath = child.path.slice(sourcePath.length + 1);
     guard.mark(child.path);
-    guard.mark((0, import_obsidian8.normalizePath)(`${targetPath}/${relativePath}`));
+    guard.mark((0, import_obsidian12.normalizePath)(`${targetPath}/${relativePath}`));
   });
 }
 async function reopenMovedMoc(ctx, targetMocPath) {
   const movedMoc = ctx.app.vault.getAbstractFileByPath(targetMocPath);
-  if (!(movedMoc instanceof import_obsidian8.TFile)) return;
+  if (!(movedMoc instanceof import_obsidian12.TFile)) return;
   try {
     await ctx.app.workspace.getLeaf(false).openFile(movedMoc, { active: true });
   } catch (e) {
@@ -1179,7 +3435,7 @@ async function rollbackTransition(ctx, plan, progress) {
   const { app, guard } = ctx;
   try {
     const currentFolder = (_a = app.vault.getAbstractFileByPath(plan.targetProjectPath)) != null ? _a : plan.projectFolder;
-    if (!(currentFolder instanceof import_obsidian8.TFolder)) {
+    if (!(currentFolder instanceof import_obsidian12.TFolder)) {
       throw new Error(`\u56DE\u6EDA\u65F6\u6CA1\u6709\u627E\u5230\u9879\u76EE\u76EE\u5F55\uFF1A${plan.targetProjectPath}`);
     }
     if (app.vault.getAbstractFileByPath(plan.sourceProjectPath)) {
@@ -1188,13 +3444,15 @@ async function rollbackTransition(ctx, plan, progress) {
     markFolderTree(ctx, currentFolder, plan.sourceProjectPath);
     await app.fileManager.renameFile(currentFolder, plan.sourceProjectPath);
     const restoredMoc = app.vault.getAbstractFileByPath(plan.expectedMocPath);
-    if (!(restoredMoc instanceof import_obsidian8.TFile)) {
+    if (!(restoredMoc instanceof import_obsidian12.TFile)) {
       throw new Error(`\u56DE\u6EDA\u540E\u6CA1\u6709\u627E\u5230\u9879\u76EE MOC\uFF1A${plan.expectedMocPath}`);
     }
     if (progress.statusChanged) {
       guard.mark(restoredMoc.path);
       await app.fileManager.processFrontMatter(restoredMoc, (frontmatter) => {
         frontmatter.status = plan.currentStatus;
+        if (progress.previousArchived === void 0) delete frontmatter[FIELDS.archived];
+        else frontmatter[FIELDS.archived] = progress.previousArchived;
       });
     }
     if (progress.basePathChanged) {
@@ -1215,7 +3473,7 @@ async function showProjectTransitionConfirm(app, plan) {
     new ProjectTransitionConfirmModal(app, plan, resolve).open();
   });
 }
-var ProjectTransitionConfirmModal = class extends import_obsidian8.Modal {
+var ProjectTransitionConfirmModal = class extends import_obsidian12.Modal {
   constructor(app, plan, resolver) {
     super(app);
     /** 按钮结算与关闭结算都会走到 settle，用它保证只生效一次 */
@@ -1266,8 +3524,8 @@ var ProjectTransitionConfirmModal = class extends import_obsidian8.Modal {
     buttonBar.style.justifyContent = "flex-end";
     buttonBar.style.gap = "8px";
     buttonBar.style.marginTop = "18px";
-    new import_obsidian8.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.settle(false));
-    const confirmButton = new import_obsidian8.ButtonComponent(buttonBar).setButtonText(`\u786E\u8BA4${transition.label}`).setCta().onClick(() => this.settle(true));
+    new import_obsidian12.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.settle(false));
+    const confirmButton = new import_obsidian12.ButtonComponent(buttonBar).setButtonText(`\u786E\u8BA4${transition.label}`).setCta().onClick(() => this.settle(true));
     confirmButton.buttonEl.focus();
   }
   onClose() {
@@ -1318,7 +3576,7 @@ function getErrorMessage(error) {
 }
 
 // src/modules/projects/updatedMaintainer.ts
-var import_obsidian9 = require("obsidian");
+var import_obsidian13 = require("obsidian");
 var UPDATED_DEBOUNCE_MS = 2e3;
 var SYSTEM_PREFIX = `${FOLDERS.system}/`;
 function registerUpdatedMaintainer(ctx) {
@@ -1328,7 +3586,7 @@ function registerUpdatedMaintainer(ctx) {
     if (!ctx.settings.autoUpdated) return;
     if (path.startsWith(SYSTEM_PREFIX)) return;
     const file = ctx.app.vault.getAbstractFileByPath(path);
-    if (!(file instanceof import_obsidian9.TFile)) return;
+    if (!(file instanceof import_obsidian13.TFile)) return;
     if (!((_a = ctx.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter)) return;
     ctx.guard.mark(path);
     await ctx.app.fileManager.processFrontMatter(file, (frontmatter) => {
@@ -1336,8 +3594,8 @@ function registerUpdatedMaintainer(ctx) {
     });
   };
   const scheduleUpdate = (path) => {
-    const pending = pendingTimeouts.get(path);
-    if (pending !== void 0) window.clearTimeout(pending);
+    const pending2 = pendingTimeouts.get(path);
+    if (pending2 !== void 0) window.clearTimeout(pending2);
     const timeoutId = window.setTimeout(() => {
       pendingTimeouts.delete(path);
       void applyUpdated(path).catch(() => {
@@ -1346,9 +3604,9 @@ function registerUpdatedMaintainer(ctx) {
     pendingTimeouts.set(path, timeoutId);
   };
   const cancelUpdate = (path) => {
-    const pending = pendingTimeouts.get(path);
-    if (pending === void 0) return;
-    window.clearTimeout(pending);
+    const pending2 = pendingTimeouts.get(path);
+    if (pending2 === void 0) return;
+    window.clearTimeout(pending2);
     pendingTimeouts.delete(path);
   };
   ctx.plugin.register(() => {
@@ -1365,7 +3623,7 @@ function registerUpdatedMaintainer(ctx) {
           cancelUpdate(file.path);
           return;
         }
-        if (!(file instanceof import_obsidian9.TFile) || file.extension !== "md") return;
+        if (!(file instanceof import_obsidian13.TFile) || file.extension !== "md") return;
         if (file.path.startsWith(SYSTEM_PREFIX)) {
           cancelUpdate(file.path);
           return;
@@ -1381,13 +3639,669 @@ function registerUpdatedMaintainer(ctx) {
   });
 }
 
+// src/modules/review/periodic.ts
+var import_obsidian14 = require("obsidian");
+function periodFolderOf(ctx, period) {
+  const root = normalizeFolderPath(ctx.settings.diaryFolder, FOLDERS.diary);
+  const leaf = period.folder.slice(FOLDERS.diary.length + 1);
+  return `${root}/${leaf}`;
+}
+function diaryFolders(ctx) {
+  const root = normalizeFolderPath(ctx.settings.diaryFolder, FOLDERS.diary);
+  return [root, ...Object.values(PERIODS).map((period) => periodFolderOf(ctx, period))];
+}
+function periodOfFile(app, file) {
+  var _a, _b, _c;
+  const declaredType = String(
+    (_c = (_b = (_a = app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter) == null ? void 0 : _b[FIELDS.type]) != null ? _c : ""
+  ).trim();
+  for (const period of Object.values(PERIODS)) {
+    if (period.type === declaredType) return period;
+  }
+  for (const period of Object.values(PERIODS)) {
+    if (periodStartOf(period, file.basename) !== null) return period;
+  }
+  return null;
+}
+function periodStartOfNote(app, file, period) {
+  var _a, _b;
+  const declared = dayText((_b = (_a = app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter) == null ? void 0 : _b[FIELDS.periodStart]);
+  return declared != null ? declared : periodStartOf(period, file.basename);
+}
+var SCOPE_ALIASES = {
+  \u5468: "weekly",
+  \u6708: "monthly",
+  \u5B63: "quarterly",
+  \u5E74: "yearly"
+};
+function resolveScope(app, host, params) {
+  var _a, _b;
+  const aliasKey = SCOPE_ALIASES[(_a = params["\u8303\u56F4"]) != null ? _a : ""];
+  const period = (_b = host ? periodOfFile(app, host) : null) != null ? _b : aliasKey ? PERIODS[aliasKey] : null;
+  if (!period || !host) return null;
+  const start = periodStartOfNote(app, host, period);
+  if (!start) return null;
+  return { period, start, end: shiftDay(start, 1, period.stepUnit) };
+}
+async function openPeriodNote(ctx, period, options) {
+  try {
+    const title = currentPeriodTitle(period);
+    const folder = periodFolderOf(ctx, period);
+    const path = `${folder}/${title}.md`;
+    const existing = ctx.app.vault.getAbstractFileByPath(path);
+    if (existing && !(existing instanceof import_obsidian14.TFile)) {
+      new import_obsidian14.Notice(`\u540C\u540D\u7684\u4E0D\u662F\u7B14\u8BB0\u800C\u662F\u6587\u4EF6\u5939\uFF1A${path}`);
+      return null;
+    }
+    const content = periodNoteContent(period, title, ctx.settings.dateTimeFormat);
+    let file = existing;
+    if (!file) {
+      await ensureFolderPath(ctx.app, folder);
+      ctx.guard.mark(path);
+      file = await ctx.app.vault.create(path, content);
+    } else if (file.stat.size === 0) {
+      ctx.guard.mark(path);
+      await ctx.app.vault.process(file, () => content);
+    }
+    if ((options == null ? void 0 : options.reveal) !== false) await ctx.app.workspace.getLeaf(false).openFile(file);
+    return file;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    new import_obsidian14.Notice(`\u6253\u5F00${period.label}\u5931\u8D25\uFF1A${message}`);
+    return null;
+  }
+}
+function registerPeriodicCommands(ctx) {
+  for (const period of Object.values(PERIODS)) {
+    ctx.plugin.addCommand({
+      id: period.commandId,
+      name: period.commandName,
+      callback: () => {
+        void openPeriodNote(ctx, period);
+      }
+    });
+  }
+}
+
+// src/modules/review/projectViews.ts
+var MAX_ROWS2 = 10;
+var PERIOD_NAMES = {
+  daily: "\u4ECA\u5929",
+  weekly: "\u672C\u5468",
+  monthly: "\u672C\u6708",
+  quarterly: "\u672C\u5B63",
+  yearly: "\u672C\u5E74"
+};
+var CLOSED_TITLES = [
+  { status: "done", title: "\u2705 \u672C\u5E74\u5B8C\u6210" },
+  { status: "dropped", title: "\u274C \u672C\u5E74\u653E\u5F03" },
+  { status: "paused", title: "\u23F8 \u672C\u5E74\u6682\u505C" }
+];
+var projectActivity = {
+  name: "\u9879\u76EE\u52A8\u6001",
+  render: async (view) => {
+    var _a, _b, _c, _d, _e, _f;
+    const scope = resolveScope(view.ctx.app, view.host, view.params);
+    if (!scope) {
+      renderEmpty(view.el, "\u8FD9\u7BC7\u7B14\u8BB0\u7B97\u4E0D\u51FA\u5468\u671F\u5750\u6807\u3002\u7528\u300C\u6253\u5F00\u672C\u5468\u590D\u76D8\u300D\u5EFA\u7684\u7B14\u8BB0\uFF0C\u672C\u533A\u5757\u81EA\u52A8\u751F\u6548\u3002");
+      return;
+    }
+    const periodName = (_a = PERIOD_NAMES[scope.period.key]) != null ? _a : "\u672C\u5468\u671F";
+    const root = normalizeFolderPath(view.ctx.settings.projectFolder, FOLDERS.projects);
+    const entries = /* @__PURE__ */ new Map();
+    const within = (day) => !!day && day >= scope.start && day < scope.end;
+    for (const file of view.index.allNotes()) {
+      const folder = (_c = (_b = file.parent) == null ? void 0 : _b.path) != null ? _c : "";
+      if (!isInFolder(folder, root) || folder === root) continue;
+      const name = folder.slice(root.length + 1).split("/")[0];
+      const entry = (_d = entries.get(name)) != null ? _d : {
+        name,
+        moc: null,
+        status: "",
+        born: 0,
+        touched: 0,
+        last: ""
+      };
+      if (toText(view.index.fieldOf(file, FIELDS.type)) === NOTE_TYPES.project) {
+        entry.moc = file;
+        entry.status = toText(view.index.fieldOf(file, FIELDS.status));
+      }
+      const created = (_e = dayText(view.index.fieldOf(file, FIELDS.created))) != null ? _e : dayOfMillis(file.stat.ctime);
+      const updated = (_f = dayText(view.index.fieldOf(file, FIELDS.updated))) != null ? _f : dayOfMillis(file.stat.mtime);
+      if (within(created)) {
+        entry.born += 1;
+        if (created > entry.last) entry.last = created;
+      } else if (within(updated)) {
+        entry.touched += 1;
+        if (updated > entry.last) entry.last = updated;
+      }
+      entries.set(name, entry);
+    }
+    const moving = [...entries.values()].filter((entry) => entry.born + entry.touched > 0);
+    const orphans = moving.filter((entry) => !entry.moc);
+    const counted = moving.filter((entry) => entry.moc).sort((left, right) => right.born + right.touched - (left.born + left.touched));
+    if (!counted.length) {
+      renderEmpty(view.el, `${periodName}\u6CA1\u6709\u9879\u76EE\u4EA7\u751F\u65B0\u589E\u6216\u6539\u52A8\u3002`);
+      warnOrphans(view, orphans);
+      return;
+    }
+    const totalBorn = counted.reduce((sum2, entry) => sum2 + entry.born, 0);
+    const totalTouched = counted.reduce((sum2, entry) => sum2 + entry.touched, 0);
+    renderSummary(
+      view.el,
+      `${periodName} **${counted.length}** \u4E2A\u9879\u76EE\u5728\u52A8\uFF0C\u5171\u65B0\u589E **${totalBorn}** \u7BC7\u3001\u6539\u52A8 **${totalTouched}** \u7BC7\u3002`
+    );
+    renderTable(
+      view.ctx.app,
+      view.el,
+      view.sourcePath,
+      ["\u9879\u76EE", "\u72B6\u6001", "\u65B0\u589E", "\u6539\u52A8", "\u6700\u8FD1"],
+      counted.slice(0, MAX_ROWS2).map((entry) => [
+        entry.moc ? noteLink(entry.moc, entry.name) : entry.name,
+        entry.status || "\u2014",
+        entry.born,
+        entry.touched,
+        entry.last || "\u2014"
+      ])
+    );
+    if (counted.length > MAX_ROWS2) {
+      renderNote(view.el, `\u2026\u53E6\u6709 ${counted.length - MAX_ROWS2} \u4E2A\u9879\u76EE${periodName}\u4E5F\u6709\u52A8\u9759`);
+    }
+    warnOrphans(view, orphans);
+  }
+};
+function warnOrphans(view, orphans) {
+  if (!orphans.length) return;
+  renderNote(
+    view.el,
+    `\u26A0\uFE0F \u53E6\u6709 ${orphans.length} \u4E2A\u6587\u4EF6\u5939\u6709\u6539\u52A8\u4F46\u7F3A\u5C11\u540C\u540D\u7684 type: project \u7B14\u8BB0\uFF0C\u672A\u8BA1\u5165\uFF1A${orphans.map((entry) => entry.name).join("\u3001")}`
+  );
+}
+var finishedProjects = {
+  name: "\u5B8C\u6210\u7684\u9879\u76EE",
+  render: async (view) => {
+    var _a;
+    const scope = resolveScope(view.ctx.app, view.host, view.params);
+    if (!scope) {
+      renderEmpty(view.el, "\u8FD9\u7BC7\u7B14\u8BB0\u7B97\u4E0D\u51FA\u5468\u671F\u5750\u6807\u3002\u7528\u300C\u6253\u5F00\u672C\u6708\u590D\u76D8\u300D\u5EFA\u7684\u7B14\u8BB0\uFF0C\u672C\u533A\u5757\u81EA\u52A8\u751F\u6548\u3002");
+      return;
+    }
+    const periodName = (_a = PERIOD_NAMES[scope.period.key]) != null ? _a : "\u672C\u5468\u671F";
+    const finished = collectProjects(view).filter((project) => project.status === "done").filter((project) => !!project.closed && project.closed >= scope.start && project.closed < scope.end).sort((left, right) => String(left.closed).localeCompare(String(right.closed)));
+    if (!finished.length) {
+      renderEmpty(
+        view.el,
+        `${periodName}\u6CA1\u6709\u9879\u76EE\u5B8C\u6210\u5F52\u6863\u3002\uFF08\u53E3\u5F84\uFF1Astatus \u4E3A done\uFF0C\u4E14\u5F52\u6863\u65E5\u843D\u5728${periodName}\uFF09`
+      );
+      return;
+    }
+    const spans = finished.map((project) => daysBetween(project.born, project.closed)).filter((days) => days !== null);
+    const average = spans.length ? `\uFF0C\u5E73\u5747\u5386\u65F6 **${Math.round(spans.reduce((sum2, days) => sum2 + days, 0) / spans.length)}** \u5929` : "";
+    renderSummary(view.el, `${periodName}\u5B8C\u6210 **${finished.length}** \u4E2A\u9879\u76EE${average}\uFF1A`);
+    renderTable(
+      view.ctx.app,
+      view.el,
+      view.sourcePath,
+      ["\u9879\u76EE", "\u5F00\u59CB", "\u5B8C\u6210", "\u5386\u65F6"],
+      finished.map((project) => durationRow(project, project.closed))
+    );
+  }
+};
+var yearlyOverview = {
+  name: "\u5E74\u5EA6\u5168\u666F",
+  render: async (view) => {
+    var _a, _b;
+    const scope = resolveScope(view.ctx.app, view.host, view.params);
+    if (!scope) {
+      renderEmpty(view.el, "\u8FD9\u7BC7\u7B14\u8BB0\u7B97\u4E0D\u51FA\u5468\u671F\u5750\u6807\u3002\u7528\u300C\u6253\u5F00\u672C\u5E74\u590D\u76D8\u300D\u5EFA\u7684\u7B14\u8BB0\uFF0C\u672C\u533A\u5757\u81EA\u52A8\u751F\u6548\u3002");
+      return;
+    }
+    const within = (day) => !!day && day >= scope.start && day < scope.end;
+    const monthIndex = (day) => Number(day.slice(5, 7)) - 1;
+    const year = scope.start.slice(0, 4);
+    const born = [];
+    const buckets = /* @__PURE__ */ new Map();
+    const monthlyBorn = new Array(12).fill(0);
+    const monthlyDone = new Array(12).fill(0);
+    for (const project of collectProjects(view)) {
+      if (within(project.born)) {
+        born.push(project);
+        monthlyBorn[monthIndex(project.born)] += 1;
+      }
+      if (project.status !== "active" && within(project.closed)) {
+        const bucket = buckets.get(project.status);
+        if (bucket) bucket.push(project);
+        else buckets.set(project.status, [project]);
+        if (project.status === "done") monthlyDone[monthIndex(project.closed)] += 1;
+      }
+      if (project.status === "active" && (!project.born || project.born < scope.end)) {
+        const bucket = buckets.get("active");
+        if (bucket) bucket.push(project);
+        else buckets.set("active", [project]);
+      }
+    }
+    const countOf = (status) => {
+      var _a2, _b2;
+      return (_b2 = (_a2 = buckets.get(status)) == null ? void 0 : _a2.length) != null ? _b2 : 0;
+    };
+    renderSummary(
+      view.el,
+      `**${year} \u5E74**\uFF1A\u65B0\u5F00 **${born.length}** \u4E2A \xB7 \u5B8C\u6210 **${countOf("done")}** \u4E2A \xB7 \u653E\u5F03 **${countOf("dropped")}** \u4E2A \xB7 \u6682\u505C **${countOf("paused")}** \u4E2A \xB7 \u4ECD\u5728\u8FDB\u884C **${countOf("active")}** \u4E2A`
+    );
+    renderMonthlyBars(view, monthlyBorn, monthlyDone);
+    for (const { status, title } of CLOSED_TITLES) {
+      renderClosedGroup(view, title, (_a = buckets.get(status)) != null ? _a : []);
+    }
+    renderActiveGroup(view, (_b = buckets.get("active")) != null ? _b : [], scope.end, year);
+    if (!born.length && !buckets.size) {
+      renderEmpty(view.el, "\u672C\u5E74\u6CA1\u6709\u4EFB\u4F55\u9879\u76EE\u8BB0\u5F55\u3002");
+    }
+  }
+};
+function renderMonthlyBars(view, monthlyBorn, monthlyDone) {
+  const peak = Math.max(...monthlyBorn, ...monthlyDone, 1);
+  const chart = view.el.createDiv();
+  chart.style.cssText = "display:flex;align-items:flex-end;gap:4px;height:150px;margin:14px 0 6px;padding-bottom:24px;border-bottom:1px solid var(--background-modifier-border)";
+  for (let month = 0; month < 12; month += 1) {
+    const column = chart.createDiv();
+    column.style.cssText = "flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative";
+    const pair = column.createDiv();
+    pair.style.cssText = "display:flex;align-items:flex-end;gap:2px;height:100%;width:100%;justify-content:center";
+    addBar(pair, monthlyBorn[month], peak, "var(--text-accent)", `${month + 1} \u6708\u65B0\u5F00`);
+    addBar(pair, monthlyDone[month], peak, "var(--color-green, #16a34a)", `${month + 1} \u6708\u5B8C\u6210`);
+    const label = column.createDiv();
+    label.style.cssText = "position:absolute;bottom:-21px;font-size:11px;color:var(--text-muted)";
+    label.setText(String(month + 1));
+  }
+  renderNote(view.el, `\u5DE6\u67F1\uFF1D\u65B0\u5F00\u3000\u53F3\u67F1\uFF1D\u5B8C\u6210\u3000\u7EB5\u8F74\u5CF0\u503C ${peak}\u3000\u6A2A\u8F74\u4E3A\u6708\u4EFD`);
+}
+function addBar(parent, count, peak, color, label) {
+  const bar = parent.createDiv();
+  bar.style.cssText = `width:42%;height:${Math.round(count / peak * 100)}%;min-height:${count > 0 ? 3 : 0}px;background:${color};border-radius:2px 2px 0 0`;
+  if (count > 0) bar.setAttribute("aria-label", `${label}\uFF1A${count}`);
+}
+function renderClosedGroup(view, title, list) {
+  if (!list.length) return;
+  const sorted = [...list].sort(
+    (left, right) => String(left.closed).localeCompare(String(right.closed))
+  );
+  renderHeading(view.el, 4, `${title}\uFF08${list.length}\uFF09`);
+  renderTable(
+    view.ctx.app,
+    view.el,
+    view.sourcePath,
+    ["\u9879\u76EE", "\u5F00\u59CB", "\u5F52\u6863", "\u5386\u65F6"],
+    sorted.map((project) => durationRow(project, project.closed))
+  );
+}
+function renderActiveGroup(view, list, end, year) {
+  if (!list.length) return;
+  const isPastYear = end <= today();
+  const cutoff = isPastYear ? today() : end;
+  const sorted = [...list].sort(
+    (left, right) => String(left.born).localeCompare(String(right.born))
+  );
+  renderHeading(view.el, 4, `\u{1F525} ${isPastYear ? "\u622A\u81F3\u4ECA\u65E5" : "\u5E74\u672B"}\u4ECD\u5728\u8FDB\u884C\uFF08${list.length}\uFF09`);
+  if (isPastYear) {
+    renderNote(
+      view.el,
+      `\u9879\u76EE\u72B6\u6001\u53EA\u6709\u5F53\u524D\u503C\uFF0C\u65E0\u6CD5\u56DE\u6EAF\u5230 ${year} \u5E74\u672B\uFF0C\u6B64\u5904\u663E\u793A\u7684\u662F\u6B64\u523B\u4ECD\u5728\u8FDB\u884C\u7684\u9879\u76EE\u3002`
+    );
+  }
+  renderTable(
+    view.ctx.app,
+    view.el,
+    view.sourcePath,
+    ["\u9879\u76EE", "\u5F00\u59CB", "\u6700\u8FD1\u6539\u52A8", "\u5DF2\u8FDB\u884C"],
+    sorted.map((project) => {
+      var _a, _b;
+      return [
+        noteLink(project.file),
+        (_a = project.born) != null ? _a : "\u2014",
+        (_b = project.closed) != null ? _b : "\u2014",
+        formatDays2(daysBetween(project.born, cutoff))
+      ];
+    })
+  );
+}
+function collectProjects(view) {
+  var _a, _b, _c;
+  const projectRoot = normalizeFolderPath(view.ctx.settings.projectFolder, FOLDERS.projects);
+  const archiveRoot = normalizeFolderPath(view.ctx.settings.archiveFolder, FOLDERS.archives);
+  const collected = [];
+  for (const file of view.index.notesOfType(NOTE_TYPES.project)) {
+    if (!isInFolder(file.path, projectRoot) && !isInFolder(file.path, archiveRoot)) continue;
+    collected.push({
+      file,
+      born: (_a = dayText(view.index.fieldOf(file, FIELDS.created))) != null ? _a : dayOfMillis(file.stat.ctime),
+      // 归档日优先取状态流转命令写入的 archived；回落 updated 只为兼容 V2 之前建的项目
+      closed: (_c = (_b = dayText(view.index.fieldOf(file, FIELDS.archived))) != null ? _b : dayText(view.index.fieldOf(file, FIELDS.updated))) != null ? _c : dayOfMillis(file.stat.mtime),
+      status: toText(view.index.fieldOf(file, FIELDS.status)).toLowerCase()
+    });
+  }
+  return collected;
+}
+function durationRow(project, endDay) {
+  var _a;
+  return [
+    noteLink(project.file),
+    (_a = project.born) != null ? _a : "\u2014",
+    endDay != null ? endDay : "\u2014",
+    formatDays2(daysBetween(project.born, endDay))
+  ];
+}
+function formatDays2(days) {
+  return days === null ? "\u2014" : `${days} \u5929`;
+}
+var reviewProjectViews = [
+  projectActivity,
+  finishedProjects,
+  yearlyOverview
+];
+
+// src/modules/review/seed.ts
+function reviewSeed(ctx) {
+  return {
+    folders: diaryFolders(ctx),
+    notes: []
+  };
+}
+
+// src/modules/review/theme.ts
+var import_obsidian15 = require("obsidian");
+var MESSAGES5 = {
+  unchanged: "\u4E3B\u9898\u6CA1\u6709\u53D8\u5316\uFF08\u7559\u7A7A\u4E0D\u4F1A\u6E05\u6389\u5DF2\u7ECF\u5199\u597D\u7684\u4E3B\u9898\uFF09",
+  donePrefix: "\u5DF2\u5199\u5165",
+  failedPrefix: "\u5199\u4E3B\u9898\u5931\u8D25\uFF1A"
+};
+function registerThemeCommand(ctx) {
+  ctx.plugin.addCommand({
+    id: THEME_COMMAND.id,
+    name: THEME_COMMAND.name,
+    callback: () => {
+      void writeTheme(ctx);
+    }
+  });
+}
+async function writeTheme(ctx) {
+  var _a, _b, _c;
+  try {
+    const target = await resolveTarget(ctx);
+    if (!target) return;
+    const { file, period } = target;
+    const current = String(
+      (_c = (_b = (_a = ctx.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter) == null ? void 0 : _b[FIELDS.theme]) != null ? _c : ""
+    ).trim();
+    const answer = await new TextInputModal(ctx.app, {
+      title: promptOf(period),
+      placeholder: "\u4E00\u53E5\u8BDD\uFF0C\u5199\u7ED3\u8BBA\u4E0D\u5199\u8FC7\u7A0B",
+      initial: current
+    }).openAndGetValue();
+    if (answer === null) return;
+    const theme = answer.trim();
+    if (!theme) {
+      new import_obsidian15.Notice(MESSAGES5.unchanged);
+      return;
+    }
+    ctx.guard.mark(file.path);
+    await ctx.app.fileManager.processFrontMatter(file, (frontmatter) => {
+      frontmatter[FIELDS.theme] = theme;
+    });
+    new import_obsidian15.Notice(`${MESSAGES5.donePrefix}${period.label}\u4E3B\u9898\uFF1A${theme}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    new import_obsidian15.Notice(MESSAGES5.failedPrefix + message);
+  }
+}
+async function resolveTarget(ctx) {
+  const active = ctx.app.workspace.getActiveFile();
+  if (active) {
+    const period = periodOfFile(ctx.app, active);
+    if (period) return { file: active, period };
+  }
+  const diary = await openPeriodNote(ctx, PERIODS.daily);
+  return diary ? { file: diary, period: PERIODS.daily } : null;
+}
+function promptOf(period) {
+  switch (period.key) {
+    case "daily":
+      return "\u4ECA\u5929\u4E3B\u8981\u505A\u4E86\u4EC0\u4E48\uFF1F\uFF08\u5468\u590D\u76D8\u770B\u7684\u5C31\u662F\u5B83\uFF09";
+    case "weekly":
+      return "\u672C\u5468\u4E3B\u9898\uFF1A\u8FD9\u5468\u4E3B\u8981\u63A8\u8FDB\u4E86\u54EA\u9879\u4EBA\u751F\u7BA1\u7406\u76EE\u6807\uFF1F";
+    case "monthly":
+      return "\u672C\u6708\u4E3B\u9898\uFF1A\u8FD9\u4E2A\u6708\u4E3B\u7EBF\u63A8\u8FDB\u5230\u54EA\u4E00\u6B65\u4E86\uFF1F";
+    case "quarterly":
+      return "\u5B63\u5EA6\u4E3B\u9898\uFF1A\u8FD9\u4E09\u4E2A\u6708\uFF0C\u4E3B\u7EBF\u4EFB\u52A1\u63A8\u8FDB\u4E86\u591A\u5C11\uFF1F";
+    default:
+      return "\u5E74\u5EA6\u4E3B\u9898\uFF1A\u7528\u4E00\u53E5\u8BDD\u6982\u62EC\u8FD9\u4E00\u5E74\u7684\u4E3B\u7EBF";
+  }
+}
+
+// src/modules/review/views.ts
+var MAX_ROWS3 = 12;
+var CHILD_OF = {
+  daily: null,
+  weekly: "daily",
+  monthly: "weekly",
+  quarterly: "monthly",
+  yearly: "monthly"
+};
+var MONTH_SPAN = { quarterly: 3, yearly: 12 };
+var WEEKDAY_NAMES = ["\u4E00", "\u4E8C", "\u4E09", "\u56DB", "\u4E94", "\u516D", "\u65E5"];
+var dailyOutput = {
+  name: "\u4ECA\u65E5\u4EA7\u51FA",
+  render: async (view) => {
+    const day = view.host ? dayOfTitle(view.host.basename) : null;
+    if (!day) {
+      renderEmpty(view.el, "\u8FD9\u7BC7\u7B14\u8BB0\u7684\u6587\u4EF6\u540D\u4E0D\u662F YYYY-MM-DD\uFF0C\u62FF\u4E0D\u5230\u65E5\u671F\u3002\u7528\u300C\u6253\u5F00\u4ECA\u5929\u7684\u65E5\u8BB0\u300D\u5EFA\u7684\u7B14\u8BB0\uFF0C\u672C\u533A\u5757\u81EA\u52A8\u751F\u6548\u3002");
+      return;
+    }
+    const folders = contentFolders(view);
+    const created = [];
+    const changed = [];
+    for (const file of view.index.allNotes()) {
+      if (!folders.some((folder) => isInFolder(file.path, folder))) continue;
+      if (dayOf(view, file, FIELDS.created, file.stat.ctime) === day) {
+        created.push(file);
+        continue;
+      }
+      if (dayOf(view, file, FIELDS.updated, file.stat.mtime) === day) changed.push(file);
+    }
+    if (!created.length && !changed.length) {
+      renderEmpty(view.el, "\u4ECA\u5929\u8FD8\u6CA1\u6709\u7B14\u8BB0\u4EA7\u51FA\u3002\u5728\u9879\u76EE\u76EE\u5F55\u91CC\u5199\u70B9\u4EC0\u4E48\uFF0C\u8FD9\u91CC\u4F1A\u81EA\u52A8\u957F\u51FA\u6765\u3002");
+      return;
+    }
+    renderSummary(view.el, `\u65B0\u5EFA **${created.length}** \u7BC7 \xB7 \u6539\u52A8 **${changed.length}** \u7BC7`);
+    const rows = [];
+    collectRows(rows, "\u{1F195}", created, view);
+    collectRows(rows, "\u270F\uFE0F", changed, view);
+    renderTable(view.ctx.app, view.el, view.sourcePath, ["", "\u7B14\u8BB0", "\u6240\u5C5E"], rows);
+  }
+};
+function collectRows(rows, mark, files, view) {
+  for (const file of files.slice(0, MAX_ROWS3)) {
+    rows.push([mark, noteLink(file), originOf(view, file)]);
+  }
+  if (files.length > MAX_ROWS3) rows.push([mark, `\u2026\u53E6\u6709 ${files.length - MAX_ROWS3} \u7BC7`, ""]);
+}
+function originOf(view, file) {
+  var _a, _b;
+  const projects = normalizeFolderPath(view.ctx.settings.projectFolder, FOLDERS.projects);
+  const archives = normalizeFolderPath(view.ctx.settings.archiveFolder, FOLDERS.archives);
+  const folder = (_b = (_a = file.parent) == null ? void 0 : _a.path) != null ? _b : "";
+  if (isInFolder(folder, projects) && folder !== projects) {
+    return folder.slice(projects.length + 1).split("/")[0];
+  }
+  if (isInFolder(folder, archives) && folder !== archives) {
+    return `\u{1F4E6} ${folder.slice(archives.length + 1).split("/")[0]}`;
+  }
+  return folder.split("/")[0] || "\u6839\u76EE\u5F55";
+}
+function contentFolders(view) {
+  return [
+    FOLDERS.inbox,
+    normalizeFolderPath(view.ctx.settings.projectFolder, FOLDERS.projects),
+    normalizeFolderPath(view.ctx.settings.areaFolder, FOLDERS.areas),
+    normalizeFolderPath(view.ctx.settings.archiveFolder, FOLDERS.archives)
+  ];
+}
+function dayOf(view, file, field, fallbackMillis) {
+  var _a;
+  return (_a = dayText(view.index.fieldOf(file, field))) != null ? _a : dayOfMillis(fallbackMillis);
+}
+var themeChain = {
+  name: "\u4E3B\u9898\u94FE",
+  render: async (view) => {
+    const scope = resolveScope(view.ctx.app, view.host, view.params);
+    if (!scope) {
+      renderEmpty(view.el, "\u8FD9\u7BC7\u7B14\u8BB0\u7B97\u4E0D\u51FA\u5468\u671F\u5750\u6807\uFF1A\u5B83\u4E0D\u662F\u590D\u76D8\u7B14\u8BB0\uFF0C\u6587\u4EF6\u540D\u4E5F\u4E0D\u662F\u672C\u7EA7\u683C\u5F0F\u3002\u7528\u300C\u6253\u5F00\u672C\u5468\u590D\u76D8\u300D\u5EFA\u7684\u7B14\u8BB0\uFF0C\u672C\u533A\u5757\u81EA\u52A8\u751F\u6548\u3002");
+      return;
+    }
+    const childKey = CHILD_OF[scope.period.key];
+    if (!childKey) {
+      renderEmpty(view.el, "\u65E5\u8BB0\u4E0B\u9762\u6CA1\u6709\u66F4\u5C0F\u7684\u5468\u671F\u4E86\uFF0C\u4E3B\u9898\u94FE\u653E\u5728\u5468\u8BB0\u53CA\u4EE5\u4E0A\u624D\u6709\u5185\u5BB9\u3002");
+      return;
+    }
+    const child = PERIODS[childKey];
+    if (childKey === "daily") renderDays(view, child, scope.start);
+    else if (childKey === "weekly") renderWeeks(view, child, scope);
+    else renderMonths(view, child, scope);
+  }
+};
+function renderDays(view, child, start) {
+  const byTitle = notesByTitle(view, child);
+  const rows = [];
+  let filled = 0;
+  for (let offset = 0; offset < 7; offset += 1) {
+    const day = shiftDay(start, offset, "day");
+    const note = byTitle.get(day);
+    if (note) filled += 1;
+    rows.push([
+      note ? noteLink(note) : day.slice(5),
+      `\u5468${WEEKDAY_NAMES[offset]}`,
+      themeCell(view, note, "\uFF08\u65E0\u65E5\u8BB0\uFF09")
+    ]);
+  }
+  renderTable(view.ctx.app, view.el, view.sourcePath, ["\u65E5\u671F", "\u661F\u671F", "\u5F53\u65E5\u4E3B\u9898"], rows);
+  renderNote(view.el, `\u672C\u5468 **${filled}/7** \u5929\u6709\u65E5\u8BB0\u3002`);
+}
+function renderWeeks(view, child, scope) {
+  const weeks = [];
+  for (const note of view.index.notesOfType(child.type)) {
+    const weekStart = periodStartOfNote(view.ctx.app, note, child);
+    if (!weekStart) continue;
+    const thursday = shiftDay(weekStart, 3, "day");
+    if (thursday < scope.start || thursday >= scope.end) continue;
+    weeks.push({ start: weekStart, note });
+  }
+  if (!weeks.length) {
+    renderEmpty(view.el, "\u672C\u6708\u8FD8\u6CA1\u6709\u5468\u8BB0\u3002\u547D\u4EE4\u9762\u677F\u8FD0\u884C\u300C\u6253\u5F00\u672C\u5468\u590D\u76D8\u300D\u5199\u7B2C\u4E00\u7BC7\u3002");
+    return;
+  }
+  weeks.sort((left, right) => left.start.localeCompare(right.start));
+  renderTable(
+    view.ctx.app,
+    view.el,
+    view.sourcePath,
+    ["\u5468", "\u672C\u5468\u4E3B\u9898"],
+    weeks.map((week) => [noteLink(week.note), themeCell(view, week.note, "")])
+  );
+}
+function renderMonths(view, child, scope) {
+  var _a, _b;
+  const span = (_a = MONTH_SPAN[scope.period.key]) != null ? _a : 12;
+  const byTitle = notesByTitle(view, child);
+  const rows = [];
+  let filled = 0;
+  for (let offset = 0; offset < span; offset += 1) {
+    const monthStart = shiftDay(scope.start, offset, "month");
+    const title = (_b = titleOfDay(monthStart, child)) != null ? _b : monthStart;
+    const note = byTitle.get(title);
+    if (note) filled += 1;
+    rows.push([note ? noteLink(note) : title, themeCell(view, note, "\uFF08\u65E0\u6708\u8BB0\uFF09")]);
+  }
+  renderTable(view.ctx.app, view.el, view.sourcePath, ["\u6708\u4EFD", "\u672C\u6708\u4E3B\u9898"], rows);
+  renderNote(
+    view.el,
+    `\u672C${scope.period.key === "quarterly" ? "\u5B63" : "\u5E74"} **${filled}/${span}** \u4E2A\u6708\u6709\u6708\u8BB0\u3002`
+  );
+}
+function notesByTitle(view, period) {
+  const map = /* @__PURE__ */ new Map();
+  for (const note of view.index.notesOfType(period.type)) {
+    map.set(note.basename, note);
+  }
+  return map;
+}
+function themeCell(view, note, missing) {
+  if (!note) return missing;
+  return toText(view.index.fieldOf(note, FIELDS.theme)) || "\uFF08\u672A\u5199\u4E3B\u9898\uFF09";
+}
+var reviewThemeViews = [dailyOutput, themeChain];
+
+// src/modules/setup/init.ts
+var import_obsidian16 = require("obsidian");
+var VAULT_README_PATH = "README.md";
+var MESSAGES6 = {
+  notEmpty: "\u68C0\u6D4B\u5230\u5DF2\u6709\u7B14\u8BB0\uFF0CziminOS \u53EA\u5728\u7A7A\u5E93\u5F00\u8352\u3002\u8BF7\u65B0\u5EFA\u4E00\u4E2A\u7A7A\u5E93\u518D\u8BD5\u3002",
+  done: "\u5F00\u8352\u5B8C\u6210 \u2705",
+  failedPrefix: "\u521D\u59CB\u5316\u5931\u8D25\uFF1A"
+};
+async function initializeVault(ctx, seeds) {
+  var _a;
+  try {
+    const isFirstRun = ctx.settings.initializedAt === "";
+    if (isFirstRun && hasUserNotes(ctx)) {
+      new import_obsidian16.Notice(MESSAGES6.notEmpty);
+      return;
+    }
+    for (const folder of INIT_FOLDERS) {
+      await ensureFolderPath(ctx.app, folder);
+    }
+    for (const seed of seeds) {
+      await applySeed(ctx, seed);
+    }
+    if (isFirstRun) {
+      for (const seed of seeds) {
+        await ((_a = seed.finish) == null ? void 0 : _a.call(seed));
+      }
+    }
+    if (isFirstRun) {
+      ctx.settings.initializedAt = nowStamp(ctx.settings.dateTimeFormat);
+    }
+    await ctx.saveSettings();
+    new import_obsidian16.Notice(MESSAGES6.done);
+    await ctx.app.workspace.openLinkText(NAV_FILE, "", false);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    new import_obsidian16.Notice(MESSAGES6.failedPrefix + message);
+  }
+}
+async function applySeed(ctx, seed) {
+  for (const folder of seed.folders) {
+    await ensureFolderPath(ctx.app, folder);
+  }
+  for (const note of seed.notes) {
+    await createFileIfMissing(ctx, note.path, note.content);
+  }
+}
+function hasUserNotes(ctx) {
+  const systemPrefix = `${FOLDERS.system}/`;
+  return ctx.app.vault.getMarkdownFiles().some((file) => file.path !== VAULT_README_PATH && !file.path.startsWith(systemPrefix));
+}
+async function createFileIfMissing(ctx, path, content) {
+  if (ctx.app.vault.getAbstractFileByPath(path)) return;
+  ctx.guard.mark(path);
+  await ctx.app.vault.create(path, content);
+}
+
 // src/settings.ts
-var import_obsidian10 = require("obsidian");
+var import_obsidian17 = require("obsidian");
 var TEXTS = {
   initHeading: "\u5F00\u8352",
   initName: "\u521D\u59CB\u5316\u7B14\u8BB0\u5E93",
   initButton: "\u521D\u59CB\u5316",
-  initPending: "\u5C1A\u672A\u521D\u59CB\u5316\u3002\u70B9\u53F3\u8FB9\u7684\u6309\u94AE\uFF0C\u4E3A\u8FD9\u4E2A\u5E93\u94FA\u597D PARA \u516D\u4E2A\u6587\u4EF6\u5939\u3001\u4E24\u4EFD\u6A21\u677F\u548C\u4E00\u9875\u5BFC\u822A\u3002",
+  initPending: "\u5C1A\u672A\u521D\u59CB\u5316\u3002\u70B9\u53F3\u8FB9\u7684\u6309\u94AE\uFF0C\u4E3A\u8FD9\u4E2A\u5E93\u94FA\u597D\u4E03\u4E2A\u6587\u4EF6\u5939\u3001\u6A21\u677F\u4E0E\u5BFC\u822A\uFF0C\u5E76\u957F\u51FA\u4EBA\u8109\u4E0E\u590D\u76D8\u4E24\u5957\u7CFB\u7EDF\u3002",
   initReadyPrefix: "\u5DF2\u5C31\u7EEA \u2713 \u9996\u6B21\u5F00\u8352\u4E8E ",
   initReadySuffix: "\u3002\u518D\u70B9\u4E00\u6B21\u53EA\u8865\u9F50\u7F3A\u5931\u7684\u6587\u4EF6\uFF0C\u4E0D\u4F1A\u8986\u76D6\u4F60\u5199\u8FC7\u7684\u4EFB\u4F55\u7B14\u8BB0\u3002",
   autoHeading: "\u81EA\u52A8\u5316",
@@ -1412,20 +4326,31 @@ var TEXTS = {
 var ADVANCED_FIELDS = [
   { key: "projectFolder", name: "\u9879\u76EE\u76EE\u5F55", hint: "\u6B63\u5728\u63A8\u8FDB\u7684\u9879\u76EE\u653E\u5728\u8FD9\u91CC\u3002" },
   { key: "areaFolder", name: "\u9886\u57DF\u76EE\u5F55", hint: "\u957F\u671F\u5173\u6CE8\u3001\u6CA1\u6709\u7EC8\u70B9\u7684\u9886\u57DF\u653E\u5728\u8FD9\u91CC\u3002" },
-  { key: "archiveFolder", name: "\u5F52\u6863\u76EE\u5F55", hint: "\u5B8C\u6210\u3001\u6682\u505C\u3001\u653E\u5F03\u7684\u9879\u76EE\u4F1A\u642C\u5230\u8FD9\u91CC\u3002" },
+  { key: "archiveFolder", name: "\u5F52\u6863\u76EE\u5F55", hint: "\u5B8C\u6210\u3001\u6682\u505C\u3001\u653E\u5F03\u7684\u9879\u76EE\u4F1A\u642C\u5230\u8FD9\u91CC\uFF1B\u4EBA\u8109\u6863\u6848\u642C\u8FDB\u6765\u5373\u9000\u51FA\u5168\u90E8\u540D\u5F55\u3002" },
+  { key: "diaryFolder", name: "\u590D\u76D8\u76EE\u5F55", hint: "\u65E5/\u5468/\u6708/\u5B63/\u5E74\u4E94\u7EA7\u590D\u76D8\u7684\u65F6\u95F4\u8F74\u6839\u76EE\u5F55\uFF0C\u4E94\u4E2A\u5B50\u76EE\u5F55\u7531\u5B83\u6D3E\u751F\u3002" },
+  { key: "contactFolder", name: "\u4EBA\u8109\u76EE\u5F55", hint: "\u4EBA\u7269\u6863\u6848\u5E73\u94FA\u5B58\u653E\u5728\u8FD9\u91CC\uFF1B\u89C6\u56FE\u9760 type \u8BA4\u4EBA\uFF0C\u632A\u8D70\u4E5F\u4E0D\u5F71\u54CD\u3002" },
+  { key: "clientFolder", name: "\u5BA2\u6237\u76EE\u5F55", hint: "\u4ED8\u8D39\u7528\u6237\u6863\u6848\u653E\u5728\u8FD9\u91CC\uFF0C\u8FD0\u884C\u300C\u521D\u59CB\u5316\u5BA2\u6237\u6A21\u5757\u300D\u540E\u624D\u4F1A\u7528\u5230\u3002" },
+  { key: "clientSources", name: "\u5BA2\u6237\u6E20\u9053", hint: "\u300C\u65B0\u5EFA\u5BA2\u6237\u300D\u7684\u6E20\u9053\u5019\u9009\uFF0C\u7528\u9017\u53F7\u5206\u9694\u3002\u8D70\u9009\u62E9\u800C\u975E\u624B\u6253\uFF0C\u7EDF\u8BA1\u624D\u4E0D\u4F1A\u88AB\u540C\u4E49\u5199\u6CD5\u6253\u6563\u3002" },
+  { key: "clientProducts", name: "\u4EA7\u54C1\u6E05\u5355", hint: "\u300C\u589E\u52A0\u4ED8\u8D39\u300D\u7684\u4EA7\u54C1\u5019\u9009\uFF0C\u7528\u9017\u53F7\u5206\u9694\u3002" },
   { key: "dateTimeFormat", name: "\u65F6\u95F4\u683C\u5F0F", hint: "created \u4E0E updated \u5B57\u6BB5\u7684\u5199\u6CD5\uFF0Cmoment \u8BED\u6CD5\u3002" }
 ];
 var SYSTEM_MODULES = [
-  { name: "\u{1F4E6} \u9879\u76EE\u7BA1\u7406 v1", status: "\u8FD0\u884C\u4E2D", running: true },
-  { name: "\u{1F4A1} \u7075\u611F\u6536\u96C6 v1", status: "Dataview \u672A\u5B8C\u6210\u4EFB\u52A1\u89C6\u56FE\u5DF2\u5C31\u7EEA", running: true },
-  { name: "\u{1F465} \u4EBA\u8109\u7BA1\u7406", status: "\u656C\u8BF7\u671F\u5F85", running: false },
-  { name: "\u{1F4D4} \u65E5\u8BB0\u590D\u76D8", status: "\u656C\u8BF7\u671F\u5F85", running: false },
+  { name: "\u{1F4E6} \u9879\u76EE\u7BA1\u7406 v1", status: "\u8FD0\u884C\u4E2D \xB7 \u5EFA\u9879\u76EE\u3001\u5361\u7247\u767B\u8BB0\u3001\u56DB\u6001\u6D41\u8F6C", running: true },
+  { name: "\u{1F4A1} \u7075\u611F\u6536\u96C6 v1", status: "\u8FD0\u884C\u4E2D \xB7 Dataview \u672A\u5B8C\u6210\u4EFB\u52A1\u89C6\u56FE\u5DF2\u5C31\u7EEA", running: true },
+  { name: "\u{1F465} \u4EBA\u8109\u7BA1\u7406 v1", status: "\u8FD0\u884C\u4E2D \xB7 \u65B0\u5EFA\u4EBA\u8109\u3001\u8BB0\u4EBA\u60C5\uFF0C\u6863\u6848\u4E0E MOC \u5171\u516B\u4E2A\u89C6\u56FE", running: true },
+  { name: "\u{1F4D4} \u590D\u76D8 v1", status: "\u8FD0\u884C\u4E2D \xB7 \u4E94\u7EA7\u5468\u671F\u7B14\u8BB0\u3001\u4E3B\u9898\u94FE\u4E0E\u9879\u76EE\u6570\u636E\u5171\u4E94\u4E2A\u89C6\u56FE", running: true },
+  {
+    name: "\u{1F4B0} \u5BA2\u6237\u4E0E\u4ED8\u8D39 v1",
+    status: "\u6309\u9700\u542F\u7528 \xB7 \u547D\u4EE4\u9762\u677F\u8FD0\u884C\u300C\u521D\u59CB\u5316\u5BA2\u6237\u6A21\u5757\u300D\uFF0C\u957F\u51FA MOC \u4E0E\u516B\u4E2A\u89C6\u56FE",
+    running: true
+  },
   { name: "\u{1F3A8} \u5916\u89C2\u5305 v1", status: "Minimal + Style Settings \u5DF2\u5C31\u7EEA", running: true }
 ];
-var ZiminosSettingTab = class extends import_obsidian10.PluginSettingTab {
-  constructor(ctx) {
+var ZiminosSettingTab = class extends import_obsidian17.PluginSettingTab {
+  constructor(ctx, initialize) {
     super(ctx.app, ctx.plugin);
     this.ctx = ctx;
+    this.initialize = initialize;
   }
   /** 每次打开设置页都整体重建，保证显示的永远是设置对象的当前值 */
   display() {
@@ -1446,12 +4371,12 @@ var ZiminosSettingTab = class extends import_obsidian10.PluginSettingTab {
    * 状态说明随之从「尚未初始化」翻面成「已就绪」。
    */
   renderInitSection(containerEl) {
-    new import_obsidian10.Setting(containerEl).setName(TEXTS.initHeading).setHeading();
-    new import_obsidian10.Setting(containerEl).setName(TEXTS.initName).setDesc(this.describeInitState()).addButton((button) => {
+    new import_obsidian17.Setting(containerEl).setName(TEXTS.initHeading).setHeading();
+    new import_obsidian17.Setting(containerEl).setName(TEXTS.initName).setDesc(this.describeInitState()).addButton((button) => {
       button.setButtonText(TEXTS.initButton).setCta().onClick(async () => {
         button.setDisabled(true);
         try {
-          await initializeVault(this.ctx);
+          await this.initialize();
         } finally {
           this.display();
         }
@@ -1469,13 +4394,13 @@ var ZiminosSettingTab = class extends import_obsidian10.PluginSettingTab {
   // ============================================================
   /** 自动化区：两个开关，对应插件仅有的两个常驻监听 */
   renderAutomationSection(containerEl) {
-    new import_obsidian10.Setting(containerEl).setName(TEXTS.autoHeading).setHeading();
+    new import_obsidian17.Setting(containerEl).setName(TEXTS.autoHeading).setHeading();
     this.renderToggle(containerEl, "autoCardInit", TEXTS.autoCardName, TEXTS.autoCardDesc);
     this.renderToggle(containerEl, "autoUpdated", TEXTS.autoUpdatedName, TEXTS.autoUpdatedDesc);
   }
   /** 渲染一个布尔开关。改动立即落盘，监听方每次触发都现读设置，故无需通知任何人 */
   renderToggle(containerEl, key, name, desc) {
-    new import_obsidian10.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
+    new import_obsidian17.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
       toggle.setValue(this.ctx.settings[key]).onChange(async (value) => {
         this.ctx.settings[key] = value;
         await this.ctx.saveSettings();
@@ -1487,7 +4412,7 @@ var ZiminosSettingTab = class extends import_obsidian10.PluginSettingTab {
   // ============================================================
   /** 灵感区直接展示常用自定义项；这些字段就是「记录灵感」命令的下一次运行参数 */
   renderInspirationSection(containerEl) {
-    new import_obsidian10.Setting(containerEl).setName(TEXTS.inspirationHeading).setHeading();
+    new import_obsidian17.Setting(containerEl).setName(TEXTS.inspirationHeading).setHeading();
     this.renderInspirationTextField(
       containerEl,
       "inspirationFolder",
@@ -1509,14 +4434,14 @@ var ZiminosSettingTab = class extends import_obsidian10.PluginSettingTab {
       TEXTS.inspirationTargetDesc,
       INSPIRATION_DEFAULTS.heading
     );
-    new import_obsidian10.Setting(containerEl).setName(TEXTS.inspirationPositionName).setDesc(TEXTS.inspirationPositionDesc).addDropdown((dropdown) => {
+    new import_obsidian17.Setting(containerEl).setName(TEXTS.inspirationPositionName).setDesc(TEXTS.inspirationPositionDesc).addDropdown((dropdown) => {
       dropdown.addOption("heading-top", "\u6807\u9898\u4E0B\u65B9\uFF08\u65B0\u5185\u5BB9\u5728\u524D\uFF09").addOption("heading-bottom", "\u6807\u9898\u533A\u672B\u5C3E\uFF08\u65B0\u5185\u5BB9\u5728\u540E\uFF09").addOption("file-top", "\u6B63\u6587\u9876\u90E8").addOption("file-bottom", "\u6B63\u6587\u5E95\u90E8").setValue(this.normalizeInspirationPosition(this.ctx.settings.inspirationInsertPosition)).onChange(async (value) => {
         const position = this.normalizeInspirationPosition(value);
         this.ctx.settings.inspirationInsertPosition = position;
         await this.ctx.saveSettings();
       });
     });
-    new import_obsidian10.Setting(containerEl).setName(TEXTS.inspirationFormatName).setDesc(TEXTS.inspirationFormatDesc).addTextArea((textArea) => {
+    new import_obsidian17.Setting(containerEl).setName(TEXTS.inspirationFormatName).setDesc(TEXTS.inspirationFormatDesc).addTextArea((textArea) => {
       textArea.setPlaceholder(INSPIRATION_DEFAULTS.format).setValue(this.ctx.settings.inspirationFormat).onChange(async (value) => {
         this.ctx.settings.inspirationFormat = value;
         await this.ctx.saveSettings();
@@ -1527,7 +4452,7 @@ var ZiminosSettingTab = class extends import_obsidian10.PluginSettingTab {
   }
   /** 灵感目录/文件/标题三个文本设置共用同一条即时落盘路径 */
   renderInspirationTextField(containerEl, key, name, desc, fallback) {
-    new import_obsidian10.Setting(containerEl).setName(name).setDesc(desc).addText((text) => {
+    new import_obsidian17.Setting(containerEl).setName(name).setDesc(desc).addText((text) => {
       text.setPlaceholder(fallback).setValue(this.ctx.settings[key]).onChange(async (value) => {
         this.ctx.settings[key] = value;
         await this.ctx.saveSettings();
@@ -1564,7 +4489,7 @@ var ZiminosSettingTab = class extends import_obsidian10.PluginSettingTab {
    */
   renderTextField(containerEl, field) {
     const fallback = DEFAULT_SETTINGS[field.key];
-    new import_obsidian10.Setting(containerEl).setName(field.name).setDesc(`${field.hint}\u8BFE\u7A0B\u9ED8\u8BA4\u503C ${fallback}\uFF0C\u6539\u524D\u4E09\u601D\u3002`).addText((text) => {
+    new import_obsidian17.Setting(containerEl).setName(field.name).setDesc(`${field.hint}\u8BFE\u7A0B\u9ED8\u8BA4\u503C ${fallback}\uFF0C\u6539\u524D\u4E09\u601D\u3002`).addText((text) => {
       text.setPlaceholder(fallback).setValue(this.ctx.settings[field.key]).onChange(async (value) => {
         this.ctx.settings[field.key] = value;
         await this.ctx.saveSettings();
@@ -1576,9 +4501,9 @@ var ZiminosSettingTab = class extends import_obsidian10.PluginSettingTab {
   // ============================================================
   /** 模块区：纯展示，没有任何控件。未上线的模块以禁用态呈现，看得见但点不动 */
   renderModulesSection(containerEl) {
-    new import_obsidian10.Setting(containerEl).setName(TEXTS.modulesHeading).setHeading();
+    new import_obsidian17.Setting(containerEl).setName(TEXTS.modulesHeading).setHeading();
     for (const entry of SYSTEM_MODULES) {
-      const item = new import_obsidian10.Setting(containerEl).setName(entry.name).setDesc(entry.status);
+      const item = new import_obsidian17.Setting(containerEl).setName(entry.name).setDesc(entry.status);
       if (!entry.running) item.setDisabled(true);
     }
   }
@@ -1589,7 +4514,7 @@ var INIT_VAULT_COMMAND = {
   id: "init-vault",
   name: "\u521D\u59CB\u5316\u7B14\u8BB0\u5E93"
 };
-var ZiminosPlugin = class extends import_obsidian11.Plugin {
+var ZiminosPlugin = class extends import_obsidian18.Plugin {
   constructor() {
     super(...arguments);
     /**
@@ -1609,12 +4534,17 @@ var ZiminosPlugin = class extends import_obsidian11.Plugin {
       // 守卫必须全库唯一：写方标记与监听方查询共用同一份记录，自写抑制才成立
       guard: new SelfWriteGuard()
     };
+    const collectSeeds = () => [
+      projectsSeed(ctx),
+      reviewSeed(ctx),
+      contactsSeed(ctx)
+    ];
     this.addCommand({
       id: INIT_VAULT_COMMAND.id,
       name: INIT_VAULT_COMMAND.name,
       // 开荒内部已把全部异常转成中文 Notice，此处无需等待也无需接住
       callback: () => {
-        void initializeVault(ctx);
+        void initializeVault(ctx, collectSeeds());
       }
     });
     registerCreateProjectCommand(ctx);
@@ -1623,7 +4553,23 @@ var ZiminosPlugin = class extends import_obsidian11.Plugin {
     registerTransitionCommands(ctx);
     registerUpdatedMaintainer(ctx);
     registerInspirationCaptureCommand(ctx);
-    this.addSettingTab(new ZiminosSettingTab(ctx));
+    registerPeriodicCommands(ctx);
+    registerThemeCommand(ctx);
+    registerCreateContactCommand(ctx);
+    registerRecordFavorCommand(ctx, () => openPeriodNote(ctx, PERIODS.daily, { reveal: false }));
+    registerClientCommands(ctx, (seed) => applySeed(ctx, seed));
+    registerViewCodeBlock(ctx, [
+      ...reviewThemeViews,
+      ...reviewProjectViews,
+      ...personViews,
+      ...circleViews,
+      // 客户视图始终注册：视图是只读的，注册它零成本，
+      // 而用开关控制注册会让「块能不能渲染」变成需要重启才生效的事
+      ...clientViews
+    ]);
+    this.addSettingTab(
+      new ZiminosSettingTab(ctx, () => initializeVault(ctx, collectSeeds()))
+    );
   }
   /**
    * 读取持久化设置并补齐缺省值。

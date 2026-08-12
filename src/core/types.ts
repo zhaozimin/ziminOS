@@ -1,7 +1,8 @@
 /**
  * [INPUT]: 依赖 obsidian 的 App/Plugin 类型，依赖 ./constants 的 PARA、时间与灵感收集默认值，
  *          依赖 ./guard 的 SelfWriteGuard 类型
- * [OUTPUT]: 对外提供 ZiminosSettings 设置契约、DEFAULT_SETTINGS 默认值、ZiminosContext 运行时上下文
+ * [OUTPUT]: 对外提供 ZiminosSettings 设置契约、DEFAULT_SETTINGS 默认值、ZiminosContext 运行时上下文，
+ *           以及开荒贡献契约 VaultSeed/VaultSeedNote
  * [POS]: core 的契约层，定义插件与各功能模块之间唯一的传参形态。
  *        功能模块一律只接收 ZiminosContext，不直接持有 Plugin 实例细节，也不各自读写设置文件——
  *        这样 main.ts 是唯一装配点，模块之间彼此不可见，可以并行开发、独立替换
@@ -9,7 +10,13 @@
  */
 
 import type { App, Plugin } from 'obsidian';
-import { DEFAULT_DATETIME_FORMAT, FOLDERS, INSPIRATION_DEFAULTS } from './constants';
+import {
+    CLIENT_FOLDER,
+    CONTACT_FOLDER,
+    DEFAULT_DATETIME_FORMAT,
+    FOLDERS,
+    INSPIRATION_DEFAULTS,
+} from './constants';
 import type { InspirationInsertPosition } from './constants';
 import type { SelfWriteGuard } from './guard';
 
@@ -37,6 +44,16 @@ export interface ZiminosSettings {
     inspirationInsertPosition: InspirationInsertPosition;
     /** 单条灵感模板，支持 content/date/time/datetime 四个占位符 */
     inspirationFormat: string;
+    /** 复盘时间轴根目录；五个子目录由它派生，学员改一处即可整体搬家 */
+    diaryFolder: string;
+    /** 人脉档案根目录 */
+    contactFolder: string;
+    /** 客户档案根目录 */
+    clientFolder: string;
+    /** 客户来源渠道候选，逗号分隔。走选择而非手打，否则「B站/b站/哔哩哔哩」会把渠道统计打散 */
+    clientSources: string;
+    /** 产品候选，逗号分隔。产品名是学员自己的，必须可配，但仍要枚举化 */
+    clientProducts: string;
     /** 首次开荒完成的时间戳；空字符串表示尚未初始化，是「首次」与「补齐」的唯一判据 */
     initializedAt: string;
 }
@@ -54,8 +71,43 @@ export const DEFAULT_SETTINGS: ZiminosSettings = {
     inspirationHeading: INSPIRATION_DEFAULTS.heading,
     inspirationInsertPosition: INSPIRATION_DEFAULTS.insertPosition,
     inspirationFormat: INSPIRATION_DEFAULTS.format,
+    diaryFolder: FOLDERS.diary,
+    contactFolder: CONTACT_FOLDER,
+    clientFolder: CLIENT_FOLDER,
+    clientSources: 'B站,抖音,小红书,公众号,朋友介绍,其他',
+    clientProducts: '课程,咨询,陪跑',
     initializedAt: '',
 };
+
+/**
+ * 一份笔记的开荒诉求：路径 + 正文。
+ * 正文是已经求值好的字符串而非工厂函数——模板都是纯函数，求值便宜，
+ * 多一层惰性只会让「开荒到底会写出什么」这件事需要跑一遍才知道。
+ */
+export interface VaultSeedNote {
+    readonly path: string;
+    readonly content: string;
+}
+
+/**
+ * 一个功能模块对开荒的全部贡献。
+ *
+ * 它存在的理由是依赖方向：开荒要建人脉 MOC、要建复盘目录，
+ * 但开荒模块一旦 import 人脉模块，「模块之间彼此不认识」这条不变式就破了。
+ * 改由每个模块自报诉求、main 装配、开荒只认这个契约——
+ * 于是新增一个模块只是在 main 里多传一个 seed，开荒代码一行不改（OCP）。
+ */
+export interface VaultSeed {
+    /** 本模块要求存在的目录，父目录必须排在子目录之前 */
+    readonly folders: readonly string[];
+    /** 本模块要求存在的笔记；已存在的一律不读不改不覆盖 */
+    readonly notes: readonly VaultSeedNote[];
+    /**
+     * 仅首次开荒执行的收尾动作，例如开出第一个项目。
+     * 补齐时不执行——补齐是修复骨架，不是重来一次。
+     */
+    readonly finish?: () => Promise<void>;
+}
 
 /**
  * 运行时上下文：功能模块能力的全部来源。

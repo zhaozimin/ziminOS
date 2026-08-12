@@ -1,7 +1,6 @@
 /**
  * [INPUT]: 依赖 obsidian 的 PluginSettingTab 基类与 Setting 构建器；依赖 ./core/constants 的
- *          灵感默认值/插入位置、./core/types 的 ZiminosContext/DEFAULT_SETTINGS，
- *          依赖 ./modules/projects/init 的 initializeVault
+ *          灵感默认值/插入位置、./core/types 的 ZiminosContext/DEFAULT_SETTINGS
  * [OUTPUT]: 对外提供 ZiminosSettingTab，由 main.ts 在装配末尾挂载
  * [POS]: 插件唯一的图形界面，也是「人主导」这条红线的具象化——开荒只在用户按下按钮时发生，
  *        两个自动行为的开关随时可以关掉。它只读写 ctx.settings 并调 ctx.saveSettings，
@@ -17,7 +16,6 @@ import { INSPIRATION_DEFAULTS, INSPIRATION_INSERT_POSITIONS } from './core/const
 import type { InspirationInsertPosition } from './core/constants';
 import { DEFAULT_SETTINGS } from './core/types';
 import type { ZiminosContext } from './core/types';
-import { initializeVault } from './modules/projects/init';
 
 // ============================================================
 // 界面文案（全中文，集中在此，避免同一句话散落在多处）
@@ -27,7 +25,7 @@ const TEXTS = {
     initHeading: '开荒',
     initName: '初始化笔记库',
     initButton: '初始化',
-    initPending: '尚未初始化。点右边的按钮，为这个库铺好 PARA 六个文件夹、两份模板和一页导航。',
+    initPending: '尚未初始化。点右边的按钮，为这个库铺好七个文件夹、模板与导航，并长出人脉与复盘两套系统。',
     initReadyPrefix: '已就绪 ✓ 首次开荒于 ',
     initReadySuffix: '。再点一次只补齐缺失的文件，不会覆盖你写过的任何笔记。',
 
@@ -59,7 +57,16 @@ const TEXTS = {
 // ============================================================
 
 /** 可由高级区文本框直接编辑的设置项，全部是字符串字段 */
-type TextSettingKey = 'projectFolder' | 'areaFolder' | 'archiveFolder' | 'dateTimeFormat';
+type TextSettingKey =
+    | 'projectFolder'
+    | 'areaFolder'
+    | 'archiveFolder'
+    | 'diaryFolder'
+    | 'contactFolder'
+    | 'clientFolder'
+    | 'clientSources'
+    | 'clientProducts'
+    | 'dateTimeFormat';
 
 /** 一个文本框的全部信息。用数据描述而非四段雷同代码，增删字段只改这张表 */
 interface TextFieldSpec {
@@ -72,7 +79,12 @@ interface TextFieldSpec {
 const ADVANCED_FIELDS: readonly TextFieldSpec[] = [
     { key: 'projectFolder', name: '项目目录', hint: '正在推进的项目放在这里。' },
     { key: 'areaFolder', name: '领域目录', hint: '长期关注、没有终点的领域放在这里。' },
-    { key: 'archiveFolder', name: '归档目录', hint: '完成、暂停、放弃的项目会搬到这里。' },
+    { key: 'archiveFolder', name: '归档目录', hint: '完成、暂停、放弃的项目会搬到这里；人脉档案搬进来即退出全部名录。' },
+    { key: 'diaryFolder', name: '复盘目录', hint: '日/周/月/季/年五级复盘的时间轴根目录，五个子目录由它派生。' },
+    { key: 'contactFolder', name: '人脉目录', hint: '人物档案平铺存放在这里；视图靠 type 认人，挪走也不影响。' },
+    { key: 'clientFolder', name: '客户目录', hint: '付费用户档案放在这里，运行「初始化客户模块」后才会用到。' },
+    { key: 'clientSources', name: '客户渠道', hint: '「新建客户」的渠道候选，用逗号分隔。走选择而非手打，统计才不会被同义写法打散。' },
+    { key: 'clientProducts', name: '产品清单', hint: '「增加付费」的产品候选，用逗号分隔。' },
     { key: 'dateTimeFormat', name: '时间格式', hint: 'created 与 updated 字段的写法，moment 语法。' },
 ];
 
@@ -92,10 +104,15 @@ interface ModuleEntry {
  * 与自有 CSS 协同提供；清单只展示交付状态，不在 ziminOS 内重新实现第三方能力。
  */
 const SYSTEM_MODULES: readonly ModuleEntry[] = [
-    { name: '📦 项目管理 v1', status: '运行中', running: true },
-    { name: '💡 灵感收集 v1', status: 'Dataview 未完成任务视图已就绪', running: true },
-    { name: '👥 人脉管理', status: '敬请期待', running: false },
-    { name: '📔 日记复盘', status: '敬请期待', running: false },
+    { name: '📦 项目管理 v1', status: '运行中 · 建项目、卡片登记、四态流转', running: true },
+    { name: '💡 灵感收集 v1', status: '运行中 · Dataview 未完成任务视图已就绪', running: true },
+    { name: '👥 人脉管理 v1', status: '运行中 · 新建人脉、记人情，档案与 MOC 共八个视图', running: true },
+    { name: '📔 复盘 v1', status: '运行中 · 五级周期笔记、主题链与项目数据共五个视图', running: true },
+    {
+        name: '💰 客户与付费 v1',
+        status: '按需启用 · 命令面板运行「初始化客户模块」，长出 MOC 与八个视图',
+        running: true,
+    },
     { name: '🎨 外观包 v1', status: 'Minimal + Style Settings 已就绪', running: true },
 ];
 
@@ -111,10 +128,18 @@ const SYSTEM_MODULES: readonly ModuleEntry[] = [
 export class ZiminosSettingTab extends PluginSettingTab {
     private readonly ctx: ZiminosContext;
 
-    constructor(ctx: ZiminosContext) {
+    /**
+     * 开荒动作由 main 注入。
+     * 设置页因此不必知道有哪些模块要参与开荒——那份名单只存在于装配点，
+     * 加一个模块不会牵动这个文件。
+     */
+    private readonly initialize: () => Promise<void>;
+
+    constructor(ctx: ZiminosContext, initialize: () => Promise<void>) {
         super(ctx.app, ctx.plugin);
 
         this.ctx = ctx;
+        this.initialize = initialize;
     }
 
     /** 每次打开设置页都整体重建，保证显示的永远是设置对象的当前值 */
@@ -154,7 +179,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
 
                         try {
                             // 开荒自己吃掉全部异常并以 Notice 汇报，这里不需要再判断成败
-                            await initializeVault(this.ctx);
+                            await this.initialize();
                         } finally {
                             // 重建面板即刷新状态；旧按钮随 containerEl 一起丢弃，无需解禁
                             this.display();

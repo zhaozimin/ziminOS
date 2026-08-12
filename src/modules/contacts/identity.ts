@@ -1,0 +1,77 @@
+/**
+ * [INPUT]: 依赖 obsidian 的 TFile 与 App 类型；依赖 core/constants 的 FIELDS/FOLDERS，
+ *          core/folders 的 isInFolder/normalizeFolderPath，core/types 的 ZiminosContext
+ * [OUTPUT]: 对外提供 isLivePath（还在经营范围内）与 liveNotesOfType（命令侧的候选人清单）
+ * [POS]: 「谁还算数」这个问题的唯一答案处，被两条命令与十几个视图共用。
+ *        全部视图靠 type 认身份、不靠文件夹，唯一还认位置的是归档——
+ *        因为「不再往来的人」需要一个退出机制，而他的身份没变，
+ *        变的是你不再经营这段关系，这件事只能用位置表达。
+ *        归档目录取自插件设置，不再需要库内的一份配置笔记：
+ *        视图搬进插件之后，位置依赖彻底收敛到设置页那一个输入框
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+import { TFile } from 'obsidian';
+import type { ViewContext } from '../../core/codeblock';
+import { FIELDS, FOLDERS } from '../../core/constants';
+import { isInFolder, normalizeFolderPath } from '../../core/folders';
+import { dayOfTitle } from '../../core/time';
+import type { ZiminosContext } from '../../core/types';
+
+/** 归档目录，按设置解析 */
+export function archiveFolderOf(ctx: ZiminosContext): string {
+    return normalizeFolderPath(ctx.settings.archiveFolder, FOLDERS.archives);
+}
+
+/** 这条路径还在经营范围内吗？搬进归档目录即退出全部名录 */
+export function isLivePath(archiveFolder: string, path: string): boolean {
+    return !isInFolder(path, archiveFolder);
+}
+
+/**
+ * 某个身份的全部在营笔记，按名字排序。
+ *
+ * 命令侧专用：命令拿不到视图引擎的索引，只能自己走一遍 metadataCache。
+ * 这点开销发生在人点了命令之后、弹窗出现之前，量级是全库一次遍历，感知不到。
+ */
+export function liveNotesOfType(ctx: ZiminosContext, type: string): TFile[] {
+    const archive = archiveFolderOf(ctx);
+    const matched: TFile[] = [];
+
+    for (const file of ctx.app.vault.getMarkdownFiles()) {
+        if (!isLivePath(archive, file.path)) continue;
+
+        const declared = ctx.app.metadataCache.getFileCache(file)?.frontmatter?.[FIELDS.type];
+        const values = Array.isArray(declared) ? declared : [declared];
+
+        if (values.some((value) => String(value ?? '').trim() === type)) matched.push(file);
+    }
+
+    return matched.sort((left, right) => left.basename.localeCompare(right.basename, 'zh'));
+}
+
+/** 档案的一句话简介，用来让选择列表里的同名者可区分 */
+export function descriptionOf(ctx: ZiminosContext, file: TFile): string {
+    const value = ctx.app.metadataCache.getFileCache(file)?.frontmatter?.[FIELDS.description];
+
+    return String(value ?? '').trim();
+}
+
+/**
+ * 最近一次在日记里提到他是哪天，没提过返回 null。
+ *
+ * 只认日记：档案之间的互链、MOC 里的名录链接都不算「联系」，
+ * 否则每个人都会显示成今天刚联系过——名录会变成一张永远全绿的假表，
+ * 而这套系统里最值钱的恰恰是那个 ⚠️。
+ */
+export function lastContactDayOf(view: ViewContext, person: TFile): string | null {
+    let latest: string | null = null;
+
+    for (const source of view.index.backlinksOf(person)) {
+        const day = dayOfTitle(source.basename);
+
+        if (day && (!latest || day > latest)) latest = day;
+    }
+
+    return latest;
+}

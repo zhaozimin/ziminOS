@@ -1,12 +1,15 @@
 /**
  * [INPUT]: 依赖 obsidian 的 ButtonComponent/Modal/Notice/TFile/TFolder/Vault/normalizePath 与 App 类型，
- *          依赖 core/constants 的 TRANSITIONS、STATUS_LABELS 与流转类型，
+ *          依赖 core/constants 的 TRANSITIONS、STATUS_LABELS、FIELDS 与流转类型，依赖 core/time 的 today，
  *          依赖 core/folders 的 ensureFolderPath、normalizeFolderPath，
  *          依赖 core/types 的 ZiminosContext 与 DEFAULT_SETTINGS，依赖 core/frontmatter 的 Frontmatter 类型
  * [OUTPUT]: 对外提供 registerTransitionCommands（注册四条流转命令）与 runProjectTransition（执行单次流转）
  * [POS]: projects 模块的生命周期终局，与 createProject 构成项目的一生两端——
  *        createProject 在项目目录里造出 MOC，本文件按 TRANSITIONS 状态机把整个项目文件夹
- *        在「项目目录」与「归档目录」之间整体搬移，并改写 MOC 的 status。
+ *        在「项目目录」与「归档目录」之间整体搬移，并在同一次写入里改写 MOC 的 status 与 archived。
+ *        archived 是复盘「本月完成了哪些项目」唯一可信的时间事实：文件系统时间会被同步、
+ *        rsync 与批量脚本改写，frontmatter 的 updated 又恰恰被自写抑制挡在门外（归档是插件的
+ *        动作而非人的编辑），因此归档时刻若不在这里落笔，就再也无处可查。
  *        全部守卫（必须站在约定路径的同名 MOC 上、type 必须是 project、当前 status 必须在
  *        allowedStatuses 内、目标位置不得已有同名项目）都前置在搬移之前；搬移之后任一步失败
  *        都整体回滚，绝不留下「文件夹已搬走但状态没改」的半截状态。这是全插件唯一会移动
@@ -19,10 +22,11 @@
 import { ButtonComponent, Modal, Notice, TFile, TFolder, Vault, normalizePath } from 'obsidian';
 import type { App } from 'obsidian';
 
-import { STATUS_LABELS, TRANSITIONS } from '../../core/constants';
+import { FIELDS, STATUS_LABELS, TRANSITIONS } from '../../core/constants';
 import type { FolderRole, ProjectTransition, TransitionAction } from '../../core/constants';
 import { ensureFolderPath, normalizeFolderPath } from '../../core/folders';
 import type { Frontmatter } from '../../core/frontmatter';
+import { today } from '../../core/time';
 import { DEFAULT_SETTINGS } from '../../core/types';
 import type { ZiminosContext } from '../../core/types';
 
@@ -92,6 +96,12 @@ interface TransitionProgress {
     statusChanged: boolean;
     /** MOC 里的 Base 筛选路径是否已经改写 */
     basePathChanged: boolean;
+    /**
+     * 改写前的 archived 原值，回滚时原样放回。
+     * 记原值而不是「回滚就删掉」：重新开始一个已归档项目时，
+     * 若流转中途失败却把归档日抹了，那篇项目会变成一个没有完成时间的完成项目。
+     */
+    previousArchived: unknown;
 }
 
 // ============================================================
@@ -262,6 +272,7 @@ async function applyTransition(ctx: ZiminosContext, plan: TransitionPlan): Promi
         moved: false,
         statusChanged: false,
         basePathChanged: false,
+        previousArchived: undefined,
     };
 
     try {
@@ -285,6 +296,19 @@ async function applyTransition(ctx: ZiminosContext, plan: TransitionPlan): Promi
             }
 
             movedFrontmatter.status = plan.transition.status;
+
+            // 归档日必须与 status 在同一次写入里落笔。
+            // 「哪个项目在本月完成」这件事没有别的可信来源：文件系统时间会被同步与脚本改写，
+            // frontmatter 的 updated 又恰恰被自写抑制挡住（归档是插件的动作，不是人的编辑），
+            // 于是不写它的话，一次归档在数据上根本没有发生过。
+            progress.previousArchived = movedFrontmatter[FIELDS.archived];
+
+            if (plan.transition.target === 'archive') {
+                movedFrontmatter[FIELDS.archived] = today();
+            } else {
+                // 重新开始意味着这个项目又回到进行中，旧的归档日不再成立，留着会让年度全景重复计数
+                delete movedFrontmatter[FIELDS.archived];
+            }
         });
         progress.statusChanged = true;
 
@@ -423,6 +447,10 @@ async function rollbackTransition(
             guard.mark(restoredMoc.path);
             await app.fileManager.processFrontMatter(restoredMoc, (frontmatter: Frontmatter) => {
                 frontmatter.status = plan.currentStatus;
+
+                // 状态与归档日是一次写入落的两个字段，回滚也必须一起还原
+                if (progress.previousArchived === undefined) delete frontmatter[FIELDS.archived];
+                else frontmatter[FIELDS.archived] = progress.previousArchived;
             });
         }
 

@@ -1,8 +1,11 @@
 /**
- * [INPUT]: 依赖 obsidian 导出的 moment，依赖 ./constants 的 UID_FORMAT 与 DEFAULT_DATETIME_FORMAT
+ * [INPUT]: 依赖 obsidian 导出的 moment，依赖 ./constants 的 UID_FORMAT、DEFAULT_DATETIME_FORMAT、
+ *          DAY_FORMAT 与 PeriodDefinition 类型
  * [OUTPUT]: 对外提供 nowStamp（按设置格式取当前时间）、nowUid（17 位本地时间 UID）、
  *           nowStampAndUid（同一时刻派生时间戳与 UID）、nowLocalDateTimeParts（同一时刻派生
- *           日期/分钟/自定义时间）及对应返回类型
+ *           日期/分钟/自定义时间）；日粒度口径 today/dayText/dayOfMillis/dayOfTitle/shiftDay/daysBetween；
+ *           五级复盘周期算术 currentPeriodTitle/periodStartOf/periodEndOf/periodNeighbours/titleOfDay
+ *           及对应返回类型
  * [POS]: core 的时间口径统一处，同时是 dateTimeFormat 设置项的守门人——
  *        设置页刻意不做校验，空值回落在此收敛为唯一一处，调用方传原值即可，无从遗漏。
  *        原始脚本里存在手写 padStart 与 moment 两套实现，此处统一为 moment 一种
@@ -13,12 +16,26 @@
  */
 
 import { moment } from 'obsidian';
-import { DEFAULT_DATETIME_FORMAT, UID_FORMAT } from './constants';
+import { DAY_FORMAT, DEFAULT_DATETIME_FORMAT, UID_FORMAT } from './constants';
+import type { PeriodDefinition } from './constants';
 
-/** 本模块只用得到 format，按接口隔离原则不引入 moment 的完整类型 */
+/**
+ * 本模块用到的 moment 能力，按接口隔离原则只声明这些，不引入 moment 的完整类型。
+ * 注意 startOf/add/subtract 在 moment 里是就地修改并返回自身，
+ * 因此任何派生计算都必须先 clone，否则一次取上一篇会把原始时刻改掉。
+ */
 interface MomentLike {
     format(format: string): string;
+    isValid(): boolean;
+    clone(): MomentLike;
+    startOf(unit: string): MomentLike;
+    add(amount: number, unit: string): MomentLike;
+    subtract(amount: number, unit: string): MomentLike;
+    diff(other: MomentLike, unit: string): number;
 }
+
+/** moment 的三种调用形态：取当下、解析时间戳、按格式严格解析标题 */
+type MomentFactory = (input?: string | number, format?: string, strict?: boolean) => MomentLike;
 
 /** 同一时刻派生出的两个时间身份：人读的时间戳与机器认的永久 UID */
 export interface StampAndUid {
@@ -40,7 +57,7 @@ export interface LocalDateTimeParts {
  * 命名空间类型不携带调用签名，因此需要在此还原它本来的函数形态。
  * 运行时拿到的就是 Obsidian 内置的 moment 本体，本断言只修类型不改行为，且全仓库仅此一处。
  */
-const momentFactory = moment as unknown as () => MomentLike;
+const momentFactory = moment as unknown as MomentFactory;
 
 /**
  * 把设置页里的自由文本收敛成可用的 moment 格式串：空串、纯空白、非字符串一律回落默认格式。
@@ -95,8 +112,156 @@ export function nowLocalDateTimeParts(format: string): LocalDateTimeParts {
     const now = momentFactory();
 
     return {
-        date: now.format('YYYY-MM-DD'),
+        date: now.format(DAY_FORMAT),
         time: now.format('HH:mm'),
         datetime: now.format(normalizeDateTimeFormat(format)),
     };
+}
+
+// ============================================================
+// 日粒度：全库一切区间比较的落地格式
+// ============================================================
+
+/** 今天，YYYY-MM-DD */
+export function today(): string {
+    return momentFactory().format(DAY_FORMAT);
+}
+
+/**
+ * 把 frontmatter 里的任意时间值收敛成 YYYY-MM-DD，收敛不了返回 null。
+ *
+ * 全库一切区间比较都降到这个定宽字符串空间——字典序即时间序，
+ * 于是不存在日期算术、不存在跨年边界、也不存在「字符串与日期对象比大小」这种
+ * 不报错却恒定返回同一结果的静默陷阱。
+ *
+ * 只认 ISO 前缀是刻意的：`2026/8/10` 这类写法宁可算作「没填」，也不做宽松猜测——
+ * 猜错产生的是一个看起来合理的错误日期，比空值有害得多。全部模板写出的都是 ISO。
+ */
+export function dayText(value: unknown): string | null {
+    if (value === null || value === undefined) return null;
+
+    if (value instanceof Date) {
+        const time = value.getTime();
+
+        return Number.isNaN(time) ? null : momentFactory(time).format(DAY_FORMAT);
+    }
+
+    if (typeof value === 'number') {
+        return Number.isFinite(value) ? momentFactory(value).format(DAY_FORMAT) : null;
+    }
+
+    const text = String(value).trim();
+
+    return /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(0, 10) : null;
+}
+
+/** 把文件时间戳（毫秒）转成日粒度，供 frontmatter 缺字段时兜底 */
+export function dayOfMillis(millis: number): string {
+    return momentFactory(millis).format(DAY_FORMAT);
+}
+
+/**
+ * 文件名恰好是一个合法日期时返回它，否则 null。
+ *
+ * 这是全库唯一的「这篇是不是日记」判据——只认文件名，不认文件夹。
+ * 学员把日记挪出 05-diary、改成英文目录名、按年份再分层，人脉与复盘的十几个视图一个都不用改。
+ * 严格解析同时挡掉 2026-13-45 这类看着像日期的文件名。
+ */
+export function dayOfTitle(title: string): string | null {
+    return momentFactory(title, DAY_FORMAT, true).isValid() ? title : null;
+}
+
+/** 在日粒度上平移，返回仍是 YYYY-MM-DD；输入非法时原样返回，调用方的比较自然落空 */
+export function shiftDay(day: string, amount: number, unit: string): string {
+    const parsed = momentFactory(day, DAY_FORMAT, true);
+
+    if (!parsed.isValid()) return day;
+
+    return parsed.add(amount, unit).format(DAY_FORMAT);
+}
+
+/** 两个日粒度时间之间的天数；任一为空返回 null（不要把「算不出」伪装成 0 天） */
+export function daysBetween(from: string | null, to: string | null): number | null {
+    if (!from || !to) return null;
+
+    const start = momentFactory(from, DAY_FORMAT, true);
+    const end = momentFactory(to, DAY_FORMAT, true);
+
+    if (!start.isValid() || !end.isValid()) return null;
+
+    return Math.round(end.diff(start, 'days'));
+}
+
+// ============================================================
+// 五级复盘的周期算术
+// ============================================================
+
+/** 一篇周期笔记的三个邻居，用于生成导航行 */
+export interface PeriodNeighbours {
+    readonly prev: string;
+    readonly next: string;
+    /** 上级周期笔记标题；年记没有上级 */
+    readonly parent: string | null;
+}
+
+/** 当下所属周期的标题，也就是「今天/本周/本月/本季/本年」那篇笔记的文件名 */
+export function currentPeriodTitle(period: PeriodDefinition): string {
+    return momentFactory().format(period.titleFormat);
+}
+
+/**
+ * 从周期笔记的标题反解出周期锚点（YYYY-MM-DD）。
+ * 严格解析：标题不是该级的格式就返回 null，由调用方显式提示，
+ * 绝不悄悄回退到「当前周期」——那会让一篇命名错误的笔记安静地冒充本周。
+ */
+export function periodStartOf(period: PeriodDefinition, title: string): string | null {
+    const parsed = momentFactory(title, period.titleFormat, true);
+
+    if (!parsed.isValid()) return null;
+
+    return parsed.startOf(period.startOfUnit).format(DAY_FORMAT);
+}
+
+/** 周期区间的开区间右端：`start <= x < end`，五级共用同一条比较式 */
+export function periodEndOf(period: PeriodDefinition, startDay: string): string {
+    return shiftDay(startDay, 1, period.stepUnit);
+}
+
+/**
+ * 算出一篇周期笔记的上一篇、下一篇与上级。
+ *
+ * 上级一律用「周期锚点 → 按上级格式重新格式化」求得，唯独周记要先 +3 天：
+ * 周归属月按 ISO 惯例以周四为准，每周只归一个月，不重不漏。
+ * 若改成按周一归属，跨月那一周会在两个月里各出现一次或一次都不出现。
+ */
+export function periodNeighbours(
+    period: PeriodDefinition,
+    title: string,
+    parentPeriod: PeriodDefinition | null,
+): PeriodNeighbours | null {
+    const parsed = momentFactory(title, period.titleFormat, true);
+
+    if (!parsed.isValid()) return null;
+
+    const prev = parsed.clone().subtract(1, period.stepUnit).format(period.titleFormat);
+    const next = parsed.clone().add(1, period.stepUnit).format(period.titleFormat);
+
+    if (!parentPeriod) return { prev, next, parent: null };
+
+    const anchor = parsed.clone().startOf(period.startOfUnit);
+    const parent = (period.key === 'weekly' ? anchor.add(3, 'days') : anchor).format(
+        parentPeriod.titleFormat,
+    );
+
+    return { prev, next, parent };
+}
+
+/**
+ * 把某个日粒度时间按某一级的标题格式重新表达。
+ * 主题链向上汇总时用它把「某一天」折算成「它属于哪一周/哪个月」。
+ */
+export function titleOfDay(day: string, period: PeriodDefinition): string | null {
+    const parsed = momentFactory(day, DAY_FORMAT, true);
+
+    return parsed.isValid() ? parsed.format(period.titleFormat) : null;
 }

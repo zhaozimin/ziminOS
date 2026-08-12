@@ -1,10 +1,14 @@
 /**
  * [INPUT]: 无。本文件不 import 任何模块，是 core 层依赖图的最底层叶子
- * [OUTPUT]: 对外提供 PARA 目录常量 FOLDERS/INIT_FOLDERS、笔记路径常量 NAV_FILE/TEMPLATE_FILES、
- *           卡片字段序 CARD_FIELDS 与其字段类型 CardField、时间格式 DEFAULT_DATETIME_FORMAT/UID_FORMAT、
- *           灵感收集默认值/命令/插入位置，
- *           自写抑制窗口 SELF_WRITE_WINDOW_MS，以及项目生命周期状态机 TRANSITIONS/STATUS_LABELS
- *           及其类型 ProjectStatus/TransitionAction/FolderRole/ProjectTransition
+ * [OUTPUT]: 对外提供 PARA 目录常量 FOLDERS/INIT_FOLDERS/CONTACT_FOLDER/CLIENT_FOLDER、
+ *           笔记路径常量 NAV_FILE/TEMPLATE_FILES/CONTACT_MOC/CLIENT_MOC、
+ *           卡片字段序 CARD_FIELDS 与其字段类型 CardField、统一字段名 FIELDS 与身份取值 NOTE_TYPES、
+ *           时间格式 DEFAULT_DATETIME_FORMAT/UID_FORMAT/DAY_FORMAT、灵感收集默认值/命令/插入位置，
+ *           自写抑制窗口 SELF_WRITE_WINDOW_MS，项目生命周期状态机 TRANSITIONS/STATUS_LABELS
+ *           及其类型 ProjectStatus/TransitionAction/FolderRole/ProjectTransition，
+ *           五级复盘周期表 PERIODS 及其类型 PeriodKey/PeriodDefinition，
+ *           人脉三轴 CONTACT_TIERS/TIER_LIMITS/CONTACT_DIRECTIONS、人情账本格式 LEDGER、
+ *           付费流水字段 PAYMENT_FIELDS，以及视图代码块契约 VIEW_BLOCK_LANG/VIEW_REFRESH_DEBOUNCE_MS
  * [POS]: 全仓库唯一的常量源。规格要求「禁魔法字符串」，任何目录名、字段名、状态名、时间格式
  *        都必须从这里取而不得就地硬编码；因为它零依赖，所有模块都可单向依赖它而不产生环
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -14,18 +18,30 @@
 // PARA 目录骨架
 // ============================================================
 
-/** 笔记库的六个根文件夹与模板目录，值是相对于库根的路径 */
+/**
+ * 笔记库的七个根文件夹与模板目录，值是相对于库根的路径。
+ *
+ * 前六个是 PARA 骨架，回答「这东西属于谁」；diary 是 V2 新增的第七个，回答「这事什么时候发生」。
+ * 两种坐标轴不塞进同一格：复盘是时间轴，它在 PARA 的四个象限里都找不到自己的位置。
+ */
 export const FOLDERS = {
     inbox: '00-inbox',
     projects: '01-projects',
     areas: '02-areas',
     resources: '03-resources',
     archives: '04-archives',
+    diary: '05-diary',
     system: '90-system',
     template: '90-system/Template',
 } as const;
 
-/** 开荒时按序创建的目录：先六个根目录，再模板子目录（父目录先于子目录） */
+/**
+ * 开荒时由骨架本身保证存在的目录：六个 PARA 根目录 + 模板子目录（父目录先于子目录）。
+ *
+ * 这里刻意不含 05-diary 与 02-areas/人脉——它们由复盘与人脉模块各自的开荒贡献带来。
+ * 「第七个根文件夹存在，是因为复盘模块存在」这件事必须在代码里也成立，
+ * 否则删掉一个模块，库里会留下一个永远空着的目录。
+ */
 export const INIT_FOLDERS: readonly string[] = [
     FOLDERS.inbox,
     FOLDERS.projects,
@@ -36,6 +52,12 @@ export const INIT_FOLDERS: readonly string[] = [
     FOLDERS.template,
 ];
 
+/** 人脉档案的家：平铺存放，不建子目录（分组靠 up 归属链接，不靠文件夹） */
+export const CONTACT_FOLDER = `${FOLDERS.areas}/人脉`;
+
+/** 客户档案的家；它不进开荒骨架，由「初始化客户模块」命令按需长出 */
+export const CLIENT_FOLDER = `${FOLDERS.areas}/客户`;
+
 // ============================================================
 // 系统笔记路径
 // ============================================================
@@ -43,11 +65,19 @@ export const INIT_FOLDERS: readonly string[] = [
 /** 导航笔记：库的总入口，开荒时生成 */
 export const NAV_FILE = `${FOLDERS.system}/导航.md`;
 
-/** 供「模板」核心插件手动插入的两份模板文件 */
+/** 供「模板」核心插件手动插入的模板文件 */
 export const TEMPLATE_FILES = {
     moc: `${FOLDERS.template}/MOC 模板.md`,
     card: `${FOLDERS.template}/卡片笔记模板.md`,
+    person: `${FOLDERS.template}/人脉模板.md`,
+    client: `${FOLDERS.template}/客户模板.md`,
 } as const;
+
+/** 人脉领域总控台，也是新建档案时 up 的默认指向 */
+export const CONTACT_MOC = `${CONTACT_FOLDER}/人脉MOC.md`;
+
+/** 客户领域总控台，随客户模块一起长出 */
+export const CLIENT_MOC = `${CLIENT_FOLDER}/客户MOC.md`;
 
 // ============================================================
 // 灵感收集
@@ -195,3 +225,295 @@ export const STATUS_LABELS: Readonly<Record<string, string>> = {
     done: '已完成',
     dropped: '已放弃',
 };
+
+// ============================================================
+// 全库统一字段名与身份取值
+// ============================================================
+
+/**
+ * frontmatter 字段名的唯一出处。
+ *
+ * 视图靠字段认事实，命令靠字段写事实，两边写错一个字母就静默失联——
+ * 而 YAML 里的空字段查不出来也报不了错，是最难发现的一类 bug。因此全部收敛在此。
+ */
+export const FIELDS = {
+    aliases: 'aliases',
+    description: 'description',
+    created: 'created',
+    updated: 'updated',
+    tags: 'tags',
+    uid: 'UID',
+    type: 'type',
+    status: 'status',
+    up: 'up',
+    /** 归档时刻。由状态流转命令与 status 同一次写入，是「本月完成了什么」唯一可信的时间事实 */
+    archived: 'archived',
+    /** 项目→人的商业契约标记：写下它等于宣告「我欠这个人一个交付」 */
+    client: 'client',
+    /** 项目→人的同行标记：一起做的，无交付债务 */
+    with: 'with',
+    tier: 'tier',
+    direction: 'direction',
+    gift: 'gift',
+    address: 'address',
+    get: 'get',
+    birthday: 'birthday',
+    source: 'source',
+    contact: 'contact',
+    homepage: 'homepage',
+    /** 复盘主题：主题链的唯一入口，五级各写一句 */
+    theme: 'theme',
+    /** 复盘周期锚点，YYYY-MM-DD 定宽字符串；日记没有此字段，它的锚点是文件名 */
+    periodStart: 'period_start',
+} as const;
+
+/**
+ * type 字段的封闭枚举。
+ *
+ * 全部视图靠它认身份，与文件夹无关——学员重命名目录、换分层、用英文目录名，视图一个都不用改。
+ * 唯一保留的位置依赖是归档目录：「不再往来的人」身份没变，变的是不再经营，只能用位置表达。
+ */
+export const NOTE_TYPES = {
+    project: 'project',
+    area: 'area',
+    /** 人脉档案：认识的人，有生日有脾气有人情往来 */
+    person: 'person',
+    /** 付费用户：陌生人买你的东西，你只知道渠道与联系方式，是与 person 并列的独立物种 */
+    client: 'client',
+    diary: 'diary',
+    weekly: 'weekly',
+    monthly: 'monthly',
+    quarterly: 'quarterly',
+    yearly: 'yearly',
+} as const;
+
+/** 全库一切区间比较的落地格式：定宽，字典序即时间序，零日期算术、零跨类型陷阱 */
+export const DAY_FORMAT = 'YYYY-MM-DD';
+
+// ============================================================
+// 五级复盘周期表
+// ============================================================
+
+/** 五级复盘的档位标识；同时是 DIARY 子目录与 PERIODS 表的键 */
+export type PeriodKey = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+
+/**
+ * 一级复盘的完整描述。
+ * 只放格式串不放日期算术：本文件零 import，moment 属于 core/time 的地界。
+ */
+export interface PeriodDefinition {
+    readonly key: PeriodKey;
+    /** 写入 frontmatter 的 type 值 */
+    readonly type: string;
+    /** 中文名，用于正文标题与提示文案 */
+    readonly label: string;
+    /** 命令面板里的命令名 */
+    readonly commandName: string;
+    /** 命令 id */
+    readonly commandId: string;
+    /** 所在子目录 */
+    readonly folder: string;
+    /** 文件名即标题的 moment 格式 */
+    readonly titleFormat: string;
+    /** moment startOf 的单位，用于算周期锚点 */
+    readonly startOfUnit: 'day' | 'isoWeek' | 'month' | 'quarter' | 'year';
+    /** moment add/subtract 的单位，用于算上一篇与下一篇 */
+    readonly stepUnit: 'day' | 'week' | 'month' | 'quarter' | 'year';
+    /** 上一级周期；年记没有上级 */
+    readonly parent: PeriodKey | null;
+    /** 导航行里指向上级的链接别名 */
+    readonly parentAlias: string;
+}
+
+/**
+ * 五级复盘表。
+ *
+ * 日记刻意没有 period_start：它的文件名就是日期，多写一个字段等于给同一件事两个事实源。
+ * 周归属月一律按 ISO 惯例（周四落在哪个月算哪个月），每周只归一个月，不重不漏。
+ */
+export const PERIODS: Readonly<Record<PeriodKey, PeriodDefinition>> = {
+    daily: {
+        key: 'daily',
+        type: NOTE_TYPES.diary,
+        label: '日记',
+        commandName: '打开今天的日记',
+        commandId: 'open-diary',
+        folder: `${FOLDERS.diary}/01-daily`,
+        titleFormat: DAY_FORMAT,
+        startOfUnit: 'day',
+        stepUnit: 'day',
+        parent: 'weekly',
+        parentAlias: '本周',
+    },
+    weekly: {
+        key: 'weekly',
+        type: NOTE_TYPES.weekly,
+        label: '周记',
+        commandName: '打开本周复盘',
+        commandId: 'open-weekly',
+        folder: `${FOLDERS.diary}/02-weekly`,
+        // GGGG 是 ISO 周所属年，与 WW 配对才不会在跨年周上错位
+        titleFormat: 'GGGG-[W]WW',
+        startOfUnit: 'isoWeek',
+        stepUnit: 'week',
+        parent: 'monthly',
+        parentAlias: '本月',
+    },
+    monthly: {
+        key: 'monthly',
+        type: NOTE_TYPES.monthly,
+        label: '月记',
+        commandName: '打开本月复盘',
+        commandId: 'open-monthly',
+        folder: `${FOLDERS.diary}/03-monthly`,
+        titleFormat: 'YYYY-MM',
+        startOfUnit: 'month',
+        stepUnit: 'month',
+        parent: 'quarterly',
+        parentAlias: '本季',
+    },
+    quarterly: {
+        key: 'quarterly',
+        type: NOTE_TYPES.quarterly,
+        label: '季记',
+        commandName: '打开本季复盘',
+        commandId: 'open-quarterly',
+        folder: `${FOLDERS.diary}/04-quarterly`,
+        titleFormat: 'YYYY-[Q]Q',
+        startOfUnit: 'quarter',
+        stepUnit: 'quarter',
+        parent: 'yearly',
+        parentAlias: '本年',
+    },
+    yearly: {
+        key: 'yearly',
+        type: NOTE_TYPES.yearly,
+        label: '年记',
+        commandName: '打开本年复盘',
+        commandId: 'open-yearly',
+        folder: `${FOLDERS.diary}/05-yearly`,
+        titleFormat: 'YYYY',
+        startOfUnit: 'year',
+        stepUnit: 'year',
+        parent: null,
+        parentAlias: '',
+    },
+};
+
+/** 按 PERIODS 派生的五个子目录，开荒时由复盘模块贡献（父目录先于子目录） */
+export const DIARY_FOLDERS: readonly string[] = [
+    FOLDERS.diary,
+    PERIODS.daily.folder,
+    PERIODS.weekly.folder,
+    PERIODS.monthly.folder,
+    PERIODS.quarterly.folder,
+    PERIODS.yearly.folder,
+];
+
+/**
+ * 日记里那个「今天做了什么」小节的标题。
+ *
+ * 它是复盘模板与人脉记账之间唯一的书面约定：模板按这个标题生成小节，
+ * 记人情命令把账本行追加到这个小节末尾。约定放在常量里而不是各写一遍，
+ * 是因为一旦两边不一致，账本行会落到文件末尾（今日产出视图之后），
+ * 既难看又让人以为命令坏了——而这种不一致没有任何报错。
+ */
+export const DIARY_LOG_HEADING = '## 今天做了什么';
+
+/** 写主题命令：当前笔记是复盘笔记就写它的，否则写今天日记的 */
+export const THEME_COMMAND = {
+    id: 'write-theme',
+    name: '写复盘主题',
+} as const;
+
+// ============================================================
+// 人脉三轴与人情账本
+// ============================================================
+
+/** 联系节奏分层，数组顺序即名录里的排序优先级 */
+export const CONTACT_TIERS = ['密', '近', '熟', '远'] as const;
+
+/** 分层的联系节奏上限（天）。超出即在名录里标 ⚠️，那是该主动找他的信号 */
+export const TIER_LIMITS: Readonly<Record<string, number>> = {
+    密: 7,
+    近: 30,
+    熟: 90,
+    远: 365,
+};
+
+/** 分层缺失或写了未知值时的兜底节奏，取最宽松的一档 */
+export const TIER_FALLBACK_LIMIT = 365;
+
+/** 关系位势：这段关系往哪个方向使劲 */
+export const CONTACT_DIRECTIONS = ['向上', '平行', '向下'] as const;
+
+/**
+ * 人情账本行的格式约定：`- [[人名]]｜去｜事项｜状态`。
+ *
+ * 分隔符用全角｜而非半角，因为半角 | 在 Markdown 表格里有语法含义，
+ * 学员把账本行粘进表格时会炸；事项内出现的全角｜由记账命令清洗成半角，防止段错位。
+ */
+export const LEDGER = {
+    separator: '｜',
+    /** 第二段必须是它们之一，否则这行不是账本行 */
+    kinds: ['去', '来'] as const,
+    /** 第四段的合法取值；写了别的以 ⚠️ 前缀暴露，不静默吞掉 */
+    statuses: ['两清', '我欠', '他欠'] as const,
+    /** 第四段省略即两清——两清是最常见的情形，让最常见的写法最短 */
+    defaultStatus: '两清',
+} as const;
+
+/**
+ * 付费流水的行内字段名，一律中文。
+ *
+ * 含大写字母的键会被 Dataview 额外补一份小写规范名，遍历求和把钱算两遍；
+ * 学员的库里可能同时装着 Dataview，两边看到的必须是同一笔账，故格式按原样交付。
+ */
+export const PAYMENT_FIELDS = {
+    product: '产品',
+    amount: '金额',
+    date: '日期',
+} as const;
+
+/** 付费流水在客户档案里的落点 */
+export const CLIENT_PAYMENT_HEADING = '## 付费与交付';
+
+/** 收款流水在客户项目 MOC 里的落点 */
+export const PROJECT_PAYMENT_HEADING = '## 收款';
+
+/** 客户模块的四条命令：一条按需开荒，三条日常 */
+export const CLIENT_COMMANDS = {
+    setup: { id: 'setup-clients', name: '初始化客户模块' },
+    create: { id: 'create-client', name: '新建客户' },
+    payment: { id: 'add-payment', name: '增加付费' },
+    receipt: { id: 'record-receipt', name: '记收款' },
+} as const;
+
+/** 人脉模块的两条命令 */
+export const CONTACT_COMMANDS = {
+    create: { id: 'create-contact', name: '新建人脉' },
+    favor: { id: 'record-favor', name: '记人情' },
+} as const;
+
+// ============================================================
+// 视图代码块
+// ============================================================
+
+/**
+ * 视图代码块的语言标记。学员写的是：
+ *
+ * ```ziminos
+ * 人脉名录
+ * ```
+ *
+ * 只注册这一个 processor：视图名是块里的第一行内容而非语言标记本身，
+ * 因此新增视图不需要动 main.ts，也不会让学员的笔记里出现二十种代码块语言。
+ */
+export const VIEW_BLOCK_LANG = 'ziminos';
+
+/**
+ * 视图重算防抖（毫秒）。
+ * 重算由 metadataCache 变更事件驱动而非轮询——这正是 V2 不采用 DataviewJS 的理由之一：
+ * 它靠一个 2500ms 的 setInterval 刷新，而「无定时器、无后台轮询」是红线。
+ */
+export const VIEW_REFRESH_DEBOUNCE_MS = 200;
