@@ -63,6 +63,22 @@ export interface MocContentOptions {
     created: string;
     /** 14 位本地时间 UID，数字类型，落盘不带引号 */
     uid: number;
+    /** 项目与某个人的关系；自己独做的项目不带这一项，空键是登记表不是索引 */
+    relation?: ProjectRelation;
+}
+
+/**
+ * 项目与人的关联：写哪个键、指向谁。
+ *
+ * 两个键分家的理由不是分类癖：client 是商业契约标记，写下它等于把那个人注册成客户，
+ * 客户名录直接用它反推身份。所以「周六和张三去旅游」这类私人项目必须走 with，
+ * 否则朋友会被无声注册成客户、项目会挂进「我还欠谁的交付」、结案后污染案例库的选题统计。
+ */
+export interface ProjectRelation {
+    /** FIELDS.client 或 FIELDS.with */
+    readonly field: string;
+    /** 目标笔记名，落盘写成整值 wikilink */
+    readonly target: string;
 }
 
 /**
@@ -77,7 +93,12 @@ function toYamlString(value: string): string {
  * 生成 MOC 的 YAML frontmatter（固定十行）。
  * aliases/updated/tags 刻意留空：前者由用户自取，updated 交给自动维护，tags 属于个人分类习惯。
  */
-export function mocFrontmatter(description: string, created: string, uid: number): string {
+export function mocFrontmatter(
+    description: string,
+    created: string,
+    uid: number,
+    relation?: ProjectRelation,
+): string {
     return [
         '---',
         'aliases:',
@@ -88,6 +109,8 @@ export function mocFrontmatter(description: string, created: string, uid: number
         `UID: ${uid}`,
         'type: project',
         'status: active',
+        // 只在有值时才写这一行：空的 client 键会让这个项目被当成一笔没有客户的委托
+        ...(relation ? [`${relation.field}: "[[${relation.target}]]"`] : []),
         '---',
     ].join('\n');
 }
@@ -137,7 +160,12 @@ export function mocBaseBlock(projectName: string, projectFolderPath: string): st
  * 建项目后光标正落在其中，脚本一的这条约定被完整保留。
  */
 export function mocContent(options: MocContentOptions): string {
-    const frontmatter = mocFrontmatter(options.description, options.created, options.uid);
+    const frontmatter = mocFrontmatter(
+        options.description,
+        options.created,
+        options.uid,
+        options.relation,
+    );
     const baseBlock = mocBaseBlock(options.projectName, options.projectFolderPath);
 
     return `${frontmatter}\n\n\n\n${baseBlock}\n`;

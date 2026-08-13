@@ -1,0 +1,106 @@
+/*
+ * ziminOS 视图样式
+ *
+ * 只服务插件自渲染的那二十一个视图，全部选择器都带 ziminos- 前缀，
+ * 不碰用户笔记正文、不覆盖主题的任何既有规则。
+ * 颜色一律取 Obsidian 的语义变量，因此跟随主题与 Style Settings 的配色走，
+ * 换主题、切明暗、改配色都不需要动这个文件。
+ */
+
+/* ── 三线表：顶线粗、栏目线细、底线粗，没有竖线也没有行线 ── */
+
+.ziminos-table-wrap {
+    /* 列多的时候（名录六列）让表格自己横向滚，而不是把整页撑宽 */
+    overflow-x: auto;
+    margin: 0.6em 0 1em;
+}
+
+.ziminos-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.92em;
+    line-height: 1.6;
+    border-top: 2px solid var(--text-normal);
+    border-bottom: 2px solid var(--text-normal);
+}
+
+.ziminos-table th,
+.ziminos-table td {
+    border: none;
+    padding: 6px 16px 6px 0;
+    text-align: left;
+    vertical-align: top;
+    white-space: normal;
+}
+
+.ziminos-table th {
+    border-bottom: 1px solid var(--background-modifier-border);
+    color: var(--text-muted);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* 末列右侧不留悬空的内边距，底线才收得干净 */
+.ziminos-table th:last-child,
+.ziminos-table td:last-child {
+    padding-right: 0;
+}
+
+.ziminos-table tbody tr:hover {
+    background: var(--background-modifier-hover);
+}
+
+/* ── 待办：按日期分组，复选框可勾 ── */
+
+.ziminos-tasks {
+    margin: 0.6em 0 1em;
+}
+
+.ziminos-tasks-day {
+    margin-top: 0.8em;
+    font-weight: 600;
+}
+
+.ziminos-tasks-count {
+    color: var(--text-faint);
+    font-weight: 400;
+    font-size: 0.85em;
+}
+
+.ziminos-task-list {
+    margin: 0.2em 0 0;
+    padding-left: 1.4em;
+    list-style: none;
+}
+
+.ziminos-task {
+    margin: 0.15em 0;
+    line-height: 1.7;
+}
+
+.ziminos-task input[type='checkbox'] {
+    margin-right: 0.55em;
+    cursor: pointer;
+}
+
+.ziminos-task.is-checked > span {
+    color: var(--text-faint);
+    text-decoration: line-through;
+}
+
+/* ── 文字 ── */
+
+.ziminos-summary {
+    margin: 0.4em 0;
+}
+
+.ziminos-note,
+.ziminos-empty {
+    margin: 0.4em 0;
+    color: var(--text-muted);
+    font-size: 0.9em;
+}
+
+.ziminos-heading {
+    margin: 1.2em 0 0.3em;
+}

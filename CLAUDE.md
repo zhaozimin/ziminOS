@@ -8,12 +8,12 @@ TypeScript 7.0 + esbuild 0.28 + Obsidian API 1.13（manifest minAppVersion 1.13.
 docs/ - 设计规格与第三方组件锁定记录；代码、交付物与规格必须同步
 skill/ - SKILL.md 桌面智能体交付契约；当前工作区就是用户已命名的笔记库，源码只在外部临时目录施工
 vault/ - 笔记库成品模板；同一交付物内独立放置 ziminOS、Dataview、Minimal、Style Settings、默认配色与自有 CSS
-vault/.obsidian/plugins/ziminos/ - 插件安装位；manifest.json 是版本号事实源，main.js 是刻意入库的构建产物
+vault/.obsidian/plugins/ziminos/ - 插件安装位；manifest.json 是版本号事实源，main.js 是刻意入库的构建产物，styles.css 是二十一个视图的三线表与待办样式（手工维护，不经 esbuild）
 src/ - 插件源码 (2子目录: core 无业务的基础设施与视图引擎、modules 含 setup 开荒、projects 项目管理、inspiration 灵感收集、review 五级复盘、contacts 人脉与客户)
 </directory>
 
 <views>
-V2 起全部二十一个视图由插件自渲染：笔记里只留一行 ```ziminos 代码块 + 视图名，逻辑住在 main.js。库内零 JS 文件，DataviewJS 保持关闭，升级只换 main.js 即全库生效。重算由 metadataCache 变更事件驱动，无定时器、无轮询。Dataview 仍随库交付，它的活儿只剩灵感集那条 TASK 查询。
+V2 起全部二十一个视图由插件自渲染：笔记里只留一行 ```ziminos 代码块 + 视图名，逻辑住在 main.js、样式住在 styles.css。表格是三线表，文本里的双链渲染成可点链接，任务行渲染成能勾的复选框并写回源文件。库内零 JS 文件，DataviewJS 保持关闭，升级只换 main.js 即全库生效。重算由 metadataCache 变更事件驱动，无定时器、无轮询。Dataview 仍随库交付，它的活儿只剩灵感集那条 TASK 查询。
 </views>
 
 <config>

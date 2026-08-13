@@ -1,7 +1,8 @@
 /**
  * [INPUT]: 依赖 obsidian 的 TFile 与 App 类型；依赖 core/constants 的 FIELDS/FOLDERS，
  *          core/folders 的 isInFolder/normalizeFolderPath，core/types 的 ZiminosContext
- * [OUTPUT]: 对外提供 isLivePath（还在经营范围内）与 liveNotesOfType（命令侧的候选人清单）
+ * [OUTPUT]: 对外提供 isLivePath（还在经营范围内）、liveNotesOfType（命令侧的候选人清单）、
+ *           descriptionOf、lastContactDayOf 与 pickPerson（跨两库的选人弹窗）
  * [POS]: 「谁还算数」这个问题的唯一答案处，被两条命令与十几个视图共用。
  *        全部视图靠 type 认身份、不靠文件夹，唯一还认位置的是归档——
  *        因为「不再往来的人」需要一个退出机制，而他的身份没变，
@@ -11,9 +12,10 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { TFile } from 'obsidian';
+import { Notice, TFile } from 'obsidian';
 import type { ViewContext } from '../../core/codeblock';
-import { FIELDS, FOLDERS } from '../../core/constants';
+import { FIELDS, FOLDERS, NOTE_TYPES } from '../../core/constants';
+import { ChoiceModal } from '../../core/modals';
 import { isInFolder, normalizeFolderPath } from '../../core/folders';
 import { dayOfTitle } from '../../core/time';
 import type { ZiminosContext } from '../../core/types';
@@ -55,6 +57,43 @@ export function descriptionOf(ctx: ZiminosContext, file: TFile): string {
     const value = ctx.app.metadataCache.getFileCache(file)?.frontmatter?.[FIELDS.description];
 
     return String(value ?? '').trim();
+}
+
+/**
+ * 从全部在营档案里选一个人。
+ *
+ * 候选跨人脉与客户两库：现实不分家——客户可能是朋友，熟人也可能派活给你。
+ * 靠 type 识别而非文件夹，归档目录内的人不进候选（不再往来的人不该出现在新项目的关联里）。
+ * 没有任何档案时给一句明确的引导再返回 null，免得调用方只能说一句没头没脑的「已取消」。
+ */
+export async function pickPerson(
+    ctx: ZiminosContext,
+    title: string,
+    quietWhenEmpty = false,
+): Promise<TFile | null> {
+    const candidates = [
+        ...liveNotesOfType(ctx, NOTE_TYPES.person),
+        ...liveNotesOfType(ctx, NOTE_TYPES.client),
+    ];
+
+    if (!candidates.length) {
+        // 关联是可选的那些场景（比如自己独做的项目问一句同行者）不该被这句话打扰
+        if (!quietWhenEmpty) {
+            new Notice('还没有任何人脉或客户档案。先运行「新建人脉」建一个，再来关联。');
+        }
+
+        return null;
+    }
+
+    return new ChoiceModal(ctx.app, {
+        title,
+        items: candidates,
+        labelOf: (file) => {
+            const hint = descriptionOf(ctx, file);
+
+            return hint ? `${file.basename}　—　${hint}` : file.basename;
+        },
+    }).openAndGetChoice();
 }
 
 /**

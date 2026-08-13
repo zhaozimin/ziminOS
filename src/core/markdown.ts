@@ -30,6 +30,39 @@ const PLACEHOLDER = '-';
  * 小节内若有视图代码块，新行插在它前面——那个块是对这些行的汇总，
  * 汇总排在原始数据后面才读得顺。
  */
+/** 任务行的复选框，捕获缩进与标记以便原样写回 */
+const TASK_BOX = /^(\s*(?:[-*+]|\d+[.)])\s+\[)([^\]])(\]\s)/;
+
+/**
+ * 翻转指定行的复选框，返回新正文；这一行不是预期的那条任务时返回 null。
+ *
+ * 比对原文是必须的：视图渲染后用户可能改过那篇日记，行号会漂。
+ * 与其在错的一行上写字，不如什么都不做、让调用方重画一次——
+ * 勾错一条别人的待办，比没勾上难发现得多。
+ */
+export function toggleTaskLine(
+    content: string,
+    line: number,
+    expectedChecked: boolean,
+): string | null {
+    const lines = content.split('\n');
+    const current = lines[line];
+
+    if (typeof current !== 'string') return null;
+
+    const match = TASK_BOX.exec(current);
+
+    if (!match) return null;
+
+    const checked = match[2].trim().toLowerCase() === 'x';
+
+    if (checked !== expectedChecked) return null;
+
+    lines[line] = current.replace(TASK_BOX, `$1${checked ? ' ' : 'x'}$3`);
+
+    return lines.join('\n');
+}
+
 export function insertIntoSection(content: string, heading: string, line: string): string {
     const lines = content.split('\n');
     const headingIndex = lines.findIndex((text) => text.trim() === heading);

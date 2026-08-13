@@ -58,6 +58,7 @@ git clone --depth 1 "https://github.com/zhaozimin/ziminOS.git" "$install_staging
 ```text
 施工源/vault/.obsidian/plugins/ziminos/manifest.json
 施工源/vault/.obsidian/plugins/ziminos/main.js
+施工源/vault/.obsidian/plugins/ziminos/styles.css
 施工源/vault/.obsidian/plugins/dataview/manifest.json
 施工源/vault/.obsidian/plugins/dataview/main.js
 施工源/vault/.obsidian/plugins/dataview/styles.css
@@ -105,6 +106,7 @@ mkdir -p "$vault_root/.obsidian/snippets"
 
 cp "$install_staging_dir/repo/vault/.obsidian/plugins/ziminos/manifest.json" "$vault_root/.obsidian/plugins/ziminos/manifest.json"
 cp "$install_staging_dir/repo/vault/.obsidian/plugins/ziminos/main.js" "$vault_root/.obsidian/plugins/ziminos/main.js"
+cp "$install_staging_dir/repo/vault/.obsidian/plugins/ziminos/styles.css" "$vault_root/.obsidian/plugins/ziminos/styles.css"
 
 cp "$install_staging_dir/repo/vault/.obsidian/plugins/dataview/manifest.json" "$vault_root/.obsidian/plugins/dataview/manifest.json"
 cp "$install_staging_dir/repo/vault/.obsidian/plugins/dataview/main.js" "$vault_root/.obsidian/plugins/dataview/main.js"
@@ -147,7 +149,7 @@ README.md
 确认：
 
 - `$vault_root/.obsidian/plugins/ziminos/main.js` 存在。
-- `$vault_root/.obsidian/plugins/ziminos/manifest.json` 存在。
+- `$vault_root/.obsidian/plugins/ziminos/manifest.json` 与 `styles.css` 存在。
 - `$vault_root/.obsidian/plugins/dataview/main.js` 存在，版本为 0.5.68。
 - `$vault_root/.obsidian/plugins/obsidian-style-settings/main.js` 存在，`data.json` 是合法 JSON 对象。
 - `$vault_root/.obsidian/themes/Minimal/theme.css` 存在，版本为 9.0.2。

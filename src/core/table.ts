@@ -1,14 +1,17 @@
 /**
  * [INPUT]: 依赖 obsidian 的 App 与 TFile 类型；只用 createEl/createDiv 等原生 DOM 辅助与
- *          workspace.openLinkText，不依赖任何渲染插件
- * [OUTPUT]: 对外提供单元格类型 Cell/NoteLink 与 noteLink 构造器，以及五个渲染原语
- *           renderTable / renderEmpty / renderNote / renderHeading / renderRichText
- * [POS]: 视图引擎的呈现层，二十个视图的唯一出口。它不认识任何业务概念，只认识
- *        「表头 + 行 + 单元格」。收在一处的理由有二：
- *        其一，两次建表会生成两个各自算列宽的 <table>，同一逻辑表的列必然错位——
- *        原始脚本为此在注释里留过教训，这里用「一张表 + 首列标记」的写法从结构上杜绝；
- *        其二，空态必须显式。缺记录是常态，把空结果兜底成 0 等于把「本月没记录」
- *        伪装成「本月跑了 0 公里」，因此空态有专门的原语，且强制要求一句下一步指引
+ *          workspace.openLinkText，不依赖任何渲染插件；样式由插件自带的 styles.css 承担
+ * [OUTPUT]: 对外提供单元格类型 Cell/NoteLink/RichText 与 noteLink/richText 构造器，
+ *           渲染原语 renderTable / renderTaskList / renderEmpty / renderNote / renderHeading /
+ *           renderSummary / renderRichText，以及任务行类型 TaskLine
+ * [POS]: 视图引擎的呈现层，二十一个视图的唯一出口。它不认识任何业务概念，只认识
+ *        「表头 + 行 + 单元格」与「一组任务」。三条纪律都来自真机对比：
+ *        其一，文本里的 `[[双链]]` 必须渲染成可点的链接。视图检索出来的是日记原文，
+ *        原文里的人名、项目名都是双链——渲染成死文本，等于把一张关系网拍平成一段字符串；
+ *        其二，任务行必须渲染成真的复选框并能勾。看起来像复选框却点不动是撒谎，
+ *        所以勾选会写回源文件那一行；
+ *        其三，表格是三线表。逻辑上属于同一张表的内容必须一次画完——
+ *        两次建表会得到两个各自算列宽的 table，同一张逻辑表的列必然错位
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -22,25 +25,56 @@ export interface NoteLink {
     readonly display: string;
 }
 
-/** 表格单元格可以是文本、数字、笔记链接，或调用方自己搭好的元素 */
-export type Cell = string | number | NoteLink | HTMLElement | null | undefined;
+/**
+ * 一段可能含 `[[双链]]` 的文本。
+ * from 是解析这些链接的基准路径——视图检索出来的行来自日记，
+ * 链接必须相对那篇日记解析，而不是相对视图所在的档案。
+ */
+export interface RichText {
+    readonly text: string;
+    readonly from: string;
+}
+
+/** 表格单元格可以是文本、数字、笔记链接、带双链的文本，或调用方自己搭好的元素 */
+export type Cell = string | number | NoteLink | RichText | HTMLElement | null | undefined;
+
+/** 一条待办：它从哪篇笔记的哪一行来，现在勾没勾 */
+export interface TaskLine {
+    readonly file: TFile;
+    /** 分组用的日期，通常是来源日记的文件名 */
+    readonly day: string;
+    readonly text: string;
+    readonly line: number;
+    readonly checked: boolean;
+}
 
 /** 由文件构造链接单元格；display 缺省即文件名 */
 export function noteLink(file: TFile, display?: string): NoteLink {
     return { path: file.path, display: display ?? file.basename };
 }
 
-/** 判定一个单元格是不是笔记链接。用结构判定而非 instanceof，NoteLink 是纯数据 */
-function isNoteLink(cell: Cell): cell is NoteLink {
-    return typeof cell === 'object' && cell !== null && !(cell instanceof HTMLElement) && 'path' in cell;
+/** 由一段原文构造富文本单元格，fromPath 是解析其中双链的基准 */
+export function richText(text: string, fromPath: string): RichText {
+    return { text, from: fromPath };
 }
 
+function isObjectCell(cell: Cell): cell is NoteLink | RichText {
+    return typeof cell === 'object' && cell !== null && !(cell instanceof HTMLElement);
+}
+
+function isNoteLink(cell: Cell): cell is NoteLink {
+    return isObjectCell(cell) && 'path' in cell;
+}
+
+// ============================================================
+// 表格
+// ============================================================
+
 /**
- * 渲染一张表。
+ * 渲染一张三线表。
  *
- * 逻辑上属于同一张表的内容必须一次画完：分两次调用会得到两个 <table>，
- * 浏览器对它们各自算列宽，视觉上就是两段对不齐的表。需要区分两类行时，
- * 加一列标记（🆕 / ✏️）而不是加一张表。
+ * 首列表头带上行数（`项目 (3)`）——一屏之内先知道「有几条」，再决定要不要细看，
+ * 这是复盘与名录都需要的第一个信息。
  */
 export function renderTable(
     app: App,
@@ -49,12 +83,13 @@ export function renderTable(
     headers: readonly string[],
     rows: readonly (readonly Cell[])[],
 ): void {
-    const table = el.createEl('table', { cls: 'ziminos-view-table' });
+    const wrapper = el.createDiv({ cls: 'ziminos-table-wrap' });
+    const table = wrapper.createEl('table', { cls: 'ziminos-table' });
     const headRow = table.createEl('thead').createEl('tr');
 
-    for (const header of headers) {
-        headRow.createEl('th', { text: header });
-    }
+    headers.forEach((header, index) => {
+        headRow.createEl('th', { text: index === 0 && rows.length ? `${header} (${rows.length})` : header });
+    });
 
     const body = table.createEl('tbody');
 
@@ -87,6 +122,12 @@ function renderCell(app: App, td: HTMLElement, sourcePath: string, cell: Cell): 
         return;
     }
 
+    if (isObjectCell(cell)) {
+        renderTextWithLinks(app, td, cell.text, cell.from);
+
+        return;
+    }
+
     renderRichText(td, String(cell));
 }
 
@@ -112,6 +153,103 @@ function renderNoteLink(app: App, parent: HTMLElement, sourcePath: string, link:
     });
 }
 
+/** 匹配一段文本里的 `[[目标]]` 或 `[[目标|别名]]` */
+const WIKILINK = /\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\\?\|([^\]]*))?\]\]/g;
+
+/**
+ * 把一段原文画出来，其中的 `[[双链]]` 渲染成可点的链接。
+ *
+ * 只认双链这一种标记，不接完整 Markdown 渲染器：这些文本是用户日记里的原话，
+ * 交给渲染器等于把用户数据当代码执行，一个 `![[大图]]` 就会在名录里嵌进一张图。
+ * 未解析到文件的链接照样画成链接（点击会走 Obsidian 的新建流程），
+ * 这与在正文里点一个红色链接的行为一致，不制造第二套语义。
+ */
+export function renderTextWithLinks(
+    app: App,
+    parent: HTMLElement,
+    text: string,
+    fromPath: string,
+): void {
+    WIKILINK.lastIndex = 0;
+
+    let cursor = 0;
+    let match = WIKILINK.exec(text);
+
+    while (match) {
+        if (match.index > cursor) parent.appendText(text.slice(cursor, match.index));
+
+        const target = match[1].trim();
+        const display = (match[2] ?? '').trim() || target;
+
+        renderNoteLink(app, parent, fromPath, { path: target, display });
+
+        cursor = match.index + match[0].length;
+        match = WIKILINK.exec(text);
+    }
+
+    if (cursor < text.length) parent.appendText(text.slice(cursor));
+}
+
+// ============================================================
+// 待办
+// ============================================================
+
+/**
+ * 把一组任务渲染成真的待办：按日期分组，每条一个可勾的复选框。
+ *
+ * 勾选会写回源文件那一行——看起来像复选框却点不动是撒谎，
+ * 而「在档案里看见待办、顺手勾掉」正是这个视图存在的理由。
+ * 写回由调用方负责（它才有 guard 与写权限），这里只负责把点击事件交出去。
+ */
+export function renderTaskList(
+    app: App,
+    el: HTMLElement,
+    tasks: readonly TaskLine[],
+    onToggle: (task: TaskLine) => void,
+): void {
+    const groups = new Map<string, TaskLine[]>();
+
+    for (const task of tasks) {
+        const bucket = groups.get(task.day);
+
+        if (bucket) bucket.push(task);
+        else groups.set(task.day, [task]);
+    }
+
+    const container = el.createDiv({ cls: 'ziminos-tasks' });
+
+    for (const [day, group] of [...groups.entries()].sort((left, right) =>
+        right[0].localeCompare(left[0]),
+    )) {
+        const heading = container.createDiv({ cls: 'ziminos-tasks-day' });
+
+        renderNoteLink(app, heading, group[0].file.path, noteLink(group[0].file, day));
+        heading.createSpan({ cls: 'ziminos-tasks-count', text: ` (${group.length})` });
+
+        const list = container.createEl('ul', { cls: 'contains-task-list ziminos-task-list' });
+
+        for (const task of group) {
+            const item = list.createEl('li', { cls: 'task-list-item ziminos-task' });
+            const box = item.createEl('input', { type: 'checkbox', cls: 'task-list-item-checkbox' });
+
+            box.checked = task.checked;
+
+            if (task.checked) item.addClass('is-checked');
+
+            box.addEventListener('click', (event: MouseEvent) => {
+                event.preventDefault();
+                onToggle(task);
+            });
+
+            renderTextWithLinks(app, item.createSpan(), task.text, task.file.path);
+        }
+    }
+}
+
+// ============================================================
+// 文字
+// ============================================================
+
 /**
  * 空态：一句话说清楚「现在什么都没有」以及「下一步该做什么」。
  *
@@ -119,36 +257,27 @@ function renderNoteLink(app: App, parent: HTMLElement, sourcePath: string, link:
  * 一片空白会让他以为系统坏了，一句「命令面板运行『新建人脉』建第一个」则是入口。
  */
 export function renderEmpty(el: HTMLElement, message: string): void {
-    const paragraph = el.createEl('p', { cls: 'ziminos-view-empty' });
-
-    paragraph.style.color = 'var(--text-muted)';
-    renderRichText(paragraph, `📭 ${message}`);
+    renderRichText(el.createEl('p', { cls: 'ziminos-empty' }), `📭 ${message}`);
 }
 
 /** 视图的说明或统计行，弱化显示 */
 export function renderNote(el: HTMLElement, message: string): void {
-    const paragraph = el.createEl('p');
-
-    paragraph.style.color = 'var(--text-muted)';
-    paragraph.style.fontSize = '0.9em';
-    renderRichText(paragraph, message);
+    renderRichText(el.createEl('p', { cls: 'ziminos-note' }), message);
 }
 
 /** 视图内的分组小标题 */
 export function renderHeading(el: HTMLElement, level: 3 | 4, text: string): void {
-    el.createEl(level === 3 ? 'h3' : 'h4', { text });
+    el.createEl(level === 3 ? 'h3' : 'h4', { cls: 'ziminos-heading', text });
 }
 
 /** 视图顶部的一句话总结，允许 **加粗** */
 export function renderSummary(el: HTMLElement, text: string): void {
-    renderRichText(el.createEl('p'), text);
+    renderRichText(el.createEl('p', { cls: 'ziminos-summary' }), text);
 }
 
 /**
- * 只认识 `**加粗**` 的极小文本渲染。
- *
- * 刻意不接 Markdown 渲染器：视图里的文案全是我们自己写的，需要的强调只有加粗一种；
- * 引入完整渲染意味着把用户数据当 Markdown 执行，一个人名里带 `[[` 就会渲染出意外的链接。
+ * 只认识 `**加粗**` 的极小文本渲染，用于我们自己写的文案。
+ * 用户数据一律走 renderTextWithLinks，两者的区别是：这里的文本是我们写的，那里的不是。
  */
 export function renderRichText(parent: HTMLElement, text: string): void {
     const segments = text.split('**');

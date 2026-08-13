@@ -26,6 +26,7 @@ import { circleViews } from './modules/contacts/circleViews';
 import { clientViews } from './modules/contacts/clientViews';
 import { registerClientCommands } from './modules/contacts/client';
 import { registerCreateContactCommand } from './modules/contacts/createContact';
+import { pickPerson } from './modules/contacts/identity';
 import { personViews } from './modules/contacts/personViews';
 import { registerRecordFavorCommand } from './modules/contacts/recordFavor';
 import { contactsSeed } from './modules/contacts/seed';
@@ -111,7 +112,8 @@ export default class ZiminosPlugin extends Plugin {
         // 各模块注册自己的命令与自动行为
         // ============================================================
 
-        registerCreateProjectCommand(ctx);
+        // 建项目要问「这是谁委托的」，候选人住在人脉模块——用同一套注入把两者接上
+        registerCreateProjectCommand(ctx, (title, quiet) => pickPerson(ctx, title, quiet));
         registerCardInitCommand(ctx);
         registerCardAutoInit(ctx);
         registerTransitionCommands(ctx);
