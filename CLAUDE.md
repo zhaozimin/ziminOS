@@ -8,13 +8,13 @@ TypeScript 7.0 + esbuild 0.28 + Obsidian API 1.13（manifest minAppVersion 1.13.
 docs/ - 设计规格与第三方组件锁定记录；代码、交付物与规格必须同步
 skill/ - SKILL.md 桌面智能体交付契约；当前工作区就是用户已命名的笔记库，源码只在外部临时目录施工
 vault/ - 笔记库成品模板；同一交付物内独立放置 ziminOS、Dataview、Minimal、Style Settings、默认配色与自有 CSS
-vault/.obsidian/plugins/ziminos/ - 插件安装位；manifest.json 是版本号事实源，main.js 是刻意入库的构建产物（二十二个图标的 SVG 也在里面），styles.css 是二十一个视图的三线表与待办样式、外加外观开关浮层与设置页那九张标签页（手工维护，不经 esbuild）
+vault/.obsidian/plugins/ziminos/ - 插件安装位；manifest.json 是版本号事实源，main.js 是刻意入库的构建产物（二十三个图标的 SVG 也在里面），styles.css 是二十一个视图的三线表与待办样式、外加外观开关浮层与设置页那九张标签页（手工维护，不经 esbuild）
 vault/.obsidian/snippets/ - 十二个 CSS 片段，外观包的可拆装部分；十个默认启用，全部由右下角外观开关逐个开关。appearance.json 的 enabledCssSnippets 是它们开着还是关着的唯一事实源
-src/ - 插件源码 (2子目录: core 无业务的基础设施、命令注册台与视图引擎、modules 含 setup 开荒、projects 项目管理、inspiration 灵感收集、review 五级复盘、contacts 人脉与客户、appearance 外观开关、format 排版整理、ribbon 左侧边栏命令)
+src/ - 插件源码 (2子目录: core 无业务的基础设施、命令注册台与视图引擎、modules 含 setup 开荒、projects 项目与领域、inspiration 灵感收集、review 五级复盘、contacts 人脉与客户、appearance 外观开关、format 排版整理、ribbon 左侧边栏命令)
 </directory>
 
 <commands>
-二十二条命令，身份（id / 中文名 / 图标 / 分组）全在 src/core/commands.ts，一律经 CommandRegistry 注册——它在交给 Obsidian 的同时留一份花名册，左侧边栏与设置页照着它摆，三处因此不可能对不齐。默认七条摆进左侧边栏（新建项目、记录灵感、今天的日记、写复盘主题、新建人脉、记人情、外观开关），其余十五条勾一下就上；首次摆出的先后即命令的注册顺序，此后顺序归用户（Obsidian 自带的边栏拖拽）。图标全程只用公开 API（addIcon / addRibbonIcon / Command.icon），不构成第 4 处红线偏离。
+二十三条命令，身份（id / 中文名 / 图标 / 分组）全在 src/core/commands.ts，一律经 CommandRegistry 注册——它在交给 Obsidian 的同时留一份花名册，左侧边栏与设置页照着它摆，三处因此不可能对不齐。默认七条摆进左侧边栏（新建项目、记录灵感、今天的日记、写复盘主题、新建人脉、记人情、外观开关），其余十六条勾一下就上；首次摆出的先后即命令的注册顺序，此后顺序归用户（Obsidian 自带的边栏拖拽）。图标全程只用公开 API（addIcon / addRibbonIcon / Command.icon），不构成第 4 处红线偏离。
 </commands>
 
 <settings>
@@ -33,7 +33,7 @@ esbuild.config.mjs - 唯一构建出口；产物直接写入 vault 插件目录�
 .gitignore - 只忽略 node_modules 与 .DS_Store；main.js 不忽略，学员克隆即可用
 .gitattributes - 锁定 Dataview、Minimal、Style Settings 发布资产的原始字节，防止 Git 换行/格式化破坏 SHA-256
 docs/第三方组件.md - Dataview / Minimal / Style Settings / Pikaicons 的版本、上游、许可与升级边界
-docs/设计规格书-V2.md - 人脉与复盘（v0.4.0）、左侧边栏命令（v0.5.0）、设置页分页（v0.6.0）与排版整理（v0.7.0）的唯一事实源；与 V1 规格并存，交集处以它为准
+docs/设计规格书-V2.md - 人脉与复盘（v0.4.0）、左侧边栏命令（v0.5.0）、设置页分页（v0.6.0）、排版整理（v0.7.0）与新建领域及 MOC 改名（v0.8.0）的唯一事实源；与 V1 规格并存，交集处以它为准
 </config>
 
 <delivery>

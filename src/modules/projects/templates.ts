@@ -1,5 +1,6 @@
 /**
- * [INPUT]: 依赖 ../../core/constants 的 CARD_FIELDS（卡片十字段的权威顺序）
+ * [INPUT]: 依赖 ../../core/constants 的 CARD_FIELDS（卡片十字段的权威顺序）。
+ *          MOC 的文件名由调用方经 ./moc 算好递进来，本文件不认识命名约定
  * [OUTPUT]: 对外提供 MocContentOptions 类型与七个纯生成函数：mocFrontmatter、mocBaseBlock、mocContent、
  *           cardTemplateFile、mocTemplateFile、navContent、firstProjectDescription
  * [POS]: projects 模块的文本工厂，是「笔记长成什么样」的唯一出处。
@@ -51,20 +52,35 @@ const NAV_VIEWS: readonly { readonly name: string; readonly filter: string }[] =
 // MOC 正文生成（自 create-project-moc.js 逐字移植）
 // ============================================================
 
-/** MOC 内容的全部可变量。五个参数同为字符串，用具名对象传递以杜绝顺序错位 */
-export interface MocContentOptions {
-    /** 项目名，同时是 MOC 文件名与 up 链接的目标 */
-    projectName: string;
-    /** 项目文件夹路径，base 视图据此收集同目录文件 */
-    projectFolderPath: string;
-    /** 项目概述，写入 description */
-    description: string;
+/** 一篇 MOC 的 YAML 全部可变量。用具名对象传递以杜绝顺序错位 */
+export interface MocFrontmatterOptions {
+    /** 概述，写入 description */
+    readonly description: string;
     /** 创建时间戳，格式由调用方按设置决定 */
-    created: string;
+    readonly created: string;
     /** 14 位本地时间 UID，数字类型，落盘不带引号 */
-    uid: number;
-    /** 项目与某个人的关系；自己独做的项目不带这一项，空键是登记表不是索引 */
-    relation?: ProjectRelation;
+    readonly uid: number;
+    /** 身份：NOTE_TYPES.project 或 NOTE_TYPES.area。它决定导航页把这篇笔记摆进哪张表 */
+    readonly type: string;
+    /**
+     * 生命周期状态。项目写 active，领域**不写**——
+     * 领域是没有终点的长期关注，给它一个「进行中」等于承诺它某天会结束，
+     * 而导航页那张「正在进行中」正是按 status 筛的，写了它就会混进去。
+     */
+    readonly status?: string;
+    /** 与某个人的关系；自己独做的项目不带这一项，空键是登记表不是索引 */
+    readonly relation?: ProjectRelation;
+}
+
+/** MOC 正文的全部可变量：YAML 那一份，加上 base 视图要用的两个名字 */
+export interface MocContentOptions extends MocFrontmatterOptions {
+    /**
+     * MOC 自己的文件名（不含扩展名），由调用方经 ./moc 的 mocBasenameOf 算好递进来。
+     * base 视图的 `up == link(…)` 用的是它——卡片的 up 指向这篇笔记，不是文件夹。
+     */
+    readonly mocBasename: string;
+    /** 项目或领域的文件夹路径，base 视图据此收集同目录文件 */
+    readonly projectFolderPath: string;
 }
 
 /**
@@ -93,12 +109,9 @@ function toYamlString(value: string): string {
  * 生成 MOC 的 YAML frontmatter（固定十行）。
  * aliases/updated/tags 刻意留空：前者由用户自取，updated 交给自动维护，tags 属于个人分类习惯。
  */
-export function mocFrontmatter(
-    description: string,
-    created: string,
-    uid: number,
-    relation?: ProjectRelation,
-): string {
+export function mocFrontmatter(options: MocFrontmatterOptions): string {
+    const { description, created, uid, type, status, relation } = options;
+
     return [
         '---',
         'aliases:',
@@ -107,8 +120,9 @@ export function mocFrontmatter(
         'updated:',
         'tags:',
         `UID: ${uid}`,
-        'type: project',
-        'status: active',
+        `type: ${type}`,
+        // 领域没有状态，那一行整行不写；空的 status 键会让它出现在「正在进行中」那张表里
+        ...(status ? [`status: ${status}`] : []),
         // 只在有值时才写这一行：空的 client 键会让这个项目被当成一笔没有客户的委托
         ...(relation ? [`${relation.field}: "[[${relation.target}]]"`] : []),
         '---',
@@ -121,7 +135,7 @@ export function mocFrontmatter(
  * 也收项目文件夹里的所有文件（附件、草稿、来不及登记的笔记），
  * 因此"整理"这件事对学员是可选的，而不是前提。
  */
-export function mocBaseBlock(projectName: string, projectFolderPath: string): string {
+export function mocBaseBlock(mocBasename: string, projectFolderPath: string): string {
     return [
         '```base',
         'filters:',
@@ -137,7 +151,9 @@ export function mocBaseBlock(projectName: string, projectFolderPath: string): st
         '    name: 项目文件',
         '    filters:',
         '      or:',
-        `        - up == link(${JSON.stringify(projectName)})`,
+        // 这一行必须是 MOC 自己的文件名，不是文件夹名：卡片的 up 指向的是这篇笔记。
+        // 两者一旦分叉，这张表会静默少收一半文件——它不报错，只是变短
+        `        - up == link(${JSON.stringify(mocBasename)})`,
         `        - file.folder == ${JSON.stringify(projectFolderPath)}`,
         '    order:',
         '      - file.name',
@@ -160,13 +176,8 @@ export function mocBaseBlock(projectName: string, projectFolderPath: string): st
  * 建项目后光标正落在其中，脚本一的这条约定被完整保留。
  */
 export function mocContent(options: MocContentOptions): string {
-    const frontmatter = mocFrontmatter(
-        options.description,
-        options.created,
-        options.uid,
-        options.relation,
-    );
-    const baseBlock = mocBaseBlock(options.projectName, options.projectFolderPath);
+    const frontmatter = mocFrontmatter(options);
+    const baseBlock = mocBaseBlock(options.mocBasename, options.projectFolderPath);
 
     return `${frontmatter}\n\n\n\n${baseBlock}\n`;
 }
@@ -188,7 +199,7 @@ export function cardTemplateFile(): string {
     return emptyFrontmatter(CARD_FIELDS);
 }
 
-/** MOC 模板：八字段，供手动新建领域、书籍等非项目型 MOC 使用 */
+/** MOC 模板：八字段，供手动新建书籍等非项目非领域型 MOC 使用（项目与领域各有命令） */
 export function mocTemplateFile(): string {
     return emptyFrontmatter(MOC_FIELDS);
 }

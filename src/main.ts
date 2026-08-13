@@ -42,6 +42,7 @@ import { registerRecordFavorCommand } from './modules/contacts/recordFavor';
 import { contactsSeed } from './modules/contacts/seed';
 import { registerInspirationCaptureCommand } from './modules/inspiration/capture';
 import { registerCardAutoInit, registerCardInitCommand } from './modules/projects/cardInit';
+import { registerCreateAreaCommand } from './modules/projects/createArea';
 import { registerCreateProjectCommand } from './modules/projects/createProject';
 import { projectsSeed } from './modules/projects/seed';
 import { registerTransitionCommands } from './modules/projects/transitions';
@@ -109,6 +110,7 @@ export default class ZiminosPlugin extends Plugin {
 
         // 建项目要问「这是谁委托的」，候选人住在人脉模块——用同一套注入把两者接上
         registerCreateProjectCommand(ctx, (title, quiet) => pickPerson(ctx, title, quiet));
+        registerCreateAreaCommand(ctx);
         registerCardInitCommand(ctx);
         registerCardAutoInit(ctx);
         registerTransitionCommands(ctx);

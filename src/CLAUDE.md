@@ -16,7 +16,7 @@ modules/review/: 复盘模块，五级周期笔记、主题链与项目数据五
 modules/contacts/: 人脉与客户模块，两类档案、六条命令（人脉两条、客户四条）与十六个视图。
 modules/format/: 排版模块，一条整理命令与一个编辑监听，替代学员原本要自己装的 Linter。规则本体住在 core/markdownStyle，本模块只回答「什么时候对哪一篇跑它」；它绝不整理用户正开着的那一篇——中文输入法在合成中途被外部改写会吞字。断环靠 formatMarkdown 幂等而非守卫，因此插件自己插进去的那一行（里面有用户现敲的字）照样会被整理。同样不生产笔记。
 modules/appearance/: 外观模块，右下角状态栏的 CSS 片段开关。不生产笔记，也是唯一接触 Obsidian 非公开 API 的地方——那一处接触被关在 snippets.ts 里，声明成可选并带公开 API 兜底。
-modules/ribbon/: 左侧边栏模块，二十二个 Pikaicons 图标与「哪几条命令摆出来」。同样不生产笔记；与 appearance 不同的是它全程只用公开 API（addIcon / addRibbonIcon / Command.icon）。
+modules/ribbon/: 左侧边栏模块，二十三个 Pikaicons 图标与「哪几条命令摆出来」。同样不生产笔记；与 appearance 不同的是它全程只用公开 API（addIcon / addRibbonIcon / Command.icon）。
 
 ## 依赖方向
 

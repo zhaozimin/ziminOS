@@ -32,7 +32,7 @@ __export(main_exports, {
   default: () => ZiminosPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian23 = require("obsidian");
+var import_obsidian24 = require("obsidian");
 
 // src/core/codeblock.ts
 var import_obsidian2 = require("obsidian");
@@ -178,6 +178,7 @@ var NOTE_TYPES = {
   quarterly: "quarterly",
   yearly: "yearly"
 };
+var MOC_PREFIX = "MOC-";
 var DAY_FORMAT = "YYYY-MM-DD";
 var PERIODS = {
   daily: {
@@ -697,6 +698,7 @@ var COMMAND_GROUPS = {
 var COMMAND_ICONS = {
   vault: "ziminos-vault",
   project: "ziminos-project",
+  area: "ziminos-area",
   card: "ziminos-card",
   done: "ziminos-done",
   paused: "ziminos-paused",
@@ -729,6 +731,16 @@ var PROJECT_COMMANDS = {
     id: "create-project",
     name: "\u65B0\u5EFA\u9879\u76EE",
     icon: COMMAND_ICONS.project,
+    group: COMMAND_GROUPS.projects
+  },
+  /**
+   * 新建领域。它与新建项目共用一条流程，差别只有三处（目录、type、不问归属），
+   * 因此也归项目组——PARA 里「项目」与「领域」是同一个问题的两个答案：这件事有没有终点。
+   */
+  area: {
+    id: "create-area",
+    name: "\u65B0\u5EFA\u9886\u57DF",
+    icon: COMMAND_ICONS.area,
     group: COMMAND_GROUPS.projects
   },
   card: {
@@ -3781,7 +3793,7 @@ function normalizeInsertPosition(value) {
 }
 
 // src/modules/projects/cardInit.ts
-var import_obsidian13 = require("obsidian");
+var import_obsidian14 = require("obsidian");
 
 // src/core/frontmatter.ts
 function hasValue(value) {
@@ -3823,6 +3835,25 @@ function reorderFrontmatter(frontmatter, cardValues) {
   }
 }
 
+// src/modules/projects/moc.ts
+var import_obsidian13 = require("obsidian");
+function mocBasenameOf(containerName) {
+  return `${MOC_PREFIX}${containerName}`;
+}
+function mocPathOf(folderPath, containerName) {
+  return (0, import_obsidian13.normalizePath)(`${folderPath}/${mocBasenameOf(containerName)}.md`);
+}
+function legacyMocPathOf(folderPath, containerName) {
+  return (0, import_obsidian13.normalizePath)(`${folderPath}/${containerName}.md`);
+}
+function resolveMocPath(app, folderPath, containerName) {
+  const current = mocPathOf(folderPath, containerName);
+  if (app.vault.getAbstractFileByPath(current)) return current;
+  const legacy = legacyMocPathOf(folderPath, containerName);
+  if (app.vault.getAbstractFileByPath(legacy)) return legacy;
+  return current;
+}
+
 // src/modules/projects/cardInit.ts
 function resolveRoots(settings) {
   const projectFolder = normalizeFolderPath(
@@ -3837,8 +3868,8 @@ function resolveRoots(settings) {
     ])).values()
   );
 }
-function getCardContext(filePath, roots) {
-  const normalizedFilePath = (0, import_obsidian13.normalizePath)(filePath);
+function getCardContext(app, filePath, roots) {
+  const normalizedFilePath = (0, import_obsidian14.normalizePath)(filePath);
   for (const root of roots) {
     const prefix = `${root.path}/`;
     if (!normalizedFilePath.startsWith(prefix)) continue;
@@ -3846,7 +3877,7 @@ function getCardContext(filePath, roots) {
     const pathParts = relativePath.split("/").filter(Boolean);
     if (pathParts.length < 2) return null;
     const containerName = pathParts[0];
-    const mocPath = (0, import_obsidian13.normalizePath)(`${root.path}/${containerName}/${containerName}.md`);
+    const mocPath = resolveMocPath(app, `${root.path}/${containerName}`, containerName);
     if (normalizedFilePath === mocPath) return null;
     return {
       kind: root.kind,
@@ -3862,7 +3893,7 @@ async function initCard(ctx, file, opts) {
   const { app, settings, guard } = ctx;
   try {
     if (file.extension !== "md") return;
-    const context = getCardContext(file.path, resolveRoots(settings));
+    const context = getCardContext(app, file.path, resolveRoots(settings));
     if (!context) return;
     const cachedFrontmatter = (_a = app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter;
     if (isMocFrontmatter(cachedFrontmatter) || isCardInitialized(cachedFrontmatter)) {
@@ -3901,7 +3932,7 @@ async function initCard(ctx, file, opts) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian13.Notice(`\u5361\u7247\u7B14\u8BB0\u521D\u59CB\u5316\u5931\u8D25\uFF1A${message}`);
+    new import_obsidian14.Notice(`\u5361\u7247\u7B14\u8BB0\u521D\u59CB\u5316\u5931\u8D25\uFF1A${message}`);
     throw error;
   }
 }
@@ -3918,9 +3949,9 @@ function registerCardAutoInit(ctx) {
     ctx.plugin.registerEvent(
       ctx.app.vault.on("create", (file) => {
         if (!ctx.settings.autoCardInit) return;
-        if (!(file instanceof import_obsidian13.TFile) || file.extension !== "md") return;
+        if (!(file instanceof import_obsidian14.TFile) || file.extension !== "md") return;
         if (ctx.guard.isRecent(file.path)) return;
-        if (!getCardContext(file.path, resolveRoots(ctx.settings))) return;
+        if (!getCardContext(ctx.app, file.path, resolveRoots(ctx.settings))) return;
         if (file.stat.size !== 0) return;
         void initCard(ctx, file, { interactive: true }).catch(() => {
         });
@@ -3929,8 +3960,8 @@ function registerCardAutoInit(ctx) {
   });
 }
 
-// src/modules/projects/createProject.ts
-var import_obsidian14 = require("obsidian");
+// src/modules/projects/createContainer.ts
+var import_obsidian15 = require("obsidian");
 
 // src/modules/projects/templates.ts
 var MOC_FIELDS = [
@@ -3953,7 +3984,8 @@ var NAV_VIEWS = [
 function toYamlString(value) {
   return JSON.stringify(String(value));
 }
-function mocFrontmatter(description, created, uid, relation) {
+function mocFrontmatter(options) {
+  const { description, created, uid, type, status, relation } = options;
   return [
     "---",
     "aliases:",
@@ -3962,14 +3994,15 @@ function mocFrontmatter(description, created, uid, relation) {
     "updated:",
     "tags:",
     `UID: ${uid}`,
-    "type: project",
-    "status: active",
+    `type: ${type}`,
+    // 领域没有状态，那一行整行不写；空的 status 键会让它出现在「正在进行中」那张表里
+    ...status ? [`status: ${status}`] : [],
     // 只在有值时才写这一行：空的 client 键会让这个项目被当成一笔没有客户的委托
     ...relation ? [`${relation.field}: "[[${relation.target}]]"`] : [],
     "---"
   ].join("\n");
 }
-function mocBaseBlock(projectName, projectFolderPath) {
+function mocBaseBlock(mocBasename, projectFolderPath) {
   return [
     "```base",
     "filters:",
@@ -3985,7 +4018,9 @@ function mocBaseBlock(projectName, projectFolderPath) {
     "    name: \u9879\u76EE\u6587\u4EF6",
     "    filters:",
     "      or:",
-    `        - up == link(${JSON.stringify(projectName)})`,
+    // 这一行必须是 MOC 自己的文件名，不是文件夹名：卡片的 up 指向的是这篇笔记。
+    // 两者一旦分叉，这张表会静默少收一半文件——它不报错，只是变短
+    `        - up == link(${JSON.stringify(mocBasename)})`,
     `        - file.folder == ${JSON.stringify(projectFolderPath)}`,
     "    order:",
     "      - file.name",
@@ -4002,13 +4037,8 @@ function mocBaseBlock(projectName, projectFolderPath) {
   ].join("\n");
 }
 function mocContent(options) {
-  const frontmatter = mocFrontmatter(
-    options.description,
-    options.created,
-    options.uid,
-    options.relation
-  );
-  const baseBlock = mocBaseBlock(options.projectName, options.projectFolderPath);
+  const frontmatter = mocFrontmatter(options);
+  const baseBlock = mocBaseBlock(options.mocBasename, options.projectFolderPath);
   return `${frontmatter}
 
 
@@ -4057,44 +4087,60 @@ function firstProjectDescription() {
   return "\u642D\u5EFA\u5C5E\u4E8E\u6211\u7684\u4E2A\u4EBA\u77E5\u8BC6\u7BA1\u7406\u7CFB\u7EDF";
 }
 
-// src/modules/projects/createProject.ts
+// src/modules/projects/createContainer.ts
 var OWNERSHIP = [
   { field: null, label: "\u81EA\u5DF1\u7684\u9879\u76EE\uFF08\u4E0D\u5199 client\uFF0C\u4E0D\u8FDB\u5BA2\u6237\u7EDF\u8BA1\uFF09", ask: "\u548C\u8C01\u4E00\u8D77\u505A\uFF1F\uFF08\u81EA\u5DF1\u72EC\u505A\u5C31\u6309 Esc \u8DF3\u8FC7\uFF09" },
   { field: FIELDS.client, label: "\u5BA2\u6237\u59D4\u6258\u7684\uFF08\u5199 client\uFF0C\u6211\u6B20\u4ED6\u4E00\u4E2A\u4EA4\u4ED8\uFF09", ask: "\u8FD9\u662F\u8C01\u59D4\u6258\u7684\uFF1F" }
 ];
-async function createProject(ctx, preset, pickPerson2) {
+var PROJECT_KIND = {
+  label: "\u9879\u76EE",
+  type: NOTE_TYPES.project,
+  status: "active",
+  folderKey: "projectFolder",
+  folderFallback: FOLDERS.projects,
+  asksOwnership: true
+};
+var AREA_KIND = {
+  label: "\u9886\u57DF",
+  type: NOTE_TYPES.area,
+  folderKey: "areaFolder",
+  folderFallback: FOLDERS.areas,
+  asksOwnership: false
+};
+async function createContainer(ctx, kind, preset, pickPerson2) {
   var _a;
   const { app } = ctx;
   try {
-    const baseFolder = normalizeFolderPath(ctx.settings.projectFolder, FOLDERS.projects);
-    const projectNameInput = preset ? preset.name : await new TextInputModal(app, {
-      title: "\u8BF7\u8F93\u5165\u65B0\u5EFA\u9879\u76EE\u7684\u540D\u79F0"
+    const settings = ctx.settings;
+    const baseFolder = normalizeFolderPath(settings[kind.folderKey], kind.folderFallback);
+    const nameInput = preset ? preset.name : await new TextInputModal(app, {
+      title: `\u8BF7\u8F93\u5165\u65B0\u5EFA${kind.label}\u7684\u540D\u79F0`
     }).openAndGetValue();
-    if (projectNameInput === null || !projectNameInput.trim()) {
-      new import_obsidian14.Notice("\u672A\u8F93\u5165\u9879\u76EE\u540D\u79F0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
+    if (nameInput === null || !nameInput.trim()) {
+      new import_obsidian15.Notice(`\u672A\u8F93\u5165${kind.label}\u540D\u79F0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
       return null;
     }
-    const projectName = projectNameInput.trim();
-    if (/[\\/]/.test(projectName)) {
-      new import_obsidian14.Notice("\u9879\u76EE\u540D\u79F0\u4E0D\u80FD\u5305\u542B\u659C\u6760\u6216\u53CD\u659C\u6760\u3002");
+    const containerName = nameInput.trim();
+    if (/[\\/]/.test(containerName)) {
+      new import_obsidian15.Notice(`${kind.label}\u540D\u79F0\u4E0D\u80FD\u5305\u542B\u659C\u6760\u6216\u53CD\u659C\u6760\u3002`);
       return null;
     }
     let relation;
-    if (!preset) {
+    if (kind.asksOwnership && !preset) {
       const ownership = await new ChoiceModal(app, {
-        title: "\u8FD9\u4E2A\u9879\u76EE\u662F\u8C01\u7684\uFF1F",
+        title: `\u8FD9\u4E2A${kind.label}\u662F\u8C01\u7684\uFF1F`,
         items: OWNERSHIP,
         labelOf: (item) => item.label
       }).openAndGetChoice();
       if (!ownership) {
-        new import_obsidian14.Notice("\u672A\u9009\u62E9\u9879\u76EE\u5F52\u5C5E\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
+        new import_obsidian15.Notice(`\u672A\u9009\u62E9${kind.label}\u5F52\u5C5E\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
         return null;
       }
       if (pickPerson2) {
         const isCommission = ownership.field !== null;
         const person = await pickPerson2(ownership.ask, !isCommission);
         if (isCommission && !person) {
-          new import_obsidian14.Notice("\u672A\u9009\u62E9\u5BA2\u6237\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
+          new import_obsidian15.Notice("\u672A\u9009\u62E9\u5BA2\u6237\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
           return null;
         }
         if (person) {
@@ -4106,32 +4152,38 @@ async function createProject(ctx, preset, pickPerson2) {
       }
     }
     const descriptionInput = preset ? preset.description : await new TextInputModal(app, {
-      title: "\u8BF7\u8F93\u5165\u9879\u76EE\u6982\u8FF0"
+      title: `\u8BF7\u8F93\u5165${kind.label}\u6982\u8FF0`
     }).openAndGetValue();
     if (descriptionInput === null) {
-      new import_obsidian14.Notice("\u5DF2\u53D6\u6D88\u8F93\u5165\u9879\u76EE\u6982\u8FF0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
+      new import_obsidian15.Notice(`\u5DF2\u53D6\u6D88\u8F93\u5165${kind.label}\u6982\u8FF0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
       return null;
     }
     const description = descriptionInput.trim();
-    const projectFolderPath = (0, import_obsidian14.normalizePath)(`${baseFolder}/${projectName}`);
-    const mocFilePath = (0, import_obsidian14.normalizePath)(`${projectFolderPath}/${projectName}.md`);
+    const containerFolderPath = (0, import_obsidian15.normalizePath)(`${baseFolder}/${containerName}`);
+    const mocBasename = mocBasenameOf(containerName);
+    const mocFilePath = mocPathOf(containerFolderPath, containerName);
     await ensureFolderPath(app, baseFolder);
-    await ensureFolderPath(app, projectFolderPath);
+    await ensureFolderPath(app, containerFolderPath);
     const existingMocFile = app.vault.getAbstractFileByPath(mocFilePath);
     if (existingMocFile) {
-      new import_obsidian14.Notice(`\u9879\u76EE MOC \u7B14\u8BB0\u5DF2\u7ECF\u5B58\u5728\uFF0C\u672A\u6267\u884C\u8986\u76D6\uFF1A${mocFilePath}`);
+      new import_obsidian15.Notice(`${kind.label} MOC \u7B14\u8BB0\u5DF2\u7ECF\u5B58\u5728\uFF0C\u672A\u6267\u884C\u8986\u76D6\uFF1A${mocFilePath}`);
       return null;
     }
-    const { stamp: created, uid } = nowStampAndUid(ctx.settings.dateTimeFormat);
-    const mocMarkdown = mocContent({
-      projectName,
-      projectFolderPath,
+    const { stamp: created, uid } = nowStampAndUid(settings.dateTimeFormat);
+    const identity = {
       description,
       created,
       uid,
+      type: kind.type,
+      status: kind.status,
       relation
+    };
+    const mocMarkdown = mocContent({
+      ...identity,
+      mocBasename,
+      projectFolderPath: containerFolderPath
     });
-    const frontmatter = mocFrontmatter(description, created, uid, relation);
+    const frontmatter = mocFrontmatter(identity);
     ctx.guard.mark(mocFilePath);
     const mocFile = await app.vault.create(mocFilePath, mocMarkdown);
     const leaf = app.workspace.getLeaf(false);
@@ -4141,7 +4193,7 @@ async function createProject(ctx, preset, pickPerson2) {
         mode: "source"
       }
     });
-    if (leaf.view instanceof import_obsidian14.MarkdownView) {
+    if (leaf.view instanceof import_obsidian15.MarkdownView) {
       const editor = leaf.view.editor;
       const secondBlankLine = frontmatter.split("\n").length + 1;
       const cursorPosition = {
@@ -4160,13 +4212,28 @@ async function createProject(ctx, preset, pickPerson2) {
         );
       }
     }
-    new import_obsidian14.Notice(`\u9879\u76EE\u5DF2\u521B\u5EFA\uFF1A${projectName}`);
+    new import_obsidian15.Notice(`${kind.label}\u5DF2\u521B\u5EFA\uFF1A${containerName}`);
     return mocFile;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian14.Notice(`\u521B\u5EFA\u9879\u76EE\u5931\u8D25\uFF1A${message}`);
+    new import_obsidian15.Notice(`\u521B\u5EFA${kind.label}\u5931\u8D25\uFF1A${message}`);
     return null;
   }
+}
+
+// src/modules/projects/createArea.ts
+async function createArea(ctx) {
+  return createContainer(ctx, AREA_KIND);
+}
+function registerCreateAreaCommand(ctx) {
+  ctx.commands.register(PROJECT_COMMANDS.area, () => {
+    void createArea(ctx);
+  });
+}
+
+// src/modules/projects/createProject.ts
+async function createProject(ctx, preset, pickPerson2) {
+  return createContainer(ctx, PROJECT_KIND, preset, pickPerson2);
 }
 function registerCreateProjectCommand(ctx, pickPerson2) {
   ctx.commands.register(PROJECT_COMMANDS.create, () => {
@@ -4205,7 +4272,7 @@ async function createFirstProject(ctx) {
 }
 
 // src/modules/projects/transitions.ts
-var import_obsidian15 = require("obsidian");
+var import_obsidian16 = require("obsidian");
 var PROJECT_TYPE = "project";
 var CONFIRM_MODAL_CLASS = "qa-project-transition-confirm";
 function registerTransitionCommands(ctx) {
@@ -4219,7 +4286,7 @@ async function runProjectTransition(ctx, action) {
   try {
     const transition = TRANSITIONS[action];
     if (!transition) {
-      new import_obsidian15.Notice(`\u672A\u77E5\u7684\u9879\u76EE\u6D41\u8F6C\u52A8\u4F5C\uFF1A${action}`);
+      new import_obsidian16.Notice(`\u672A\u77E5\u7684\u9879\u76EE\u6D41\u8F6C\u52A8\u4F5C\uFF1A${action}`);
       return;
     }
     const plan = resolveTransitionPlan(ctx, transition);
@@ -4229,15 +4296,15 @@ async function runProjectTransition(ctx, action) {
     const basePathChanged = await applyTransition(ctx, plan);
     await reopenMovedMoc(ctx, plan.targetMocPath);
     if (!basePathChanged) {
-      new import_obsidian15.Notice(
+      new import_obsidian16.Notice(
         "\u9879\u76EE\u6D41\u8F6C\u6210\u529F\uFF0C\u4F46 MOC\uFF08\u9879\u76EE\u5BFC\u822A\u7B14\u8BB0\uFF09\u4E2D\u6CA1\u6709\u627E\u5230\u9700\u8981\u66F4\u65B0\u7684 file.folder\uFF08\u6587\u4EF6\u5939\uFF09\u7B5B\u9009\u6761\u4EF6\u3002"
       );
     }
-    new import_obsidian15.Notice(
+    new import_obsidian16.Notice(
       `\u9879\u76EE\u5DF2${transition.label}\uFF1A${plan.projectName} \u2192 ${formatStatusForDisplay(transition.status)}`
     );
   } catch (error) {
-    new import_obsidian15.Notice(`\u9879\u76EE\u72B6\u6001\u6D41\u8F6C\u5931\u8D25\uFF1A${getErrorMessage(error)}`);
+    new import_obsidian16.Notice(`\u9879\u76EE\u72B6\u6001\u6D41\u8F6C\u5931\u8D25\uFF1A${getErrorMessage(error)}`);
   }
 }
 function resolveTransitionPlan(ctx, transition) {
@@ -4246,46 +4313,46 @@ function resolveTransitionPlan(ctx, transition) {
   const activeFolder = normalizeFolderPath(settings.projectFolder, DEFAULT_SETTINGS.projectFolder);
   const archiveFolder = normalizeFolderPath(settings.archiveFolder, DEFAULT_SETTINGS.archiveFolder);
   if (activeFolder === archiveFolder) {
-    new import_obsidian15.Notice("\u9879\u76EE\u76EE\u5F55\u548C\u5F52\u6863\u76EE\u5F55\u4E0D\u80FD\u8BBE\u7F6E\u4E3A\u540C\u4E00\u8DEF\u5F84\u3002");
+    new import_obsidian16.Notice("\u9879\u76EE\u76EE\u5F55\u548C\u5F52\u6863\u76EE\u5F55\u4E0D\u80FD\u8BBE\u7F6E\u4E3A\u540C\u4E00\u8DEF\u5F84\u3002");
     return null;
   }
   const sourceRoot = transition.source === "active" ? activeFolder : archiveFolder;
   const targetRoot = transition.target === "active" ? activeFolder : archiveFolder;
   const mocFile = app.workspace.getActiveFile();
-  if (!(mocFile instanceof import_obsidian15.TFile) || mocFile.extension !== "md") {
-    new import_obsidian15.Notice("\u8BF7\u5148\u6253\u5F00\u9700\u8981\u8FDB\u884C\u72B6\u6001\u6D41\u8F6C\u7684\u9879\u76EE MOC\u3002");
+  if (!(mocFile instanceof import_obsidian16.TFile) || mocFile.extension !== "md") {
+    new import_obsidian16.Notice("\u8BF7\u5148\u6253\u5F00\u9700\u8981\u8FDB\u884C\u72B6\u6001\u6D41\u8F6C\u7684\u9879\u76EE MOC\u3002");
     return null;
   }
   const projectFolder = mocFile.parent;
-  if (!(projectFolder instanceof import_obsidian15.TFolder)) {
-    new import_obsidian15.Notice("\u65E0\u6CD5\u8BC6\u522B\u5F53\u524D\u9879\u76EE\u6587\u4EF6\u5939\u3002");
+  if (!(projectFolder instanceof import_obsidian16.TFolder)) {
+    new import_obsidian16.Notice("\u65E0\u6CD5\u8BC6\u522B\u5F53\u524D\u9879\u76EE\u6587\u4EF6\u5939\u3002");
     return null;
   }
   const projectName = projectFolder.name;
-  const sourceProjectPath = (0, import_obsidian15.normalizePath)(`${sourceRoot}/${projectName}`);
-  const expectedMocPath = (0, import_obsidian15.normalizePath)(`${sourceProjectPath}/${projectName}.md`);
-  if ((0, import_obsidian15.normalizePath)(mocFile.path) !== expectedMocPath) {
-    new import_obsidian15.Notice(`\u5F53\u524D\u547D\u4EE4\u53EA\u80FD\u5728\u4EE5\u4E0B\u9879\u76EE MOC \u4E2D\u6267\u884C\uFF1A${expectedMocPath}`);
+  const sourceProjectPath = (0, import_obsidian16.normalizePath)(`${sourceRoot}/${projectName}`);
+  const expectedMocPath = resolveMocPath(app, sourceProjectPath, projectName);
+  if ((0, import_obsidian16.normalizePath)(mocFile.path) !== expectedMocPath) {
+    new import_obsidian16.Notice(`\u5F53\u524D\u547D\u4EE4\u53EA\u80FD\u5728\u4EE5\u4E0B\u9879\u76EE MOC \u4E2D\u6267\u884C\uFF1A${expectedMocPath}`);
     return null;
   }
   const frontmatter = (_a = app.metadataCache.getFileCache(mocFile)) == null ? void 0 : _a.frontmatter;
   const type = normalizeText(frontmatter == null ? void 0 : frontmatter.type);
   const currentStatus = normalizeText(frontmatter == null ? void 0 : frontmatter.status);
   if (type !== PROJECT_TYPE) {
-    new import_obsidian15.Notice("\u5F53\u524D\u7B14\u8BB0\u4E0D\u662F\u9879\u76EE MOC\uFF1A\u7F3A\u5C11 type: project\uFF08\u9879\u76EE\uFF09\u3002");
+    new import_obsidian16.Notice("\u5F53\u524D\u7B14\u8BB0\u4E0D\u662F\u9879\u76EE MOC\uFF1A\u7F3A\u5C11 type: project\uFF08\u9879\u76EE\uFF09\u3002");
     return null;
   }
   if (!transition.allowedStatuses.includes(currentStatus)) {
-    new import_obsidian15.Notice(
+    new import_obsidian16.Notice(
       `\u9879\u76EE\u5F53\u524D\u72B6\u6001\u4E3A\u201C${formatStatusForDisplay(currentStatus)}\u201D\uFF0C\u4E0D\u80FD\u6267\u884C\u201C${transition.label}\u201D\u64CD\u4F5C\u3002`
     );
     return null;
   }
-  const targetProjectPath = (0, import_obsidian15.normalizePath)(`${targetRoot}/${projectName}`);
-  const targetMocPath = (0, import_obsidian15.normalizePath)(`${targetProjectPath}/${projectName}.md`);
+  const targetProjectPath = (0, import_obsidian16.normalizePath)(`${targetRoot}/${projectName}`);
+  const targetMocPath = (0, import_obsidian16.normalizePath)(`${targetProjectPath}/${mocFile.name}`);
   const existingTarget = app.vault.getAbstractFileByPath(targetProjectPath);
   if (existingTarget) {
-    new import_obsidian15.Notice(`\u76EE\u6807\u4F4D\u7F6E\u5DF2\u7ECF\u5B58\u5728\u540C\u540D\u9879\u76EE\uFF0C\u64CD\u4F5C\u5DF2\u505C\u6B62\uFF1A${targetProjectPath}`);
+    new import_obsidian16.Notice(`\u76EE\u6807\u4F4D\u7F6E\u5DF2\u7ECF\u5B58\u5728\u540C\u540D\u9879\u76EE\uFF0C\u64CD\u4F5C\u5DF2\u505C\u6B62\uFF1A${targetProjectPath}`);
     return null;
   }
   return {
@@ -4314,7 +4381,7 @@ async function applyTransition(ctx, plan) {
     await app.fileManager.renameFile(plan.projectFolder, plan.targetProjectPath);
     progress.moved = true;
     const movedMoc = app.vault.getAbstractFileByPath(plan.targetMocPath);
-    if (!(movedMoc instanceof import_obsidian15.TFile)) {
+    if (!(movedMoc instanceof import_obsidian16.TFile)) {
       throw new Error(`\u79FB\u52A8\u540E\u6CA1\u6709\u627E\u5230\u9879\u76EE MOC\uFF1A${plan.targetMocPath}`);
     }
     guard.mark(movedMoc.path);
@@ -4353,16 +4420,16 @@ function markFolderTree(ctx, folder, targetPath) {
   const sourcePath = folder.path;
   guard.mark(sourcePath);
   guard.mark(targetPath);
-  import_obsidian15.Vault.recurseChildren(folder, (child) => {
-    if (!(child instanceof import_obsidian15.TFile)) return;
+  import_obsidian16.Vault.recurseChildren(folder, (child) => {
+    if (!(child instanceof import_obsidian16.TFile)) return;
     const relativePath = child.path.slice(sourcePath.length + 1);
     guard.mark(child.path);
-    guard.mark((0, import_obsidian15.normalizePath)(`${targetPath}/${relativePath}`));
+    guard.mark((0, import_obsidian16.normalizePath)(`${targetPath}/${relativePath}`));
   });
 }
 async function reopenMovedMoc(ctx, targetMocPath) {
   const movedMoc = ctx.app.vault.getAbstractFileByPath(targetMocPath);
-  if (!(movedMoc instanceof import_obsidian15.TFile)) return;
+  if (!(movedMoc instanceof import_obsidian16.TFile)) return;
   try {
     await ctx.app.workspace.getLeaf(false).openFile(movedMoc, { active: true });
   } catch (e) {
@@ -4386,7 +4453,7 @@ async function rollbackTransition(ctx, plan, progress) {
   const { app, guard } = ctx;
   try {
     const currentFolder = (_a = app.vault.getAbstractFileByPath(plan.targetProjectPath)) != null ? _a : plan.projectFolder;
-    if (!(currentFolder instanceof import_obsidian15.TFolder)) {
+    if (!(currentFolder instanceof import_obsidian16.TFolder)) {
       throw new Error(`\u56DE\u6EDA\u65F6\u6CA1\u6709\u627E\u5230\u9879\u76EE\u76EE\u5F55\uFF1A${plan.targetProjectPath}`);
     }
     if (app.vault.getAbstractFileByPath(plan.sourceProjectPath)) {
@@ -4395,7 +4462,7 @@ async function rollbackTransition(ctx, plan, progress) {
     markFolderTree(ctx, currentFolder, plan.sourceProjectPath);
     await app.fileManager.renameFile(currentFolder, plan.sourceProjectPath);
     const restoredMoc = app.vault.getAbstractFileByPath(plan.expectedMocPath);
-    if (!(restoredMoc instanceof import_obsidian15.TFile)) {
+    if (!(restoredMoc instanceof import_obsidian16.TFile)) {
       throw new Error(`\u56DE\u6EDA\u540E\u6CA1\u6709\u627E\u5230\u9879\u76EE MOC\uFF1A${plan.expectedMocPath}`);
     }
     if (progress.statusChanged) {
@@ -4424,7 +4491,7 @@ async function showProjectTransitionConfirm(app, plan) {
     new ProjectTransitionConfirmModal(app, plan, resolve).open();
   });
 }
-var ProjectTransitionConfirmModal = class extends import_obsidian15.Modal {
+var ProjectTransitionConfirmModal = class extends import_obsidian16.Modal {
   constructor(app, plan, resolver) {
     super(app);
     /** 按钮结算与关闭结算都会走到 settle，用它保证只生效一次 */
@@ -4475,8 +4542,8 @@ var ProjectTransitionConfirmModal = class extends import_obsidian15.Modal {
     buttonBar.style.justifyContent = "flex-end";
     buttonBar.style.gap = "8px";
     buttonBar.style.marginTop = "18px";
-    new import_obsidian15.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.settle(false));
-    const confirmButton = new import_obsidian15.ButtonComponent(buttonBar).setButtonText(`\u786E\u8BA4${transition.label}`).setCta().onClick(() => this.settle(true));
+    new import_obsidian16.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.settle(false));
+    const confirmButton = new import_obsidian16.ButtonComponent(buttonBar).setButtonText(`\u786E\u8BA4${transition.label}`).setCta().onClick(() => this.settle(true));
     confirmButton.buttonEl.focus();
   }
   onClose() {
@@ -4527,7 +4594,7 @@ function getErrorMessage(error) {
 }
 
 // src/modules/projects/updatedMaintainer.ts
-var import_obsidian16 = require("obsidian");
+var import_obsidian17 = require("obsidian");
 var UPDATED_DEBOUNCE_MS = 2e3;
 var SYSTEM_PREFIX = `${FOLDERS.system}/`;
 function registerUpdatedMaintainer(ctx) {
@@ -4537,7 +4604,7 @@ function registerUpdatedMaintainer(ctx) {
     if (!ctx.settings.autoUpdated) return;
     if (path.startsWith(SYSTEM_PREFIX)) return;
     const file = ctx.app.vault.getAbstractFileByPath(path);
-    if (!(file instanceof import_obsidian16.TFile)) return;
+    if (!(file instanceof import_obsidian17.TFile)) return;
     if (!((_a = ctx.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter)) return;
     ctx.guard.mark(path);
     await ctx.app.fileManager.processFrontMatter(file, (frontmatter) => {
@@ -4574,7 +4641,7 @@ function registerUpdatedMaintainer(ctx) {
           cancelUpdate(file.path);
           return;
         }
-        if (!(file instanceof import_obsidian16.TFile) || file.extension !== "md") return;
+        if (!(file instanceof import_obsidian17.TFile) || file.extension !== "md") return;
         if (file.path.startsWith(SYSTEM_PREFIX)) {
           cancelUpdate(file.path);
           return;
@@ -4591,7 +4658,7 @@ function registerUpdatedMaintainer(ctx) {
 }
 
 // src/modules/review/periodic.ts
-var import_obsidian17 = require("obsidian");
+var import_obsidian18 = require("obsidian");
 function periodFolderOf(ctx, period) {
   const root = normalizeFolderPath(ctx.settings.diaryFolder, FOLDERS.diary);
   const leaf = period.folder.slice(FOLDERS.diary.length + 1);
@@ -4640,8 +4707,8 @@ async function openPeriodNote(ctx, period, options) {
     const folder = periodFolderOf(ctx, period);
     const path = `${folder}/${title}.md`;
     const existing = ctx.app.vault.getAbstractFileByPath(path);
-    if (existing && !(existing instanceof import_obsidian17.TFile)) {
-      new import_obsidian17.Notice(`\u540C\u540D\u7684\u4E0D\u662F\u7B14\u8BB0\u800C\u662F\u6587\u4EF6\u5939\uFF1A${path}`);
+    if (existing && !(existing instanceof import_obsidian18.TFile)) {
+      new import_obsidian18.Notice(`\u540C\u540D\u7684\u4E0D\u662F\u7B14\u8BB0\u800C\u662F\u6587\u4EF6\u5939\uFF1A${path}`);
       return null;
     }
     const content = periodNoteContent(period, title, ctx.settings.dateTimeFormat);
@@ -4658,7 +4725,7 @@ async function openPeriodNote(ctx, period, options) {
     return file;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian17.Notice(`\u6253\u5F00${period.label}\u5931\u8D25\uFF1A${message}`);
+    new import_obsidian18.Notice(`\u6253\u5F00${period.label}\u5931\u8D25\uFF1A${message}`);
     return null;
   }
 }
@@ -4955,7 +5022,7 @@ function reviewSeed(ctx) {
 }
 
 // src/modules/review/theme.ts
-var import_obsidian18 = require("obsidian");
+var import_obsidian19 = require("obsidian");
 var MESSAGES5 = {
   unchanged: "\u4E3B\u9898\u6CA1\u6709\u53D8\u5316\uFF08\u7559\u7A7A\u4E0D\u4F1A\u6E05\u6389\u5DF2\u7ECF\u5199\u597D\u7684\u4E3B\u9898\uFF09",
   donePrefix: "\u5DF2\u5199\u5165",
@@ -4983,17 +5050,17 @@ async function writeTheme(ctx) {
     if (answer === null) return;
     const theme = answer.trim();
     if (!theme) {
-      new import_obsidian18.Notice(MESSAGES5.unchanged);
+      new import_obsidian19.Notice(MESSAGES5.unchanged);
       return;
     }
     ctx.guard.mark(file.path);
     await ctx.app.fileManager.processFrontMatter(file, (frontmatter) => {
       frontmatter[FIELDS.theme] = theme;
     });
-    new import_obsidian18.Notice(`${MESSAGES5.donePrefix}${period.label}\u4E3B\u9898\uFF1A${theme}`);
+    new import_obsidian19.Notice(`${MESSAGES5.donePrefix}${period.label}\u4E3B\u9898\uFF1A${theme}`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian18.Notice(MESSAGES5.failedPrefix + message);
+    new import_obsidian19.Notice(MESSAGES5.failedPrefix + message);
   }
 }
 async function resolveTarget(ctx) {
@@ -5184,10 +5251,10 @@ function themeCell(view, note, missing) {
 var reviewThemeViews = [dailyOutput, themeChain];
 
 // src/modules/ribbon/dock.ts
-var import_obsidian20 = require("obsidian");
+var import_obsidian21 = require("obsidian");
 
 // src/modules/ribbon/icons.ts
-var import_obsidian19 = require("obsidian");
+var import_obsidian20 = require("obsidian");
 var GRID = 24;
 var BOX = 100;
 var STROKE = "var(--icon-stroke, 2)";
@@ -5203,6 +5270,16 @@ var ARTWORK = {
   /** 新建项目：插一面旗。项目与领域的区别就是它有终点，而旗子是插在终点上的（Pikaicons 原图） */
   [COMMAND_ICONS.project]: [
     "M5 3L5 21M6.4719 13.5167C8.2565 12.9141 10.2137 13.104 11.8491 14.0385C13.4338 14.9441 15.3231 15.1518 17.0666 14.6121L18.376 14.2068C18.747 14.092 19 13.7488 19 13.3604V4.48517C19 3.59568 17.3336 4.41833 16.9549 4.53557C15.2894 5.05107 13.4824 4.8202 12 3.90255C10.5176 2.98491 8.71058 2.75404 7.04513 3.26954L5.59885 3.71719C5.24278 3.82741 5 4.15669 5 4.52944V13.4561C5 14.2118 6.13797 13.6294 6.4719 13.5167Z"
+  ],
+  /**
+   * 新建领域：一个闭合的环。
+   *
+   * 免费集里没有，照同一套画法补画，且刻意与旗子（新建项目）成一对反义词：
+   * 旗子插在终点上，而领域没有终点——健康、手艺、人脉都是走完一圈又一圈的事。
+   * 环用的正是那个半径 9 的公共圆，缺口开在右上，让它读成「循环」而不是「句号」。
+   */
+  [COMMAND_ICONS.area]: [
+    "M20.49 15A9 9 0 1 1 21 12M21 4V9H16"
   ],
   /** 初始化当前卡片：一页笔记。它做的事就是把眼前这一页登记成卡片（Pikaicons 原图） */
   [COMMAND_ICONS.card]: [
@@ -5307,8 +5384,8 @@ var ARTWORK = {
 };
 function registerZiminosIcons(plugin) {
   for (const [name, paths] of Object.entries(ARTWORK)) {
-    (0, import_obsidian19.addIcon)(name, wrap(paths));
-    plugin.register(() => (0, import_obsidian19.removeIcon)(name));
+    (0, import_obsidian20.addIcon)(name, wrap(paths));
+    plugin.register(() => (0, import_obsidian20.removeIcon)(name));
   }
 }
 function wrap(paths) {
@@ -5337,11 +5414,11 @@ var RibbonDock = class {
    *
    * 这里有两条纪律，都来自 Obsidian 边栏的真实模型，不是口味问题：
    *
-   * 其一，**只为勾上的命令建按钮**，而不是一次建齐二十二个再切显隐。
+   * 其一，**只为勾上的命令建按钮**，而不是一次建齐二十三个再切显隐。
    * Obsidian 的 leftRibbon 自己存着一份 items，手机端底栏的边栏菜单与
    * 桌面「设置 → 外观 → 功能区」的管理弹窗都是遍历这份 items 画出来的，
    * 两处的过滤条件都只有 item.hidden，与 DOM 无关（边栏右键菜单会多看一眼 buttonEl 在不在，
-   * 但那对我们没用——被藏起来的按钮 buttonEl 还在）。一次建齐的话，那两处永远列着全部二十二条，
+   * 但那对我们没用——被藏起来的按钮 buttonEl 还在）。一次建齐的话，那两处永远列着全部二十三条，
    * 包括「初始化笔记库」这种一辈子只该按一次的——那正是这个功能想消灭的杂乱。
    *
    * 其二，**藏起来走 class 不走 inline display**，理由见 HIDDEN_CLASS。
@@ -5361,7 +5438,7 @@ var RibbonDock = class {
       if (!enabled.has(id)) {
         if (existing && !existing.hasClass(HIDDEN_CLASS)) {
           existing.addClass(HIDDEN_CLASS);
-          if (import_obsidian20.Platform.isPhone) new import_obsidian20.Notice(MOBILE_PENDING);
+          if (import_obsidian21.Platform.isPhone) new import_obsidian21.Notice(MOBILE_PENDING);
         }
         continue;
       }
@@ -5379,7 +5456,7 @@ var RibbonDock = class {
 };
 
 // src/modules/setup/init.ts
-var import_obsidian21 = require("obsidian");
+var import_obsidian22 = require("obsidian");
 
 // src/modules/setup/schemaNote.ts
 var SAMPLE_TYPE = "\u793A\u4F8B";
@@ -5518,7 +5595,7 @@ async function initializeVault(ctx, seeds) {
   try {
     const isFirstRun = ctx.settings.initializedAt === "";
     if (isFirstRun && hasUserNotes(ctx)) {
-      new import_obsidian21.Notice(MESSAGES6.notEmpty);
+      new import_obsidian22.Notice(MESSAGES6.notEmpty);
       return;
     }
     for (const folder of INIT_FOLDERS) {
@@ -5538,11 +5615,11 @@ async function initializeVault(ctx, seeds) {
       ctx.settings.initializedAt = nowStamp(ctx.settings.dateTimeFormat);
     }
     await ctx.saveSettings();
-    new import_obsidian21.Notice(MESSAGES6.done);
+    new import_obsidian22.Notice(MESSAGES6.done);
     await ctx.app.workspace.openLinkText(NAV_FILE, "", false);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian21.Notice(MESSAGES6.failedPrefix + message);
+    new import_obsidian22.Notice(MESSAGES6.failedPrefix + message);
   }
 }
 async function applySeed(ctx, seed) {
@@ -5564,7 +5641,7 @@ async function createFileIfMissing(ctx, path, content) {
 }
 
 // src/settings.ts
-var import_obsidian22 = require("obsidian");
+var import_obsidian23 = require("obsidian");
 var TABS = [
   {
     id: "setup",
@@ -5627,7 +5704,7 @@ var TABS = [
     label: "\u8FB9\u680F",
     emoji: "\u{1F9ED}",
     module: "\u5DE6\u4FA7\u8FB9\u680F v1",
-    status: "\u8FD0\u884C\u4E2D \xB7 \u4E8C\u5341\u4E8C\u6761\u547D\u4EE4\u914D Pikaicons \u56FE\u6807\uFF0C\u9ED8\u8BA4\u6446\u51FA\u4E03\u6761"
+    status: "\u8FD0\u884C\u4E2D \xB7 \u4E8C\u5341\u4E09\u6761\u547D\u4EE4\u914D Pikaicons \u56FE\u6807\uFF0C\u9ED8\u8BA4\u6446\u51FA\u4E03\u6761"
   }
 ];
 var TEXTS3 = {
@@ -5674,7 +5751,7 @@ var TEXT_FIELDS = [
 ];
 var FIELDS_ONLY = () => {
 };
-var ZiminosSettingTab = class extends import_obsidian22.PluginSettingTab {
+var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
   constructor(ctx, actions) {
     super(ctx.app, ctx.plugin);
     /**
@@ -5690,7 +5767,7 @@ var ZiminosSettingTab = class extends import_obsidian22.PluginSettingTab {
      * 「已摆出 N / 21 条」那行字。
      *
      * 这是全页唯一一处持有 DOM 引用的地方，理由很具体：勾选要即时更新这个数，
-     * 而重建整页会把滚动条弹回顶部——二十二行排下来，用户勾第十八行时页面一跳，
+     * 而重建整页会把滚动条弹回顶部——二十三行排下来，用户勾第十八行时页面一跳，
      * 他就得重新找回刚才那一行。持有的是一个渲染出来的节点，不是第二份状态：
      * 数字仍然现算自设置对象，每次 display 也会把它换成新节点。
      */
@@ -5760,7 +5837,7 @@ var ZiminosSettingTab = class extends import_obsidian22.PluginSettingTab {
    */
   renderPanel(body) {
     const tab = this.activeTab;
-    new import_obsidian22.Setting(body).setName(`${tab.emoji} ${tab.module}`).setDesc(tab.status).setHeading();
+    new import_obsidian23.Setting(body).setName(`${tab.emoji} ${tab.module}`).setDesc(tab.status).setHeading();
     this.renderTextFields(body, tab.id, false);
     this.panels[tab.id](body);
     this.renderAdvancedFold(body, tab.id);
@@ -5775,7 +5852,7 @@ var ZiminosSettingTab = class extends import_obsidian22.PluginSettingTab {
    * 天然看得见新值；只有已经画在屏幕上的东西（状态栏按钮）才需要有人去推它一把。
    */
   renderToggle(containerEl, key, name, desc, onApplied) {
-    new import_obsidian22.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
+    new import_obsidian23.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
       toggle.setValue(this.ctx.settings[key]).onChange(async (value) => {
         this.ctx.settings[key] = value;
         await this.ctx.saveSettings();
@@ -5811,7 +5888,7 @@ var ZiminosSettingTab = class extends import_obsidian22.PluginSettingTab {
   renderTextField(containerEl, field) {
     const fallback = DEFAULT_SETTINGS[field.key];
     const desc = field.advanced ? `${field.hint}${TEXTS3.advancedSuffixPrefix}${fallback}${TEXTS3.advancedSuffixTail}` : field.hint;
-    new import_obsidian22.Setting(containerEl).setName(field.name).setDesc(desc).addText((text) => {
+    new import_obsidian23.Setting(containerEl).setName(field.name).setDesc(desc).addText((text) => {
       text.setPlaceholder(fallback).setValue(this.ctx.settings[field.key]).onChange(async (value) => {
         this.ctx.settings[field.key] = value;
         await this.ctx.saveSettings();
@@ -5827,7 +5904,7 @@ var ZiminosSettingTab = class extends import_obsidian22.PluginSettingTab {
    * 状态说明随之从「尚未初始化」翻面成「已就绪」——停留的页不变，重建的是内容。
    */
   renderInitButton(containerEl) {
-    new import_obsidian22.Setting(containerEl).setName(TEXTS3.initName).setDesc(this.describeInitState()).addButton((button) => {
+    new import_obsidian23.Setting(containerEl).setName(TEXTS3.initName).setDesc(this.describeInitState()).addButton((button) => {
       button.setButtonText(TEXTS3.initButton).setCta().onClick(async () => {
         button.setDisabled(true);
         try {
@@ -5860,14 +5937,14 @@ var ZiminosSettingTab = class extends import_obsidian22.PluginSettingTab {
    * 落点那三个文本框已由骨架照字段表画在上方，这里只补两个非文本控件。
    */
   renderInspirationPanel(containerEl) {
-    new import_obsidian22.Setting(containerEl).setName(TEXTS3.inspirationPositionName).setDesc(TEXTS3.inspirationPositionDesc).addDropdown((dropdown) => {
+    new import_obsidian23.Setting(containerEl).setName(TEXTS3.inspirationPositionName).setDesc(TEXTS3.inspirationPositionDesc).addDropdown((dropdown) => {
       dropdown.addOption("heading-top", "\u6807\u9898\u4E0B\u65B9\uFF08\u65B0\u5185\u5BB9\u5728\u524D\uFF09").addOption("heading-bottom", "\u6807\u9898\u533A\u672B\u5C3E\uFF08\u65B0\u5185\u5BB9\u5728\u540E\uFF09").addOption("file-top", "\u6B63\u6587\u9876\u90E8").addOption("file-bottom", "\u6B63\u6587\u5E95\u90E8").setValue(this.normalizeInspirationPosition(this.ctx.settings.inspirationInsertPosition)).onChange(async (value) => {
         const position = this.normalizeInspirationPosition(value);
         this.ctx.settings.inspirationInsertPosition = position;
         await this.ctx.saveSettings();
       });
     });
-    new import_obsidian22.Setting(containerEl).setName(TEXTS3.inspirationFormatName).setDesc(TEXTS3.inspirationFormatDesc).addTextArea((textArea) => {
+    new import_obsidian23.Setting(containerEl).setName(TEXTS3.inspirationFormatName).setDesc(TEXTS3.inspirationFormatDesc).addTextArea((textArea) => {
       textArea.setPlaceholder(INSPIRATION_DEFAULTS.format).setValue(this.ctx.settings.inspirationFormat).onChange(async (value) => {
         this.ctx.settings.inspirationFormat = value;
         await this.ctx.saveSettings();
@@ -5898,7 +5975,7 @@ var ZiminosSettingTab = class extends import_obsidian22.PluginSettingTab {
       TEXTS3.autoFormatName,
       TEXTS3.autoFormatDesc
     );
-    new import_obsidian22.Setting(containerEl).setName(TEXTS3.formatRulesHeading).setDesc(TEXTS3.formatRulesIntro).setHeading();
+    new import_obsidian23.Setting(containerEl).setName(TEXTS3.formatRulesHeading).setDesc(TEXTS3.formatRulesIntro).setHeading();
     for (const rule of FORMAT_RULES) {
       this.renderRuleRow(containerEl, rule.key, rule.name, rule.desc);
     }
@@ -5906,12 +5983,12 @@ var ZiminosSettingTab = class extends import_obsidian22.PluginSettingTab {
   /**
    * 一条规则一行。
    *
-   * 它与边栏那二十二行是同一种控件——勾选决定一个 id 在不在清单里，而不是翻一个布尔字段。
+   * 它与边栏那二十三行是同一种控件——勾选决定一个 id 在不在清单里，而不是翻一个布尔字段。
    * 存清单而不是九个布尔字段，是为了让「加一条规则」不必动设置契约：
    * 老库升级时那条新规则不在清单里，于是默认不开，这与「不替用户改他没选过的东西」同源。
    */
   renderRuleRow(containerEl, key, name, desc) {
-    new import_obsidian22.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
+    new import_obsidian23.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
       toggle.setValue(this.ctx.settings.formatRules.includes(key)).onChange(async (value) => {
         this.ctx.settings.formatRules = this.nextFormatRules(key, value);
         await this.ctx.saveSettings();
@@ -5945,17 +6022,17 @@ var ZiminosSettingTab = class extends import_obsidian22.PluginSettingTab {
     );
   }
   // ============================================================
-  // 八、边栏页：二十二行
+  // 八、边栏页：二十三行
   // ============================================================
   /**
-   * 边栏页：一句说明 + 按分组排下来的二十二行。
+   * 边栏页：一句说明 + 按分组排下来的二十三行。
    *
    * 清单现读花名册而不是自己维护一份，因此它与命令面板里能搜到的命令永远是同一批；
    * 分组标题按「相邻两行的 group 不同」切出来，与外观开关面板用的是同一套画法——
    * 分组顺序不需要另一张表，它就是命令的注册顺序。
    */
   renderRibbonPanel(containerEl) {
-    const summary = new import_obsidian22.Setting(containerEl).setName(this.describeRibbonCount()).setDesc(TEXTS3.ribbonIntro);
+    const summary = new import_obsidian23.Setting(containerEl).setName(this.describeRibbonCount()).setDesc(TEXTS3.ribbonIntro);
     this.ribbonCountEl = summary.nameEl;
     let currentGroup = "";
     for (const command of this.ctx.commands.list()) {
@@ -5982,10 +6059,10 @@ var ZiminosSettingTab = class extends import_obsidian22.PluginSettingTab {
   renderRibbonRow(containerEl, id, icon, name) {
     const label = createFragment((frag) => {
       const iconEl = frag.createSpan({ cls: "ziminos-ribbon-icon" });
-      (0, import_obsidian22.setIcon)(iconEl, icon);
+      (0, import_obsidian23.setIcon)(iconEl, icon);
       frag.createSpan({ text: name });
     });
-    new import_obsidian22.Setting(containerEl).setName(label).setClass("ziminos-ribbon-row").addToggle((toggle) => {
+    new import_obsidian23.Setting(containerEl).setName(label).setClass("ziminos-ribbon-row").addToggle((toggle) => {
       toggle.setValue(this.ctx.settings.ribbonCommands.includes(id)).onChange(async (value) => {
         this.ctx.settings.ribbonCommands = this.nextRibbonCommands(id, value);
         await this.ctx.saveSettings();
@@ -6011,7 +6088,7 @@ var ZiminosSettingTab = class extends import_obsidian22.PluginSettingTab {
 };
 
 // src/main.ts
-var ZiminosPlugin = class extends import_obsidian23.Plugin {
+var ZiminosPlugin = class extends import_obsidian24.Plugin {
   constructor() {
     super(...arguments);
     /**
@@ -6042,6 +6119,7 @@ var ZiminosPlugin = class extends import_obsidian23.Plugin {
       void initializeVault(ctx, collectSeeds());
     });
     registerCreateProjectCommand(ctx, (title, quiet) => pickPerson(ctx, title, quiet));
+    registerCreateAreaCommand(ctx);
     registerCardInitCommand(ctx);
     registerCardAutoInit(ctx);
     registerTransitionCommands(ctx);
