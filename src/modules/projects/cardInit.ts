@@ -200,7 +200,8 @@ export async function initCard(
                 rating: hasOwn('rating') ? frontmatter.rating : null,
                 author: hasOwn('author') ? frontmatter.author : null,
                 source: hasOwn('source') ? frontmatter.source : null,
-                up: hasValue(frontmatter.up) ? frontmatter.up : context.upLink,
+                // up 是列表类型（一张卡片可以同时属于多个 MOC），首次登记也写成单元素列表
+                up: hasValue(frontmatter.up) ? frontmatter.up : [context.upLink],
             };
 
             reorderFrontmatter(frontmatter, cardValues);

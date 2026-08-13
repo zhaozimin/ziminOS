@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 obsidian 导出的 moment，依赖 ./constants 的 UID_FORMAT、DEFAULT_DATETIME_FORMAT、
  *          DAY_FORMAT 与 PeriodDefinition 类型
- * [OUTPUT]: 对外提供 nowStamp（按设置格式取当前时间）、nowUid（17 位本地时间 UID）、
+ * [OUTPUT]: 对外提供 nowStamp（按设置格式取当前时间）、nowUid（14 位本地时间数字 UID）、
  *           nowStampAndUid（同一时刻派生时间戳与 UID）、nowLocalDateTimeParts（同一时刻派生
  *           日期/分钟/自定义时间）；日粒度口径 today/dayText/dayOfMillis/dayOfTitle/shiftDay/daysBetween；
  *           五级复盘周期算术 currentPeriodTitle/periodStartOf/periodEndOf/periodNeighbours/titleOfDay
@@ -41,8 +41,8 @@ type MomentFactory = (input?: string | number, format?: string, strict?: boolean
 export interface StampAndUid {
     /** 按 dateTimeFormat 格式化的可读时间，写入 created */
     readonly stamp: string;
-    /** 17 位本地时间 UID，写入 UID */
-    readonly uid: string;
+    /** 14 位本地时间 UID，写入 UID。是 number 而非 string——属性面板把它登记为数字类型 */
+    readonly uid: number;
 }
 
 /** 同一时刻派生出的模板时间变量，避免跨分钟边界时一条灵感出现互相矛盾的日期与时间 */
@@ -80,13 +80,13 @@ export function nowStamp(format: string): string {
 }
 
 /**
- * 取 17 位本地时间 UID（YYYYMMDDHHmmssSSS）。
+ * 取 14 位本地时间 UID（YYYYMMDDHHmmss）。
  * UID 是笔记的永久身份，格式固定不可配置，因此不接受参数。
- * 当前两个写 UID 的地方都要同时写 created，故都走 nowStampAndUid；本函数是规格第 4 节
- * 明列的 core/time 公开接口，为「只需要一个 UID」的调用点保留，不因暂无引用而删除。
+ * 返回 number 而非 string：它在属性面板里是数字类型，落盘时不带引号。
+ * 位数为何是 14 而不是 17，见 constants 里 UID_FORMAT 的说明——这关系到主键会不会自己改数。
  */
-export function nowUid(): string {
-    return momentFactory().format(UID_FORMAT);
+export function nowUid(): number {
+    return Number(momentFactory().format(UID_FORMAT));
 }
 
 /**
@@ -100,7 +100,7 @@ export function nowStampAndUid(format: string): StampAndUid {
 
     return {
         stamp: now.format(normalizeDateTimeFormat(format)),
-        uid: now.format(UID_FORMAT),
+        uid: Number(now.format(UID_FORMAT)),
     };
 }
 

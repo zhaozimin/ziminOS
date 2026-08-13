@@ -26,7 +26,8 @@ import { viewBlock } from '../review/templates';
 /** 建档时要填进 frontmatter 的值；模板文件则全部留空 */
 export interface PersonValues {
     readonly created: string;
-    readonly uid: string;
+    /** 14 位数字 UID；模板文件传 null 表示留空 */
+    readonly uid: number | null;
     /** 模板留空，建档填 person */
     readonly type: string;
     /** 归属圈子，建档时默认指向人脉 MOC */
@@ -38,7 +39,8 @@ export interface PersonValues {
 /** 客户档案建档时要填进 frontmatter 的值 */
 export interface ClientValues {
     readonly created: string;
-    readonly uid: string;
+    /** 14 位数字 UID；模板文件传 null 表示留空 */
+    readonly uid: number | null;
     readonly type: string;
     /** 他从哪个渠道来 */
     readonly source: string;
@@ -73,9 +75,11 @@ export function personNoteContent(values: PersonValues): string {
         `${FIELDS.created}: ${values.created}`,
         `${FIELDS.updated}:`,
         `${FIELDS.tags}:`,
-        `${FIELDS.uid}:${values.uid ? ` "${values.uid}"` : ''}`,
+        // UID 不加引号：属性面板把它登记为数字类型，加引号就变成一个长得像数字的字符串
+        `${FIELDS.uid}:${values.uid === null ? '' : ` ${values.uid}`}`,
         `${FIELDS.type}:${values.type ? ` ${values.type}` : ''}`,
-        `${FIELDS.up}:${values.up ? ` "${values.up}"` : ''}`,
+        // up 写成 YAML 列表：它在属性面板里是列表类型，一个人可以同时属于多个圈子
+        values.up ? `${FIELDS.up}:\n  - "${values.up}"` : `${FIELDS.up}:`,
         `${FIELDS.tier}:${values.tier ? ` ${values.tier}` : ''}`,
         `${FIELDS.direction}:${values.direction ? ` ${values.direction}` : ''}`,
         `${FIELDS.gift}:`,
@@ -113,7 +117,7 @@ export function personNoteContent(values: PersonValues): string {
 
 /** 供手工复制的人脉模板：全字段留空，type 尤其必须空 */
 export function personTemplateFile(): string {
-    return personNoteContent({ created: '', uid: '', type: '', up: '', tier: '', direction: '' });
+    return personNoteContent({ created: '', uid: null, type: '', up: '', tier: '', direction: '' });
 }
 
 // ============================================================
@@ -135,7 +139,7 @@ export function clientNoteContent(values: ClientValues): string {
         `${FIELDS.created}: ${values.created}`,
         `${FIELDS.updated}:`,
         `${FIELDS.tags}:`,
-        `${FIELDS.uid}:${values.uid ? ` "${values.uid}"` : ''}`,
+        `${FIELDS.uid}:${values.uid === null ? '' : ` ${values.uid}`}`,
         `${FIELDS.type}:${values.type ? ` ${values.type}` : ''}`,
         `${FIELDS.source}:${values.source ? ` ${values.source}` : ''}`,
         `${FIELDS.contact}:${values.contact ? ` ${values.contact}` : ''}`,
@@ -166,7 +170,7 @@ export function clientNoteContent(values: ClientValues): string {
 
 /** 供手工复制的客户模板：全字段留空 */
 export function clientTemplateFile(): string {
-    return clientNoteContent({ created: '', uid: '', type: '', source: '', contact: '' });
+    return clientNoteContent({ created: '', uid: null, type: '', source: '', contact: '' });
 }
 
 // ============================================================
@@ -174,7 +178,7 @@ export function clientTemplateFile(): string {
 // ============================================================
 
 /** 领域 MOC 的 frontmatter：领域没有终点，status 恒空 */
-function areaFrontmatter(description: string, created: string, uid: string): string {
+function areaFrontmatter(description: string, created: string, uid: number): string {
     return [
         '---',
         `${FIELDS.aliases}:`,
@@ -182,7 +186,7 @@ function areaFrontmatter(description: string, created: string, uid: string): str
         `${FIELDS.created}: ${created}`,
         `${FIELDS.updated}:`,
         `${FIELDS.tags}:`,
-        `${FIELDS.uid}: "${uid}"`,
+        `${FIELDS.uid}: ${uid}`,
         `${FIELDS.type}: ${NOTE_TYPES.area}`,
         `${FIELDS.status}:`,
         '---',
@@ -190,7 +194,7 @@ function areaFrontmatter(description: string, created: string, uid: string): str
 }
 
 /** 人脉领域总控台 */
-export function contactMocContent(created: string, uid: string): string {
+export function contactMocContent(created: string, uid: number): string {
     return [
         areaFrontmatter('人脉领域总控台：按圈子分组的名录、投喂名单、本月生日、人情余额', created, uid),
         '',
@@ -274,7 +278,7 @@ export function contactMocContent(created: string, uid: string): string {
 }
 
 /** 客户领域总控台 */
-export function clientMocContent(created: string, uid: string): string {
+export function clientMocContent(created: string, uid: number): string {
     return [
         areaFrontmatter(
             '客户领域总控台：产品区（待交付/销售分析/付费用户）＋ 服务区（未结案/案例库/服务客户）',

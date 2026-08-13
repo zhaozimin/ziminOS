@@ -65,6 +65,17 @@ export const CLIENT_FOLDER = `${FOLDERS.areas}/客户`;
 /** 导航笔记：库的总入口，开荒时生成 */
 export const NAV_FILE = `${FOLDERS.system}/导航.md`;
 
+/**
+ * 属性类型示例笔记：全部属性各出现一次，每个都带一个正确格式的样例值。
+ *
+ * 它解决的是一个很具体的麻烦：模板里的空字段在属性面板里一律显示成「文本」，
+ * 学员看到 created 是文本、UID 是文本，只能一个个手动改类型。
+ * 真正的权威是 `.obsidian/types.json`（随库交付，Obsidian 读它决定每个属性的控件），
+ * 本笔记是给人看的那一份——它同时充当活文档：想知道某个属性该怎么填，打开它照抄。
+ * 它住在 90-system 且 type 取一个不在封闭枚举内的值，因此不会混进任何一个视图。
+ */
+export const SCHEMA_NOTE = `${FOLDERS.system}/属性类型示例.md`;
+
 /** 供「模板」核心插件手动插入的模板文件 */
 export const TEMPLATE_FILES = {
     moc: `${FOLDERS.template}/MOC 模板.md`,
@@ -140,8 +151,17 @@ export type CardField = (typeof CARD_FIELDS)[number];
 /** created / updated 字段的默认时间格式（moment 语法） */
 export const DEFAULT_DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
-/** UID 字段的 17 位本地时间格式（moment 语法） */
-export const UID_FORMAT = 'YYYYMMDDHHmmssSSS';
+/**
+ * UID 字段的 14 位本地时间格式（moment 语法）。
+ *
+ * 必须是 14 位而不是带毫秒的 17 位：UID 在属性面板里登记为**数字**类型，
+ * 而 JavaScript 的安全整数上限是 9007199254740991（16 位）。
+ * 17 位数值一旦不加引号就会被静默四舍五入——20260812084155123 落盘成 20260812084155120，
+ * 既不报错，值又变了，且此后每次读写都在错误的值上继续。
+ * 代价是同一秒内建的两篇笔记会撞号；命令都是人触发的，一秒一篇是现实上限，
+ * 这个代价远小于「主键会悄悄改数」。
+ */
+export const UID_FORMAT = 'YYYYMMDDHHmmss';
 
 // ============================================================
 // 自写抑制
@@ -259,6 +279,8 @@ export const FIELDS = {
     get: 'get',
     birthday: 'birthday',
     source: 'source',
+    author: 'author',
+    rating: 'rating',
     contact: 'contact',
     homepage: 'homepage',
     /** 复盘主题：主题链的唯一入口，五级各写一句 */

@@ -56,6 +56,7 @@ var INIT_FOLDERS = [
 var CONTACT_FOLDER = `${FOLDERS.areas}/\u4EBA\u8109`;
 var CLIENT_FOLDER = `${FOLDERS.areas}/\u5BA2\u6237`;
 var NAV_FILE = `${FOLDERS.system}/\u5BFC\u822A.md`;
+var SCHEMA_NOTE = `${FOLDERS.system}/\u5C5E\u6027\u7C7B\u578B\u793A\u4F8B.md`;
 var TEMPLATE_FILES = {
   moc: `${FOLDERS.template}/MOC \u6A21\u677F.md`,
   card: `${FOLDERS.template}/\u5361\u7247\u7B14\u8BB0\u6A21\u677F.md`,
@@ -94,7 +95,7 @@ var CARD_FIELDS = [
   "up"
 ];
 var DEFAULT_DATETIME_FORMAT = "YYYY-MM-DD HH:mm:ss";
-var UID_FORMAT = "YYYYMMDDHHmmssSSS";
+var UID_FORMAT = "YYYYMMDDHHmmss";
 var SELF_WRITE_WINDOW_MS = 3e3;
 var TRANSITIONS = {
   done: {
@@ -155,6 +156,8 @@ var FIELDS = {
   get: "get",
   birthday: "birthday",
   source: "source",
+  author: "author",
+  rating: "rating",
   contact: "contact",
   homepage: "homepage",
   /** 复盘主题：主题链的唯一入口，五级各写一句 */
@@ -715,7 +718,7 @@ function nowStampAndUid(format) {
   const now = momentFactory();
   return {
     stamp: now.format(normalizeDateTimeFormat(format)),
-    uid: now.format(UID_FORMAT)
+    uid: Number(now.format(UID_FORMAT))
   };
 }
 function nowLocalDateTimeParts(format) {
@@ -1544,8 +1547,18 @@ var ChoiceModal = class extends import_obsidian5.FuzzySuggestModal {
   onChooseItem(item) {
     this.settle(item);
   }
+  /**
+   * 关闭即取消——但不能立刻断定。
+   *
+   * Obsidian 的 SuggestModal 在用户选中一项时，是**先关闭弹窗、再回调 onChooseItem**。
+   * 若在这里同步结算成 null，每一次正常选择都会先被判成取消，随后的 onChooseItem
+   * 因为 settle 幂等而失效——表现就是四条走选择的命令永远只说「已取消」。
+   * 推迟一拍再结算，选中回调便有机会先落定；真正的取消（Esc / 遮罩）没有后续回调，
+   * 一拍之后照样结算成 null。顺序在两种路径下都成立，不依赖基类的实现细节。
+   */
   onClose() {
-    this.settle(null);
+    super.onClose();
+    window.setTimeout(() => this.settle(null), 0);
   }
   /** 唯一结算点，保证 Promise 只被兑现一次 */
   settle(value) {
@@ -1577,7 +1590,7 @@ function periodNoteContent(period, title, dateTimeFormat) {
     "---",
     `${FIELDS.created}: ${stamp}`,
     `${FIELDS.updated}:`,
-    `${FIELDS.uid}: "${uid}"`,
+    `${FIELDS.uid}: ${uid}`,
     `${FIELDS.type}: ${period.type}`,
     // 日记刻意没有 period_start：文件名就是日期，多一个字段等于给同一件事两个事实源
     ...period.key === "daily" ? [] : [`${FIELDS.periodStart}: ${(_a = periodStartOf(period, title)) != null ? _a : ""}`],
@@ -1694,9 +1707,12 @@ function personNoteContent(values) {
     `${FIELDS.created}: ${values.created}`,
     `${FIELDS.updated}:`,
     `${FIELDS.tags}:`,
-    `${FIELDS.uid}:${values.uid ? ` "${values.uid}"` : ""}`,
+    // UID 不加引号：属性面板把它登记为数字类型，加引号就变成一个长得像数字的字符串
+    `${FIELDS.uid}:${values.uid === null ? "" : ` ${values.uid}`}`,
     `${FIELDS.type}:${values.type ? ` ${values.type}` : ""}`,
-    `${FIELDS.up}:${values.up ? ` "${values.up}"` : ""}`,
+    // up 写成 YAML 列表：它在属性面板里是列表类型，一个人可以同时属于多个圈子
+    values.up ? `${FIELDS.up}:
+  - "${values.up}"` : `${FIELDS.up}:`,
     `${FIELDS.tier}:${values.tier ? ` ${values.tier}` : ""}`,
     `${FIELDS.direction}:${values.direction ? ` ${values.direction}` : ""}`,
     `${FIELDS.gift}:`,
@@ -1731,7 +1747,7 @@ function personNoteContent(values) {
   ].join("\n");
 }
 function personTemplateFile() {
-  return personNoteContent({ created: "", uid: "", type: "", up: "", tier: "", direction: "" });
+  return personNoteContent({ created: "", uid: null, type: "", up: "", tier: "", direction: "" });
 }
 function clientNoteContent(values) {
   const frontmatter = [
@@ -1741,7 +1757,7 @@ function clientNoteContent(values) {
     `${FIELDS.created}: ${values.created}`,
     `${FIELDS.updated}:`,
     `${FIELDS.tags}:`,
-    `${FIELDS.uid}:${values.uid ? ` "${values.uid}"` : ""}`,
+    `${FIELDS.uid}:${values.uid === null ? "" : ` ${values.uid}`}`,
     `${FIELDS.type}:${values.type ? ` ${values.type}` : ""}`,
     `${FIELDS.source}:${values.source ? ` ${values.source}` : ""}`,
     `${FIELDS.contact}:${values.contact ? ` ${values.contact}` : ""}`,
@@ -1769,7 +1785,7 @@ function clientNoteContent(values) {
   ].join("\n");
 }
 function clientTemplateFile() {
-  return clientNoteContent({ created: "", uid: "", type: "", source: "", contact: "" });
+  return clientNoteContent({ created: "", uid: null, type: "", source: "", contact: "" });
 }
 function areaFrontmatter(description, created, uid) {
   return [
@@ -1779,7 +1795,7 @@ function areaFrontmatter(description, created, uid) {
     `${FIELDS.created}: ${created}`,
     `${FIELDS.updated}:`,
     `${FIELDS.tags}:`,
-    `${FIELDS.uid}: "${uid}"`,
+    `${FIELDS.uid}: ${uid}`,
     `${FIELDS.type}: ${NOTE_TYPES.area}`,
     `${FIELDS.status}:`,
     "---"
@@ -2964,7 +2980,8 @@ async function initCard(ctx, file, opts) {
         rating: hasOwn("rating") ? frontmatter.rating : null,
         author: hasOwn("author") ? frontmatter.author : null,
         source: hasOwn("source") ? frontmatter.source : null,
-        up: hasValue(frontmatter.up) ? frontmatter.up : context.upLink
+        // up 是列表类型（一张卡片可以同时属于多个 MOC），首次登记也写成单元素列表
+        up: hasValue(frontmatter.up) ? frontmatter.up : [context.upLink]
       };
       reorderFrontmatter(frontmatter, cardValues);
     });
@@ -3034,7 +3051,7 @@ function mocFrontmatter(description, created, uid) {
     `created: ${created}`,
     "updated:",
     "tags:",
-    `UID: ${toYamlString(uid)}`,
+    `UID: ${uid}`,
     "type: project",
     "status: active",
     "---"
@@ -4241,6 +4258,133 @@ var reviewThemeViews = [dailyOutput, themeChain];
 
 // src/modules/setup/init.ts
 var import_obsidian16 = require("obsidian");
+
+// src/modules/setup/schemaNote.ts
+var SAMPLE_TYPE = "\u793A\u4F8B";
+function schemaNoteContent(created, uid) {
+  const frontmatter = [
+    "---",
+    `${FIELDS.aliases}:`,
+    "  - \u5C5E\u6027\u8BF4\u660E",
+    `${FIELDS.description}: \u5168\u90E8\u7B14\u8BB0\u5C5E\u6027\u5404\u51FA\u73B0\u4E00\u6B21\uFF0C\u7167\u7740\u5B83\u586B\u5C31\u4E0D\u4F1A\u9519`,
+    `${FIELDS.created}: ${created}`,
+    `${FIELDS.updated}: ${created}`,
+    `${FIELDS.tags}:`,
+    "  - \u7CFB\u7EDF",
+    `${FIELDS.uid}: ${uid}`,
+    `${FIELDS.type}: ${SAMPLE_TYPE}`,
+    `${FIELDS.status}: active`,
+    `${FIELDS.up}:`,
+    '  - "[[\u5BFC\u822A]]"',
+    `${FIELDS.rating}: 5`,
+    `${FIELDS.author}:`,
+    "  - \u8D75\u5B50\u6C11",
+    `${FIELDS.source}: https://edu.zhaozimin.com`,
+    `${FIELDS.archived}: 2026-12-31`,
+    `${FIELDS.client}: "[[\u67D0\u4F4D\u5BA2\u6237]]"`,
+    `${FIELDS.with}: "[[\u67D0\u4F4D\u540C\u884C\u8005]]"`,
+    `${FIELDS.theme}: \u4ECA\u5929\u4E3B\u8981\u505A\u4E86\u4EC0\u4E48\uFF0C\u4E00\u53E5\u8BDD`,
+    `${FIELDS.periodStart}: 2026-01-01`,
+    `${FIELDS.tier}: ${CONTACT_TIERS[1]}`,
+    `${FIELDS.direction}: ${CONTACT_DIRECTIONS[0]}`,
+    `${FIELDS.gift}: true`,
+    `${FIELDS.address}: \u5F20\u4E09 138-0000-0000 \u5317\u4EAC\u5E02\u671D\u9633\u533A\u793A\u4F8B\u8DEF 1 \u53F7 2 \u5355\u5143 301`,
+    `${FIELDS.get}:`,
+    "  - \u88C5\u4FEE",
+    "  - \u672C\u5730\u4EBA\u8109",
+    `${FIELDS.birthday}: 1985-08-15`,
+    `${FIELDS.contact}: \u5FAE\u4FE1 demo_wangwu`,
+    `${FIELDS.homepage}: https://example.com`,
+    "---"
+  ].join("\n");
+  return [
+    frontmatter,
+    "",
+    "# \u5C5E\u6027\u7C7B\u578B\u793A\u4F8B",
+    "",
+    "> \u8FD9\u7BC7\u7B14\u8BB0\u4E0D\u662F\u7ED9\u4F60\u5199\u4E1C\u897F\u7528\u7684\uFF0C\u662F**\u4E00\u5F20\u5BF9\u7167\u8868**\u3002",
+    "> \u4E0A\u9762\u7684\u5C5E\u6027\u6846\u91CC\uFF0C\u6BCF\u4E00\u4E2A\u5C5E\u6027\u90FD\u586B\u4E86\u4E00\u4E2A\u683C\u5F0F\u6B63\u786E\u7684\u6837\u4F8B\u2014\u2014\u60F3\u77E5\u9053\u67D0\u4E2A\u5C5E\u6027\u8BE5\u600E\u4E48\u586B\uFF0C\u56DE\u6765\u7167\u6284\u3002",
+    "> \u7C7B\u578B\u672C\u8EAB\u7531\u7B14\u8BB0\u5E93\u81EA\u5E26\u7684\u914D\u7F6E\u51B3\u5B9A\uFF0C\u4F60\u4E0D\u9700\u8981\u624B\u52A8\u53BB\u6539\u4EFB\u4F55\u4E00\u4E2A\u5C5E\u6027\u7684\u7C7B\u578B\u3002",
+    "",
+    "## \u{1F4DD} \u6587\u672C\uFF1A\u4E00\u53E5\u8BDD\u3001\u4E00\u4E2A\u8BCD\u3001\u4E00\u4E2A\u94FE\u63A5",
+    "",
+    "| \u5C5E\u6027 | \u88C5\u4EC0\u4E48 | \u6837\u4F8B |",
+    "|---|---|---|",
+    `| \`${FIELDS.description}\` | \u4E00\u53E5\u8BDD\u62AB\u9732\uFF1A\u8FD9\u7BC7\u91CC\u6709\u4EC0\u4E48 | \u88C5\u4FEE\u516C\u53F8\u8001\u677F\uFF0C\u672C\u5730\u8D44\u6E90\u591A |`,
+    `| \`${FIELDS.source}\` | \u8FD9\u4E1C\u897F\u4ECE\u54EA\u6765 | \u7F51\u5740\u3001\u4E66\u540D\u3001\u8BA4\u8BC6\u7684\u573A\u5408 |`,
+    `| \`${FIELDS.type}\` | \u8EAB\u4EFD\u767B\u8BB0\uFF0C\u5C01\u95ED\u53D6\u503C | ${Object.values(NOTE_TYPES).join(" / ")} |`,
+    `| \`${FIELDS.status}\` | \u6709\u7EC8\u70B9\u4E4B\u7269\u7684\u8FC7\u7A0B\u72B6\u6001 | active / paused / done / dropped |`,
+    `| \`${FIELDS.tier}\` | \u8054\u7CFB\u8282\u594F | ${CONTACT_TIERS.join(" / ")} |`,
+    `| \`${FIELDS.direction}\` | \u5173\u7CFB\u4F4D\u52BF | ${CONTACT_DIRECTIONS.join(" / ")} |`,
+    `| \`${FIELDS.address}\` | \u6574\u4E32\u5BC4\u4EF6\u4FE1\u606F\uFF0C\u7167\u6284\u5C31\u80FD\u586B\u5FEB\u9012\u5355 | \u6536\u4EF6\u4EBA + \u7535\u8BDD + \u5730\u5740 |`,
+    `| \`${FIELDS.contact}\` | \u5BA2\u6237\u7684\u8054\u7CFB\u65B9\u5F0F | \u5FAE\u4FE1\u53F7 / \u624B\u673A\u53F7 / \u5E73\u53F0\u8D26\u53F7 |`,
+    `| \`${FIELDS.homepage}\` | \u5BA2\u6237\u7684\u4E3B\u9875 | \u4E00\u4E2A\u7F51\u5740 |`,
+    `| \`${FIELDS.theme}\` | \u590D\u76D8\u4E3B\u9898\uFF1A\u5BF9\u4E00\u5929/\u4E00\u5468\u7684**\u7ED3\u8BBA** | \u4ECA\u5929\u4E3B\u8981\u505A\u4E86\u4EC0\u4E48 |`,
+    `| \`${FIELDS.client}\` | \u4ED6\u59D4\u6258\u7684\uFF08\u6211\u6B20\u4E00\u4E2A\u4EA4\u4ED8\uFF09 | \`"[[\u5F20\u4E09]]"\` |`,
+    `| \`${FIELDS.with}\` | \u548C\u4ED6\u4E00\u8D77\u505A\u7684\uFF08\u65E0\u4EA4\u4ED8\u503A\u52A1\uFF09 | \`"[[\u5F20\u4E09]]"\` |`,
+    "",
+    `> [!warning] \`${FIELDS.client}\` \u4E0E \`${FIELDS.with}\` \u4E0D\u80FD\u4E92\u6362`,
+    `> \u5199\u4E0B \`${FIELDS.client}\` \u7B49\u4E8E\u5BA3\u544A\u300C\u6211\u6B20\u8FD9\u4E2A\u4EBA\u4E00\u4E2A\u4EA4\u4ED8\u300D\uFF0C\u5BA2\u6237\u540D\u5F55\u76F4\u63A5\u7528\u5B83\u53CD\u63A8\u8EAB\u4EFD\u3002`,
+    `> \u670B\u53CB\u4E00\u8D77\u505A\u7684\u4E8B\u5FC5\u987B\u8D70 \`${FIELDS.with}\`\uFF0C\u5426\u5219\u670B\u53CB\u4F1A\u88AB\u65E0\u58F0\u6CE8\u518C\u6210\u5BA2\u6237\u3002`,
+    "",
+    "## \u{1F550} \u65E5\u671F\u548C\u65F6\u95F4\uFF1A\u673A\u5668\u7684\u8BB0\u8D26",
+    "",
+    "| \u5C5E\u6027 | \u88C5\u4EC0\u4E48 | \u6837\u4F8B |",
+    "|---|---|---|",
+    `| \`${FIELDS.created}\` | \u8BDE\u751F\u65F6\u523B\uFF0C\u5EFA\u7B14\u8BB0\u65F6\u81EA\u52A8\u586B | 2026-08-12 09:30:00 |`,
+    `| \`${FIELDS.updated}\` | \u6700\u540E\u4E00\u6B21\u6539\u52A8\uFF0C\u81EA\u52A8\u7EF4\u62A4 | 2026-08-12 21:15:00 |`,
+    "",
+    "\u8FD9\u4E24\u4E2A\u4E0D\u7528\u4F60\u7BA1\uFF1A`created` \u5EFA\u7B14\u8BB0\u65F6\u5199\u4E00\u6B21\u5C31\u4E0D\u518D\u53D8\uFF0C`updated` \u7531\u63D2\u4EF6\u5728\u4F60\u505C\u624B\u4E24\u79D2\u540E\u81EA\u52A8\u8BB0\u3002",
+    "",
+    "## \u{1F4C5} \u65E5\u671F\uFF1A\u53EA\u5230\u5929\uFF0C\u4E0D\u5E26\u65F6\u95F4",
+    "",
+    "| \u5C5E\u6027 | \u88C5\u4EC0\u4E48 | \u6837\u4F8B |",
+    "|---|---|---|",
+    `| \`${FIELDS.birthday}\` | \u751F\u65E5\uFF0C\u672C\u6708\u751F\u65E5\u8868\u9760\u5B83 | 1985-08-15 |`,
+    `| \`${FIELDS.archived}\` | \u5F52\u6863\u65F6\u523B\uFF0C\u7531\u300C\u5B8C\u6210\u9879\u76EE\u300D\u547D\u4EE4\u5199 | 2026-12-31 |`,
+    `| \`${FIELDS.periodStart}\` | \u590D\u76D8\u5468\u671F\u7684\u7B2C\u4E00\u5929\uFF0C\u5EFA\u590D\u76D8\u7B14\u8BB0\u65F6\u81EA\u52A8\u7B97 | 2026-01-01 |`,
+    "",
+    "## \u{1F522} \u6570\u5B57\uFF1A\u80FD\u6392\u5E8F\u3001\u80FD\u6C42\u548C\u7684\u91CF",
+    "",
+    "| \u5C5E\u6027 | \u88C5\u4EC0\u4E48 | \u6837\u4F8B |",
+    "|---|---|---|",
+    `| \`${FIELDS.uid}\` | \u673A\u5668\u4E3B\u952E\uFF0C14 \u4F4D\u65F6\u95F4\u6233\uFF0C\u6539\u540D\u4E5F\u4E0D\u53D8 | ${uid} |`,
+    `| \`${FIELDS.rating}\` | \u6211\u7ED9\u5B83\u6253\u51E0\u5206 | 1 \u5230 5 |`,
+    "",
+    `> [!note] \`${FIELDS.uid}\` \u4E3A\u4EC0\u4E48\u662F 14 \u4F4D\u800C\u4E0D\u662F 17 \u4F4D`,
+    "> \u6570\u5B57\u7C7B\u578B\u6709\u4E2A\u786C\u4E0A\u9650\uFF1A\u8D85\u8FC7 16 \u4F4D\u5C31\u4F1A\u88AB\u6084\u6084\u56DB\u820D\u4E94\u5165\uFF0C\u503C\u53D8\u4E86\u8FD8\u4E0D\u62A5\u9519\u3002",
+    "> 14 \u4F4D\uFF08\u5E74\u6708\u65E5\u65F6\u5206\u79D2\uFF09\u521A\u597D\u7A33\u7A33\u5728\u5B89\u5168\u7EBF\u5185\uFF0C\u6240\u4EE5\u4E3B\u952E\u53D6 14 \u4F4D\u3002",
+    "",
+    "## \u{1F4CB} \u5217\u8868\uFF1A\u53EF\u4EE5\u6709\u597D\u51E0\u4E2A",
+    "",
+    "| \u5C5E\u6027 | \u88C5\u4EC0\u4E48 | \u6837\u4F8B |",
+    "|---|---|---|",
+    `| \`${FIELDS.aliases}\` | \u522B\u7684\u53EB\u6CD5\uFF0C\u8F93\u5165 \`[[\` \u65F6\u4E5F\u80FD\u641C\u5230 | \u6635\u79F0\u3001\u62FC\u97F3\u3001\u82F1\u6587\u540D |`,
+    `| \`${FIELDS.tags}\` | \u6A2A\u5207\u4E3B\u9898\u8BCD | \u4E0D\u88C5\u7C7B\u578B\u3001\u4E0D\u88C5\u5F52\u5C5E\u3001\u4E0D\u88C5\u72B6\u6001 |`,
+    `| \`${FIELDS.up}\` | \u6211\u5C5E\u4E8E\u8C01\uFF1A\u5361\u7247\u2192\u9879\u76EE\uFF0C\u4EBA\u2192\u5708\u5B50 | \`[[\u67D0\u4E2A MOC]]\` |`,
+    `| \`${FIELDS.author}\` | \u5916\u90E8\u5185\u5BB9\u7684\u539F\u4F5C\u8005 | \u53EF\u4EE5\u6709\u597D\u51E0\u4F4D |`,
+    `| \`${FIELDS.get}\` | \u4ED6\u80FD\u7ED9\u6211\u4EC0\u4E48 | \u88C5\u4FEE\u3001\u672C\u5730\u4EBA\u8109 |`,
+    "",
+    "## \u2611\uFE0F \u52FE\u9009\u6846\uFF1A\u662F\u6216\u5426",
+    "",
+    "| \u5C5E\u6027 | \u88C5\u4EC0\u4E48 |",
+    "|---|---|",
+    `| \`${FIELDS.gift}\` | \u613F\u4E0D\u613F\u610F\u6301\u7EED\u5728\u4ED6\u8EAB\u4E0A\u82B1\u94B1\u82B1\u5FC3\u601D\u3002\u52FE\u4E0A\u5373\u8FDB\u300C\u6295\u5582\u540D\u5355\u300D |`,
+    "",
+    "---",
+    "",
+    "## \u8FD9\u7BC7\u7B14\u8BB0\u4E3A\u4EC0\u4E48\u4E0D\u4F1A\u6C61\u67D3\u4EFB\u4F55\u7EDF\u8BA1",
+    "",
+    `\u5168\u90E8\u89C6\u56FE\u90FD\u9760 \`${FIELDS.type}\` \u8BA4\u8EAB\u4EFD\u3002\u8FD9\u7BC7\u7684 \`${FIELDS.type}\` \u662F \`${SAMPLE_TYPE}\`\uFF0C`,
+    `\u4E0D\u5728\u7CFB\u7EDF\u8BA4\u5F97\u7684\u53D6\u503C\u91CC\uFF08${Object.values(NOTE_TYPES).join(" / ")}\uFF09\uFF0C\u6240\u4EE5\u5B83\u8C01\u4E5F\u4E0D\u50CF\u2014\u2014`,
+    "\u5B83\u4E0D\u4F1A\u51FA\u73B0\u5728\u4EBA\u8109\u540D\u5F55\u3001\u6295\u5582\u540D\u5355\u3001\u9879\u76EE\u770B\u677F\u6216\u4EFB\u4F55\u4E00\u5F20\u8868\u91CC\u3002",
+    "",
+    "\u4F60\u53EF\u4EE5\u653E\u5FC3\u628A\u5B83\u7559\u7740\u5F53\u5BF9\u7167\u8868\uFF1B\u771F\u4E0D\u60F3\u8981\u4E86\uFF0C\u5220\u6389\u4E5F\u4E0D\u5F71\u54CD\u4EFB\u4F55\u529F\u80FD\u3002",
+    ""
+  ].join("\n");
+}
+
+// src/modules/setup/init.ts
 var VAULT_README_PATH = "README.md";
 var MESSAGES6 = {
   notEmpty: "\u68C0\u6D4B\u5230\u5DF2\u6709\u7B14\u8BB0\uFF0CziminOS \u53EA\u5728\u7A7A\u5E93\u5F00\u8352\u3002\u8BF7\u65B0\u5EFA\u4E00\u4E2A\u7A7A\u5E93\u518D\u8BD5\u3002",
@@ -4258,6 +4402,8 @@ async function initializeVault(ctx, seeds) {
     for (const folder of INIT_FOLDERS) {
       await ensureFolderPath(ctx.app, folder);
     }
+    const { stamp, uid } = nowStampAndUid(ctx.settings.dateTimeFormat);
+    await createFileIfMissing(ctx, SCHEMA_NOTE, schemaNoteContent(stamp, uid));
     for (const seed of seeds) {
       await applySeed(ctx, seed);
     }

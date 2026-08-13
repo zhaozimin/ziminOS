@@ -1,10 +1,13 @@
 /**
  * [INPUT]: 依赖 obsidian 的 Notice；依赖 core/constants 的 FOLDERS/INIT_FOLDERS/NAV_FILE、
- *          core/folders 的 ensureFolderPath、core/time 的 nowStamp、
+ *          core/folders 的 ensureFolderPath、core/time 的 nowStamp/nowStampAndUid、
+ *          ./schemaNote 的 schemaNoteContent、
  *          core/types 的 ZiminosContext 与 VaultSeed
  * [OUTPUT]: 对外提供 initializeVault（开荒笔记库）与 applySeed（按需长出单个模块的产物）
  * [POS]: 开荒编排者，由设置页「初始化」按钮与 init-vault 命令唯一触发（人主导，无定时器）。
- *        它只保证两件事属于笔记库本身：PARA 骨架目录，以及「开荒过没有」这个事实。
+ *        它只保证三件事属于笔记库本身：PARA 骨架目录、属性类型示例笔记，
+ *        以及「开荒过没有」这个事实。属性示例归这里而不归任一模块，
+ *        是因为属性注册表横跨全部模块，它属于笔记库自己。
  *        其余一切产物——模板、导航、复盘时间轴、人脉 MOC——都由各功能模块自报 VaultSeed，
  *        由 main 装配后递进来。因此本文件不 import 任何兄弟模块，
  *        新增一个模块只是在 main 里多传一个 seed，这里一行不改（OCP）。
@@ -14,9 +17,10 @@
  */
 
 import { Notice } from 'obsidian';
-import { FOLDERS, INIT_FOLDERS, NAV_FILE } from '../../core/constants';
+import { FOLDERS, INIT_FOLDERS, NAV_FILE, SCHEMA_NOTE } from '../../core/constants';
 import { ensureFolderPath } from '../../core/folders';
-import { nowStamp } from '../../core/time';
+import { nowStamp, nowStampAndUid } from '../../core/time';
+import { schemaNoteContent } from './schemaNote';
 import type { VaultSeed, ZiminosContext } from '../../core/types';
 
 // ============================================================
@@ -67,7 +71,15 @@ export async function initializeVault(
         }
 
         // ============================================================
-        // 2. 各模块的产物：目录先全部就位，再写笔记
+        // 2. 属性类型示例：全部属性各出现一次，学员不必手动改任何一个属性的类型
+        // ============================================================
+
+        const { stamp, uid } = nowStampAndUid(ctx.settings.dateTimeFormat);
+
+        await createFileIfMissing(ctx, SCHEMA_NOTE, schemaNoteContent(stamp, uid));
+
+        // ============================================================
+        // 3. 各模块的产物：目录先全部就位，再写笔记
         // ============================================================
 
         for (const seed of seeds) {
@@ -75,7 +87,7 @@ export async function initializeVault(
         }
 
         // ============================================================
-        // 3. 各模块的首次收尾，例如开出第一个项目
+        // 4. 各模块的首次收尾，例如开出第一个项目
         // ============================================================
 
         if (isFirstRun) {
@@ -85,7 +97,7 @@ export async function initializeVault(
         }
 
         // ============================================================
-        // 4. 收尾：记录开荒时间、落盘设置、把学员送到导航页
+        // 5. 收尾：记录开荒时间、落盘设置、把学员送到导航页
         // ============================================================
 
         // 只在首次落笔。字段名与设置页文案都说的是「首次开荒于」，

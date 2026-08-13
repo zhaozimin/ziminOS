@@ -1,0 +1,29 @@
+{
+  "types": {
+    "aliases": "aliases",
+    "tags": "tags",
+    "description": "text",
+    "source": "text",
+    "type": "text",
+    "status": "text",
+    "tier": "text",
+    "direction": "text",
+    "address": "text",
+    "contact": "text",
+    "homepage": "text",
+    "theme": "text",
+    "client": "text",
+    "with": "text",
+    "created": "datetime",
+    "updated": "datetime",
+    "birthday": "date",
+    "archived": "date",
+    "period_start": "date",
+    "UID": "number",
+    "rating": "number",
+    "author": "multitext",
+    "up": "multitext",
+    "get": "multitext",
+    "gift": "checkbox"
+  }
+}

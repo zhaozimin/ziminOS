@@ -163,12 +163,21 @@ export class ChoiceModal<T> extends FuzzySuggestModal<T> {
     }
 
     onChooseItem(item: T): void {
-        // 选中后基类会关闭弹窗，onClose 里的兜底结算因此自然失效
         this.settle(item);
     }
 
+    /**
+     * 关闭即取消——但不能立刻断定。
+     *
+     * Obsidian 的 SuggestModal 在用户选中一项时，是**先关闭弹窗、再回调 onChooseItem**。
+     * 若在这里同步结算成 null，每一次正常选择都会先被判成取消，随后的 onChooseItem
+     * 因为 settle 幂等而失效——表现就是四条走选择的命令永远只说「已取消」。
+     * 推迟一拍再结算，选中回调便有机会先落定；真正的取消（Esc / 遮罩）没有后续回调，
+     * 一拍之后照样结算成 null。顺序在两种路径下都成立，不依赖基类的实现细节。
+     */
     onClose(): void {
-        this.settle(null);
+        super.onClose();
+        window.setTimeout(() => this.settle(null), 0);
     }
 
     /** 唯一结算点，保证 Promise 只被兑现一次 */

@@ -51,7 +51,7 @@ export function periodNoteContent(
         '---',
         `${FIELDS.created}: ${stamp}`,
         `${FIELDS.updated}:`,
-        `${FIELDS.uid}: "${uid}"`,
+        `${FIELDS.uid}: ${uid}`,
         `${FIELDS.type}: ${period.type}`,
         // 日记刻意没有 period_start：文件名就是日期，多一个字段等于给同一件事两个事实源
         ...(period.key === 'daily'

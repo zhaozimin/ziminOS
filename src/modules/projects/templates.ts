@@ -61,8 +61,8 @@ export interface MocContentOptions {
     description: string;
     /** 创建时间戳，格式由调用方按设置决定 */
     created: string;
-    /** 17 位本地时间 UID */
-    uid: string;
+    /** 14 位本地时间 UID，数字类型，落盘不带引号 */
+    uid: number;
 }
 
 /**
@@ -77,7 +77,7 @@ function toYamlString(value: string): string {
  * 生成 MOC 的 YAML frontmatter（固定十行）。
  * aliases/updated/tags 刻意留空：前者由用户自取，updated 交给自动维护，tags 属于个人分类习惯。
  */
-export function mocFrontmatter(description: string, created: string, uid: string): string {
+export function mocFrontmatter(description: string, created: string, uid: number): string {
     return [
         '---',
         'aliases:',
@@ -85,7 +85,7 @@ export function mocFrontmatter(description: string, created: string, uid: string
         `created: ${created}`,
         'updated:',
         'tags:',
-        `UID: ${toYamlString(uid)}`,
+        `UID: ${uid}`,
         'type: project',
         'status: active',
         '---',

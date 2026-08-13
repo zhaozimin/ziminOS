@@ -73,6 +73,7 @@ git clone --depth 1 "https://github.com/zhaozimin/ziminOS.git" "$install_staging
 施工源/vault/.obsidian/themes/Minimal/theme.css
 施工源/vault/.obsidian/themes/Minimal/LICENSE
 施工源/vault/.obsidian/snippets/ziminos-quote-semantic-colors.css
+施工源/vault/.obsidian/types.json
 ```
 
 任一缺失就停止并说明仓库不完整。ziminOS、Dataview、Minimal 与 Style Settings 的运行产物已全部在 `vault/` 中；不要运行 `npm install` / `npm run build`，不要安装 Node.js，也不要去 Obsidian 商店或网络另行下载主题/插件。禁止额外安装 QuickAdd、Linter 等非系统组件。
@@ -127,6 +128,7 @@ cp "$install_staging_dir/repo/vault/.obsidian/snippets/ziminos-quote-semantic-co
 然后按下列所有权规则处理四份用户配置：
 
 1. Dataview `data.json`：施工源不提供默认设置文件；目标存在时原样保留，不得创建或覆盖。DataviewJS 因此保持插件上游默认关闭，用户已有选择仍归用户所有。
+1b. `types.json`（属性类型登记表）：目标不存在时才从施工源复制；已存在则解析现有 JSON，只补进缺失的属性键，绝不改写用户已经调过的类型。它决定属性面板给每个属性什么控件（文本/日期时间/日期/数字/列表/勾选框），缺了它学员会看到所有属性都是文本，只能一个个手动改。
 2. Style Settings `data.json`：目标不存在时才从施工源复制；已存在则一个字节都不得改。
 3. `community-plugins.json`：解析现有 JSON 数组，仅追加缺失的 `ziminos`、`dataview` 与 `obsidian-style-settings`；保留原顺序、原插件和用户状态。文件不存在时才复制施工源默认文件。
 4. `appearance.json`：解析现有 JSON 对象，把 `ziminos-quote-semantic-colors` 合并进 `enabledCssSnippets`。`cssTheme` 缺失或为空时设为 `Minimal`；若用户已选其他非空主题则保留。文件不存在时才复制施工源默认文件。
@@ -150,11 +152,12 @@ README.md
 - `$vault_root/.obsidian/plugins/obsidian-style-settings/main.js` 存在，`data.json` 是合法 JSON 对象。
 - `$vault_root/.obsidian/themes/Minimal/theme.css` 存在，版本为 9.0.2。
 - `$vault_root/.obsidian/snippets/ziminos-quote-semantic-colors.css` 存在。
+- `$vault_root/.obsidian/types.json` 存在且是合法 JSON，`types` 下至少含 `created: datetime`、`UID: number`、`up: multitext`。
 - `$vault_root/.obsidian/community-plugins.json` 包含 `ziminos`、`dataview` 与 `obsidian-style-settings`。
 - `$vault_root/.obsidian/appearance.json` 的全新安装默认主题为 `Minimal`，并启用 `ziminos-quote-semantic-colors`。
 - `$vault_root` 内不存在 `.git/`、`src/`、`docs/`、`skill/`、`vault/`、`node_modules/` 或 `package.json`。
 
-升级模式还要确认：升级前已存在的 Dataview / Style Settings `data.json` SHA-256 不变；用户原有插件 ID、非空自选主题、其他 CSS 片段与 Markdown 笔记全部仍在。
+升级模式还要确认：升级前已存在的 Dataview / Style Settings `data.json` SHA-256 不变；`types.json` 里用户原有的属性类型一个都没被改写；用户原有插件 ID、非空自选主题、其他 CSS 片段与 Markdown 笔记全部仍在。
 
 若发现开发文件，说明安装错误；由 Agent 修正，不让用户判断哪些文件该删。
 
