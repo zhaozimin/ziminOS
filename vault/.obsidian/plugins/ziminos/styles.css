@@ -1,7 +1,7 @@
 /*
  * ziminOS 视图样式
  *
- * 服务插件自渲染的那二十二个视图、外观开关浮层，以及设置页里的侧边栏与关于作者两区，
+ * 服务插件自渲染的那二十二个视图、外观开关浮层，以及设置页的十张标签页，
  * 全部选择器都带 ziminos- 前缀，不碰用户笔记正文。
  * 除文末那一条藏边栏图标的规则外，不覆盖主题的任何既有规则——那一条的理由写在它自己头上。
  * 颜色一律取 Obsidian 的语义变量，因此跟随主题与 Style Settings 的配色走，
@@ -227,8 +227,8 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
 /* ── 左侧边栏：设置页里那二十一行的分组标签、图标与行距 ── */
 
 /*
- * 分组标签。它不是 Obsidian 的 setting heading，因为它比分区标题矮一级——
- * 「左侧边栏」是分区，「项目」「复盘」是分区里的组，两者不该长得一样。
+ * 分组标签。它不是 Obsidian 的 setting heading，因为它比页头矮一级——
+ * 「左侧边栏」是一整页，「项目」「复盘」是页里的组，两者不该长得一样。
  */
 .ziminos-ribbon-group {
     margin: 14px 0 2px;
@@ -319,4 +319,85 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
     height: 16px;
     display: block;
     flex-shrink: 0;
+/* ── 设置页：顶上那排标签，一页一个系统模块 ── */
+
+/*
+ * 标签栏吸顶。边栏那一页有二十一行，翻到第十八行时标签栏早已滚出视野，
+ * 想换一页就得先滚回顶部——吸顶让「换页」随时可做，这是分页值不值的关键一环。
+ *
+ * 背景必须是实心的，否则下面的行会从字缝里透上来；取 --background-primary，
+ * 那正是设置弹窗内容区自己的底色，因此吸住时看不出接缝。
+ */
+.ziminos-settings .ziminos-settings-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--background-modifier-border);
+    background-color: var(--background-primary);
+}
+
+/*
+ * 一枚标签。它是真的 <button>，所以得先把浏览器与 Obsidian 给按钮的立体外观卸干净，
+ * 再按「一枚未选中的标签」重画——八个立体按钮排成一行，看着像八个待按的动作，
+ * 而它们其实只是八个位置。
+ *
+ * 选择器写成两级，与本文件里表格那处同理：主题也会给内容区里的 button 定规矩，
+ * 单一个类名跟它打平手时，胜负就取决于谁的样式表后加载，那不是可以依赖的东西。
+ */
+.ziminos-settings .ziminos-settings-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: auto;
+    padding: 5px 12px;
+    border: none;
+    border-radius: var(--radius-m);
+    background-color: transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+    font-weight: var(--font-normal);
+    line-height: 1.4;
+    cursor: pointer;
+}
+
+.ziminos-settings .ziminos-settings-tab:hover {
+    background-color: var(--background-modifier-hover);
+    box-shadow: none;
+    color: var(--text-normal);
+}
+
+/* 当前页：底色与字重一起变，不只靠颜色——低对比度主题与色觉差异下也认得出 */
+.ziminos-settings .ziminos-settings-tab.is-active {
+    background-color: var(--background-modifier-active-hover, var(--background-modifier-hover));
+    color: var(--text-accent);
+    font-weight: var(--font-semibold);
+}
+
+.ziminos-settings-emoji {
+    font-size: 1.05em;
+    line-height: 1;
+}
+
+/* 页头与标签栏之间留一口气，第一条设置项不必顶着标签栏 */
+.ziminos-settings-body .setting-item-heading {
+    padding-top: 18px;
+}
+
+/* ── 设置页：每页末尾那个「高级设置（一般不用改）」折叠区 ── */
+
+/*
+ * 八张页共用同一个折叠区样式，位置也一律在页尾。
+ * 它比页头轻（muted + 小一号），因为它是「一般不用改」的东西，不该与页头抢注意力。
+ */
+.ziminos-advanced > summary {
+    padding: 12px 0;
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+    font-weight: var(--font-semibold);
+    cursor: pointer;
 }

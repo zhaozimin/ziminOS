@@ -82,7 +82,9 @@ export function buildInitialInspirationContent(
 ): string {
     const filter = buildDataviewTaskQuery(targetPath);
 
-    return `${heading}\n${filter}\n\n${entry}\n`;
+    // 标题与围栏之间那一行空行不是装饰：标准 Markdown 要求代码块与标题各自成块，
+    // 而读取侧的 skipBlankLines 本来就越过它，加了不影响任何一处解析
+    return `${heading}\n\n${filter}\n\n${entry}\n`;
 }
 
 /**

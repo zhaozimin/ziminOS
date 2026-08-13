@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 obsidian 的 App/Plugin 类型，依赖 ./constants 的 PARA、时间与灵感收集默认值，
  *          依赖 ./commands 的 DEFAULT_RIBBON_COMMANDS 与 CommandRegistry 类型，
- *          依赖 ./guard 的 SelfWriteGuard 类型
+ *          依赖 ./markdownStyle 的 DEFAULT_FORMAT_RULES，依赖 ./guard 的 SelfWriteGuard 类型
  * [OUTPUT]: 对外提供 ZiminosSettings 设置契约、DEFAULT_SETTINGS 默认值、ZiminosContext 运行时上下文，
  *           以及开荒贡献契约 VaultSeed/VaultSeedNote
  * [POS]: core 的契约层，定义插件与各功能模块之间唯一的传参形态。
@@ -13,6 +13,7 @@
 import type { App, Plugin } from 'obsidian';
 import { DEFAULT_RIBBON_COMMANDS } from './commands';
 import type { CommandRegistry } from './commands';
+import { DEFAULT_FORMAT_RULES } from './markdownStyle';
 import {
     CLIENT_FOLDER,
     CONTACT_FOLDER,
@@ -73,6 +74,22 @@ export interface ZiminosSettings {
      * 这条约束由编译器执行，不靠人记得。
      */
     ribbonCommands: readonly string[];
+    /**
+     * 是否在用户离开一篇笔记、或改动一篇没开着的笔记之后，自动按排版规则整理它。
+     *
+     * 关掉之后「整理当前笔记格式」这条命令照常可用——自动只是替他按下那条命令，
+     * 而不是那条命令的唯一入口。
+     */
+    autoFormat: boolean;
+    /**
+     * 启用中的排版规则 id 清单，取值来自 core/markdownStyle 的 FORMAT_RULES。
+     *
+     * 与 ribbonCommands 同为 readonly 且同因：它在用户没调过时与 DEFAULT_SETTINGS 共用引用，
+     * 允许原地增删的话，第一次勾选就把默认值本身改掉了。
+     * 存「开着哪几条」而不是九个布尔字段，是为了让加一条规则不必动设置契约——
+     * 老库升级时那条新规则默认不开，这与「不替用户改他没选过的东西」是同一条纪律。
+     */
+    formatRules: readonly string[];
     /** 首次开荒完成的时间戳；空字符串表示尚未初始化，是「首次」与「补齐」的唯一判据 */
     initializedAt: string;
 }
@@ -97,6 +114,8 @@ export const DEFAULT_SETTINGS: ZiminosSettings = {
     clientProducts: '课程,咨询,陪跑',
     showAppearanceSwitch: true,
     ribbonCommands: DEFAULT_RIBBON_COMMANDS,
+    autoFormat: true,
+    formatRules: DEFAULT_FORMAT_RULES,
     initializedAt: '',
 };
 

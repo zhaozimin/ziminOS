@@ -31,6 +31,7 @@ import type { Frontmatter } from '../../core/frontmatter';
 import { today } from '../../core/time';
 import { DEFAULT_SETTINGS } from '../../core/types';
 import type { ZiminosContext } from '../../core/types';
+import { resolveMocPath } from './moc';
 
 // ============================================================
 // 模块常量
@@ -187,7 +188,9 @@ function resolveTransitionPlan(
 
     const projectName = projectFolder.name;
     const sourceProjectPath = normalizePath(`${sourceRoot}/${projectName}`);
-    const expectedMocPath = normalizePath(`${sourceProjectPath}/${projectName}.md`);
+    // 两种命名都认：V3 起是 MOC-文件夹名，V3 之前与文件夹同名。
+    // 老库里的项目不会被改名，而「完成项目」在它们身上必须照样能按
+    const expectedMocPath = resolveMocPath(app, sourceProjectPath, projectName);
 
     // 只允许从约定目录中的同名项目 MOC 执行，防止误移动卡片或其他文件夹。
     if (normalizePath(mocFile.path) !== expectedMocPath) {
@@ -212,7 +215,9 @@ function resolveTransitionPlan(
     }
 
     const targetProjectPath = normalizePath(`${targetRoot}/${projectName}`);
-    const targetMocPath = normalizePath(`${targetProjectPath}/${projectName}.md`);
+    // 搬的是整个文件夹，MOC 的文件名一个字都不会变——所以这里沿用它此刻的名字，
+    // 而不是照当前约定重新拼一个：那样会让老库的项目在搬完之后「找不到自己的 MOC」而整体回滚
+    const targetMocPath = normalizePath(`${targetProjectPath}/${mocFile.name}`);
     const existingTarget = app.vault.getAbstractFileByPath(targetProjectPath);
 
     // 绝不覆盖或合并同名项目。

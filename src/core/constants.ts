@@ -307,6 +307,16 @@ export const NOTE_TYPES = {
     yearly: 'yearly',
 } as const;
 
+/**
+ * MOC 笔记的文件名前缀。
+ *
+ * 一个项目是「一个文件夹 + 一篇 MOC」，而 V3 之前那篇 MOC 与文件夹同名，
+ * 于是文件树里父子两级写着同一个词，学员分不出哪一篇是总览、哪一篇是普通卡片。
+ * 加个前缀，它在任何按名字排序的地方都浮到最上面，也一眼认得出。
+ * 存量笔记不改名——读取侧靠 modules/projects/moc 的 resolveMocPath 两种命名都认。
+ */
+export const MOC_PREFIX = 'MOC-';
+
 /** 全库一切区间比较的落地格式：定宽，字典序即时间序，零日期算术、零跨类型陷阱 */
 export const DAY_FORMAT = 'YYYY-MM-DD';
 

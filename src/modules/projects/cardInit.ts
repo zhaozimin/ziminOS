@@ -2,7 +2,8 @@
  * [INPUT]: 依赖 obsidian 的 Notice/TFile/normalizePath 与 TAbstractFile 类型；
  *          依赖 core/commands 的 PROJECT_COMMANDS、core/folders 的 normalizeFolderPath、
  *          core/frontmatter 的 hasValue 与三个 YAML 判定/重排函数、
- *          core/modals 的 TextInputModal、core/time 的 nowStampAndUid、core/types 的 ZiminosContext
+ *          core/modals 的 TextInputModal、core/time 的 nowStampAndUid、core/types 的 ZiminosContext，
+ *          依赖同目录 moc 的 resolveMocPath
  * [OUTPUT]: 对外提供 initCard（把一篇笔记登记为卡片）、registerCardInitCommand（init-card 命令）、
  *           registerCardAutoInit（新建空笔记时的自动登记）
  * [POS]: projects 模块的卡片登记器，自 initialize-card-note.js 移植。
@@ -14,7 +15,7 @@
  */
 
 import { Notice, TFile, normalizePath } from 'obsidian';
-import type { TAbstractFile } from 'obsidian';
+import type { App, TAbstractFile } from 'obsidian';
 import { PROJECT_COMMANDS } from '../../core/commands';
 import { normalizeFolderPath } from '../../core/folders';
 import {
@@ -26,6 +27,7 @@ import {
 import type { CardValues, Frontmatter } from '../../core/frontmatter';
 import { TextInputModal } from '../../core/modals';
 import { nowStampAndUid } from '../../core/time';
+import { resolveMocPath } from './moc';
 import { DEFAULT_SETTINGS } from '../../core/types';
 import type { ZiminosContext, ZiminosSettings } from '../../core/types';
 
@@ -48,7 +50,7 @@ interface CardContext {
     readonly kind: CardRootKind;
     /** 直属的项目名或领域名，即根目录下的第一层文件夹名 */
     readonly containerName: string;
-    /** 该项目/领域的同名 MOC 路径 */
+    /** 该项目/领域的 MOC 路径，新老两种命名都可能 */
     readonly mocPath: string;
     /** 写入 up 字段的双链文本，显示名取项目名而非全路径 */
     readonly upLink: string;
@@ -91,10 +93,15 @@ function resolveRoots(settings: ZiminosSettings): CardRoot[] {
 
 /**
  * 根据当前文件路径识别它属于哪个项目或领域，并计算对应 MOC 链接。
- * 约定：根目录/项目名/项目名.md 是 MOC，其余 Markdown 文件是卡片。
+ * 约定：根目录/容器名/MOC-容器名.md 是 MOC，其余 Markdown 文件是卡片；
+ * V3 之前建的容器里那篇 MOC 与文件夹同名，读取侧一并认（见 ./moc）。
  * 返回 null 表示「这篇笔记不归任何 MOC 管」，调用方据此放行不做任何写入。
  */
-function getCardContext(filePath: string, roots: readonly CardRoot[]): CardContext | null {
+function getCardContext(
+    app: App,
+    filePath: string,
+    roots: readonly CardRoot[],
+): CardContext | null {
     const normalizedFilePath = normalizePath(filePath);
 
     for (const root of roots) {
@@ -109,9 +116,12 @@ function getCardContext(filePath: string, roots: readonly CardRoot[]): CardConte
         if (pathParts.length < 2) return null;
 
         const containerName = pathParts[0];
-        const mocPath = normalizePath(`${root.path}/${containerName}/${containerName}.md`);
+        // 认名走 resolveMocPath 而不是就地拼：V3 起新建的 MOC 叫 MOC-文件夹名，
+        // 而 V3 之前建的项目仍与文件夹同名，两种都得认得出来，否则老库里的卡片
+        // 会挂到一篇不存在的 MOC 上——那条 up 双链是死的，而死链不报错
+        const mocPath = resolveMocPath(app, `${root.path}/${containerName}`, containerName);
 
-        // 同名 MOC 自身不套用卡片字段。
+        // MOC 自身不套用卡片字段。
         if (normalizedFilePath === mocPath) return null;
 
         return {
@@ -144,9 +154,9 @@ export async function initCard(
         // 只处理 Markdown 文件。
         if (file.extension !== 'md') return;
 
-        const context = getCardContext(file.path, resolveRoots(settings));
+        const context = getCardContext(app, file.path, resolveRoots(settings));
 
-        // 根目录外的笔记、直接位于根目录的笔记以及同名 MOC 均不处理。
+        // 根目录外的笔记、直接位于根目录的笔记以及 MOC 本身均不处理。
         if (!context) return;
 
         const cachedFrontmatter = app.metadataCache.getFileCache(file)?.frontmatter;
@@ -254,7 +264,7 @@ export function registerCardAutoInit(ctx: ZiminosContext): void {
                 if (ctx.guard.isRecent(file.path)) return;
 
                 // 4. 必须落在项目/领域目录的管辖范围内（MOC 本体在此天然被排除）
-                if (!getCardContext(file.path, resolveRoots(ctx.settings))) return;
+                if (!getCardContext(ctx.app, file.path, resolveRoots(ctx.settings))) return;
 
                 // 5. 必须是空文件：同步工具带着内容落盘的文件不是「新建」，绝不改写用户既有笔记
                 if (file.stat.size !== 0) return;
