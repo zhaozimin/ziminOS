@@ -29,7 +29,7 @@ esbuild.config.mjs - 唯一构建出口；产物直接写入 vault 插件目录�
 .gitignore - 只忽略 node_modules 与 .DS_Store；main.js 不忽略，学员克隆即可用
 .gitattributes - 锁定 Dataview、Minimal、Style Settings 发布资产的原始字节，防止 Git 换行/格式化破坏 SHA-256
 docs/第三方组件.md - Dataview / Minimal / Style Settings / Pikaicons 的版本、上游、许可与升级边界
-docs/设计规格书-V2.md - 人脉与复盘（v0.4.0）与左侧边栏命令（v0.5.0）的唯一事实源；与 V1 规格并存，交集处以它为准
+docs/设计规格书-V2.md - 人脉与复盘（v0.4.0）、左侧边栏命令（v0.5.0）与模板零提示修订（v0.5.1，§4.5）的唯一事实源；与 V1 规格并存，交集处以它为准
 </config>
 
 <delivery>

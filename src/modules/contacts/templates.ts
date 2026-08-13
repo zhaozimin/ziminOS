@@ -130,6 +130,8 @@ export function personTemplateFile(): string {
  * 付费用户是与人脉并列的独立物种，不共用模板：tier（多久联系一次）、gift（送不送特产）、
  * birthday 在陌生付费用户身上是结构性拿不到，不是暂时没填——
  * 一个字段如果对整类笔记恒空，它就不该出现在那类笔记上。
+ * 正文不带 %% 提示注释（v0.5.1）：付费行的格式示例住在客户 MOC 的使用说明与 README，
+ * 每份新档案交付的都是干净的写作位，学员不必每次手删同一段提示。
  */
 export function clientNoteContent(values: ClientValues): string {
     const frontmatter = [
@@ -151,9 +153,6 @@ export function clientNoteContent(values: ClientValues): string {
         frontmatter,
         '',
         '## 付费与交付',
-        '',
-        `%% 一笔一行，未勾＝待交付，勾上＝已交付。用命令「增加付费」写入，不必手打：`,
-        `- [ ] [${PAYMENT_FIELDS.product}::课程] [${PAYMENT_FIELDS.amount}::365] [${PAYMENT_FIELDS.date}::2026-08-12] %%`,
         '',
         viewBlock('付费与交付'),
         '',
