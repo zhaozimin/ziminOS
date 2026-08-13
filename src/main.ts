@@ -109,7 +109,7 @@ export default class ZiminosPlugin extends Plugin {
         // ============================================================
 
         // 建项目要问「这是谁委托的」，候选人住在人脉模块——用同一套注入把两者接上
-        registerCreateProjectCommand(ctx, (title, quiet) => pickPerson(ctx, title, quiet));
+        registerCreateProjectCommand(ctx, (title) => pickPerson(ctx, title));
         registerCreateAreaCommand(ctx);
         registerCardInitCommand(ctx);
         registerCardAutoInit(ctx);

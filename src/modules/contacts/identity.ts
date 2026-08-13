@@ -66,21 +66,17 @@ export function descriptionOf(ctx: ZiminosContext, file: TFile): string {
  * 靠 type 识别而非文件夹，归档目录内的人不进候选（不再往来的人不该出现在新项目的关联里）。
  * 没有任何档案时给一句明确的引导再返回 null，免得调用方只能说一句没头没脑的「已取消」。
  */
-export async function pickPerson(
-    ctx: ZiminosContext,
-    title: string,
-    quietWhenEmpty = false,
-): Promise<TFile | null> {
+export async function pickPerson(ctx: ZiminosContext, title: string): Promise<TFile | null> {
     const candidates = [
         ...liveNotesOfType(ctx, NOTE_TYPES.person),
         ...liveNotesOfType(ctx, NOTE_TYPES.client),
     ];
 
     if (!candidates.length) {
-        // 关联是可选的那些场景（比如自己独做的项目问一句同行者）不该被这句话打扰
-        if (!quietWhenEmpty) {
-            new Notice('还没有任何人脉或客户档案。先运行「新建人脉」建一个，再来关联。');
-        }
+        // 这句话一律要说。它曾经带一个「安静模式」开关，供「关联本来就可选」的场景关掉，
+        // 而 V3 之后已经没有那种场景——会走到这里的每一次调用，
+        // 都是用户刚刚明确表示要挂一个人，此时沉默就是让他对着一个不弹的弹窗发愣
+        new Notice('还没有任何人脉或客户档案。先运行「新建人脉」建一个，再来关联。');
 
         return null;
     }

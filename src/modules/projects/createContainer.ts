@@ -11,8 +11,11 @@
  *        写什么 type、问不问归属。除此之外它们连一个字的提示文案都不该分叉——
  *        分叉的代价不是重复代码，是「新建领域」某天悄悄少了一道防覆盖校验。
  *        名称合法性、防覆盖、光标落点这些规矩因此只在此处定义一次。
- *        项目那条路的文案与流程仍逐段对照 create-project-moc.js：label 取「项目」时，
- *        它吐出的每一句话与 V2 逐字相同
+ *        问答顺序是设计过的：名称 → 归属 →（只有挂了人的归属才问）选人 → 概述。
+ *        概述放最后，是因为前面全是点选，中途取消不至于让人白写一段话；
+ *        归属必须在动土之前问完，客户委托却没选到人时中止，不留半个空文件夹。
+ *        文案与流程仍逐段对照 create-project-moc.js，只有一处 V3 主动偏离并已备案：
+ *        归属由两项拆成三项，「自己做」从此不再多问一句同行者（理由写在 OWNERSHIP 头上）
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -29,24 +32,59 @@ import type { ProjectRelation } from './templates';
 
 /**
  * 「从库里选一个人」这项能力，由 main 在装配时注入。
- * 建项目要问「这是谁委托的」，而候选人住在人脉模块——本文件因此不 import 那个模块，
- * 只声明这个洞。第二个参数决定库里一个人都没有时要不要吭声：
- * 客户委托必须有人，缺人要说清楚；自己独做本来就可以没有同行者，那时不该被打扰。
+ * 建项目要问「这是谁委托的」，而候选人住在人脉模块——本文件因此不 import 那个模块，只声明这个洞。
+ *
+ * 它曾经还带一个「库里没人时要不要吭声」的开关，V3 随归属三选项一起拆掉了：
+ * 那个开关只为「自己独做但顺口问一句同行者」那条路存在，而现在会走到这里的每一次调用，
+ * 都是用户刚刚明确表示要挂一个人——库里一个档案都没有时，那句话必须说。
  */
-export type PersonPicker = (title: string, quietWhenEmpty: boolean) => Promise<TFile | null>;
+export type PersonPicker = (title: string) => Promise<TFile | null>;
+
+/** 一个归属选项要挂的人。「自己做」没有这一项——这正是它与另外两项的全部区别 */
+interface OwnershipLink {
+    /** 写进 frontmatter 的字段：FIELDS.client 或 FIELDS.with */
+    readonly field: string;
+    /** 选人弹窗的标题 */
+    readonly ask: string;
+    /** 没选到人时是不是就不该建这个项目 */
+    readonly required: boolean;
+}
+
+/** 一个归属选项：一句给人看的话，加上「要不要挂人、挂哪个字段」 */
+interface OwnershipOption {
+    readonly label: string;
+    readonly link?: OwnershipLink;
+}
 
 /**
- * 项目归属的两个选项。
+ * 项目归属的三个选项。
  *
  * 这一问是整条流程里信息量最大的一步，所以选项文案直接把后果写出来。
- * client 是商业契约标记：写下它等于把那个人注册成客户，三张客户表全靠它过滤。
- * 「周六和张三去旅游」这类私人项目必须走 with，否则朋友会被无声注册成客户、
- * 项目会挂进「我还欠谁的交付」，结案后还会污染案例库的选题统计。
+ *
+ * 三个而不是两个，是 V3 修掉的一处自相矛盾：此前只有「自己的项目」与「客户委托的」，
+ * 而选了「自己的项目」之后仍会弹一次「和谁一起做？（自己独做就按 Esc 跳过）」——
+ * 标签刚说完这是自己的项目，下一屏就问你还有谁，用户只能靠按 Esc 来表达「真的只有我」。
+ * 一个必须靠取消才能走完的流程，是在拿取消键当确认键使。
+ * 拆开之后，「要不要挂人」由用户在同一屏里一次答完：自己做就直接进下一步，
+ * 而「和别人一起做」与「客户委托的」才会弹选人。
+ *
+ * 后两项分家的理由不是分类癖：client 是商业契约标记，写下它等于把那个人注册成客户，
+ * 三张客户表全靠它过滤；「周六和张三去旅游」这类私人项目必须走 with，
+ * 否则朋友会被无声注册成客户、项目会挂进「我还欠谁的交付」，结案后还会污染案例库的选题统计。
+ * 两者的必答性也不同：客户委托却没选到人就不该建这个项目——一笔没有债主的交付债务毫无意义；
+ * 而一起做的人没选到，项目照建，只是少挂一条 with，那不影响这个项目成立。
  */
-const OWNERSHIP = [
-    { field: null, label: '自己的项目（不写 client，不进客户统计）', ask: '和谁一起做？（自己独做就按 Esc 跳过）' },
-    { field: FIELDS.client, label: '客户委托的（写 client，我欠他一个交付）', ask: '这是谁委托的？' },
-] as const;
+const OWNERSHIP: readonly OwnershipOption[] = [
+    { label: '自己做（只有我，不挂任何人）' },
+    {
+        label: '和别人一起做（写 with，不算客户）',
+        link: { field: FIELDS.with, ask: '和谁一起做？', required: false },
+    },
+    {
+        label: '客户委托的（写 client，我欠他一个交付）',
+        link: { field: FIELDS.client, ask: '这是谁委托的？', required: true },
+    },
+];
 
 // ============================================================
 // 项目与领域的全部差别
@@ -175,20 +213,23 @@ export async function createContainer(
                 return null;
             }
 
-            if (pickPerson) {
-                const isCommission = ownership.field !== null;
-                const person = await pickPerson(ownership.ask, !isCommission);
+            // 「自己做」没有 link，因此一个字都不再问，直接进下一步——
+            // 这正是用户选它时表达的意思，不该再让他按一次 Esc 来重申
+            if (ownership.link && pickPerson) {
+                const { field, ask, required } = ownership.link;
+                const person = await pickPerson(ask);
 
                 // 客户委托却没选到人，就不该建这个项目：一笔没有债主的交付债务毫无意义，
-                // 而且此刻还没动土，中止不留半成品
-                if (isCommission && !person) {
+                // 而且此刻还没动土，中止不留半成品。一起做的人没选到则照建，
+                // 少挂一条 with 不影响这个项目成立
+                if (required && !person) {
                     new Notice('未选择客户，操作已取消。');
                     return null;
                 }
 
                 if (person) {
                     relation = {
-                        field: ownership.field ?? FIELDS.with,
+                        field,
                         target: person.basename,
                     };
                 }

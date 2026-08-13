@@ -1806,15 +1806,13 @@ function descriptionOf(ctx, file) {
   const value = (_b = (_a = ctx.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter) == null ? void 0 : _b[FIELDS.description];
   return String(value != null ? value : "").trim();
 }
-async function pickPerson(ctx, title, quietWhenEmpty = false) {
+async function pickPerson(ctx, title) {
   const candidates = [
     ...liveNotesOfType(ctx, NOTE_TYPES.person),
     ...liveNotesOfType(ctx, NOTE_TYPES.client)
   ];
   if (!candidates.length) {
-    if (!quietWhenEmpty) {
-      new import_obsidian8.Notice("\u8FD8\u6CA1\u6709\u4EFB\u4F55\u4EBA\u8109\u6216\u5BA2\u6237\u6863\u6848\u3002\u5148\u8FD0\u884C\u300C\u65B0\u5EFA\u4EBA\u8109\u300D\u5EFA\u4E00\u4E2A\uFF0C\u518D\u6765\u5173\u8054\u3002");
-    }
+    new import_obsidian8.Notice("\u8FD8\u6CA1\u6709\u4EFB\u4F55\u4EBA\u8109\u6216\u5BA2\u6237\u6863\u6848\u3002\u5148\u8FD0\u884C\u300C\u65B0\u5EFA\u4EBA\u8109\u300D\u5EFA\u4E00\u4E2A\uFF0C\u518D\u6765\u5173\u8054\u3002");
     return null;
   }
   return new ChoiceModal(ctx.app, {
@@ -4089,8 +4087,15 @@ function firstProjectDescription() {
 
 // src/modules/projects/createContainer.ts
 var OWNERSHIP = [
-  { field: null, label: "\u81EA\u5DF1\u7684\u9879\u76EE\uFF08\u4E0D\u5199 client\uFF0C\u4E0D\u8FDB\u5BA2\u6237\u7EDF\u8BA1\uFF09", ask: "\u548C\u8C01\u4E00\u8D77\u505A\uFF1F\uFF08\u81EA\u5DF1\u72EC\u505A\u5C31\u6309 Esc \u8DF3\u8FC7\uFF09" },
-  { field: FIELDS.client, label: "\u5BA2\u6237\u59D4\u6258\u7684\uFF08\u5199 client\uFF0C\u6211\u6B20\u4ED6\u4E00\u4E2A\u4EA4\u4ED8\uFF09", ask: "\u8FD9\u662F\u8C01\u59D4\u6258\u7684\uFF1F" }
+  { label: "\u81EA\u5DF1\u505A\uFF08\u53EA\u6709\u6211\uFF0C\u4E0D\u6302\u4EFB\u4F55\u4EBA\uFF09" },
+  {
+    label: "\u548C\u522B\u4EBA\u4E00\u8D77\u505A\uFF08\u5199 with\uFF0C\u4E0D\u7B97\u5BA2\u6237\uFF09",
+    link: { field: FIELDS.with, ask: "\u548C\u8C01\u4E00\u8D77\u505A\uFF1F", required: false }
+  },
+  {
+    label: "\u5BA2\u6237\u59D4\u6258\u7684\uFF08\u5199 client\uFF0C\u6211\u6B20\u4ED6\u4E00\u4E2A\u4EA4\u4ED8\uFF09",
+    link: { field: FIELDS.client, ask: "\u8FD9\u662F\u8C01\u59D4\u6258\u7684\uFF1F", required: true }
+  }
 ];
 var PROJECT_KIND = {
   label: "\u9879\u76EE",
@@ -4108,7 +4113,6 @@ var AREA_KIND = {
   asksOwnership: false
 };
 async function createContainer(ctx, kind, preset, pickPerson2) {
-  var _a;
   const { app } = ctx;
   try {
     const settings = ctx.settings;
@@ -4136,16 +4140,16 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
         new import_obsidian15.Notice(`\u672A\u9009\u62E9${kind.label}\u5F52\u5C5E\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
         return null;
       }
-      if (pickPerson2) {
-        const isCommission = ownership.field !== null;
-        const person = await pickPerson2(ownership.ask, !isCommission);
-        if (isCommission && !person) {
+      if (ownership.link && pickPerson2) {
+        const { field, ask, required } = ownership.link;
+        const person = await pickPerson2(ask);
+        if (required && !person) {
           new import_obsidian15.Notice("\u672A\u9009\u62E9\u5BA2\u6237\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
           return null;
         }
         if (person) {
           relation = {
-            field: (_a = ownership.field) != null ? _a : FIELDS.with,
+            field,
             target: person.basename
           };
         }
@@ -6118,7 +6122,7 @@ var ZiminosPlugin = class extends import_obsidian24.Plugin {
     ctx.commands.register(INIT_VAULT_COMMAND, () => {
       void initializeVault(ctx, collectSeeds());
     });
-    registerCreateProjectCommand(ctx, (title, quiet) => pickPerson(ctx, title, quiet));
+    registerCreateProjectCommand(ctx, (title) => pickPerson(ctx, title));
     registerCreateAreaCommand(ctx);
     registerCardInitCommand(ctx);
     registerCardAutoInit(ctx);

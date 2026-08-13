@@ -4,7 +4,7 @@
  *          createContainer/PROJECT_KIND 与两个契约类型
  * [OUTPUT]: 对外提供 CreateProjectPreset 预设契约、PersonPicker 选人能力契约（转出）、
  *           createProject、registerCreateProjectCommand
- * [POS]: 项目这一类容器的入口。真正的流程住在 createContainer——项目与领域共用它，
+ * [POS]: 项目这一类容器的入口，命令 create-project。真正的流程住在 createContainer——项目与领域共用它，
  *        本文件只负责「项目」这一份规格与那条命令。
  *        它保留独立文件而不是并进去，是因为它有两个 createArea 没有的东西：
  *        开荒要用的 preset（首个项目免问答），以及选人能力那个注入洞
