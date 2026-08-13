@@ -5310,9 +5310,7 @@ var TEXTS2 = {
   appearanceSwitchDesc: "\u5728\u53F3\u4E0B\u89D2\u72B6\u6001\u680F\u653E\u4E00\u4E2A \u{1F3A8} \u6309\u94AE\uFF0C\u70B9\u5F00\u5C31\u80FD\u9010\u4E2A\u5F00\u5173 CSS \u7247\u6BB5\uFF0C\u4E0D\u5FC5\u518D\u8FDB\u8BBE\u7F6E\u7FFB\u5916\u89C2\u9875\u3002\u5173\u6389\u53EA\u662F\u6536\u8D77\u6309\u94AE\uFF0C\u547D\u4EE4\u9762\u677F\u91CC\u7684\u300C\u6253\u5F00\u5916\u89C2\u5F00\u5173\u300D\u7167\u5E38\u53EF\u7528\u3002",
   advancedHeading: "\u9AD8\u7EA7\u8BBE\u7F6E\uFF08\u4E00\u822C\u4E0D\u7528\u6539\uFF09",
   advancedSuffixPrefix: "\u8BFE\u7A0B\u9ED8\u8BA4\u503C ",
-  advancedSuffixTail: "\uFF0C\u6539\u524D\u4E09\u601D\u3002",
-  modulesHeading: "\u7CFB\u7EDF\u6A21\u5757",
-  modulesIntro: "\u70B9\u4EFB\u610F\u4E00\u884C\uFF0C\u76F4\u63A5\u8DF3\u5230\u90A3\u4E2A\u7CFB\u7EDF\u7684\u8BBE\u7F6E\u9875\u3002"
+  advancedSuffixTail: "\uFF0C\u6539\u524D\u4E09\u601D\u3002"
 };
 var TEXT_FIELDS = [
   { key: "projectFolder", tab: "projects", name: "\u9879\u76EE\u76EE\u5F55", hint: "\u6B63\u5728\u63A8\u8FDB\u7684\u9879\u76EE\u653E\u5728\u8FD9\u91CC\u3002", advanced: true },
@@ -5358,7 +5356,7 @@ var ZiminosSettingTab = class extends import_obsidian21.PluginSettingTab {
      * 在这里是一个编译错误，而不是一张点进去空空如也的页。
      */
     this.panels = {
-      setup: (el) => this.renderSetupPanel(el),
+      setup: (el) => this.renderInitButton(el),
       projects: (el) => this.renderProjectsPanel(el),
       inspiration: (el) => this.renderInspirationPanel(el),
       review: FIELDS_ONLY,
@@ -5474,16 +5472,8 @@ var ZiminosSettingTab = class extends import_obsidian21.PluginSettingTab {
     });
   }
   // ============================================================
-  // 三、开荒页：一个按钮，加一份系统模块清单
+  // 三、开荒页：一个按钮
   // ============================================================
-  /**
-   * 开荒页也是总览页：按下那个按钮之前，这个库还什么都没有，
-   * 所以八张页里只有它敢在第一屏就摆出「这套系统一共有哪些东西」。
-   */
-  renderSetupPanel(containerEl) {
-    this.renderInitButton(containerEl);
-    this.renderModuleList(containerEl);
-  }
   /**
    * 开荒按钮：一句状态说明 + 一个按钮。
    * 按钮点下后先禁用再执行，防止连点开出两次流程；完成后重建整个面板，
@@ -5506,20 +5496,6 @@ var ZiminosSettingTab = class extends import_obsidian21.PluginSettingTab {
     const { initializedAt } = this.ctx.settings;
     if (!initializedAt) return TEXTS2.initPending;
     return TEXTS2.initReadyPrefix + initializedAt + TEXTS2.initReadySuffix;
-  }
-  /**
-   * 系统模块清单：八行，每行就是一张标签页，点一下跳过去。
-   *
-   * 它与标签栏画的是同一份 TABS，因此不是重复而是索引——
-   * 标签栏只放得下两个字，这里才说得清那两个字背后是什么、跑没跑起来。
-   */
-  renderModuleList(containerEl) {
-    new import_obsidian21.Setting(containerEl).setName(TEXTS2.modulesHeading).setDesc(TEXTS2.modulesIntro).setHeading();
-    for (const tab of TABS) {
-      const row = new import_obsidian21.Setting(containerEl).setName(`${tab.emoji} ${tab.module}`).setDesc(tab.status).setClass("ziminos-module-row");
-      if (tab.id === this.activeTab.id) row.settingEl.addClass("is-current");
-      row.settingEl.addEventListener("click", () => this.switchTo(tab));
-    }
   }
   // ============================================================
   // 四、项目页：两个自动行为

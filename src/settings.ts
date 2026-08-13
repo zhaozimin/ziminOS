@@ -42,16 +42,16 @@ type TabId =
     | 'appearance'
     | 'ribbon';
 
-/** 一张标签页的全部身份。它同时是标签栏上的一枚按钮与「系统模块」清单里的一行 */
+/** 一张标签页的全部身份：标签栏上的那枚按钮，与它翻开之后的那句页头 */
 interface SettingsTab {
     readonly id: TabId;
     /** 标签上的短名。八张一律两个字——长短不齐的标签会让人以为它们不是一类东西 */
     readonly label: string;
-    /** 这个模块的视觉身份。标签与清单共用同一枚，用户因此能把两处对上 */
+    /** 这个模块的视觉身份。标签与页头共用同一枚，用户因此知道自己翻开的正是刚点的那张 */
     readonly emoji: string;
-    /** 模块清单里的全名，带版本号 */
+    /** 页头上的全名，带版本号 */
     readonly module: string;
-    /** 交付状态。它既是清单里那行说明，也是本页页头那句「这一页管的是什么」 */
+    /** 交付状态，即页头那句「这一页管的是什么、跑没跑起来」 */
     readonly status: string;
 }
 
@@ -60,8 +60,14 @@ interface SettingsTab {
  * 先开荒，再是每天在用的三套（项目、灵感、复盘），然后是关系与生意（人脉、客户），
  * 最后两张管的都不是笔记而是屏幕（外观、边栏）。
  *
- * 这张表同时喂三处：标签栏、每页页头、开荒页那份「系统模块」清单。
- * 一处事实三处呈现，因此不存在「标签上写着外观、清单里写着外观包 v2、页头又是另一句」这种事。
+ * 这张表同时喂两处：标签栏上那枚两个字的按钮，与每页页头那句「这一页是谁、跑没跑起来」。
+ * 一处事实两处呈现，因此不存在「标签上写着外观、页头却是另一句」这种事。
+ *
+ * 曾经还有第三处——开荒页上一份逐行列出八个模块的清单。它被摘掉了，
+ * 理由是标签栏本身就是那份清单：八张页一直摆在屏幕最上方，点一下即到，
+ * 再在首页把同样八行重列一遍，是把「索引」误当成了「介绍」。
+ * status 那句话没有跟着一起消失，它搬进了各页页头——在那儿它回答的是「我现在在哪、这页管什么」，
+ * 而不是「这套系统都有些什么」。
  */
 const TABS: readonly SettingsTab[] = [
     {
@@ -158,9 +164,6 @@ const TEXTS = {
     advancedHeading: '高级设置（一般不用改）',
     advancedSuffixPrefix: '课程默认值 ',
     advancedSuffixTail: '，改前三思。',
-
-    modulesHeading: '系统模块',
-    modulesIntro: '点任意一行，直接跳到那个系统的设置页。',
 } as const;
 
 // ============================================================
@@ -305,7 +308,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
      * 在这里是一个编译错误，而不是一张点进去空空如也的页。
      */
     private readonly panels: Readonly<Record<TabId, PanelRenderer>> = {
-        setup: (el) => this.renderSetupPanel(el),
+        setup: (el) => this.renderInitButton(el),
         projects: (el) => this.renderProjectsPanel(el),
         inspiration: (el) => this.renderInspirationPanel(el),
         review: FIELDS_ONLY,
@@ -472,17 +475,8 @@ export class ZiminosSettingTab extends PluginSettingTab {
     }
 
     // ============================================================
-    // 三、开荒页：一个按钮，加一份系统模块清单
+    // 三、开荒页：一个按钮
     // ============================================================
-
-    /**
-     * 开荒页也是总览页：按下那个按钮之前，这个库还什么都没有，
-     * 所以八张页里只有它敢在第一屏就摆出「这套系统一共有哪些东西」。
-     */
-    private renderSetupPanel(containerEl: HTMLElement): void {
-        this.renderInitButton(containerEl);
-        this.renderModuleList(containerEl);
-    }
 
     /**
      * 开荒按钮：一句状态说明 + 一个按钮。
@@ -518,32 +512,6 @@ export class ZiminosSettingTab extends PluginSettingTab {
         if (!initializedAt) return TEXTS.initPending;
 
         return TEXTS.initReadyPrefix + initializedAt + TEXTS.initReadySuffix;
-    }
-
-    /**
-     * 系统模块清单：八行，每行就是一张标签页，点一下跳过去。
-     *
-     * 它与标签栏画的是同一份 TABS，因此不是重复而是索引——
-     * 标签栏只放得下两个字，这里才说得清那两个字背后是什么、跑没跑起来。
-     */
-    private renderModuleList(containerEl: HTMLElement): void {
-        new Setting(containerEl)
-            .setName(TEXTS.modulesHeading)
-            .setDesc(TEXTS.modulesIntro)
-            .setHeading();
-
-        for (const tab of TABS) {
-            const row = new Setting(containerEl)
-                .setName(`${tab.emoji} ${tab.module}`)
-                .setDesc(tab.status)
-                .setClass('ziminos-module-row');
-
-            // 第二个类走 DOM 而不是再调一次 setClass：那个方法只承诺「设置类名」，
-            // 是加还是覆盖不在类型里，赌它是加等于把整行的样式押在一个未写明的实现上
-            if (tab.id === this.activeTab.id) row.settingEl.addClass('is-current');
-
-            row.settingEl.addEventListener('click', () => this.switchTo(tab));
-        }
     }
 
     // ============================================================

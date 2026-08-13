@@ -334,29 +334,6 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
     padding-top: 18px;
 }
 
-/* ── 设置页：开荒页那份系统模块清单 ── */
-
-/*
- * 整行可点，点了跳到那一页。行里没有任何控件，所以整行当按钮不会与谁抢点击；
- * 清单因此不是标签栏的重复，而是它的索引——标签上只放得下两个字。
- */
-.setting-item.ziminos-module-row {
-    border-radius: var(--radius-s);
-    cursor: pointer;
-}
-
-.setting-item.ziminos-module-row:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-/*
- * 你正停在这一页。用 inset 阴影而不是左边框：边框会把整行内容推开两像素，
- * 于是「当前那一行」与其余七行对不齐，而错位比高亮更显眼。
- */
-.setting-item.ziminos-module-row.is-current {
-    box-shadow: inset 2px 0 0 var(--text-accent);
-}
-
 /* ── 设置页：每页末尾那个「高级设置（一般不用改）」折叠区 ── */
 
 /*
