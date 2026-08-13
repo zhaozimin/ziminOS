@@ -19,6 +19,7 @@
  */
 
 import { PluginSettingTab, Setting, setIcon } from 'obsidian';
+import { COMMAND_ICONS } from './core/commands';
 import { INSPIRATION_DEFAULTS, INSPIRATION_INSERT_POSITIONS } from './core/constants';
 import type { InspirationInsertPosition } from './core/constants';
 import { FORMAT_RULES } from './core/markdownStyle';
@@ -26,7 +27,7 @@ import { DEFAULT_SETTINGS } from './core/types';
 import type { ZiminosContext } from './core/types';
 
 // ============================================================
-// 九张标签页：一页一个系统模块
+// 十张标签页：一页一个系统模块
 // ============================================================
 
 /**
@@ -50,10 +51,14 @@ type TabId =
 /** 一张标签页的全部身份：标签栏上的那枚按钮，与它翻开之后的那句页头 */
 interface SettingsTab {
     readonly id: TabId;
-    /** 标签上的短名。九张一律两个字——长短不齐的标签会让人以为它们不是一类东西 */
+    /** 标签上的短名。十张一律两个字——长短不齐的标签会让人以为它们不是一类东西 */
     readonly label: string;
-    /** 这个模块的视觉身份。标签与页头共用同一枚，用户因此知道自己翻开的正是刚点的那张 */
-    readonly emoji: string;
+    /**
+     * 这个模块的视觉身份，取自 COMMAND_ICONS——与左侧边栏、命令面板同一套笔画图形。
+     * 标签与页头共用同一枚，用户因此知道自己翻开的正是刚点的那张。
+     * 曾经是 emoji：十枚彩色符号排成一行，与这套系统其余图标全不同源，像贴纸不像界面。
+     */
+    readonly icon: string;
     /** 页头上的全名，带版本号 */
     readonly module: string;
     /** 交付状态，即页头那句「这一页管的是什么、跑没跑起来」 */
@@ -82,70 +87,70 @@ const TABS: readonly SettingsTab[] = [
     {
         id: 'setup',
         label: '开荒',
-        emoji: '🌱',
+        icon: COMMAND_ICONS.vault,
         module: '开荒 v1',
         status: '运行中 · 七个文件夹、模板与导航，再点一次只补齐缺失',
     },
     {
         id: 'projects',
         label: '项目',
-        emoji: '📦',
+        icon: COMMAND_ICONS.project,
         module: '项目管理 v1',
         status: '运行中 · 建项目、卡片登记、四态流转',
     },
     {
         id: 'inspiration',
         label: '灵感',
-        emoji: '💡',
+        icon: COMMAND_ICONS.inspiration,
         module: '灵感收集 v1',
         status: '运行中 · Dataview 未完成任务视图已就绪',
     },
     {
         id: 'review',
         label: '复盘',
-        emoji: '📔',
+        icon: COMMAND_ICONS.daily,
         module: '复盘 v1',
         status: '运行中 · 五级周期笔记、主题链与项目数据共五个视图',
     },
     {
         id: 'contacts',
         label: '人脉',
-        emoji: '👥',
+        icon: COMMAND_ICONS.contact,
         module: '人脉管理 v1',
         status: '运行中 · 新建人脉、记人情，档案与 MOC 共八个视图',
     },
     {
         id: 'clients',
         label: '客户',
-        emoji: '💰',
+        icon: COMMAND_ICONS.clients,
         module: '客户与付费 v1',
         status: '按需启用 · 命令面板运行「初始化客户模块」，长出 MOC 与八个视图',
     },
     {
         id: 'format',
         label: '排版',
-        emoji: '🧹',
+        icon: COMMAND_ICONS.format,
         module: '排版 v1',
         status: '运行中 · 九条标准 Markdown 写法，改完走开就替你整理',
     },
     {
         id: 'appearance',
         label: '外观',
-        emoji: '🎨',
+        icon: COMMAND_ICONS.appearance,
         module: '外观包 v2',
         status: '运行中 · Minimal + Style Settings + 十二个 CSS 片段，右下角一键开关',
     },
     {
         id: 'ribbon',
         label: '边栏',
-        emoji: '🧭',
+        icon: COMMAND_ICONS.dock,
         module: '左侧边栏 v1',
         status: '运行中 · 二十三条命令配 Pikaicons 图标，默认摆出七条',
     },
     {
         id: 'about',
         label: '关于',
-        emoji: '✍️',
+        icon: COMMAND_ICONS.theme,
         module: '关于作者 v1',
         status: '官网、教程与四个自媒体入口，随插件走——首页导航底部是同一张名片',
     },
@@ -375,13 +380,19 @@ export class ZiminosSettingTab extends PluginSettingTab {
     // 一、标签栏与分页骨架
     // ============================================================
 
-    /** 标签栏：十枚按钮，当前页高亮。用真的 button 而非 div，键盘与读屏器才认得它 */
+    /**
+     * 标签栏：十枚按钮收进一条分段式控件里，当前页从容器底色上凸起。
+     * 分段式而不是十颗散摆的按钮，是因为它们其实只是十个位置——
+     * 一条共享的槽把这层语义画了出来，按钮自己反而要卸干净立体外观。
+     * 用真的 button 而非 div，键盘与读屏器才认得它。
+     */
     private renderTabBar(containerEl: HTMLElement): void {
         const bar = containerEl.createDiv({ cls: 'ziminos-settings-tabs' });
+        const rail = bar.createDiv({ cls: 'ziminos-settings-tabrail' });
 
         for (const tab of TABS) {
             const active = tab.id === this.activeTab.id;
-            const button = bar.createEl('button', {
+            const button = rail.createEl('button', {
                 cls: 'ziminos-settings-tab',
                 // aria-pressed 而不是 role=tab：没实现方向键遍历就自称 tablist 是撒谎，
                 // 而「一枚按下去的按钮」既属实，读屏器也照样播报得清楚
@@ -392,7 +403,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
             // className 还是被 classList.add 逐个吞下，取决于 Obsidian 的实现而非它的类型
             if (active) button.addClass('is-active');
 
-            button.createSpan({ cls: 'ziminos-settings-emoji', text: tab.emoji });
+            setIcon(button.createSpan({ cls: 'ziminos-settings-tab-icon' }), tab.icon);
             button.createSpan({ text: tab.label });
             button.addEventListener('click', () => this.switchTo(tab));
         }
@@ -420,7 +431,12 @@ export class ZiminosSettingTab extends PluginSettingTab {
     private renderPanel(body: HTMLElement): void {
         const tab = this.activeTab;
 
-        new Setting(body).setName(`${tab.emoji} ${tab.module}`).setDesc(tab.status).setHeading();
+        // 页头图标与标签栏同一枚，只是大一号、着强调色——它是整页唯一的一处强调色锚点
+        const header = new Setting(body).setDesc(tab.status).setHeading();
+        const title = header.nameEl.createSpan({ cls: 'ziminos-settings-page-title' });
+
+        setIcon(title.createSpan({ cls: 'ziminos-settings-page-icon' }), tab.icon);
+        title.createSpan({ text: tab.module });
 
         this.renderTextFields(body, tab.id, false);
         this.panels[tab.id](body);

@@ -719,7 +719,13 @@ var COMMAND_ICONS = {
   payment: "ziminos-payment",
   receipt: "ziminos-receipt",
   appearance: "ziminos-appearance",
-  format: "ziminos-format"
+  format: "ziminos-format",
+  /**
+   * 不属于任何命令的一枚：设置页「边栏」标签页的图标。
+   * 边栏这个模块管的是屏幕上那一列，没有哪条命令天然长它的样子，
+   * 图形与其余二十三个同住 icons.ts，同一套画法
+   */
+  dock: "ziminos-dock"
 };
 var INIT_VAULT_COMMAND = {
   id: "init-vault",
@@ -5440,7 +5446,14 @@ var ARTWORK = {
    * 这条命令做的事就是把长短不齐的行归到同一条线上，
    * 而扫帚在 18px 下与「清空/删除」是同一个手势，那正好是它绝不会做的事。
    */
-  [COMMAND_ICONS.format]: ["M4 3V21", "M8 7H20", "M8 12H16", "M8 17H19"]
+  [COMMAND_ICONS.format]: ["M4 3V21", "M8 7H20", "M8 12H16", "M8 17H19"],
+  // ---------- 设置页 ----------
+  /** 边栏标签页：一块带左栏的面板，左栏里两粒图标位。它就是屏幕最左边那一列（补画） */
+  [COMMAND_ICONS.dock]: [
+    "M7 3H17C19.2091 3 21 4.79086 21 7V17C21 19.2091 19.2091 21 17 21H7C4.79086 21 3 19.2091 3 17V7C3 4.79086 4.79086 3 7 3Z",
+    "M9 3V21",
+    "M6 7H6.01M6 10.5H6.01"
+  ]
 };
 function registerZiminosIcons(plugin) {
   for (const [name, paths] of Object.entries(ARTWORK)) {
@@ -5706,70 +5719,70 @@ var TABS = [
   {
     id: "setup",
     label: "\u5F00\u8352",
-    emoji: "\u{1F331}",
+    icon: COMMAND_ICONS.vault,
     module: "\u5F00\u8352 v1",
     status: "\u8FD0\u884C\u4E2D \xB7 \u4E03\u4E2A\u6587\u4EF6\u5939\u3001\u6A21\u677F\u4E0E\u5BFC\u822A\uFF0C\u518D\u70B9\u4E00\u6B21\u53EA\u8865\u9F50\u7F3A\u5931"
   },
   {
     id: "projects",
     label: "\u9879\u76EE",
-    emoji: "\u{1F4E6}",
+    icon: COMMAND_ICONS.project,
     module: "\u9879\u76EE\u7BA1\u7406 v1",
     status: "\u8FD0\u884C\u4E2D \xB7 \u5EFA\u9879\u76EE\u3001\u5361\u7247\u767B\u8BB0\u3001\u56DB\u6001\u6D41\u8F6C"
   },
   {
     id: "inspiration",
     label: "\u7075\u611F",
-    emoji: "\u{1F4A1}",
+    icon: COMMAND_ICONS.inspiration,
     module: "\u7075\u611F\u6536\u96C6 v1",
     status: "\u8FD0\u884C\u4E2D \xB7 Dataview \u672A\u5B8C\u6210\u4EFB\u52A1\u89C6\u56FE\u5DF2\u5C31\u7EEA"
   },
   {
     id: "review",
     label: "\u590D\u76D8",
-    emoji: "\u{1F4D4}",
+    icon: COMMAND_ICONS.daily,
     module: "\u590D\u76D8 v1",
     status: "\u8FD0\u884C\u4E2D \xB7 \u4E94\u7EA7\u5468\u671F\u7B14\u8BB0\u3001\u4E3B\u9898\u94FE\u4E0E\u9879\u76EE\u6570\u636E\u5171\u4E94\u4E2A\u89C6\u56FE"
   },
   {
     id: "contacts",
     label: "\u4EBA\u8109",
-    emoji: "\u{1F465}",
+    icon: COMMAND_ICONS.contact,
     module: "\u4EBA\u8109\u7BA1\u7406 v1",
     status: "\u8FD0\u884C\u4E2D \xB7 \u65B0\u5EFA\u4EBA\u8109\u3001\u8BB0\u4EBA\u60C5\uFF0C\u6863\u6848\u4E0E MOC \u5171\u516B\u4E2A\u89C6\u56FE"
   },
   {
     id: "clients",
     label: "\u5BA2\u6237",
-    emoji: "\u{1F4B0}",
+    icon: COMMAND_ICONS.clients,
     module: "\u5BA2\u6237\u4E0E\u4ED8\u8D39 v1",
     status: "\u6309\u9700\u542F\u7528 \xB7 \u547D\u4EE4\u9762\u677F\u8FD0\u884C\u300C\u521D\u59CB\u5316\u5BA2\u6237\u6A21\u5757\u300D\uFF0C\u957F\u51FA MOC \u4E0E\u516B\u4E2A\u89C6\u56FE"
   },
   {
     id: "format",
     label: "\u6392\u7248",
-    emoji: "\u{1F9F9}",
+    icon: COMMAND_ICONS.format,
     module: "\u6392\u7248 v1",
     status: "\u8FD0\u884C\u4E2D \xB7 \u4E5D\u6761\u6807\u51C6 Markdown \u5199\u6CD5\uFF0C\u6539\u5B8C\u8D70\u5F00\u5C31\u66FF\u4F60\u6574\u7406"
   },
   {
     id: "appearance",
     label: "\u5916\u89C2",
-    emoji: "\u{1F3A8}",
+    icon: COMMAND_ICONS.appearance,
     module: "\u5916\u89C2\u5305 v2",
     status: "\u8FD0\u884C\u4E2D \xB7 Minimal + Style Settings + \u5341\u4E8C\u4E2A CSS \u7247\u6BB5\uFF0C\u53F3\u4E0B\u89D2\u4E00\u952E\u5F00\u5173"
   },
   {
     id: "ribbon",
     label: "\u8FB9\u680F",
-    emoji: "\u{1F9ED}",
+    icon: COMMAND_ICONS.dock,
     module: "\u5DE6\u4FA7\u8FB9\u680F v1",
     status: "\u8FD0\u884C\u4E2D \xB7 \u4E8C\u5341\u4E09\u6761\u547D\u4EE4\u914D Pikaicons \u56FE\u6807\uFF0C\u9ED8\u8BA4\u6446\u51FA\u4E03\u6761"
   },
   {
     id: "about",
     label: "\u5173\u4E8E",
-    emoji: "\u270D\uFE0F",
+    icon: COMMAND_ICONS.theme,
     module: "\u5173\u4E8E\u4F5C\u8005 v1",
     status: "\u5B98\u7F51\u3001\u6559\u7A0B\u4E0E\u56DB\u4E2A\u81EA\u5A92\u4F53\u5165\u53E3\uFF0C\u968F\u63D2\u4EF6\u8D70\u2014\u2014\u9996\u9875\u5BFC\u822A\u5E95\u90E8\u662F\u540C\u4E00\u5F20\u540D\u7247"
   }
@@ -5873,19 +5886,25 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
   // ============================================================
   // 一、标签栏与分页骨架
   // ============================================================
-  /** 标签栏：十枚按钮，当前页高亮。用真的 button 而非 div，键盘与读屏器才认得它 */
+  /**
+   * 标签栏：十枚按钮收进一条分段式控件里，当前页从容器底色上凸起。
+   * 分段式而不是十颗散摆的按钮，是因为它们其实只是十个位置——
+   * 一条共享的槽把这层语义画了出来，按钮自己反而要卸干净立体外观。
+   * 用真的 button 而非 div，键盘与读屏器才认得它。
+   */
   renderTabBar(containerEl) {
     const bar = containerEl.createDiv({ cls: "ziminos-settings-tabs" });
+    const rail = bar.createDiv({ cls: "ziminos-settings-tabrail" });
     for (const tab of TABS) {
       const active = tab.id === this.activeTab.id;
-      const button = bar.createEl("button", {
+      const button = rail.createEl("button", {
         cls: "ziminos-settings-tab",
         // aria-pressed 而不是 role=tab：没实现方向键遍历就自称 tablist 是撒谎，
         // 而「一枚按下去的按钮」既属实，读屏器也照样播报得清楚
         attr: { type: "button", "aria-pressed": String(active) }
       });
       if (active) button.addClass("is-active");
-      button.createSpan({ cls: "ziminos-settings-emoji", text: tab.emoji });
+      (0, import_obsidian23.setIcon)(button.createSpan({ cls: "ziminos-settings-tab-icon" }), tab.icon);
       button.createSpan({ text: tab.label });
       button.addEventListener("click", () => this.switchTo(tab));
     }
@@ -5907,7 +5926,10 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
    */
   renderPanel(body) {
     const tab = this.activeTab;
-    new import_obsidian23.Setting(body).setName(`${tab.emoji} ${tab.module}`).setDesc(tab.status).setHeading();
+    const header = new import_obsidian23.Setting(body).setDesc(tab.status).setHeading();
+    const title = header.nameEl.createSpan({ cls: "ziminos-settings-page-title" });
+    (0, import_obsidian23.setIcon)(title.createSpan({ cls: "ziminos-settings-page-icon" }), tab.icon);
+    title.createSpan({ text: tab.module });
     this.renderTextFields(body, tab.id, false);
     this.panels[tab.id](body);
     this.renderAdvancedFold(body, tab.id);

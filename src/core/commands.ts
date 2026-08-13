@@ -103,6 +103,12 @@ export const COMMAND_ICONS = {
     receipt: 'ziminos-receipt',
     appearance: 'ziminos-appearance',
     format: 'ziminos-format',
+    /**
+     * 不属于任何命令的一枚：设置页「边栏」标签页的图标。
+     * 边栏这个模块管的是屏幕上那一列，没有哪条命令天然长它的样子，
+     * 图形与其余二十三个同住 icons.ts，同一套画法
+     */
+    dock: 'ziminos-dock',
 } as const;
 
 // ============================================================
