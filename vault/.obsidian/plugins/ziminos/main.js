@@ -5230,75 +5230,118 @@ async function createFileIfMissing(ctx, path, content) {
 
 // src/settings.ts
 var import_obsidian21 = require("obsidian");
+var TABS = [
+  {
+    id: "setup",
+    label: "\u5F00\u8352",
+    emoji: "\u{1F331}",
+    module: "\u5F00\u8352 v1",
+    status: "\u8FD0\u884C\u4E2D \xB7 \u4E03\u4E2A\u6587\u4EF6\u5939\u3001\u6A21\u677F\u4E0E\u5BFC\u822A\uFF0C\u518D\u70B9\u4E00\u6B21\u53EA\u8865\u9F50\u7F3A\u5931"
+  },
+  {
+    id: "projects",
+    label: "\u9879\u76EE",
+    emoji: "\u{1F4E6}",
+    module: "\u9879\u76EE\u7BA1\u7406 v1",
+    status: "\u8FD0\u884C\u4E2D \xB7 \u5EFA\u9879\u76EE\u3001\u5361\u7247\u767B\u8BB0\u3001\u56DB\u6001\u6D41\u8F6C"
+  },
+  {
+    id: "inspiration",
+    label: "\u7075\u611F",
+    emoji: "\u{1F4A1}",
+    module: "\u7075\u611F\u6536\u96C6 v1",
+    status: "\u8FD0\u884C\u4E2D \xB7 Dataview \u672A\u5B8C\u6210\u4EFB\u52A1\u89C6\u56FE\u5DF2\u5C31\u7EEA"
+  },
+  {
+    id: "review",
+    label: "\u590D\u76D8",
+    emoji: "\u{1F4D4}",
+    module: "\u590D\u76D8 v1",
+    status: "\u8FD0\u884C\u4E2D \xB7 \u4E94\u7EA7\u5468\u671F\u7B14\u8BB0\u3001\u4E3B\u9898\u94FE\u4E0E\u9879\u76EE\u6570\u636E\u5171\u4E94\u4E2A\u89C6\u56FE"
+  },
+  {
+    id: "contacts",
+    label: "\u4EBA\u8109",
+    emoji: "\u{1F465}",
+    module: "\u4EBA\u8109\u7BA1\u7406 v1",
+    status: "\u8FD0\u884C\u4E2D \xB7 \u65B0\u5EFA\u4EBA\u8109\u3001\u8BB0\u4EBA\u60C5\uFF0C\u6863\u6848\u4E0E MOC \u5171\u516B\u4E2A\u89C6\u56FE"
+  },
+  {
+    id: "clients",
+    label: "\u5BA2\u6237",
+    emoji: "\u{1F4B0}",
+    module: "\u5BA2\u6237\u4E0E\u4ED8\u8D39 v1",
+    status: "\u6309\u9700\u542F\u7528 \xB7 \u547D\u4EE4\u9762\u677F\u8FD0\u884C\u300C\u521D\u59CB\u5316\u5BA2\u6237\u6A21\u5757\u300D\uFF0C\u957F\u51FA MOC \u4E0E\u516B\u4E2A\u89C6\u56FE"
+  },
+  {
+    id: "appearance",
+    label: "\u5916\u89C2",
+    emoji: "\u{1F3A8}",
+    module: "\u5916\u89C2\u5305 v2",
+    status: "\u8FD0\u884C\u4E2D \xB7 Minimal + Style Settings + \u5341\u4E8C\u4E2A CSS \u7247\u6BB5\uFF0C\u53F3\u4E0B\u89D2\u4E00\u952E\u5F00\u5173"
+  },
+  {
+    id: "ribbon",
+    label: "\u8FB9\u680F",
+    emoji: "\u{1F9ED}",
+    module: "\u5DE6\u4FA7\u8FB9\u680F v1",
+    status: "\u8FD0\u884C\u4E2D \xB7 \u4E8C\u5341\u4E00\u6761\u547D\u4EE4\u914D Pikaicons \u56FE\u6807\uFF0C\u9ED8\u8BA4\u6446\u51FA\u4E03\u6761"
+  }
+];
 var TEXTS2 = {
-  initHeading: "\u5F00\u8352",
   initName: "\u521D\u59CB\u5316\u7B14\u8BB0\u5E93",
   initButton: "\u521D\u59CB\u5316",
   initPending: "\u5C1A\u672A\u521D\u59CB\u5316\u3002\u70B9\u53F3\u8FB9\u7684\u6309\u94AE\uFF0C\u4E3A\u8FD9\u4E2A\u5E93\u94FA\u597D\u4E03\u4E2A\u6587\u4EF6\u5939\u3001\u6A21\u677F\u4E0E\u5BFC\u822A\uFF0C\u5E76\u957F\u51FA\u4EBA\u8109\u4E0E\u590D\u76D8\u4E24\u5957\u7CFB\u7EDF\u3002",
   initReadyPrefix: "\u5DF2\u5C31\u7EEA \u2713 \u9996\u6B21\u5F00\u8352\u4E8E ",
   initReadySuffix: "\u3002\u518D\u70B9\u4E00\u6B21\u53EA\u8865\u9F50\u7F3A\u5931\u7684\u6587\u4EF6\uFF0C\u4E0D\u4F1A\u8986\u76D6\u4F60\u5199\u8FC7\u7684\u4EFB\u4F55\u7B14\u8BB0\u3002",
-  autoHeading: "\u81EA\u52A8\u5316",
   autoCardName: "\u65B0\u5EFA\u7B14\u8BB0\u81EA\u52A8\u767B\u8BB0\u4E3A\u5361\u7247",
   autoCardDesc: "\u5728\u9879\u76EE\u6216\u9886\u57DF\u76EE\u5F55\u91CC\u65B0\u5EFA\u7A7A\u7B14\u8BB0\u65F6\uFF0C\u81EA\u52A8\u8865\u9F50\u6807\u51C6\u5B57\u6BB5\uFF0C\u5E76\u94FE\u56DE\u5B83\u6240\u5C5E\u7684 MOC\u3002\u5173\u6389\u540E\u53EF\u7528\u547D\u4EE4\u300C\u521D\u59CB\u5316\u5F53\u524D\u5361\u7247\u300D\u624B\u52A8\u767B\u8BB0\u3002",
   autoUpdatedName: "\u81EA\u52A8\u7EF4\u62A4 updated \u65F6\u95F4",
   autoUpdatedDesc: "\u6539\u5B8C\u5E26 YAML \u7684\u7B14\u8BB0\u3001\u505C\u624B\u4E24\u79D2\u540E\uFF0C\u81EA\u52A8\u8BB0\u4E0B\u8FD9\u6B21\u4FEE\u6539\u65F6\u95F4\u3002\u6CA1\u6709 YAML \u7684\u7B14\u8BB0\u4E00\u4E2A\u5B57\u90FD\u4E0D\u52A8\u3002",
-  inspirationHeading: "\u7075\u611F\u6536\u96C6",
-  inspirationFolderName: "\u6587\u4EF6\u5939",
-  inspirationFolderDesc: "\u7075\u611F\u7B14\u8BB0\u653E\u5728\u54EA\u4E2A\u6587\u4EF6\u5939\u3002\u76F8\u5BF9\u4E8E\u7B14\u8BB0\u5E93\u6839\u76EE\u5F55\u3002",
-  inspirationFileName: "\u7B14\u8BB0\u540D\u79F0",
-  inspirationFileDesc: "\u7075\u611F\u5199\u5165\u54EA\u4E00\u7BC7\u7B14\u8BB0\uFF1B\u6CA1\u5199 .md \u65F6\u4F1A\u81EA\u52A8\u8865\u9F50\u3002",
-  inspirationTargetHeading: "\u5B9A\u4F4D\u6807\u9898",
-  inspirationTargetDesc: "\u9009\u62E9\u6807\u9898\u63D2\u5165\u65F6\uFF0C\u7528\u5B83\u5B9A\u4F4D\u5177\u4F53\u533A\u57DF\u3002\u53EF\u5199\u201C\u7075\u611F\u96C6\u201D\u6216\u5B8C\u6574 Markdown \u6807\u9898\u3002",
   inspirationPositionName: "\u63D2\u5165\u4F4D\u7F6E",
   inspirationPositionDesc: "\u51B3\u5B9A\u65B0\u7075\u611F\u5199\u5728\u6807\u9898\u533A\u6216\u6574\u7BC7\u6B63\u6587\u7684\u5934\u5C3E\u3002\u7F6E\u9876\u4F1A\u81EA\u52A8\u907F\u5F00 YAML\u3001\u9875\u9762\u6807\u9898\u548C Dataview \u7B5B\u9009\u533A\u3002",
   inspirationFormatName: "\u5355\u6761\u683C\u5F0F",
   inspirationFormatDesc: "\u5FC5\u987B\u4FDD\u7559 {{content}}\uFF1B\u8FD8\u53EF\u4F7F\u7528 {{date}}\u3001{{time}}\u3001{{datetime}}\u3002",
-  ribbonHeading: "\u5DE6\u4FA7\u8FB9\u680F",
   ribbonIntro: "\u52FE\u4E0A\u7684\u547D\u4EE4\u4F1A\u53D8\u6210\u6700\u5DE6\u8FB9\u90A3\u4E00\u5217\u56FE\u6807\uFF0C\u70B9\u4E00\u4E0B\u5C31\u6267\u884C\uFF0C\u4E0D\u7528\u518D\u6253\u5F00\u547D\u4EE4\u9762\u677F\u3002\u56FE\u6807\u662F Pikaicons\uFF0C\u8DDF\u7740\u4E3B\u9898\u7684\u989C\u8272\u4E0E\u63CF\u8FB9\u7C97\u7EC6\u8D70\u3002\u53D6\u6D88\u52FE\u9009\u540E\uFF0C\u5B83\u5728\u300C\u8BBE\u7F6E \u2192 \u5916\u89C2 \u2192 \u529F\u80FD\u533A\u300D\u548C\u624B\u673A\u7AEF\u7684\u8FB9\u680F\u83DC\u5355\u91CC\u8981\u91CD\u542F Obsidian \u624D\u6D88\u5931\uFF1B\u53CD\u8FC7\u6765\uFF0C\u4F60\u5728\u90A3\u4E24\u5904\u85CF\u6389\u7684\u56FE\u6807\uFF0C\u8FD9\u91CC\u52FE\u4E0A\u4E5F\u4E0D\u4F1A\u51FA\u73B0\u2014\u2014\u90A3\u662F Obsidian \u81EA\u5DF1\u7684\u5F00\u5173\uFF0C\u5F97\u56DE\u90A3\u513F\u6253\u5F00\u3002",
   ribbonCountPrefix: "\u5DF2\u6446\u51FA ",
   ribbonCountSeparator: " / ",
   ribbonCountSuffix: " \u6761",
-  appearanceHeading: "\u5916\u89C2",
   appearanceSwitchName: "\u72B6\u6001\u680F\u5916\u89C2\u5F00\u5173",
   appearanceSwitchDesc: "\u5728\u53F3\u4E0B\u89D2\u72B6\u6001\u680F\u653E\u4E00\u4E2A \u{1F3A8} \u6309\u94AE\uFF0C\u70B9\u5F00\u5C31\u80FD\u9010\u4E2A\u5F00\u5173 CSS \u7247\u6BB5\uFF0C\u4E0D\u5FC5\u518D\u8FDB\u8BBE\u7F6E\u7FFB\u5916\u89C2\u9875\u3002\u5173\u6389\u53EA\u662F\u6536\u8D77\u6309\u94AE\uFF0C\u547D\u4EE4\u9762\u677F\u91CC\u7684\u300C\u6253\u5F00\u5916\u89C2\u5F00\u5173\u300D\u7167\u5E38\u53EF\u7528\u3002",
   advancedHeading: "\u9AD8\u7EA7\u8BBE\u7F6E\uFF08\u4E00\u822C\u4E0D\u7528\u6539\uFF09",
-  modulesHeading: "\u7CFB\u7EDF\u6A21\u5757"
+  advancedSuffixPrefix: "\u8BFE\u7A0B\u9ED8\u8BA4\u503C ",
+  advancedSuffixTail: "\uFF0C\u6539\u524D\u4E09\u601D\u3002",
+  modulesHeading: "\u7CFB\u7EDF\u6A21\u5757",
+  modulesIntro: "\u70B9\u4EFB\u610F\u4E00\u884C\uFF0C\u76F4\u63A5\u8DF3\u5230\u90A3\u4E2A\u7CFB\u7EDF\u7684\u8BBE\u7F6E\u9875\u3002"
 };
-var ADVANCED_FIELDS = [
-  { key: "projectFolder", name: "\u9879\u76EE\u76EE\u5F55", hint: "\u6B63\u5728\u63A8\u8FDB\u7684\u9879\u76EE\u653E\u5728\u8FD9\u91CC\u3002" },
-  { key: "areaFolder", name: "\u9886\u57DF\u76EE\u5F55", hint: "\u957F\u671F\u5173\u6CE8\u3001\u6CA1\u6709\u7EC8\u70B9\u7684\u9886\u57DF\u653E\u5728\u8FD9\u91CC\u3002" },
-  { key: "archiveFolder", name: "\u5F52\u6863\u76EE\u5F55", hint: "\u5B8C\u6210\u3001\u6682\u505C\u3001\u653E\u5F03\u7684\u9879\u76EE\u4F1A\u642C\u5230\u8FD9\u91CC\uFF1B\u4EBA\u8109\u6863\u6848\u642C\u8FDB\u6765\u5373\u9000\u51FA\u5168\u90E8\u540D\u5F55\u3002" },
-  { key: "diaryFolder", name: "\u590D\u76D8\u76EE\u5F55", hint: "\u65E5/\u5468/\u6708/\u5B63/\u5E74\u4E94\u7EA7\u590D\u76D8\u7684\u65F6\u95F4\u8F74\u6839\u76EE\u5F55\uFF0C\u4E94\u4E2A\u5B50\u76EE\u5F55\u7531\u5B83\u6D3E\u751F\u3002" },
-  { key: "contactFolder", name: "\u4EBA\u8109\u76EE\u5F55", hint: "\u4EBA\u7269\u6863\u6848\u5E73\u94FA\u5B58\u653E\u5728\u8FD9\u91CC\uFF1B\u89C6\u56FE\u9760 type \u8BA4\u4EBA\uFF0C\u632A\u8D70\u4E5F\u4E0D\u5F71\u54CD\u3002" },
-  { key: "clientFolder", name: "\u5BA2\u6237\u76EE\u5F55", hint: "\u4ED8\u8D39\u7528\u6237\u6863\u6848\u653E\u5728\u8FD9\u91CC\uFF0C\u8FD0\u884C\u300C\u521D\u59CB\u5316\u5BA2\u6237\u6A21\u5757\u300D\u540E\u624D\u4F1A\u7528\u5230\u3002" },
-  { key: "clientSources", name: "\u5BA2\u6237\u6E20\u9053", hint: "\u300C\u65B0\u5EFA\u5BA2\u6237\u300D\u7684\u6E20\u9053\u5019\u9009\uFF0C\u7528\u9017\u53F7\u5206\u9694\u3002\u8D70\u9009\u62E9\u800C\u975E\u624B\u6253\uFF0C\u7EDF\u8BA1\u624D\u4E0D\u4F1A\u88AB\u540C\u4E49\u5199\u6CD5\u6253\u6563\u3002" },
-  { key: "clientProducts", name: "\u4EA7\u54C1\u6E05\u5355", hint: "\u300C\u589E\u52A0\u4ED8\u8D39\u300D\u7684\u4EA7\u54C1\u5019\u9009\uFF0C\u7528\u9017\u53F7\u5206\u9694\u3002" },
-  { key: "dateTimeFormat", name: "\u65F6\u95F4\u683C\u5F0F", hint: "created \u4E0E updated \u5B57\u6BB5\u7684\u5199\u6CD5\uFF0Cmoment \u8BED\u6CD5\u3002" }
+var TEXT_FIELDS = [
+  { key: "projectFolder", tab: "projects", name: "\u9879\u76EE\u76EE\u5F55", hint: "\u6B63\u5728\u63A8\u8FDB\u7684\u9879\u76EE\u653E\u5728\u8FD9\u91CC\u3002", advanced: true },
+  { key: "areaFolder", tab: "projects", name: "\u9886\u57DF\u76EE\u5F55", hint: "\u957F\u671F\u5173\u6CE8\u3001\u6CA1\u6709\u7EC8\u70B9\u7684\u9886\u57DF\u653E\u5728\u8FD9\u91CC\u3002", advanced: true },
+  { key: "archiveFolder", tab: "projects", name: "\u5F52\u6863\u76EE\u5F55", hint: "\u5B8C\u6210\u3001\u6682\u505C\u3001\u653E\u5F03\u7684\u9879\u76EE\u4F1A\u642C\u5230\u8FD9\u91CC\uFF1B\u4EBA\u8109\u6863\u6848\u642C\u8FDB\u6765\u5373\u9000\u51FA\u5168\u90E8\u540D\u5F55\u3002", advanced: true },
+  { key: "inspirationFolder", tab: "inspiration", name: "\u6587\u4EF6\u5939", hint: "\u7075\u611F\u7B14\u8BB0\u653E\u5728\u54EA\u4E2A\u6587\u4EF6\u5939\u3002\u76F8\u5BF9\u4E8E\u7B14\u8BB0\u5E93\u6839\u76EE\u5F55\u3002", advanced: false },
+  { key: "inspirationFileName", tab: "inspiration", name: "\u7B14\u8BB0\u540D\u79F0", hint: "\u7075\u611F\u5199\u5165\u54EA\u4E00\u7BC7\u7B14\u8BB0\uFF1B\u6CA1\u5199 .md \u65F6\u4F1A\u81EA\u52A8\u8865\u9F50\u3002", advanced: false },
+  { key: "inspirationHeading", tab: "inspiration", name: "\u5B9A\u4F4D\u6807\u9898", hint: "\u9009\u62E9\u6807\u9898\u63D2\u5165\u65F6\uFF0C\u7528\u5B83\u5B9A\u4F4D\u5177\u4F53\u533A\u57DF\u3002\u53EF\u5199\u201C\u7075\u611F\u96C6\u201D\u6216\u5B8C\u6574 Markdown \u6807\u9898\u3002", advanced: false },
+  { key: "diaryFolder", tab: "review", name: "\u590D\u76D8\u76EE\u5F55", hint: "\u65E5/\u5468/\u6708/\u5B63/\u5E74\u4E94\u7EA7\u590D\u76D8\u7684\u65F6\u95F4\u8F74\u6839\u76EE\u5F55\uFF0C\u4E94\u4E2A\u5B50\u76EE\u5F55\u7531\u5B83\u6D3E\u751F\u3002", advanced: true },
+  { key: "contactFolder", tab: "contacts", name: "\u4EBA\u8109\u76EE\u5F55", hint: "\u4EBA\u7269\u6863\u6848\u5E73\u94FA\u5B58\u653E\u5728\u8FD9\u91CC\uFF1B\u89C6\u56FE\u9760 type \u8BA4\u4EBA\uFF0C\u632A\u8D70\u4E5F\u4E0D\u5F71\u54CD\u3002", advanced: true },
+  { key: "clientSources", tab: "clients", name: "\u5BA2\u6237\u6E20\u9053", hint: "\u300C\u65B0\u5EFA\u5BA2\u6237\u300D\u7684\u6E20\u9053\u5019\u9009\uFF0C\u7528\u9017\u53F7\u5206\u9694\u3002\u8D70\u9009\u62E9\u800C\u975E\u624B\u6253\uFF0C\u7EDF\u8BA1\u624D\u4E0D\u4F1A\u88AB\u540C\u4E49\u5199\u6CD5\u6253\u6563\u3002", advanced: false },
+  { key: "clientProducts", tab: "clients", name: "\u4EA7\u54C1\u6E05\u5355", hint: "\u300C\u589E\u52A0\u4ED8\u8D39\u300D\u7684\u4EA7\u54C1\u5019\u9009\uFF0C\u7528\u9017\u53F7\u5206\u9694\u3002\u5199\u4F60\u81EA\u5DF1\u5728\u5356\u7684\u4E1C\u897F\u3002", advanced: false },
+  { key: "clientFolder", tab: "clients", name: "\u5BA2\u6237\u76EE\u5F55", hint: "\u4ED8\u8D39\u7528\u6237\u6863\u6848\u653E\u5728\u8FD9\u91CC\uFF0C\u8FD0\u884C\u300C\u521D\u59CB\u5316\u5BA2\u6237\u6A21\u5757\u300D\u540E\u624D\u4F1A\u7528\u5230\u3002", advanced: true },
+  { key: "dateTimeFormat", tab: "setup", name: "\u65F6\u95F4\u683C\u5F0F", hint: "created \u4E0E updated \u5B57\u6BB5\u7684\u5199\u6CD5\uFF0Cmoment \u8BED\u6CD5\u3002", advanced: true }
 ];
-var SYSTEM_MODULES = [
-  { name: "\u{1F4E6} \u9879\u76EE\u7BA1\u7406 v1", status: "\u8FD0\u884C\u4E2D \xB7 \u5EFA\u9879\u76EE\u3001\u5361\u7247\u767B\u8BB0\u3001\u56DB\u6001\u6D41\u8F6C", running: true },
-  { name: "\u{1F4A1} \u7075\u611F\u6536\u96C6 v1", status: "\u8FD0\u884C\u4E2D \xB7 Dataview \u672A\u5B8C\u6210\u4EFB\u52A1\u89C6\u56FE\u5DF2\u5C31\u7EEA", running: true },
-  { name: "\u{1F465} \u4EBA\u8109\u7BA1\u7406 v1", status: "\u8FD0\u884C\u4E2D \xB7 \u65B0\u5EFA\u4EBA\u8109\u3001\u8BB0\u4EBA\u60C5\uFF0C\u6863\u6848\u4E0E MOC \u5171\u516B\u4E2A\u89C6\u56FE", running: true },
-  { name: "\u{1F4D4} \u590D\u76D8 v1", status: "\u8FD0\u884C\u4E2D \xB7 \u4E94\u7EA7\u5468\u671F\u7B14\u8BB0\u3001\u4E3B\u9898\u94FE\u4E0E\u9879\u76EE\u6570\u636E\u5171\u4E94\u4E2A\u89C6\u56FE", running: true },
-  {
-    name: "\u{1F4B0} \u5BA2\u6237\u4E0E\u4ED8\u8D39 v1",
-    status: "\u6309\u9700\u542F\u7528 \xB7 \u547D\u4EE4\u9762\u677F\u8FD0\u884C\u300C\u521D\u59CB\u5316\u5BA2\u6237\u6A21\u5757\u300D\uFF0C\u957F\u51FA MOC \u4E0E\u516B\u4E2A\u89C6\u56FE",
-    running: true
-  },
-  {
-    name: "\u{1F3A8} \u5916\u89C2\u5305 v2",
-    status: "\u8FD0\u884C\u4E2D \xB7 Minimal + Style Settings + \u5341\u4E8C\u4E2A CSS \u7247\u6BB5\uFF0C\u53F3\u4E0B\u89D2\u4E00\u952E\u5F00\u5173",
-    running: true
-  },
-  {
-    name: "\u{1F9ED} \u5DE6\u4FA7\u8FB9\u680F v1",
-    status: "\u8FD0\u884C\u4E2D \xB7 \u4E8C\u5341\u4E00\u6761\u547D\u4EE4\u914D Pikaicons \u56FE\u6807\uFF0C\u9ED8\u8BA4\u6446\u51FA\u4E03\u6761",
-    running: true
-  }
-];
+var FIELDS_ONLY = () => {
+};
 var ZiminosSettingTab = class extends import_obsidian21.PluginSettingTab {
   constructor(ctx, actions) {
     super(ctx.app, ctx.plugin);
+    /**
+     * 当前停在哪一页。
+     *
+     * 这是页面状态而非领域状态，因此刻意不进 data.json——设置对象里存的都是
+     * 「这个库是什么样」，而不是「上次那个人翻到了第几页」。
+     * 它随本条插件实例存活，也就是关掉设置弹窗再打开仍停在原页、重启 Obsidian 归位，
+     * 与 Obsidian 自己记住你上次停在哪个插件设置页是同一档待遇。
+     */
+    this.activeTab = TABS[0];
     /**
      * 「已摆出 N / 21 条」那行字。
      *
@@ -5308,6 +5351,22 @@ var ZiminosSettingTab = class extends import_obsidian21.PluginSettingTab {
      * 数字仍然现算自设置对象，每次 display 也会把它换成新节点。
      */
     this.ribbonCountEl = null;
+    /**
+     * 每页自己的控件。
+     *
+     * 用 Record<TabId, …> 而不是可选查表：加一张标签页却忘了写它的渲染，
+     * 在这里是一个编译错误，而不是一张点进去空空如也的页。
+     */
+    this.panels = {
+      setup: (el) => this.renderSetupPanel(el),
+      projects: (el) => this.renderProjectsPanel(el),
+      inspiration: (el) => this.renderInspirationPanel(el),
+      review: FIELDS_ONLY,
+      contacts: FIELDS_ONLY,
+      clients: FIELDS_ONLY,
+      appearance: (el) => this.renderAppearancePanel(el),
+      ribbon: (el) => this.renderRibbonPanel(el)
+    };
     this.ctx = ctx;
     this.actions = actions;
   }
@@ -5315,24 +5374,122 @@ var ZiminosSettingTab = class extends import_obsidian21.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    this.renderInitSection(containerEl);
-    this.renderAutomationSection(containerEl);
-    this.renderInspirationSection(containerEl);
-    this.renderAppearanceSection(containerEl);
-    this.renderRibbonSection(containerEl);
-    this.renderAdvancedSection(containerEl);
-    this.renderModulesSection(containerEl);
+    containerEl.addClass("ziminos-settings");
+    this.renderTabBar(containerEl);
+    this.renderPanel(containerEl.createDiv({ cls: "ziminos-settings-body" }));
   }
   // ============================================================
-  // 一、开荒
+  // 一、标签栏与分页骨架
+  // ============================================================
+  /** 标签栏：八枚按钮，当前页高亮。用真的 button 而非 div，键盘与读屏器才认得它 */
+  renderTabBar(containerEl) {
+    const bar = containerEl.createDiv({ cls: "ziminos-settings-tabs" });
+    for (const tab of TABS) {
+      const active = tab.id === this.activeTab.id;
+      const button = bar.createEl("button", {
+        cls: "ziminos-settings-tab",
+        // aria-pressed 而不是 role=tab：没实现方向键遍历就自称 tablist 是撒谎，
+        // 而「一枚按下去的按钮」既属实，读屏器也照样播报得清楚
+        attr: { type: "button", "aria-pressed": String(active) }
+      });
+      if (active) button.addClass("is-active");
+      button.createSpan({ cls: "ziminos-settings-emoji", text: tab.emoji });
+      button.createSpan({ text: tab.label });
+      button.addEventListener("click", () => this.switchTo(tab));
+    }
+  }
+  /** 换页。同一页再点一次不重建，否则正在编辑的输入框会被换掉 */
+  switchTo(tab) {
+    if (tab.id === this.activeTab.id) return;
+    this.activeTab = tab;
+    this.display();
+    this.containerEl.scrollTop = 0;
+  }
+  /**
+   * 一页的固定骨架：页头 → 明面上的文本字段 → 本页自有控件 → 高级折叠区。
+   *
+   * 四段的先后是一条跨八页的承诺，两头各占一句：页头永远先说清这一页是谁、跑没跑起来；
+   * 折叠区永远在最后，于是任何一页往下翻到底，危险的东西都在同一个位置、同一个标题下，
+   * 不需要每页重新找一遍。中间两段的顺序是「先说东西放哪儿，再说怎么用它」——
+   * 灵感页把落点三问排在插入位置与格式之前，正是这条顺序，不必自己再画一次字段。
+   */
+  renderPanel(body) {
+    const tab = this.activeTab;
+    new import_obsidian21.Setting(body).setName(`${tab.emoji} ${tab.module}`).setDesc(tab.status).setHeading();
+    this.renderTextFields(body, tab.id, false);
+    this.panels[tab.id](body);
+    this.renderAdvancedFold(body, tab.id);
+  }
+  // ============================================================
+  // 二、通用控件：开关、文本框、折叠区
   // ============================================================
   /**
-   * 开荒区：一句状态说明 + 一个按钮。
-   * 按钮点下后先禁用再执行，防止连点开出两次流程；完成后重建整个面板，
-   * 状态说明随之从「尚未初始化」翻面成「已就绪」。
+   * 渲染一个布尔开关。
+   *
+   * 改动立即落盘。两个自动化开关不需要 onApplied——监听方每次触发都现读设置，
+   * 天然看得见新值；只有已经画在屏幕上的东西（状态栏按钮）才需要有人去推它一把。
    */
-  renderInitSection(containerEl) {
-    new import_obsidian21.Setting(containerEl).setName(TEXTS2.initHeading).setHeading();
+  renderToggle(containerEl, key, name, desc, onApplied) {
+    new import_obsidian21.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
+      toggle.setValue(this.ctx.settings[key]).onChange(async (value) => {
+        this.ctx.settings[key] = value;
+        await this.ctx.saveSettings();
+        onApplied == null ? void 0 : onApplied();
+      });
+    });
+  }
+  /** 画出本页某一档（明面/高级）的全部文本字段。没有就一个都不画，也不留空标题 */
+  renderTextFields(containerEl, tab, advanced) {
+    const fields = TEXT_FIELDS.filter(
+      (field) => field.tab === tab && field.advanced === advanced
+    );
+    for (const field of fields) {
+      this.renderTextField(containerEl, field);
+    }
+  }
+  /**
+   * 本页的高级折叠区。默认折叠，本页没有高级字段就整块不出现——
+   * 一个点开来是空的折叠区，比没有这个折叠区更让人怀疑自己漏了什么。
+   */
+  renderAdvancedFold(containerEl, tab) {
+    const hasAdvanced = TEXT_FIELDS.some((field) => field.tab === tab && field.advanced);
+    if (!hasAdvanced) return;
+    const details = containerEl.createEl("details", { cls: "ziminos-advanced" });
+    details.createEl("summary", { text: TEXTS2.advancedHeading });
+    this.renderTextFields(details, tab, true);
+  }
+  /**
+   * 渲染一个文本框。
+   * 这里刻意不做清洗与校验：留空或写错的值由各功能模块在使用时回落到默认值，
+   * 校验集中在读取侧，设置页只负责如实记录用户敲进去的字。
+   */
+  renderTextField(containerEl, field) {
+    const fallback = DEFAULT_SETTINGS[field.key];
+    const desc = field.advanced ? `${field.hint}${TEXTS2.advancedSuffixPrefix}${fallback}${TEXTS2.advancedSuffixTail}` : field.hint;
+    new import_obsidian21.Setting(containerEl).setName(field.name).setDesc(desc).addText((text) => {
+      text.setPlaceholder(fallback).setValue(this.ctx.settings[field.key]).onChange(async (value) => {
+        this.ctx.settings[field.key] = value;
+        await this.ctx.saveSettings();
+      });
+    });
+  }
+  // ============================================================
+  // 三、开荒页：一个按钮，加一份系统模块清单
+  // ============================================================
+  /**
+   * 开荒页也是总览页：按下那个按钮之前，这个库还什么都没有，
+   * 所以八张页里只有它敢在第一屏就摆出「这套系统一共有哪些东西」。
+   */
+  renderSetupPanel(containerEl) {
+    this.renderInitButton(containerEl);
+    this.renderModuleList(containerEl);
+  }
+  /**
+   * 开荒按钮：一句状态说明 + 一个按钮。
+   * 按钮点下后先禁用再执行，防止连点开出两次流程；完成后重建整个面板，
+   * 状态说明随之从「尚未初始化」翻面成「已就绪」——停留的页不变，重建的是内容。
+   */
+  renderInitButton(containerEl) {
     new import_obsidian21.Setting(containerEl).setName(TEXTS2.initName).setDesc(this.describeInitState()).addButton((button) => {
       button.setButtonText(TEXTS2.initButton).setCta().onClick(async () => {
         button.setDisabled(true);
@@ -5350,57 +5507,36 @@ var ZiminosSettingTab = class extends import_obsidian21.PluginSettingTab {
     if (!initializedAt) return TEXTS2.initPending;
     return TEXTS2.initReadyPrefix + initializedAt + TEXTS2.initReadySuffix;
   }
+  /**
+   * 系统模块清单：八行，每行就是一张标签页，点一下跳过去。
+   *
+   * 它与标签栏画的是同一份 TABS，因此不是重复而是索引——
+   * 标签栏只放得下两个字，这里才说得清那两个字背后是什么、跑没跑起来。
+   */
+  renderModuleList(containerEl) {
+    new import_obsidian21.Setting(containerEl).setName(TEXTS2.modulesHeading).setDesc(TEXTS2.modulesIntro).setHeading();
+    for (const tab of TABS) {
+      const row = new import_obsidian21.Setting(containerEl).setName(`${tab.emoji} ${tab.module}`).setDesc(tab.status).setClass("ziminos-module-row");
+      if (tab.id === this.activeTab.id) row.settingEl.addClass("is-current");
+      row.settingEl.addEventListener("click", () => this.switchTo(tab));
+    }
+  }
   // ============================================================
-  // 二、自动化
+  // 四、项目页：两个自动行为
   // ============================================================
-  /** 自动化区：两个开关，对应插件仅有的两个常驻监听 */
-  renderAutomationSection(containerEl) {
-    new import_obsidian21.Setting(containerEl).setName(TEXTS2.autoHeading).setHeading();
+  /** 插件仅有的两个常驻监听都住在 modules/projects，所以它们的开关也该在这一页 */
+  renderProjectsPanel(containerEl) {
     this.renderToggle(containerEl, "autoCardInit", TEXTS2.autoCardName, TEXTS2.autoCardDesc);
     this.renderToggle(containerEl, "autoUpdated", TEXTS2.autoUpdatedName, TEXTS2.autoUpdatedDesc);
   }
+  // ============================================================
+  // 五、灵感页：落点、位置与格式
+  // ============================================================
   /**
-   * 渲染一个布尔开关。
-   *
-   * 改动立即落盘。两个自动化开关不需要 onApplied——监听方每次触发都现读设置，
-   * 天然看得见新值；只有已经画在屏幕上的东西（状态栏按钮）才需要有人去推它一把。
+   * 灵感页上的每一项都是「记录灵感」命令的下一次运行参数。
+   * 落点那三个文本框已由骨架照字段表画在上方，这里只补两个非文本控件。
    */
-  renderToggle(containerEl, key, name, desc, onApplied) {
-    new import_obsidian21.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
-      toggle.setValue(this.ctx.settings[key]).onChange(async (value) => {
-        this.ctx.settings[key] = value;
-        await this.ctx.saveSettings();
-        onApplied == null ? void 0 : onApplied();
-      });
-    });
-  }
-  // ============================================================
-  // 三、灵感收集
-  // ============================================================
-  /** 灵感区直接展示常用自定义项；这些字段就是「记录灵感」命令的下一次运行参数 */
-  renderInspirationSection(containerEl) {
-    new import_obsidian21.Setting(containerEl).setName(TEXTS2.inspirationHeading).setHeading();
-    this.renderInspirationTextField(
-      containerEl,
-      "inspirationFolder",
-      TEXTS2.inspirationFolderName,
-      TEXTS2.inspirationFolderDesc,
-      INSPIRATION_DEFAULTS.folder
-    );
-    this.renderInspirationTextField(
-      containerEl,
-      "inspirationFileName",
-      TEXTS2.inspirationFileName,
-      TEXTS2.inspirationFileDesc,
-      INSPIRATION_DEFAULTS.fileName
-    );
-    this.renderInspirationTextField(
-      containerEl,
-      "inspirationHeading",
-      TEXTS2.inspirationTargetHeading,
-      TEXTS2.inspirationTargetDesc,
-      INSPIRATION_DEFAULTS.heading
-    );
+  renderInspirationPanel(containerEl) {
     new import_obsidian21.Setting(containerEl).setName(TEXTS2.inspirationPositionName).setDesc(TEXTS2.inspirationPositionDesc).addDropdown((dropdown) => {
       dropdown.addOption("heading-top", "\u6807\u9898\u4E0B\u65B9\uFF08\u65B0\u5185\u5BB9\u5728\u524D\uFF09").addOption("heading-bottom", "\u6807\u9898\u533A\u672B\u5C3E\uFF08\u65B0\u5185\u5BB9\u5728\u540E\uFF09").addOption("file-top", "\u6B63\u6587\u9876\u90E8").addOption("file-bottom", "\u6B63\u6587\u5E95\u90E8").setValue(this.normalizeInspirationPosition(this.ctx.settings.inspirationInsertPosition)).onChange(async (value) => {
         const position = this.normalizeInspirationPosition(value);
@@ -5417,26 +5553,16 @@ var ZiminosSettingTab = class extends import_obsidian21.PluginSettingTab {
       textArea.inputEl.style.width = "100%";
     });
   }
-  /** 灵感目录/文件/标题三个文本设置共用同一条即时落盘路径 */
-  renderInspirationTextField(containerEl, key, name, desc, fallback) {
-    new import_obsidian21.Setting(containerEl).setName(name).setDesc(desc).addText((text) => {
-      text.setPlaceholder(fallback).setValue(this.ctx.settings[key]).onChange(async (value) => {
-        this.ctx.settings[key] = value;
-        await this.ctx.saveSettings();
-      });
-    });
-  }
   /** 防御手改 data.json 产生的未知枚举值，设置面板与写入模块保持同一回落策略 */
   normalizeInspirationPosition(value) {
     const candidate = value;
     return INSPIRATION_INSERT_POSITIONS.includes(candidate) ? candidate : INSPIRATION_DEFAULTS.insertPosition;
   }
   // ============================================================
-  // 四、外观
+  // 六、外观页：一个开关
   // ============================================================
-  /** 外观区：只有一个开关，管的是「右下角要不要常驻这个按钮」，不管片段本身开着还是关着 */
-  renderAppearanceSection(containerEl) {
-    new import_obsidian21.Setting(containerEl).setName(TEXTS2.appearanceHeading).setHeading();
+  /** 这一页管的是「右下角要不要常驻这个按钮」，不管片段本身开着还是关着 */
+  renderAppearancePanel(containerEl) {
     this.renderToggle(
       containerEl,
       "showAppearanceSwitch",
@@ -5446,22 +5572,20 @@ var ZiminosSettingTab = class extends import_obsidian21.PluginSettingTab {
     );
   }
   // ============================================================
-  // 五、左侧边栏
+  // 七、边栏页：二十一行
   // ============================================================
   /**
-   * 侧边栏区：一句说明 + 按分组排下来的二十一行。
+   * 边栏页：一句说明 + 按分组排下来的二十一行。
    *
    * 清单现读花名册而不是自己维护一份，因此它与命令面板里能搜到的命令永远是同一批；
    * 分组标题按「相邻两行的 group 不同」切出来，与外观开关面板用的是同一套画法——
    * 分组顺序不需要另一张表，它就是命令的注册顺序。
    */
-  renderRibbonSection(containerEl) {
-    const commands = this.ctx.commands.list();
-    new import_obsidian21.Setting(containerEl).setName(TEXTS2.ribbonHeading).setHeading();
+  renderRibbonPanel(containerEl) {
     const summary = new import_obsidian21.Setting(containerEl).setName(this.describeRibbonCount()).setDesc(TEXTS2.ribbonIntro);
     this.ribbonCountEl = summary.nameEl;
     let currentGroup = "";
-    for (const command of commands) {
+    for (const command of this.ctx.commands.list()) {
       if (command.spec.group !== currentGroup) {
         currentGroup = command.spec.group;
         containerEl.createDiv({ cls: "ziminos-ribbon-group", text: currentGroup });
@@ -5475,7 +5599,7 @@ var ZiminosSettingTab = class extends import_obsidian21.PluginSettingTab {
   }
   /**
    * 「已摆出 7 / 21 条」。给的是一个量级感：勾多了那条边栏会变成谁也不看的图标柱。
-   * 总数现算自花名册，不写死——这一区不认识任何一条具体命令，也就不该认识它们有几条。
+   * 总数现算自花名册，不写死——这一页不认识任何一条具体命令，也就不该认识它们有几条。
    */
   describeRibbonCount() {
     const total = this.ctx.commands.list().length;
@@ -5510,49 +5634,6 @@ var ZiminosSettingTab = class extends import_obsidian21.PluginSettingTab {
     if (enabled) chosen.add(id);
     else chosen.delete(id);
     return this.ctx.commands.list().map((command) => command.spec.id).filter((candidate) => chosen.has(candidate));
-  }
-  // ============================================================
-  // 六、高级
-  // ============================================================
-  /**
-   * 高级区：默认折叠。
-   * 目录名与时间格式是课程内容的一部分，改了会让学员的库与课程讲义对不上，
-   * 所以既要留出口，又不能摆在明面上诱导人去动它。
-   */
-  renderAdvancedSection(containerEl) {
-    const details = containerEl.createEl("details");
-    const summary = details.createEl("summary", { text: TEXTS2.advancedHeading });
-    summary.style.cursor = "pointer";
-    summary.style.padding = "12px 0";
-    summary.style.fontWeight = "600";
-    for (const field of ADVANCED_FIELDS) {
-      this.renderTextField(details, field);
-    }
-  }
-  /**
-   * 渲染一个文本框。
-   * 这里刻意不做清洗与校验：留空或写错的值由各功能模块在使用时回落到默认值，
-   * 校验集中在读取侧，设置页只负责如实记录用户敲进去的字。
-   */
-  renderTextField(containerEl, field) {
-    const fallback = DEFAULT_SETTINGS[field.key];
-    new import_obsidian21.Setting(containerEl).setName(field.name).setDesc(`${field.hint}\u8BFE\u7A0B\u9ED8\u8BA4\u503C ${fallback}\uFF0C\u6539\u524D\u4E09\u601D\u3002`).addText((text) => {
-      text.setPlaceholder(fallback).setValue(this.ctx.settings[field.key]).onChange(async (value) => {
-        this.ctx.settings[field.key] = value;
-        await this.ctx.saveSettings();
-      });
-    });
-  }
-  // ============================================================
-  // 七、系统模块
-  // ============================================================
-  /** 模块区：纯展示，没有任何控件。未上线的模块以禁用态呈现，看得见但点不动 */
-  renderModulesSection(containerEl) {
-    new import_obsidian21.Setting(containerEl).setName(TEXTS2.modulesHeading).setHeading();
-    for (const entry of SYSTEM_MODULES) {
-      const item = new import_obsidian21.Setting(containerEl).setName(entry.name).setDesc(entry.status);
-      if (!entry.running) item.setDisabled(true);
-    }
   }
 };
 
