@@ -6,13 +6,14 @@
  *        两个自动行为、以及状态栏那个常驻按钮，随时都可以关掉。
  *        它只读写 ctx.settings 并调 ctx.saveSettings，
  *        不持有任何自己的状态：面板每次 display 都从设置对象重新渲染，因此外部改动天然可见。
- *        七个分区的排列顺序即学员的使用顺序：先开荒，再决定自动化与灵感落点，
+ *        八个分区的排列顺序即学员的使用顺序：先开荒，再决定自动化与灵感落点，
  *        然后是外观与左侧边栏这两件「屏幕上摆什么」，其次才是项目目录与时间格式，
- *        最后是模块清单——它如实展示插件内的业务模块与外观包，同时为后续模块预留可见挂载位。
+ *        接着是模块清单——它如实展示插件内的业务模块与外观包，同时为后续模块预留可见挂载位；
+ *        最后是关于作者，与首页导航尾部画的是同一张名片。
  *        侧边栏那一区不认识任何一条具体命令：清单现读 ctx.commands 的花名册，
  *        因此加一条命令、改一个图标，这个文件一个字都不用改。
- *        开荒动作与两处显隐同步都由 main 注入而非自己 import：
- *        设置页因此既不认识参与开荒的模块名单，也不认识状态栏按钮与边栏图标的实现
+ *        开荒动作、两处显隐同步与作者名片都由 main 注入而非自己 import：
+ *        设置页因此既不认识参与开荒的模块名单，也不认识状态栏按钮、边栏图标与名片的实现
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -69,6 +70,8 @@ const TEXTS = {
     advancedHeading: '高级设置（一般不用改）',
 
     modulesHeading: '系统模块',
+
+    aboutHeading: '关于作者',
 } as const;
 
 // ============================================================
@@ -152,9 +155,9 @@ const SYSTEM_MODULES: readonly ModuleEntry[] = [
 // ============================================================
 
 /**
- * 设置页干不了、必须由 main 递进来的三件事。
+ * 设置页干不了、必须由 main 递进来的四件事。
  *
- * 用一个对象而不是三个位置参数：后两个函数的类型都是 `() => void`，
+ * 用一个对象而不是四个位置参数：中间两个函数的类型都是 `() => void`，
  * 摆成位置参数的话调换顺序照样能通过编译，出的错却是「改了外观开关，边栏跟着动」——
  * 这种错没有任何编译期信号，只能靠人肉眼盯着两行长长的实参对齐。
  */
@@ -165,6 +168,8 @@ export interface SettingActions {
     readonly syncAppearanceSwitch: () => void;
     /** 让左侧边栏那列图标按当前设置重新决定各自显隐 */
     readonly syncRibbon: () => void;
+    /** 把作者名片画进「关于作者」区。名片住在 about 模块，设置页因此不认识它 */
+    readonly renderAbout: (el: HTMLElement) => void;
 }
 
 // ============================================================
@@ -217,6 +222,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
         this.renderRibbonSection(containerEl);
         this.renderAdvancedSection(containerEl);
         this.renderModulesSection(containerEl);
+        this.renderAboutSection(containerEl);
     }
 
     // ============================================================
@@ -572,5 +578,20 @@ export class ZiminosSettingTab extends PluginSettingTab {
 
             if (!entry.running) item.setDisabled(true);
         }
+    }
+
+    // ============================================================
+    // 八、关于作者
+    // ============================================================
+
+    /**
+     * 关于作者区：一个标题 + 名片本体。
+     * 名片画什么由 about 模块决定，这里只给它一个容器——
+     * 首页导航尾部那个「关于作者」视图块画的也是同一张名片，两处永远一致。
+     */
+    private renderAboutSection(containerEl: HTMLElement): void {
+        new Setting(containerEl).setName(TEXTS.aboutHeading).setHeading();
+
+        this.actions.renderAbout(containerEl);
     }
 }

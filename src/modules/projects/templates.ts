@@ -1,5 +1,6 @@
 /**
- * [INPUT]: 依赖 ../../core/constants 的 CARD_FIELDS（卡片十字段的权威顺序）
+ * [INPUT]: 依赖 ../../core/constants 的 CARD_FIELDS（卡片十字段的权威顺序）与
+ *          ABOUT_VIEW/VIEW_BLOCK_LANG（导航页尾的「关于作者」视图块照它们拼写）
  * [OUTPUT]: 对外提供 MocContentOptions 类型与七个纯生成函数：mocFrontmatter、mocBaseBlock、mocContent、
  *           cardTemplateFile、mocTemplateFile、navContent、firstProjectDescription
  * [POS]: projects 模块的文本工厂，是「笔记长成什么样」的唯一出处。
@@ -10,7 +11,7 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { CARD_FIELDS } from '../../core/constants';
+import { ABOUT_VIEW, CARD_FIELDS, VIEW_BLOCK_LANG } from '../../core/constants';
 
 // ============================================================
 // 模板骨架的字段与视图定义
@@ -198,9 +199,11 @@ export function mocTemplateFile(): string {
 // ============================================================
 
 /**
- * 生成 90-system/导航.md 的全文：一行说明 + 一个 base 块。
+ * 生成 90-system/导航.md 的全文：一行说明 + 一个 base 块 + 页尾的「关于作者」视图块。
  * 导航页自身不写 frontmatter，因此不会被任何一个视图筛中，也不会被 updated 维护碰到——
  * 它是库的地图，不是库的一份笔记。
+ * 页尾那个块只有一行视图名，画什么由 main.js 里的 about 模块决定：
+ * 名片内容随插件升级而更新，不随这篇建库时写下的笔记冻结。
  */
 export function navContent(): string {
     const lines: string[] = [
@@ -229,7 +232,7 @@ export function navContent(): string {
         );
     }
 
-    lines.push('', '```', '');
+    lines.push('', '```', '', '---', '', '```' + VIEW_BLOCK_LANG, ABOUT_VIEW, '```', '');
 
     return lines.join('\n');
 }

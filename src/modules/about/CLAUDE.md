@@ -1,0 +1,17 @@
+# src/modules/about/
+
+> L2 | 父级: ../../CLAUDE.md
+
+关于作者模块。它不生产笔记、不报 VaultSeed、不注册命令；它只把作者的入口（官网与教程的 .cn/.com 双部署、GitHub 开源仓库、X / YouTube / B站 / 小红书四个自媒体频道）编译进 main.js。存在的理由是传播经济学：插件会脱离仓库单独流传，而 main.js 是唯一一定跟着走的文件——名片长在它身上，插件传到哪，作者就被认识到哪。
+
+## 成员清单
+
+view.ts: 模块的全部。链接与五段 Simple Icons 品牌图形（CC0，见 docs/第三方组件.md）是本文件唯一的数据源，改链接只改这里；renderAboutPanel 把名片画进任意容器，不接收 ctx 不读设置——内容是编译期常量，在任何库里画出来都一样。品牌色的取舍：GitHub 与 X 的官方标就是黑白两版，取 currentColor 随主题走；YouTube/B站/小红书按品牌色写在元素上而不进 styles.css，因为品牌色是数据的一部分，与主题无关也不该被主题改。
+
+## 两个挂载位
+
+同一个 renderAboutPanel 挂两处，覆盖两条传播路径：其一，「关于作者」视图（名字住在 core/constants 的 ABOUT_VIEW——它是唯一被两个模块引用的视图名，projects 模块的导航页模板照着它写块），开荒后学员每天打开的首页底部就是它；其二，设置页最底下一区（经 SettingActions 的 renderAbout 洞由 main 填上，设置页不 import 本模块），没开过荒、只拿到 main.js 的库也看得见。
+
+删掉本模块，二十二个视图少一个、导航页底部那个块降级为「没有名为×的视图」的空态提示、设置页少最后一区，其余功能零损失。
+
+[PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

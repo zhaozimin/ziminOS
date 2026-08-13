@@ -8,9 +8,9 @@ TypeScript 7.0 + esbuild 0.28 + Obsidian API 1.13（manifest minAppVersion 1.13.
 docs/ - 设计规格与第三方组件锁定记录；代码、交付物与规格必须同步
 skill/ - SKILL.md 桌面智能体交付契约；当前工作区就是用户已命名的笔记库，源码只在外部临时目录施工
 vault/ - 笔记库成品模板；同一交付物内独立放置 ziminOS、Dataview、Minimal、Style Settings、默认配色与自有 CSS
-vault/.obsidian/plugins/ziminos/ - 插件安装位；manifest.json 是版本号事实源，main.js 是刻意入库的构建产物（二十一个图标的 SVG 也在里面），styles.css 是二十一个视图的三线表与待办样式、外加外观开关浮层与侧边栏设置行（手工维护，不经 esbuild）
+vault/.obsidian/plugins/ziminos/ - 插件安装位；manifest.json 是版本号事实源，main.js 是刻意入库的构建产物（二十一个命令图标与五个品牌 logo 的 SVG 也在里面），styles.css 是二十二个视图的三线表与待办样式、外加外观开关浮层、侧边栏设置行与作者名片（手工维护，不经 esbuild）
 vault/.obsidian/snippets/ - 十二个 CSS 片段，外观包的可拆装部分；十个默认启用，全部由右下角外观开关逐个开关。appearance.json 的 enabledCssSnippets 是它们开着还是关着的唯一事实源
-src/ - 插件源码 (2子目录: core 无业务的基础设施、命令注册台与视图引擎、modules 含 setup 开荒、projects 项目管理、inspiration 灵感收集、review 五级复盘、contacts 人脉与客户、appearance 外观开关、ribbon 左侧边栏命令)
+src/ - 插件源码 (2子目录: core 无业务的基础设施、命令注册台与视图引擎、modules 含 setup 开荒、projects 项目管理、inspiration 灵感收集、review 五级复盘、contacts 人脉与客户、appearance 外观开关、ribbon 左侧边栏命令、about 作者名片)
 </directory>
 
 <commands>
@@ -18,7 +18,7 @@ src/ - 插件源码 (2子目录: core 无业务的基础设施、命令注册台
 </commands>
 
 <views>
-V2 起全部二十一个视图由插件自渲染：笔记里只留一行 ```ziminos 代码块 + 视图名，逻辑住在 main.js、样式住在 styles.css。表格是三线表，文本里的双链渲染成可点链接，任务行渲染成能勾的复选框并写回源文件。库内零 JS 文件，DataviewJS 保持关闭，升级只换 main.js 即全库生效。重算由 metadataCache 变更事件驱动，无定时器、无轮询。Dataview 仍随库交付，它的活儿只剩灵感集那条 TASK 查询。
+V2 起全部视图（现二十二个）由插件自渲染：笔记里只留一行 ```ziminos 代码块 + 视图名，逻辑住在 main.js、样式住在 styles.css。第二十二个是「关于作者」（v0.6.0）：作者的官网/教程双域名、GitHub 与四个自媒体频道连同 Simple Icons 品牌图形编译进 main.js，开荒写进导航页尾，同一张名片也挂在设置页底部——插件传到哪，名片跟到哪。表格是三线表，文本里的双链渲染成可点链接，任务行渲染成能勾的复选框并写回源文件。库内零 JS 文件，DataviewJS 保持关闭，升级只换 main.js 即全库生效。重算由 metadataCache 变更事件驱动，无定时器、无轮询。Dataview 仍随库交付，它的活儿只剩灵感集那条 TASK 查询。
 </views>
 
 <config>
@@ -28,8 +28,8 @@ tsconfig.json - 严格模式 + noEmit；类型检查与代码产出彻底分工�
 esbuild.config.mjs - 唯一构建出口；产物直接写入 vault 插件目录，构建即就位，无需任何同步脚本
 .gitignore - 只忽略 node_modules 与 .DS_Store；main.js 不忽略，学员克隆即可用
 .gitattributes - 锁定 Dataview、Minimal、Style Settings 发布资产的原始字节，防止 Git 换行/格式化破坏 SHA-256
-docs/第三方组件.md - Dataview / Minimal / Style Settings / Pikaicons 的版本、上游、许可与升级边界
-docs/设计规格书-V2.md - 人脉与复盘（v0.4.0）、左侧边栏命令（v0.5.0）与模板零提示修订（v0.5.1，§4.5）的唯一事实源；与 V1 规格并存，交集处以它为准
+docs/第三方组件.md - Dataview / Minimal / Style Settings / Pikaicons / Simple Icons 的版本、上游、许可与升级边界
+docs/设计规格书-V2.md - 人脉与复盘（v0.4.0）、左侧边栏命令（v0.5.0）、模板零提示修订（v0.5.1，§4.5）与作者名片（v0.6.0，§12）的唯一事实源；与 V1 规格并存，交集处以它为准
 </config>
 
 <delivery>

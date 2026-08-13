@@ -4,7 +4,8 @@
  *          ZiminosSettings/ZiminosContext/VaultSeed 契约、PERIODS 与 registerViewCodeBlock；
  *          依赖 modules/setup 的 initializeVault/applySeed，以及项目管理、灵感收集、复盘、
  *          人脉与客户五个模块各自的 seed、register 函数与视图数组，
- *          再加 modules/appearance 的 registerAppearanceSwitch 与 modules/ribbon 的 registerRibbon
+ *          再加 modules/appearance 的 registerAppearanceSwitch、modules/ribbon 的 registerRibbon
+ *          与 modules/about 的 aboutViews/renderAboutPanel
  * [OUTPUT]: 默认导出 ZiminosPlugin，即 Obsidian 加载 main.js 时实例化的插件入口类
  * [POS]: 插件唯一入口与唯一装配点。它只做四件事：把磁盘上的设置读成一个对象、
  *        把它连同 app/plugin/guard 装配成 ZiminosContext、把上下文分发给各模块去自行注册、
@@ -28,6 +29,7 @@ import { PERIODS } from './core/constants';
 import { SelfWriteGuard } from './core/guard';
 import { DEFAULT_SETTINGS } from './core/types';
 import type { VaultSeed, ZiminosContext, ZiminosSettings } from './core/types';
+import { aboutViews, renderAboutPanel } from './modules/about/view';
 import { registerAppearanceSwitch } from './modules/appearance/statusBar';
 import { circleViews } from './modules/contacts/circleViews';
 import { clientViews } from './modules/contacts/clientViews';
@@ -134,7 +136,7 @@ export default class ZiminosPlugin extends Plugin {
         const syncRibbon = registerRibbon(ctx);
 
         // ============================================================
-        // 视图引擎：一个代码块语言，二十一个视图；加视图不必改这里之外的任何装配代码
+        // 视图引擎：一个代码块语言，二十二个视图；加视图不必改这里之外的任何装配代码
         // ============================================================
 
         registerViewCodeBlock(ctx, [
@@ -145,6 +147,8 @@ export default class ZiminosPlugin extends Plugin {
             // 客户视图始终注册：视图是只读的，注册它零成本，
             // 而用开关控制注册会让「块能不能渲染」变成需要重启才生效的事
             ...clientViews,
+            // 作者名片：开荒写进导航页尾的那个块由它渲染
+            ...aboutViews,
         ]);
 
         // ============================================================
@@ -156,6 +160,8 @@ export default class ZiminosPlugin extends Plugin {
                 initialize: () => initializeVault(ctx, collectSeeds()),
                 syncAppearanceSwitch,
                 syncRibbon,
+                // 设置页的「关于作者」区与导航页尾的视图块画同一张名片，实现只有 about 一份
+                renderAbout: renderAboutPanel,
             }),
         );
     }

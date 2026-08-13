@@ -171,4 +171,11 @@
 
 ## 想学得更系统
 
-课程在这里：**https://edu.zhaozimin.com**
+- 官网：[zhaozimin.cn](https://zhaozimin.cn)（大陆） · [zhaozimin.com](https://zhaozimin.com)（海外）
+- 插件教程：[edu.zhaozimin.cn](https://edu.zhaozimin.cn)（大陆） · [edu.zhaozimin.com](https://edu.zhaozimin.com)（海外）
+- 更多开源工具：[github.com/zhaozimin](https://github.com/zhaozimin)
+- 找到我：[X @ZiminZhao](https://x.com/ZiminZhao) · [YouTube @ZiminZhao](https://www.youtube.com/@ZiminZhao) · [B站](https://b23.tv/E2UTPzQ) · [小红书](https://xhslink.cn/m/3NnLHIc6lQA)
+
+.cn 部署在中国大陆，.com 部署在海外——哪边打开快就用哪边。
+
+这些链接也长在首页「导航」的最底下（带各家 logo 的那一排），以及设置 → ziminOS 的最底部。

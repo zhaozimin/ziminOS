@@ -529,3 +529,11 @@ export const VIEW_BLOCK_LANG = 'ziminos';
  * 它靠一个 2500ms 的 setInterval 刷新，而「无定时器、无后台轮询」是红线。
  */
 export const VIEW_REFRESH_DEBOUNCE_MS = 200;
+
+/**
+ * 「关于作者」视图的名字。
+ * 它是唯一被两个模块引用的视图名——about 模块定义它，projects 模块把它写进导航页模板。
+ * 模块之间彼此不认识，所以这个名字只能住在这里；写成两处字面量的话，
+ * 改其中一处，导航页那个块就会安静地变成「没有名为×的视图」。
+ */
+export const ABOUT_VIEW = '关于作者';
