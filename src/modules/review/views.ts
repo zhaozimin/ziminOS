@@ -91,7 +91,7 @@ const dailyOutput: ViewDefinition = {
         collectRows(rows, '🆕', created, view);
         collectRows(rows, '✏️', changed, view);
 
-        renderTable(view.ctx.app, view.el, view.sourcePath, ['', '笔记', '所属'], rows);
+        renderTable(view.ctx.app, view.el, view.sourcePath, ['', '笔记', '所属'], rows, 1);
     },
 };
 
@@ -190,7 +190,7 @@ function renderDays(view: ViewContext, child: PeriodDefinition, start: string): 
         ]);
     }
 
-    renderTable(view.ctx.app, view.el, view.sourcePath, ['日期', '星期', '当日主题'], rows);
+    renderTable(view.ctx.app, view.el, view.sourcePath, ['日期', '星期', '当日主题'], rows, 2);
     renderNote(view.el, `本周 **${filled}/7** 天有日记。`);
 }
 
@@ -228,6 +228,7 @@ function renderWeeks(view: ViewContext, child: PeriodDefinition, scope: PeriodSc
         view.sourcePath,
         ['周', '本周主题'],
         weeks.map((week) => [noteLink(week.note), themeCell(view, week.note, '')]),
+        1,
     );
 }
 
@@ -248,7 +249,7 @@ function renderMonths(view: ViewContext, child: PeriodDefinition, scope: PeriodS
         rows.push([note ? noteLink(note) : title, themeCell(view, note, '（无月记）')]);
     }
 
-    renderTable(view.ctx.app, view.el, view.sourcePath, ['月份', '本月主题'], rows);
+    renderTable(view.ctx.app, view.el, view.sourcePath, ['月份', '本月主题'], rows, 1);
     renderNote(
         view.el,
         `本${scope.period.key === 'quarterly' ? '季' : '年'} **${filled}/${span}** 个月有月记。`,

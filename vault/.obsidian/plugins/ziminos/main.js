@@ -319,19 +319,23 @@ function isObjectCell(cell) {
 function isNoteLink(cell) {
   return isObjectCell(cell) && "path" in cell;
 }
-function renderTable(app, el, sourcePath, headers, rows) {
+function renderTable(app, el, sourcePath, headers, rows, grow) {
   const wrapper = el.createDiv({ cls: "ziminos-table-wrap" });
   const table = wrapper.createEl("table", { cls: "ziminos-table" });
   const headRow = table.createEl("thead").createEl("tr");
+  const classOf = (index) => grow === void 0 ? void 0 : index === grow ? "ziminos-grow" : "ziminos-tight";
   headers.forEach((header, index) => {
-    headRow.createEl("th", { text: index === 0 && rows.length ? `${header} (${rows.length})` : header });
+    headRow.createEl("th", {
+      cls: classOf(index),
+      text: index === 0 && rows.length ? `${header} (${rows.length})` : header
+    });
   });
   const body = table.createEl("tbody");
   for (const row of rows) {
     const tr = body.createEl("tr");
-    for (const cell of row) {
-      renderCell(app, tr.createEl("td"), sourcePath, cell);
-    }
+    row.forEach((cell, index) => {
+      renderCell(app, tr.createEl("td", { cls: classOf(index) }), sourcePath, cell);
+    });
   }
 }
 function renderCell(app, td, sourcePath, cell) {
@@ -382,31 +386,24 @@ function renderTextWithLinks(app, parent, text, fromPath) {
   if (cursor < text.length) parent.appendText(text.slice(cursor));
 }
 function renderTaskList(app, el, tasks, onToggle) {
-  const groups = /* @__PURE__ */ new Map();
-  for (const task of tasks) {
-    const bucket = groups.get(task.day);
-    if (bucket) bucket.push(task);
-    else groups.set(task.day, [task]);
-  }
-  const container = el.createDiv({ cls: "ziminos-tasks" });
-  for (const [day, group] of [...groups.entries()].sort(
-    (left, right) => right[0].localeCompare(left[0])
-  )) {
-    const heading = container.createDiv({ cls: "ziminos-tasks-day" });
-    renderNoteLink(app, heading, group[0].file.path, noteLink(group[0].file, day));
-    heading.createSpan({ cls: "ziminos-tasks-count", text: ` (${group.length})` });
-    const list = container.createEl("ul", { cls: "contains-task-list ziminos-task-list" });
-    for (const task of group) {
-      const item = list.createEl("li", { cls: "task-list-item ziminos-task" });
-      const box = item.createEl("input", { type: "checkbox", cls: "task-list-item-checkbox" });
-      box.checked = task.checked;
-      if (task.checked) item.addClass("is-checked");
-      box.addEventListener("click", (event) => {
-        event.preventDefault();
-        onToggle(task);
-      });
-      renderTextWithLinks(app, item.createSpan(), task.text, task.file.path);
-    }
+  const list = el.createEl("ul", { cls: "contains-task-list ziminos-task-list" });
+  const ordered = [...tasks].sort((left, right) => right.day.localeCompare(left.day));
+  for (const task of ordered) {
+    const item = list.createEl("li", { cls: "task-list-item ziminos-task" });
+    const box = item.createEl("input", { type: "checkbox", cls: "task-list-item-checkbox" });
+    box.checked = task.checked;
+    if (task.checked) item.addClass("is-checked");
+    box.addEventListener("click", (event) => {
+      event.preventDefault();
+      onToggle(task);
+    });
+    renderTextWithLinks(app, item.createSpan({ cls: "ziminos-task-text" }), task.text, task.file.path);
+    renderNoteLink(
+      app,
+      item.createSpan({ cls: "ziminos-task-date" }),
+      task.file.path,
+      noteLink(task.file, task.day)
+    );
   }
 }
 function renderEmpty(el, message) {
@@ -1394,7 +1391,8 @@ var roster = {
           toText(view.index.fieldOf(row.file, FIELDS.direction)) || "\u2014",
           toStringList(view.index.fieldOf(row.file, FIELDS.get)).join("\u3001") || "\u2014",
           lastContactText(row)
-        ])
+        ]),
+        1
       );
     }
   }
@@ -1450,7 +1448,7 @@ var giftList = {
       );
       return;
     }
-    renderTable(view.ctx.app, view.el, view.sourcePath, ["\u8C01", "\u4E00\u53E5\u8BDD", "\u5BC4\u4EF6\u4FE1\u606F"], rows);
+    renderTable(view.ctx.app, view.el, view.sourcePath, ["\u8C01", "\u4E00\u53E5\u8BDD", "\u5BC4\u4EF6\u4FE1\u606F"], rows, 2);
   }
 };
 var birthdays = {
@@ -2684,7 +2682,8 @@ var relatedProjects = {
         noteLink(item.project),
         item.relation,
         toText(view.index.fieldOf(item.project, FIELDS.description)) || "\u2014"
-      ])
+      ]),
+      2
     );
   }
 };
@@ -2738,7 +2737,8 @@ var personLedger = {
         entry.kind,
         richText(entry.item, entry.diary.path),
         entry.legal ? entry.status : `\u26A0\uFE0F ${entry.status}`
-      ])
+      ]),
+      2
     );
   }
 };
@@ -2786,7 +2786,8 @@ var keyEvents = {
       events.slice(0, MAX_ROWS).map((event) => [
         noteLink(event.source, event.day),
         event.link ? richText(`${event.text}\u300A[[${event.link.basename}]]\u300B`, view.sourcePath) : richText(event.text, event.source.path)
-      ])
+      ]),
+      1
     );
     if (events.length > MAX_ROWS) {
       renderNote(view.el, `\u2026\u53E6\u6709 ${events.length - MAX_ROWS} \u6761\u66F4\u65E9\u7684\u8BB0\u5F55`);
@@ -4582,7 +4583,7 @@ var dailyOutput = {
     const rows = [];
     collectRows(rows, "\u{1F195}", created, view);
     collectRows(rows, "\u270F\uFE0F", changed, view);
-    renderTable(view.ctx.app, view.el, view.sourcePath, ["", "\u7B14\u8BB0", "\u6240\u5C5E"], rows);
+    renderTable(view.ctx.app, view.el, view.sourcePath, ["", "\u7B14\u8BB0", "\u6240\u5C5E"], rows, 1);
   }
 };
 function collectRows(rows, mark, files, view) {
@@ -4649,7 +4650,7 @@ function renderDays(view, child, start) {
       themeCell(view, note, "\uFF08\u65E0\u65E5\u8BB0\uFF09")
     ]);
   }
-  renderTable(view.ctx.app, view.el, view.sourcePath, ["\u65E5\u671F", "\u661F\u671F", "\u5F53\u65E5\u4E3B\u9898"], rows);
+  renderTable(view.ctx.app, view.el, view.sourcePath, ["\u65E5\u671F", "\u661F\u671F", "\u5F53\u65E5\u4E3B\u9898"], rows, 2);
   renderNote(view.el, `\u672C\u5468 **${filled}/7** \u5929\u6709\u65E5\u8BB0\u3002`);
 }
 function renderWeeks(view, child, scope) {
@@ -4671,7 +4672,8 @@ function renderWeeks(view, child, scope) {
     view.el,
     view.sourcePath,
     ["\u5468", "\u672C\u5468\u4E3B\u9898"],
-    weeks.map((week) => [noteLink(week.note), themeCell(view, week.note, "")])
+    weeks.map((week) => [noteLink(week.note), themeCell(view, week.note, "")]),
+    1
   );
 }
 function renderMonths(view, child, scope) {
@@ -4687,7 +4689,7 @@ function renderMonths(view, child, scope) {
     if (note) filled += 1;
     rows.push([note ? noteLink(note) : title, themeCell(view, note, "\uFF08\u65E0\u6708\u8BB0\uFF09")]);
   }
-  renderTable(view.ctx.app, view.el, view.sourcePath, ["\u6708\u4EFD", "\u672C\u6708\u4E3B\u9898"], rows);
+  renderTable(view.ctx.app, view.el, view.sourcePath, ["\u6708\u4EFD", "\u672C\u6708\u4E3B\u9898"], rows, 1);
   renderNote(
     view.el,
     `\u672C${scope.period.key === "quarterly" ? "\u5B63" : "\u5E74"} **${filled}/${span}** \u4E2A\u6708\u6709\u6708\u8BB0\u3002`

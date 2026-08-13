@@ -92,6 +92,7 @@ const relatedProjects: ViewDefinition = {
                 item.relation,
                 toText(view.index.fieldOf(item.project, FIELDS.description)) || '—',
             ]),
+            2,
         );
     },
 };
@@ -171,6 +172,7 @@ const personLedger: ViewDefinition = {
                 richText(entry.item, entry.diary.path),
                 entry.legal ? entry.status : `⚠️ ${entry.status}`,
             ]),
+            2,
         );
     },
 };
@@ -250,6 +252,7 @@ const keyEvents: ViewDefinition = {
                     ? richText(`${event.text}《[[${event.link.basename}]]》`, view.sourcePath)
                     : richText(event.text, event.source.path),
             ]),
+            1,
         );
 
         if (events.length > MAX_ROWS) {

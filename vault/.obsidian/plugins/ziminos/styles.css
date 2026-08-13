@@ -12,28 +12,38 @@
 .ziminos-table-wrap {
     /* 列多的时候（名录六列）让表格自己横向滚，而不是把整页撑宽 */
     overflow-x: auto;
-    margin: 0.6em 0 1em;
+    width: 100%;
+    margin: 0.6em 0 1.2em;
 }
 
-.ziminos-table {
+/*
+ * 选择器刻意写成「元素.类 > 元素.类」两级。
+ * Minimal 一类的主题会给 table 设收缩宽度（max-content / fit-content），
+ * 单一个 .ziminos-table 压不住它——表格于是缩成内容宽度，几列全挤在左边，
+ * 一句概述被压成三行，而右边大片空白没人用。
+ */
+div.ziminos-table-wrap > table.ziminos-table {
     border-collapse: collapse;
+    table-layout: auto;
     width: 100%;
+    max-width: 100%;
     font-size: 0.92em;
-    line-height: 1.6;
+    line-height: 1.65;
     border-top: 2px solid var(--text-normal);
     border-bottom: 2px solid var(--text-normal);
 }
 
-.ziminos-table th,
-.ziminos-table td {
+div.ziminos-table-wrap > table.ziminos-table th,
+div.ziminos-table-wrap > table.ziminos-table td {
     border: none;
-    padding: 6px 16px 6px 0;
+    padding: 7px 22px 7px 0;
     text-align: left;
     vertical-align: top;
     white-space: normal;
+    word-break: break-word;
 }
 
-.ziminos-table th {
+div.ziminos-table-wrap > table.ziminos-table th {
     border-bottom: 1px solid var(--background-modifier-border);
     color: var(--text-muted);
     font-weight: 600;
@@ -41,49 +51,69 @@
 }
 
 /* 末列右侧不留悬空的内边距，底线才收得干净 */
-.ziminos-table th:last-child,
-.ziminos-table td:last-child {
+div.ziminos-table-wrap > table.ziminos-table th:last-child,
+div.ziminos-table-wrap > table.ziminos-table td:last-child {
     padding-right: 0;
 }
 
-.ziminos-table tbody tr:hover {
+/*
+ * 列宽分配：定宽列各取所需，句子列吃掉全部余量。
+ * width:1px 配 nowrap 是让一列「刚好够用」的标准写法——
+ * 浏览器把它撑到内容宽度就停手，剩下的空间全归 auto 的那一列。
+ * 不这样做的话，浏览器会按内容比例摊给每一列，结果是每列都窄一点、每列都要换行。
+ */
+div.ziminos-table-wrap > table.ziminos-table th.ziminos-tight,
+div.ziminos-table-wrap > table.ziminos-table td.ziminos-tight {
+    width: 1px;
+    white-space: nowrap;
+}
+
+div.ziminos-table-wrap > table.ziminos-table th.ziminos-grow,
+div.ziminos-table-wrap > table.ziminos-table td.ziminos-grow {
+    width: auto;
+    white-space: normal;
+}
+
+div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
     background: var(--background-modifier-hover);
 }
 
-/* ── 待办：按日期分组，复选框可勾 ── */
-
-.ziminos-tasks {
-    margin: 0.6em 0 1em;
-}
-
-.ziminos-tasks-day {
-    margin-top: 0.8em;
-    font-weight: 600;
-}
-
-.ziminos-tasks-count {
-    color: var(--text-faint);
-    font-weight: 400;
-    font-size: 0.85em;
-}
+/* ── 待办：一条一行，日期缀在句尾 ── */
 
 .ziminos-task-list {
-    margin: 0.2em 0 0;
-    padding-left: 1.4em;
+    margin: 0.4em 0 1.2em;
+    padding-left: 0;
     list-style: none;
 }
 
+/* flex 一行排开：复选框与日期各自不伸缩，中间那段句子吃掉剩余宽度 */
 .ziminos-task {
-    margin: 0.15em 0;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+    margin: 0.25em 0;
     line-height: 1.7;
 }
 
 .ziminos-task input[type='checkbox'] {
-    margin-right: 0.55em;
+    flex: none;
+    margin: 0;
     cursor: pointer;
 }
 
-.ziminos-task.is-checked > span {
+.ziminos-task-text {
+    flex: 1 1 auto;
+    /* flex 子项默认 min-width:auto，长句子会把日期挤出去，必须显式放开 */
+    min-width: 0;
+}
+
+.ziminos-task-date {
+    flex: none;
+    font-size: 0.85em;
+    opacity: 0.65;
+}
+
+.ziminos-task.is-checked .ziminos-task-text {
     color: var(--text-faint);
     text-decoration: line-through;
 }

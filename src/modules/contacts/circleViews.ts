@@ -112,6 +112,7 @@ const roster: ViewDefinition = {
                     toStringList(view.index.fieldOf(row.file, FIELDS.get)).join('、') || '—',
                     lastContactText(row),
                 ]),
+                1,
             );
         }
     },
@@ -191,7 +192,7 @@ const giftList: ViewDefinition = {
             return;
         }
 
-        renderTable(view.ctx.app, view.el, view.sourcePath, ['谁', '一句话', '寄件信息'], rows);
+        renderTable(view.ctx.app, view.el, view.sourcePath, ['谁', '一句话', '寄件信息'], rows, 2);
     },
 };
 

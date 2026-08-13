@@ -75,6 +75,11 @@ function isNoteLink(cell: Cell): cell is NoteLink {
  *
  * 首列表头带上行数（`项目 (3)`）——一屏之内先知道「有几条」，再决定要不要细看，
  * 这是复盘与名录都需要的第一个信息。
+ *
+ * grow 指出哪一列该吃掉剩余宽度。表格总是占满整行，问题只在于多出来的空间给谁：
+ * 不指定时浏览器按内容比例摊给每一列，结果是每列都窄一点、每列都要换行；
+ * 指定之后，日期、状态、数字这些定宽列各自收到刚好够用的宽度，
+ * 概述、事项、发生了什么这类句子列拿走全部余量。一句话读不读得下去，差别就在这里。
  */
 export function renderTable(
     app: App,
@@ -82,13 +87,20 @@ export function renderTable(
     sourcePath: string,
     headers: readonly string[],
     rows: readonly (readonly Cell[])[],
+    grow?: number,
 ): void {
     const wrapper = el.createDiv({ cls: 'ziminos-table-wrap' });
     const table = wrapper.createEl('table', { cls: 'ziminos-table' });
     const headRow = table.createEl('thead').createEl('tr');
+    // 只有真的指定了句子列，其余列才收紧；否则一律放开，交给浏览器按内容摊
+    const classOf = (index: number): string | undefined =>
+        grow === undefined ? undefined : index === grow ? 'ziminos-grow' : 'ziminos-tight';
 
     headers.forEach((header, index) => {
-        headRow.createEl('th', { text: index === 0 && rows.length ? `${header} (${rows.length})` : header });
+        headRow.createEl('th', {
+            cls: classOf(index),
+            text: index === 0 && rows.length ? `${header} (${rows.length})` : header,
+        });
     });
 
     const body = table.createEl('tbody');
@@ -96,9 +108,9 @@ export function renderTable(
     for (const row of rows) {
         const tr = body.createEl('tr');
 
-        for (const cell of row) {
-            renderCell(app, tr.createEl('td'), sourcePath, cell);
-        }
+        row.forEach((cell, index) => {
+            renderCell(app, tr.createEl('td', { cls: classOf(index) }), sourcePath, cell);
+        });
     }
 }
 
@@ -195,7 +207,12 @@ export function renderTextWithLinks(
 // ============================================================
 
 /**
- * 把一组任务渲染成真的待办：按日期分组，每条一个可勾的复选框。
+ * 把一组任务渲染成真的待办：一条一行，日期缀在句子后面。
+ *
+ * 日期不再单独占一行标题。按日期分组会让「三条待办」变成六行（三个日期头 + 三条内容），
+ * 而档案里的待办通常一天只有一两条——分组的收益是零，代价是整整一倍的纵向空间。
+ * 缀在行尾则既省地方，又保留了「哪天答应的」这个信息，而且它同样可点，
+ * 点一下就跳回那天的日记看上下文。
  *
  * 勾选会写回源文件那一行——看起来像复选框却点不动是撒谎，
  * 而「在档案里看见待办、顺手勾掉」正是这个视图存在的理由。
@@ -207,42 +224,29 @@ export function renderTaskList(
     tasks: readonly TaskLine[],
     onToggle: (task: TaskLine) => void,
 ): void {
-    const groups = new Map<string, TaskLine[]>();
+    const list = el.createEl('ul', { cls: 'contains-task-list ziminos-task-list' });
+    const ordered = [...tasks].sort((left, right) => right.day.localeCompare(left.day));
 
-    for (const task of tasks) {
-        const bucket = groups.get(task.day);
+    for (const task of ordered) {
+        const item = list.createEl('li', { cls: 'task-list-item ziminos-task' });
+        const box = item.createEl('input', { type: 'checkbox', cls: 'task-list-item-checkbox' });
 
-        if (bucket) bucket.push(task);
-        else groups.set(task.day, [task]);
-    }
+        box.checked = task.checked;
 
-    const container = el.createDiv({ cls: 'ziminos-tasks' });
+        if (task.checked) item.addClass('is-checked');
 
-    for (const [day, group] of [...groups.entries()].sort((left, right) =>
-        right[0].localeCompare(left[0]),
-    )) {
-        const heading = container.createDiv({ cls: 'ziminos-tasks-day' });
+        box.addEventListener('click', (event: MouseEvent) => {
+            event.preventDefault();
+            onToggle(task);
+        });
 
-        renderNoteLink(app, heading, group[0].file.path, noteLink(group[0].file, day));
-        heading.createSpan({ cls: 'ziminos-tasks-count', text: ` (${group.length})` });
-
-        const list = container.createEl('ul', { cls: 'contains-task-list ziminos-task-list' });
-
-        for (const task of group) {
-            const item = list.createEl('li', { cls: 'task-list-item ziminos-task' });
-            const box = item.createEl('input', { type: 'checkbox', cls: 'task-list-item-checkbox' });
-
-            box.checked = task.checked;
-
-            if (task.checked) item.addClass('is-checked');
-
-            box.addEventListener('click', (event: MouseEvent) => {
-                event.preventDefault();
-                onToggle(task);
-            });
-
-            renderTextWithLinks(app, item.createSpan(), task.text, task.file.path);
-        }
+        renderTextWithLinks(app, item.createSpan({ cls: 'ziminos-task-text' }), task.text, task.file.path);
+        renderNoteLink(
+            app,
+            item.createSpan({ cls: 'ziminos-task-date' }),
+            task.file.path,
+            noteLink(task.file, task.day),
+        );
     }
 }
 
