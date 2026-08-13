@@ -207,12 +207,12 @@ export function renderTextWithLinks(
 // ============================================================
 
 /**
- * 把一组任务渲染成真的待办：一条一行，日期缀在句子后面。
+ * 把一组任务渲染成一张三线表：事项一列、日期一列。
  *
- * 日期不再单独占一行标题。按日期分组会让「三条待办」变成六行（三个日期头 + 三条内容），
- * 而档案里的待办通常一天只有一两条——分组的收益是零，代价是整整一倍的纵向空间。
- * 缀在行尾则既省地方，又保留了「哪天答应的」这个信息，而且它同样可点，
- * 点一下就跳回那天的日记看上下文。
+ * 它走的是与其余二十一个视图同一个 renderTable，因此三线、列宽分配、行数计数
+ * 全都自动一致——待办不该是这套系统里唯一长得不一样的东西。
+ * 复选框与事项必须同处一格：分成两列的话，一个待办会被表格的列切成两半，
+ * 而勾选框离它要勾的那句话越远，越容易勾错。
  *
  * 勾选会写回源文件那一行——看起来像复选框却点不动是撒谎，
  * 而「在档案里看见待办、顺手勾掉」正是这个视图存在的理由。
@@ -221,33 +221,39 @@ export function renderTextWithLinks(
 export function renderTaskList(
     app: App,
     el: HTMLElement,
+    sourcePath: string,
     tasks: readonly TaskLine[],
     onToggle: (task: TaskLine) => void,
 ): void {
-    const list = el.createEl('ul', { cls: 'contains-task-list ziminos-task-list' });
     const ordered = [...tasks].sort((left, right) => right.day.localeCompare(left.day));
 
-    for (const task of ordered) {
-        const item = list.createEl('li', { cls: 'task-list-item ziminos-task' });
-        const box = item.createEl('input', { type: 'checkbox', cls: 'task-list-item-checkbox' });
+    renderTable(
+        app,
+        el,
+        sourcePath,
+        ['待办', '日期'],
+        ordered.map((task): Cell[] => [taskCell(app, task, onToggle), noteLink(task.file, task.day)]),
+        0,
+    );
+}
 
-        box.checked = task.checked;
+/** 一个待办格：复选框 + 事项原文（其中的双链照样可点） */
+function taskCell(app: App, task: TaskLine, onToggle: (task: TaskLine) => void): HTMLElement {
+    const cell = createSpan({ cls: 'ziminos-task' });
+    const box = cell.createEl('input', { type: 'checkbox', cls: 'task-list-item-checkbox' });
 
-        if (task.checked) item.addClass('is-checked');
+    box.checked = task.checked;
 
-        box.addEventListener('click', (event: MouseEvent) => {
-            event.preventDefault();
-            onToggle(task);
-        });
+    if (task.checked) cell.addClass('is-checked');
 
-        renderTextWithLinks(app, item.createSpan({ cls: 'ziminos-task-text' }), task.text, task.file.path);
-        renderNoteLink(
-            app,
-            item.createSpan({ cls: 'ziminos-task-date' }),
-            task.file.path,
-            noteLink(task.file, task.day),
-        );
-    }
+    box.addEventListener('click', (event: MouseEvent) => {
+        event.preventDefault();
+        onToggle(task);
+    });
+
+    renderTextWithLinks(app, cell.createSpan({ cls: 'ziminos-task-text' }), task.text, task.file.path);
+
+    return cell;
 }
 
 // ============================================================

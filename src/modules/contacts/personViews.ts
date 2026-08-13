@@ -310,7 +310,7 @@ const openTasks: ViewDefinition = {
         }
 
         renderSummary(view.el, `还欠 **${open.length}** 件事${done ? `（已完成 ${done} 件）` : ''}`);
-        renderTaskList(view.ctx.app, view.el, open, (task) => {
+        renderTaskList(view.ctx.app, view.el, view.sourcePath, open, (task) => {
             void toggleTask(view, task);
         });
     },

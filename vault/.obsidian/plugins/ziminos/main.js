@@ -385,26 +385,28 @@ function renderTextWithLinks(app, parent, text, fromPath) {
   }
   if (cursor < text.length) parent.appendText(text.slice(cursor));
 }
-function renderTaskList(app, el, tasks, onToggle) {
-  const list = el.createEl("ul", { cls: "contains-task-list ziminos-task-list" });
+function renderTaskList(app, el, sourcePath, tasks, onToggle) {
   const ordered = [...tasks].sort((left, right) => right.day.localeCompare(left.day));
-  for (const task of ordered) {
-    const item = list.createEl("li", { cls: "task-list-item ziminos-task" });
-    const box = item.createEl("input", { type: "checkbox", cls: "task-list-item-checkbox" });
-    box.checked = task.checked;
-    if (task.checked) item.addClass("is-checked");
-    box.addEventListener("click", (event) => {
-      event.preventDefault();
-      onToggle(task);
-    });
-    renderTextWithLinks(app, item.createSpan({ cls: "ziminos-task-text" }), task.text, task.file.path);
-    renderNoteLink(
-      app,
-      item.createSpan({ cls: "ziminos-task-date" }),
-      task.file.path,
-      noteLink(task.file, task.day)
-    );
-  }
+  renderTable(
+    app,
+    el,
+    sourcePath,
+    ["\u5F85\u529E", "\u65E5\u671F"],
+    ordered.map((task) => [taskCell(app, task, onToggle), noteLink(task.file, task.day)]),
+    0
+  );
+}
+function taskCell(app, task, onToggle) {
+  const cell = createSpan({ cls: "ziminos-task" });
+  const box = cell.createEl("input", { type: "checkbox", cls: "task-list-item-checkbox" });
+  box.checked = task.checked;
+  if (task.checked) cell.addClass("is-checked");
+  box.addEventListener("click", (event) => {
+    event.preventDefault();
+    onToggle(task);
+  });
+  renderTextWithLinks(app, cell.createSpan({ cls: "ziminos-task-text" }), task.text, task.file.path);
+  return cell;
 }
 function renderEmpty(el, message) {
   renderRichText(el.createEl("p", { cls: "ziminos-empty" }), `\u{1F4ED} ${message}`);
@@ -2828,7 +2830,7 @@ var openTasks = {
       return;
     }
     renderSummary(view.el, `\u8FD8\u6B20 **${open.length}** \u4EF6\u4E8B${done ? `\uFF08\u5DF2\u5B8C\u6210 ${done} \u4EF6\uFF09` : ""}`);
-    renderTaskList(view.ctx.app, view.el, open, (task) => {
+    renderTaskList(view.ctx.app, view.el, view.sourcePath, open, (task) => {
       void toggleTask(view, task);
     });
   }

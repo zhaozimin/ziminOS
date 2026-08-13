@@ -25,7 +25,16 @@
 div.ziminos-table-wrap > table.ziminos-table {
     border-collapse: collapse;
     table-layout: auto;
+    /*
+     * min-width 才是真正撑满的那一条，width 只是它的后备。
+     * Minimal 把表格宽度做成了 Style Settings 里的一个选项，落地时可能是
+     * `width: fit-content !important` —— 带 !important 的声明，再高的特异性也压不过。
+     * 但 min-width 不参与那场竞争：浏览器先算出 width 的用值，再拿 min-width 去夹，
+     * 于是无论主题把 width 设成什么，最终宽度都不会小于整行。
+     * 这比自己也写一个 !important 干净：我们没有覆盖主题的意图，只是声明一条下限。
+     */
     width: 100%;
+    min-width: 100%;
     max-width: 100%;
     font-size: 0.92em;
     line-height: 1.65;
@@ -78,21 +87,13 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
     background: var(--background-modifier-hover);
 }
 
-/* ── 待办：一条一行，日期缀在句尾 ── */
+/* ── 待办：同样是三线表，复选框与事项同处一格 ── */
 
-.ziminos-task-list {
-    margin: 0.4em 0 1.2em;
-    padding-left: 0;
-    list-style: none;
-}
-
-/* flex 一行排开：复选框与日期各自不伸缩，中间那段句子吃掉剩余宽度 */
+/* 复选框与事项必须在同一格里，否则一个待办会被表格的列分成两半 */
 .ziminos-task {
     display: flex;
     align-items: baseline;
     gap: 0.5em;
-    margin: 0.25em 0;
-    line-height: 1.7;
 }
 
 .ziminos-task input[type='checkbox'] {
@@ -103,14 +104,8 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
 
 .ziminos-task-text {
     flex: 1 1 auto;
-    /* flex 子项默认 min-width:auto，长句子会把日期挤出去，必须显式放开 */
+    /* flex 子项默认 min-width:auto，长句子会撑破单元格，必须显式放开 */
     min-width: 0;
-}
-
-.ziminos-task-date {
-    flex: none;
-    font-size: 0.85em;
-    opacity: 0.65;
 }
 
 .ziminos-task.is-checked .ziminos-task-text {
