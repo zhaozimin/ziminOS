@@ -6,7 +6,7 @@
  *        两个自动行为、以及状态栏那个常驻按钮，随时都可以关掉。
  *        它只读写 ctx.settings 并调 ctx.saveSettings，不持有任何领域状态：
  *        每次 display 都从设置对象重新渲染，因此外部改动天然可见。
- *        V3 起页面按系统模块切成八张标签页，切法不是新发明的分类，就是 modules/ 下的目录本身——
+ *        V3 起页面按系统模块切成九张标签页，切法不是新发明的分类，就是 modules/ 下的目录本身——
  *        一页只回答一个系统的配置问题，目录名也各自归还给它服务的那个模块，
  *        于是「一页看完就不必再往下翻」，而不是二十来个设置项排成一条长路。
  *        侧边栏那一页不认识任何一条具体命令：清单现读 ctx.commands 的花名册，
@@ -19,11 +19,12 @@
 import { PluginSettingTab, Setting, setIcon } from 'obsidian';
 import { INSPIRATION_DEFAULTS, INSPIRATION_INSERT_POSITIONS } from './core/constants';
 import type { InspirationInsertPosition } from './core/constants';
+import { FORMAT_RULES } from './core/markdownStyle';
 import { DEFAULT_SETTINGS } from './core/types';
 import type { ZiminosContext } from './core/types';
 
 // ============================================================
-// 八张标签页：一页一个系统模块
+// 九张标签页：一页一个系统模块
 // ============================================================
 
 /**
@@ -39,13 +40,14 @@ type TabId =
     | 'review'
     | 'contacts'
     | 'clients'
+    | 'format'
     | 'appearance'
     | 'ribbon';
 
 /** 一张标签页的全部身份：标签栏上的那枚按钮，与它翻开之后的那句页头 */
 interface SettingsTab {
     readonly id: TabId;
-    /** 标签上的短名。八张一律两个字——长短不齐的标签会让人以为它们不是一类东西 */
+    /** 标签上的短名。九张一律两个字——长短不齐的标签会让人以为它们不是一类东西 */
     readonly label: string;
     /** 这个模块的视觉身份。标签与页头共用同一枚，用户因此知道自己翻开的正是刚点的那张 */
     readonly emoji: string;
@@ -56,16 +58,16 @@ interface SettingsTab {
 }
 
 /**
- * 八张页，顺序即学员的使用顺序，也正好是 main.ts 的装配顺序与命令的注册顺序：
+ * 九张页，顺序即学员的使用顺序，也正好是 main.ts 的装配顺序与命令的注册顺序：
  * 先开荒，再是每天在用的三套（项目、灵感、复盘），然后是关系与生意（人脉、客户），
  * 最后两张管的都不是笔记而是屏幕（外观、边栏）。
  *
  * 这张表同时喂两处：标签栏上那枚两个字的按钮，与每页页头那句「这一页是谁、跑没跑起来」。
  * 一处事实两处呈现，因此不存在「标签上写着外观、页头却是另一句」这种事。
  *
- * 曾经还有第三处——开荒页上一份逐行列出八个模块的清单。它被摘掉了，
- * 理由是标签栏本身就是那份清单：八张页一直摆在屏幕最上方，点一下即到，
- * 再在首页把同样八行重列一遍，是把「索引」误当成了「介绍」。
+ * 曾经还有第三处——开荒页上一份逐行列出全部模块的清单。它被摘掉了，
+ * 理由是标签栏本身就是那份清单：九张页一直摆在屏幕最上方，点一下即到，
+ * 再在首页把同样九行重列一遍，是把「索引」误当成了「介绍」。
  * status 那句话没有跟着一起消失，它搬进了各页页头——在那儿它回答的是「我现在在哪、这页管什么」，
  * 而不是「这套系统都有些什么」。
  */
@@ -113,6 +115,13 @@ const TABS: readonly SettingsTab[] = [
         status: '按需启用 · 命令面板运行「初始化客户模块」，长出 MOC 与八个视图',
     },
     {
+        id: 'format',
+        label: '排版',
+        emoji: '🧹',
+        module: '排版 v1',
+        status: '运行中 · 九条标准 Markdown 写法，改完走开就替你整理',
+    },
+    {
         id: 'appearance',
         label: '外观',
         emoji: '🎨',
@@ -124,7 +133,7 @@ const TABS: readonly SettingsTab[] = [
         label: '边栏',
         emoji: '🧭',
         module: '左侧边栏 v1',
-        status: '运行中 · 二十一条命令配 Pikaicons 图标，默认摆出七条',
+        status: '运行中 · 二十二条命令配 Pikaicons 图标，默认摆出七条',
     },
 ];
 
@@ -158,6 +167,12 @@ const TEXTS = {
     ribbonCountSeparator: ' / ',
     ribbonCountSuffix: ' 条',
 
+    autoFormatName: '改完走开自动整理',
+    autoFormatDesc: '离开一篇刚改过的笔记时，按下面勾选的规则整理它一次；插件自己往笔记里写过东西之后同样会整理。它刻意不动你正开着的那一篇——中文输入法在合成中途被外部改写会吞字，而两秒的停顿在斟酌一句话时太常见。想当场整理，用命令「整理当前笔记格式」。',
+
+    formatRulesHeading: '九条规则',
+    formatRulesIntro: '关掉哪一条，整理时就不再执行它。命令与自动整理走的是同一份勾选。',
+
     appearanceSwitchName: '状态栏外观开关',
     appearanceSwitchDesc: '在右下角状态栏放一个 🎨 按钮，点开就能逐个开关 CSS 片段，不必再进设置翻外观页。关掉只是收起按钮，命令面板里的「打开外观开关」照常可用。',
 
@@ -171,7 +186,7 @@ const TEXTS = {
 // ============================================================
 
 /** 走开关控件的设置项，全部是布尔字段 */
-type BooleanSettingKey = 'autoCardInit' | 'autoUpdated' | 'showAppearanceSwitch';
+type BooleanSettingKey = 'autoCardInit' | 'autoUpdated' | 'autoFormat' | 'showAppearanceSwitch';
 
 /** 可由文本框直接编辑的设置项，全部是字符串字段 */
 type TextSettingKey =
@@ -295,7 +310,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
      * 「已摆出 N / 21 条」那行字。
      *
      * 这是全页唯一一处持有 DOM 引用的地方，理由很具体：勾选要即时更新这个数，
-     * 而重建整页会把滚动条弹回顶部——二十一行排下来，用户勾第十八行时页面一跳，
+     * 而重建整页会把滚动条弹回顶部——二十二行排下来，用户勾第十八行时页面一跳，
      * 他就得重新找回刚才那一行。持有的是一个渲染出来的节点，不是第二份状态：
      * 数字仍然现算自设置对象，每次 display 也会把它换成新节点。
      */
@@ -314,6 +329,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
         review: FIELDS_ONLY,
         contacts: FIELDS_ONLY,
         clients: FIELDS_ONLY,
+        format: (el) => this.renderFormatPanel(el),
         appearance: (el) => this.renderAppearancePanel(el),
         ribbon: (el) => this.renderRibbonPanel(el),
     };
@@ -340,7 +356,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
     // 一、标签栏与分页骨架
     // ============================================================
 
-    /** 标签栏：八枚按钮，当前页高亮。用真的 button 而非 div，键盘与读屏器才认得它 */
+    /** 标签栏：九枚按钮，当前页高亮。用真的 button 而非 div，键盘与读屏器才认得它 */
     private renderTabBar(containerEl: HTMLElement): void {
         const bar = containerEl.createDiv({ cls: 'ziminos-settings-tabs' });
 
@@ -377,7 +393,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
     /**
      * 一页的固定骨架：页头 → 明面上的文本字段 → 本页自有控件 → 高级折叠区。
      *
-     * 四段的先后是一条跨八页的承诺，两头各占一句：页头永远先说清这一页是谁、跑没跑起来；
+     * 四段的先后是一条跨九页的承诺，两头各占一句：页头永远先说清这一页是谁、跑没跑起来；
      * 折叠区永远在最后，于是任何一页往下翻到底，危险的东西都在同一个位置、同一个标题下，
      * 不需要每页重新找一遍。中间两段的顺序是「先说东西放哪儿，再说怎么用它」——
      * 灵感页把落点三问排在插入位置与格式之前，正是这条顺序，不必自己再画一次字段。
@@ -577,7 +593,77 @@ export class ZiminosSettingTab extends PluginSettingTab {
     }
 
     // ============================================================
-    // 六、外观页：一个开关
+    // 六、排版页：一个自动开关，加九条规则
+    // ============================================================
+
+    /**
+     * 排版页：先决定「要不要替我按」，再决定「按下去做哪几件事」。
+     *
+     * 两者刻意不合成一个开关：自动整理关掉之后，命令仍然照这九条勾选执行——
+     * 规则回答的是「标准写法是什么」，自动回答的是「谁来按」，把它们绑在一起，
+     * 就没法表达「我自己按，但按下去要全套」这个再正常不过的用法。
+     */
+    private renderFormatPanel(containerEl: HTMLElement): void {
+        this.renderToggle(
+            containerEl,
+            'autoFormat',
+            TEXTS.autoFormatName,
+            TEXTS.autoFormatDesc,
+        );
+
+        new Setting(containerEl)
+            .setName(TEXTS.formatRulesHeading)
+            .setDesc(TEXTS.formatRulesIntro)
+            .setHeading();
+
+        for (const rule of FORMAT_RULES) {
+            this.renderRuleRow(containerEl, rule.key, rule.name, rule.desc);
+        }
+    }
+
+    /**
+     * 一条规则一行。
+     *
+     * 它与边栏那二十二行是同一种控件——勾选决定一个 id 在不在清单里，而不是翻一个布尔字段。
+     * 存清单而不是九个布尔字段，是为了让「加一条规则」不必动设置契约：
+     * 老库升级时那条新规则不在清单里，于是默认不开，这与「不替用户改他没选过的东西」同源。
+     */
+    private renderRuleRow(
+        containerEl: HTMLElement,
+        key: string,
+        name: string,
+        desc: string,
+    ): void {
+        new Setting(containerEl)
+            .setName(name)
+            .setDesc(desc)
+            .addToggle((toggle) => {
+                toggle.setValue(this.ctx.settings.formatRules.includes(key)).onChange(async (value) => {
+                    this.ctx.settings.formatRules = this.nextFormatRules(key, value);
+
+                    await this.ctx.saveSettings();
+                });
+            });
+    }
+
+    /**
+     * 算出勾选之后的新清单。
+     *
+     * 与 nextRibbonCommands 同法同因：照 FORMAT_RULES 重排一遍而不是往旧数组里增删，
+     * 于是顺序永远等于规则表的顺序，data.json 里混进的不认识的 id 也在第一次勾选时被扫掉。
+     * 返回新数组，绝不原地改——它在用户没调过时与 DEFAULT_SETTINGS 共用引用。
+     */
+    private nextFormatRules(key: string, enabled: boolean): readonly string[] {
+        const chosen = new Set(this.ctx.settings.formatRules);
+
+        if (enabled) chosen.add(key);
+        else chosen.delete(key);
+
+        return FORMAT_RULES.map((rule) => rule.key).filter((candidate) => chosen.has(candidate));
+    }
+
+    // ============================================================
+    // 七、外观页：一个开关
     // ============================================================
 
     /** 这一页管的是「右下角要不要常驻这个按钮」，不管片段本身开着还是关着 */
@@ -592,11 +678,11 @@ export class ZiminosSettingTab extends PluginSettingTab {
     }
 
     // ============================================================
-    // 七、边栏页：二十一行
+    // 八、边栏页：二十二行
     // ============================================================
 
     /**
-     * 边栏页：一句说明 + 按分组排下来的二十一行。
+     * 边栏页：一句说明 + 按分组排下来的二十二行。
      *
      * 清单现读花名册而不是自己维护一份，因此它与命令面板里能搜到的命令永远是同一批；
      * 分组标题按「相邻两行的 group 不同」切出来，与外观开关面板用的是同一套画法——
@@ -627,7 +713,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
     }
 
     /**
-     * 「已摆出 7 / 21 条」。给的是一个量级感：勾多了那条边栏会变成谁也不看的图标柱。
+     * 「已摆出 7 / 22 条」。给的是一个量级感：勾多了那条边栏会变成谁也不看的图标柱。
      * 总数现算自花名册，不写死——这一页不认识任何一条具体命令，也就不该认识它们有几条。
      */
     private describeRibbonCount(): string {

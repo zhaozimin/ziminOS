@@ -4,7 +4,8 @@
  *          ZiminosSettings/ZiminosContext/VaultSeed 契约、PERIODS 与 registerViewCodeBlock；
  *          依赖 modules/setup 的 initializeVault/applySeed，以及项目管理、灵感收集、复盘、
  *          人脉与客户五个模块各自的 seed、register 函数与视图数组，
- *          再加 modules/appearance 的 registerAppearanceSwitch 与 modules/ribbon 的 registerRibbon
+ *          再加 modules/format 的 registerFormatter、modules/appearance 的 registerAppearanceSwitch
+ *          与 modules/ribbon 的 registerRibbon
  * [OUTPUT]: 默认导出 ZiminosPlugin，即 Obsidian 加载 main.js 时实例化的插件入口类
  * [POS]: 插件唯一入口与唯一装配点。它只做四件事：把磁盘上的设置读成一个对象、
  *        把它连同 app/plugin/guard 装配成 ZiminosContext、把上下文分发给各模块去自行注册、
@@ -24,11 +25,13 @@
 import { Plugin } from 'obsidian';
 import { registerViewCodeBlock } from './core/codeblock';
 import { CommandRegistry, INIT_VAULT_COMMAND, normalizeRibbonCommands } from './core/commands';
+import { normalizeFormatRules } from './core/markdownStyle';
 import { PERIODS } from './core/constants';
 import { SelfWriteGuard } from './core/guard';
 import { DEFAULT_SETTINGS } from './core/types';
 import type { VaultSeed, ZiminosContext, ZiminosSettings } from './core/types';
 import { registerAppearanceSwitch } from './modules/appearance/statusBar';
+import { registerFormatter } from './modules/format/formatter';
 import { circleViews } from './modules/contacts/circleViews';
 import { clientViews } from './modules/contacts/clientViews';
 import { registerClientCommands } from './modules/contacts/client';
@@ -122,6 +125,11 @@ export default class ZiminosPlugin extends Plugin {
         // 客户模块要按需长出自己的产物，同理只声明了一个「落一份开荒贡献」的洞
         registerClientCommands(ctx, (seed) => applySeed(ctx, seed));
 
+        // 排版整理横跨全库、不属于任何一套笔记，它注册的是一条命令与一个编辑监听，一篇笔记都不生产。
+        // 位置排在这里而不是更早：注册顺序就是左侧边栏的分组顺序，它该落在客户与外观之间，
+        // 与设置页那九张标签的先后对齐——两处只要有一处自作主张，学员就会觉得是两套东西
+        registerFormatter(ctx);
+
         // 外观开关在状态栏常驻一个按钮，而设置页只会改设置对象、没法让已经画出来的按钮消失，
         // 因此它交回一个「按当前设置重新决定显隐」的函数，由下面转交给设置页
         const syncAppearanceSwitch = registerAppearanceSwitch(ctx);
@@ -172,5 +180,7 @@ export default class ZiminosPlugin extends Plugin {
         // 唯一需要额外收敛的字段。浅合并对坏值毫无抵抗力，而它是全部设置里唯一一个
         // 「值坏了会让设置页画到一半炸掉」的——理由与做法见 normalizeRibbonCommands
         this.settings.ribbonCommands = normalizeRibbonCommands(this.settings.ribbonCommands);
+        // 同因同治：formatRules 也被 .includes 直接使用，坏值会让整趟排版在第一条规则上炸掉
+        this.settings.formatRules = normalizeFormatRules(this.settings.formatRules);
     }
 }

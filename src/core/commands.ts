@@ -1,9 +1,9 @@
 /**
  * [INPUT]: 依赖 obsidian 的 Plugin 类型；依赖 ./constants 的 PeriodKey 与 TransitionAction 两个类型
  * [OUTPUT]: 对外提供命令身份契约 CommandSpec、分组名 COMMAND_GROUPS、图标名 COMMAND_ICONS，
- *           二十一条命令的规格 INIT_VAULT_COMMAND/PROJECT_COMMANDS/TRANSITION_COMMANDS（含类型
+ *           二十二条命令的规格 INIT_VAULT_COMMAND/PROJECT_COMMANDS/TRANSITION_COMMANDS（含类型
  *           TransitionCommand）/INSPIRATION_COMMAND/PERIOD_COMMANDS/THEME_COMMAND/CONTACT_COMMANDS/
- *           CLIENT_COMMANDS/APPEARANCE_COMMAND，左侧边栏默认摆件 DEFAULT_RIBBON_COMMANDS
+ *           CLIENT_COMMANDS/APPEARANCE_COMMAND/FORMAT_COMMAND，左侧边栏默认摆件 DEFAULT_RIBBON_COMMANDS
  *           与它的读取侧兜底 normalizeRibbonCommands，
  *           以及注册台 CommandRegistry 与它交出的 RegisteredCommand
  * [POS]: 命令这件事的全部。constants.ts 回答「系统里有哪些东西」，本文件回答「用户能让系统做哪些事」——
@@ -41,7 +41,7 @@ export interface CommandSpec {
      * `插件id + ":" + 标题` 当作一个边栏项的身份，也就是说这个**中文名**才是
      * 用户拖出来的顺序与「在 Obsidian 里藏掉它」这两件事被记进 workspace.json 的键。
      * 改名等于换一个新按钮，用户在边栏上的排布会静默丢失。
-     * 由此还得出一条不变式：二十一个 name 必须互不相同——撞名会让两条命令共用同一个边栏项。
+     * 由此还得出一条不变式：二十二个 name 必须互不相同——撞名会让两条命令共用同一个边栏项。
      */
     readonly name: string;
     /** 图标名，取值必须来自 COMMAND_ICONS */
@@ -51,11 +51,11 @@ export interface CommandSpec {
 }
 
 /**
- * 七个命令分组。
+ * 八个命令分组。
  *
- * 它不是新发明的分类，而是照着插件自己的结构切的：六个同名于 modules/ 下的目录
- * （setup / projects / inspiration / review / contacts / appearance），
- * 第七个 clients 例外——客户不是独立目录，是 contacts 模块里 client.ts 那一支，
+ * 它不是新发明的分类，而是照着插件自己的结构切的：七个同名于 modules/ 下的目录
+ * （setup / projects / inspiration / review / contacts / appearance / format），
+ * 第八个 clients 例外——客户不是独立目录，是 contacts 模块里 client.ts 那一支，
  * 单列成组是因为客户与人脉在业务上本就是两个物种（见 contacts 的 L2）。
  * modules/ribbon 不在其中：它一条命令都不注册，只负责把别人的命令摆出来。
  */
@@ -67,10 +67,11 @@ export const COMMAND_GROUPS = {
     contacts: '人脉',
     clients: '客户',
     appearance: '外观',
+    format: '排版',
 } as const;
 
 /**
- * 二十一个图标名。
+ * 二十二个图标名。
  *
  * 一律带 `ziminos-` 前缀：图标名是 Obsidian 全局共享的命名空间，
  * 不加前缀就可能盖掉 lucide 里的同名图标，或者被后装的插件盖掉。
@@ -100,10 +101,11 @@ export const COMMAND_ICONS = {
     payment: 'ziminos-payment',
     receipt: 'ziminos-receipt',
     appearance: 'ziminos-appearance',
+    format: 'ziminos-format',
 } as const;
 
 // ============================================================
-// 二十一条命令：顺序即它们在左侧边栏里的先后
+// 二十二条命令：顺序即它们在左侧边栏里的先后
 // ============================================================
 
 /**
@@ -285,6 +287,14 @@ export const APPEARANCE_COMMAND: CommandSpec = {
     group: COMMAND_GROUPS.appearance,
 };
 
+/** 排版整理的命令入口。自动整理刻意不碰你正在编辑的那一篇，这条命令是不受此限的那条路 */
+export const FORMAT_COMMAND: CommandSpec = {
+    id: 'format-note',
+    name: '整理当前笔记格式',
+    icon: COMMAND_ICONS.format,
+    group: COMMAND_GROUPS.format,
+};
+
 // ============================================================
 // 左侧边栏：默认摆出哪几个
 // ============================================================
@@ -292,12 +302,14 @@ export const APPEARANCE_COMMAND: CommandSpec = {
 /**
  * 全新库默认摆进左侧边栏的七条命令。
  *
- * 二十一条全摆上去等于把选择的负担丢回给学员——那条边栏会长成一根谁也不看的图标柱。
+ * 二十二条全摆上去等于把选择的负担丢回给学员——那条边栏会长成一根谁也不看的图标柱。
  * 这七条的判据是「一天里可能按不止一次」：记灵感、开日记、写主题是每天的动作，
  * 新建项目与新建人脉是每周的动作，记人情发生在关系推进的当下，外观开关是刚上手时天天在调的。
- * 其余十四条要么一辈子只按一次（初始化笔记库、初始化客户模块），
+ * 其余十五条要么一辈子只按一次（初始化笔记库、初始化客户模块），
  * 要么发生在某个具体场景里（初始化当前卡片、四条流转、三条客户流水、周月季年四级复盘）——
- * 那些场景里用户本来就停在对的笔记上，命令面板比一根图标柱更快。二加十二，正好十四。
+ * 那些场景里用户本来就停在对的笔记上，命令面板比一根图标柱更快。二加十二，正好十四；
+ * 第十五条是「整理当前笔记格式」：默认开着自动整理，它是那条留给例外情况的手动路，
+ * 常按不上它反而说明自动那条跑得好。
  *
  * 老库升级正是它生效的场景：0.4.0 升上来的库 data.json 里没有 ribbonCommands 这个键，
  * 于是以这份清单打底，一次性长出这七个图标；而已经调过侧边栏的人以存档为准，
