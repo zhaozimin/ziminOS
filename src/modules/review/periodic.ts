@@ -1,8 +1,10 @@
 /**
- * [INPUT]: 依赖 obsidian 的 Notice/TFile 与 App 类型；依赖 core/constants 的 PERIODS/FIELDS/FOLDERS，
+ * [INPUT]: 依赖 obsidian 的 Notice/TFile 与 App 类型；依赖 core/commands 的 PERIOD_COMMANDS，
+ *          core/constants 的 PERIODS/FIELDS/FOLDERS，
  *          core/folders 的 ensureFolderPath/normalizeFolderPath，core/time 的 currentPeriodTitle/
  *          periodStartOf/dayText，core/types 的 ZiminosContext；依赖 ./templates 的 periodNoteContent
- * [OUTPUT]: 对外提供 registerPeriodicCommands（五条打开命令）、openPeriodNote（定位或创建某一级笔记）、
+ * [OUTPUT]: 对外提供 registerPeriodicCommands（五条打开命令，身份取自 PERIOD_COMMANDS）、
+ *           openPeriodNote（定位或创建某一级笔记）、
  *           periodFolderOf/diaryFolders（目录解析）、periodOfFile/periodStartOfNote（周期归属判定）
  * [POS]: 复盘模块的入口与坐标系。它替代的是 Templater + 日历插件那一套：
  *        五级笔记的文件名、目录、导航链接、周期锚点全部由日期算术确定性地推出，
@@ -16,6 +18,7 @@
 
 import { Notice, TFile } from 'obsidian';
 import type { App } from 'obsidian';
+import { PERIOD_COMMANDS } from '../../core/commands';
 import { FIELDS, FOLDERS, PERIODS } from '../../core/constants';
 import type { PeriodDefinition, PeriodKey } from '../../core/constants';
 import { ensureFolderPath, normalizeFolderPath } from '../../core/folders';
@@ -190,12 +193,8 @@ export async function openPeriodNote(
  */
 export function registerPeriodicCommands(ctx: ZiminosContext): void {
     for (const period of Object.values(PERIODS)) {
-        ctx.plugin.addCommand({
-            id: period.commandId,
-            name: period.commandName,
-            callback: () => {
-                void openPeriodNote(ctx, period);
-            },
+        ctx.commands.register(PERIOD_COMMANDS[period.key], () => {
+            void openPeriodNote(ctx, period);
         });
     }
 }

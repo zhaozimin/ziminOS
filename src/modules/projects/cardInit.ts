@@ -1,6 +1,7 @@
 /**
  * [INPUT]: 依赖 obsidian 的 Notice/TFile/normalizePath 与 TAbstractFile 类型；
- *          依赖 core/folders 的 normalizeFolderPath、core/frontmatter 的 hasValue 与三个 YAML 判定/重排函数、
+ *          依赖 core/commands 的 PROJECT_COMMANDS、core/folders 的 normalizeFolderPath、
+ *          core/frontmatter 的 hasValue 与三个 YAML 判定/重排函数、
  *          core/modals 的 TextInputModal、core/time 的 nowStampAndUid、core/types 的 ZiminosContext
  * [OUTPUT]: 对外提供 initCard（把一篇笔记登记为卡片）、registerCardInitCommand（init-card 命令）、
  *           registerCardAutoInit（新建空笔记时的自动登记）
@@ -14,6 +15,7 @@
 
 import { Notice, TFile, normalizePath } from 'obsidian';
 import type { TAbstractFile } from 'obsidian';
+import { PROJECT_COMMANDS } from '../../core/commands';
 import { normalizeFolderPath } from '../../core/folders';
 import {
     hasValue,
@@ -222,18 +224,14 @@ export async function initCard(
 
 /** 注册手动登记命令，供用户对当前打开的笔记随时补登记 */
 export function registerCardInitCommand(ctx: ZiminosContext): void {
-    ctx.plugin.addCommand({
-        id: 'init-card',
-        name: '初始化当前卡片',
-        callback: () => {
-            const activeFile = ctx.app.workspace.getActiveFile();
+    ctx.commands.register(PROJECT_COMMANDS.card, () => {
+        const activeFile = ctx.app.workspace.getActiveFile();
 
-            if (!activeFile) return;
+        if (!activeFile) return;
 
-            void initCard(ctx, activeFile, { interactive: true }).catch(() => {
-                // 失败详情已由 initCard 以 Notice 呈现，此处只吞掉 rejection
-            });
-        },
+        void initCard(ctx, activeFile, { interactive: true }).catch(() => {
+            // 失败详情已由 initCard 以 Notice 呈现，此处只吞掉 rejection
+        });
     });
 }
 

@@ -1,20 +1,22 @@
 /**
- * [INPUT]: 依赖 obsidian 的 PluginSettingTab 基类与 Setting 构建器；依赖 ./core/constants 的
+ * [INPUT]: 依赖 obsidian 的 PluginSettingTab 基类、Setting 构建器与 setIcon；依赖 ./core/constants 的
  *          灵感默认值/插入位置、./core/types 的 ZiminosContext/DEFAULT_SETTINGS
- * [OUTPUT]: 对外提供 ZiminosSettingTab，由 main.ts 在装配末尾挂载
+ * [OUTPUT]: 对外提供 ZiminosSettingTab 与它的注入契约 SettingActions，由 main.ts 在装配末尾挂载
  * [POS]: 插件唯一的图形界面，也是「人主导」这条红线的具象化——开荒只在用户按下按钮时发生，
  *        两个自动行为、以及状态栏那个常驻按钮，随时都可以关掉。
  *        它只读写 ctx.settings 并调 ctx.saveSettings，
  *        不持有任何自己的状态：面板每次 display 都从设置对象重新渲染，因此外部改动天然可见。
- *        六个分区的排列顺序即学员的使用顺序：先开荒，再决定自动化与灵感落点，
- *        然后是外观，其次才是项目目录与时间格式，最后是模块清单——
- *        它如实展示插件内的业务模块与外观包，同时为后续模块预留可见挂载位。
- *        开荒动作与状态栏显隐同步都由 main 注入而非自己 import：
- *        设置页因此既不认识参与开荒的模块名单，也不认识状态栏按钮的实现
+ *        七个分区的排列顺序即学员的使用顺序：先开荒，再决定自动化与灵感落点，
+ *        然后是外观与左侧边栏这两件「屏幕上摆什么」，其次才是项目目录与时间格式，
+ *        最后是模块清单——它如实展示插件内的业务模块与外观包，同时为后续模块预留可见挂载位。
+ *        侧边栏那一区不认识任何一条具体命令：清单现读 ctx.commands 的花名册，
+ *        因此加一条命令、改一个图标，这个文件一个字都不用改。
+ *        开荒动作与两处显隐同步都由 main 注入而非自己 import：
+ *        设置页因此既不认识参与开荒的模块名单，也不认识状态栏按钮与边栏图标的实现
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { PluginSettingTab, Setting } from 'obsidian';
+import { PluginSettingTab, Setting, setIcon } from 'obsidian';
 import { INSPIRATION_DEFAULTS, INSPIRATION_INSERT_POSITIONS } from './core/constants';
 import type { InspirationInsertPosition } from './core/constants';
 import { DEFAULT_SETTINGS } from './core/types';
@@ -49,6 +51,16 @@ const TEXTS = {
     inspirationPositionDesc: '决定新灵感写在标题区或整篇正文的头尾。置顶会自动避开 YAML、页面标题和 Dataview 筛选区。',
     inspirationFormatName: '单条格式',
     inspirationFormatDesc: '必须保留 {{content}}；还可使用 {{date}}、{{time}}、{{datetime}}。',
+
+    ribbonHeading: '左侧边栏',
+    ribbonIntro:
+        '勾上的命令会变成最左边那一列图标，点一下就执行，不用再打开命令面板。' +
+        '图标是 Pikaicons，跟着主题的颜色与描边粗细走。' +
+        '取消勾选后，它在「设置 → 外观 → 功能区」和手机端的边栏菜单里要重启 Obsidian 才消失；' +
+        '反过来，你在那两处藏掉的图标，这里勾上也不会出现——那是 Obsidian 自己的开关，得回那儿打开。',
+    ribbonCountPrefix: '已摆出 ',
+    ribbonCountSeparator: ' / ',
+    ribbonCountSuffix: ' 条',
 
     appearanceHeading: '外观',
     appearanceSwitchName: '状态栏外观开关',
@@ -128,7 +140,32 @@ const SYSTEM_MODULES: readonly ModuleEntry[] = [
         status: '运行中 · Minimal + Style Settings + 十二个 CSS 片段，右下角一键开关',
         running: true,
     },
+    {
+        name: '🧭 左侧边栏 v1',
+        status: '运行中 · 二十一条命令配 Pikaicons 图标，默认摆出七条',
+        running: true,
+    },
 ];
+
+// ============================================================
+// 注入契约
+// ============================================================
+
+/**
+ * 设置页干不了、必须由 main 递进来的三件事。
+ *
+ * 用一个对象而不是三个位置参数：后两个函数的类型都是 `() => void`，
+ * 摆成位置参数的话调换顺序照样能通过编译，出的错却是「改了外观开关，边栏跟着动」——
+ * 这种错没有任何编译期信号，只能靠人肉眼盯着两行长长的实参对齐。
+ */
+export interface SettingActions {
+    /** 执行一次开荒。名单住在装配点，设置页因此不认识参与开荒的模块 */
+    readonly initialize: () => Promise<void>;
+    /** 让状态栏那个按钮按当前设置重新决定显隐 */
+    readonly syncAppearanceSwitch: () => void;
+    /** 让左侧边栏那列图标按当前设置重新决定各自显隐 */
+    readonly syncRibbon: () => void;
+}
 
 // ============================================================
 // 设置页
@@ -143,29 +180,28 @@ export class ZiminosSettingTab extends PluginSettingTab {
     private readonly ctx: ZiminosContext;
 
     /**
-     * 开荒动作由 main 注入。
-     * 设置页因此不必知道有哪些模块要参与开荒——那份名单只存在于装配点，
-     * 加一个模块不会牵动这个文件。
+     * 三件由 main 注入的事。
+     * 设置页只会改设置对象并落盘，它既不知道有哪些模块要参与开荒，
+     * 也无从让屏幕上已经画好的按钮与图标自己变——谁画的谁负责收，
+     * 这里只负责在改完之后叫一声。
      */
-    private readonly initialize: () => Promise<void>;
+    private readonly actions: SettingActions;
 
     /**
-     * 让状态栏按钮按当前设置重新决定显隐，同样由 main 注入。
-     * 设置页只会改设置对象并落盘，它无从知道屏幕上已经画着一个按钮——
-     * 谁画的谁负责收，这里只负责在改完之后叫一声。
+     * 「已摆出 N / 21 条」那行字。
+     *
+     * 这是全页唯一一处持有 DOM 引用的地方，理由很具体：勾选要即时更新这个数，
+     * 而重建整页会把滚动条弹回顶部——二十一行排下来，用户勾第十八行时页面一跳，
+     * 他就得重新找回刚才那一行。持有的是一个渲染出来的节点，不是第二份状态：
+     * 数字仍然现算自设置对象，每次 display 也会把它换成新节点。
      */
-    private readonly syncAppearanceSwitch: () => void;
+    private ribbonCountEl: HTMLElement | null = null;
 
-    constructor(
-        ctx: ZiminosContext,
-        initialize: () => Promise<void>,
-        syncAppearanceSwitch: () => void,
-    ) {
+    constructor(ctx: ZiminosContext, actions: SettingActions) {
         super(ctx.app, ctx.plugin);
 
         this.ctx = ctx;
-        this.initialize = initialize;
-        this.syncAppearanceSwitch = syncAppearanceSwitch;
+        this.actions = actions;
     }
 
     /** 每次打开设置页都整体重建，保证显示的永远是设置对象的当前值 */
@@ -178,6 +214,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
         this.renderAutomationSection(containerEl);
         this.renderInspirationSection(containerEl);
         this.renderAppearanceSection(containerEl);
+        this.renderRibbonSection(containerEl);
         this.renderAdvancedSection(containerEl);
         this.renderModulesSection(containerEl);
     }
@@ -206,7 +243,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
 
                         try {
                             // 开荒自己吃掉全部异常并以 Notice 汇报，这里不需要再判断成败
-                            await this.initialize();
+                            await this.actions.initialize();
                         } finally {
                             // 重建面板即刷新状态；旧按钮随 containerEl 一起丢弃，无需解禁
                             this.display();
@@ -369,12 +406,117 @@ export class ZiminosSettingTab extends PluginSettingTab {
             'showAppearanceSwitch',
             TEXTS.appearanceSwitchName,
             TEXTS.appearanceSwitchDesc,
-            this.syncAppearanceSwitch,
+            this.actions.syncAppearanceSwitch,
         );
     }
 
     // ============================================================
-    // 五、高级
+    // 五、左侧边栏
+    // ============================================================
+
+    /**
+     * 侧边栏区：一句说明 + 按分组排下来的二十一行。
+     *
+     * 清单现读花名册而不是自己维护一份，因此它与命令面板里能搜到的命令永远是同一批；
+     * 分组标题按「相邻两行的 group 不同」切出来，与外观开关面板用的是同一套画法——
+     * 分组顺序不需要另一张表，它就是命令的注册顺序。
+     */
+    private renderRibbonSection(containerEl: HTMLElement): void {
+        const commands = this.ctx.commands.list();
+
+        new Setting(containerEl).setName(TEXTS.ribbonHeading).setHeading();
+
+        const summary = new Setting(containerEl)
+            .setName(this.describeRibbonCount())
+            .setDesc(TEXTS.ribbonIntro);
+
+        this.ribbonCountEl = summary.nameEl;
+
+        let currentGroup = '';
+
+        for (const command of commands) {
+            if (command.spec.group !== currentGroup) {
+                currentGroup = command.spec.group;
+                containerEl.createDiv({ cls: 'ziminos-ribbon-group', text: currentGroup });
+            }
+
+            this.renderRibbonRow(containerEl, command.spec.id, command.spec.icon, command.spec.name);
+        }
+    }
+
+    /** 只改那一个数字，不重建页面——重建会把滚动条弹回顶部 */
+    private refreshRibbonCount(): void {
+        if (this.ribbonCountEl) this.ribbonCountEl.setText(this.describeRibbonCount());
+    }
+
+    /**
+     * 「已摆出 7 / 21 条」。给的是一个量级感：勾多了那条边栏会变成谁也不看的图标柱。
+     * 总数现算自花名册，不写死——这一区不认识任何一条具体命令，也就不该认识它们有几条。
+     */
+    private describeRibbonCount(): string {
+        const total = this.ctx.commands.list().length;
+
+        return (
+            TEXTS.ribbonCountPrefix +
+            this.ctx.settings.ribbonCommands.length +
+            TEXTS.ribbonCountSeparator +
+            total +
+            TEXTS.ribbonCountSuffix
+        );
+    }
+
+    /** 一行：图标 + 命令名 + 开关。图标就是它在边栏上的样子，勾之前先看见 */
+    private renderRibbonRow(
+        containerEl: HTMLElement,
+        id: string,
+        icon: string,
+        name: string,
+    ): void {
+        const label = createFragment((frag) => {
+            const iconEl = frag.createSpan({ cls: 'ziminos-ribbon-icon' });
+
+            setIcon(iconEl, icon);
+            frag.createSpan({ text: name });
+        });
+
+        new Setting(containerEl)
+            .setName(label)
+            .setClass('ziminos-ribbon-row')
+            .addToggle((toggle) => {
+                toggle
+                    .setValue(this.ctx.settings.ribbonCommands.includes(id))
+                    .onChange(async (value) => {
+                        this.ctx.settings.ribbonCommands = this.nextRibbonCommands(id, value);
+
+                        await this.ctx.saveSettings();
+                        this.actions.syncRibbon();
+                        this.refreshRibbonCount();
+                    });
+            });
+    }
+
+    /**
+     * 算出勾选之后的新清单。
+     *
+     * 一律照花名册重排一遍而不是往旧数组里增删：其一，边栏顺序因此永远等于命令的注册顺序，
+     * 与用户先勾哪个无关；其二，data.json 里若混进了不认识的 id（换过版本、手改过文件），
+     * 第一次勾选就顺手扫掉，不会留一条永远没人认领的记录。
+     * 返回的是新数组，绝不原地改——ribbonCommands 在用户没调过时与 DEFAULT_SETTINGS 共用引用。
+     */
+    private nextRibbonCommands(id: string, enabled: boolean): readonly string[] {
+        const chosen = new Set(this.ctx.settings.ribbonCommands);
+
+        if (enabled) chosen.add(id);
+        else chosen.delete(id);
+
+        return this.ctx.commands
+            .list()
+            .map((command) => command.spec.id)
+            .filter((candidate) => chosen.has(candidate));
+    }
+
+    // ============================================================
+    // 六、高级
     // ============================================================
 
     /**
@@ -418,7 +560,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
     }
 
     // ============================================================
-    // 六、系统模块
+    // 七、系统模块
     // ============================================================
 
     /** 模块区：纯展示，没有任何控件。未上线的模块以禁用态呈现，看得见但点不动 */

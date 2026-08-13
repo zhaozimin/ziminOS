@@ -3,14 +3,16 @@
  * [OUTPUT]: 对外提供 PARA 目录常量 FOLDERS/INIT_FOLDERS/CONTACT_FOLDER/CLIENT_FOLDER、
  *           笔记路径常量 NAV_FILE/TEMPLATE_FILES/CONTACT_MOC/CLIENT_MOC、
  *           卡片字段序 CARD_FIELDS 与其字段类型 CardField、统一字段名 FIELDS 与身份取值 NOTE_TYPES、
- *           时间格式 DEFAULT_DATETIME_FORMAT/UID_FORMAT/DAY_FORMAT、灵感收集默认值/命令/插入位置，
+ *           时间格式 DEFAULT_DATETIME_FORMAT/UID_FORMAT/DAY_FORMAT、灵感收集默认值与插入位置，
  *           自写抑制窗口 SELF_WRITE_WINDOW_MS，项目生命周期状态机 TRANSITIONS/STATUS_LABELS
  *           及其类型 ProjectStatus/TransitionAction/FolderRole/ProjectTransition，
  *           五级复盘周期表 PERIODS 及其类型 PeriodKey/PeriodDefinition，
  *           人脉三轴 CONTACT_TIERS/TIER_LIMITS/CONTACT_DIRECTIONS、人情账本格式 LEDGER、
  *           付费流水字段 PAYMENT_FIELDS，外观开关契约 SNIPPET_FOLDER_NAME/SNIPPET_EXTENSION/
- *           APPEARANCE_FILE_NAME/ENABLED_SNIPPETS_KEY/APPEARANCE_COMMAND，
- *           以及视图代码块契约 VIEW_BLOCK_LANG/VIEW_REFRESH_DEBOUNCE_MS
+ *           APPEARANCE_FILE_NAME/ENABLED_SNIPPETS_KEY，
+ *           以及视图代码块契约 VIEW_BLOCK_LANG/VIEW_REFRESH_DEBOUNCE_MS。
+ *           二十一条命令的身份（id/名字/图标/分组）不在这里，在 ./commands——
+ *           本文件回答「系统里有哪些东西」，那里回答「用户能让系统做哪些事」
  * [POS]: 全仓库唯一的常量源。规格要求「禁魔法字符串」，任何目录名、字段名、状态名、时间格式
  *        都必须从这里取而不得就地硬编码；因为它零依赖，所有模块都可单向依赖它而不产生环
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -114,12 +116,6 @@ export const INSPIRATION_DEFAULTS = {
     heading: '# 灵感集',
     insertPosition: 'heading-top' as InspirationInsertPosition,
     format: '- [ ]  {{content}} [[{{date}}]] {{time}}',
-} as const;
-
-/** 命令面板入口；不预占系统快捷键，用户可在 Obsidian 快捷键设置里自由绑定 */
-export const INSPIRATION_COMMAND = {
-    id: 'capture-inspiration',
-    name: '记录灵感',
 } as const;
 
 // ============================================================
@@ -331,10 +327,6 @@ export interface PeriodDefinition {
     readonly type: string;
     /** 中文名，用于正文标题与提示文案 */
     readonly label: string;
-    /** 命令面板里的命令名 */
-    readonly commandName: string;
-    /** 命令 id */
-    readonly commandId: string;
     /** 所在子目录 */
     readonly folder: string;
     /** 文件名即标题的 moment 格式 */
@@ -360,8 +352,6 @@ export const PERIODS: Readonly<Record<PeriodKey, PeriodDefinition>> = {
         key: 'daily',
         type: NOTE_TYPES.diary,
         label: '日记',
-        commandName: '打开今天的日记',
-        commandId: 'open-diary',
         folder: `${FOLDERS.diary}/01-daily`,
         titleFormat: DAY_FORMAT,
         startOfUnit: 'day',
@@ -373,8 +363,6 @@ export const PERIODS: Readonly<Record<PeriodKey, PeriodDefinition>> = {
         key: 'weekly',
         type: NOTE_TYPES.weekly,
         label: '周记',
-        commandName: '打开本周复盘',
-        commandId: 'open-weekly',
         folder: `${FOLDERS.diary}/02-weekly`,
         // GGGG 是 ISO 周所属年，与 WW 配对才不会在跨年周上错位
         titleFormat: 'GGGG-[W]WW',
@@ -387,8 +375,6 @@ export const PERIODS: Readonly<Record<PeriodKey, PeriodDefinition>> = {
         key: 'monthly',
         type: NOTE_TYPES.monthly,
         label: '月记',
-        commandName: '打开本月复盘',
-        commandId: 'open-monthly',
         folder: `${FOLDERS.diary}/03-monthly`,
         titleFormat: 'YYYY-MM',
         startOfUnit: 'month',
@@ -400,8 +386,6 @@ export const PERIODS: Readonly<Record<PeriodKey, PeriodDefinition>> = {
         key: 'quarterly',
         type: NOTE_TYPES.quarterly,
         label: '季记',
-        commandName: '打开本季复盘',
-        commandId: 'open-quarterly',
         folder: `${FOLDERS.diary}/04-quarterly`,
         titleFormat: 'YYYY-[Q]Q',
         startOfUnit: 'quarter',
@@ -413,8 +397,6 @@ export const PERIODS: Readonly<Record<PeriodKey, PeriodDefinition>> = {
         key: 'yearly',
         type: NOTE_TYPES.yearly,
         label: '年记',
-        commandName: '打开本年复盘',
-        commandId: 'open-yearly',
         folder: `${FOLDERS.diary}/05-yearly`,
         titleFormat: 'YYYY',
         startOfUnit: 'year',
@@ -443,12 +425,6 @@ export const DIARY_FOLDERS: readonly string[] = [
  * 既难看又让人以为命令坏了——而这种不一致没有任何报错。
  */
 export const DIARY_LOG_HEADING = '## 今天做了什么';
-
-/** 写主题命令：当前笔记是复盘笔记就写它的，否则写今天日记的 */
-export const THEME_COMMAND = {
-    id: 'write-theme',
-    name: '写复盘主题',
-} as const;
 
 // ============================================================
 // 人脉三轴与人情账本
@@ -505,20 +481,6 @@ export const CLIENT_PAYMENT_HEADING = '## 付费与交付';
 /** 收款流水在客户项目 MOC 里的落点 */
 export const PROJECT_PAYMENT_HEADING = '## 收款';
 
-/** 客户模块的四条命令：一条按需开荒，三条日常 */
-export const CLIENT_COMMANDS = {
-    setup: { id: 'setup-clients', name: '初始化客户模块' },
-    create: { id: 'create-client', name: '新建客户' },
-    payment: { id: 'add-payment', name: '增加付费' },
-    receipt: { id: 'record-receipt', name: '记收款' },
-} as const;
-
-/** 人脉模块的两条命令 */
-export const CONTACT_COMMANDS = {
-    create: { id: 'create-contact', name: '新建人脉' },
-    favor: { id: 'record-favor', name: '记人情' },
-} as const;
-
 // ============================================================
 // 外观：CSS 片段开关
 // ============================================================
@@ -544,12 +506,6 @@ export const APPEARANCE_FILE_NAME = 'appearance.json';
 
 /** appearance.json 中登记已启用片段的键；值是不含扩展名的文件基名数组 */
 export const ENABLED_SNIPPETS_KEY = 'enabledCssSnippets';
-
-/** 外观开关的命令入口。状态栏按钮可以被关掉，命令是它永远存在的另一条路 */
-export const APPEARANCE_COMMAND = {
-    id: 'open-appearance-switch',
-    name: '打开外观开关',
-} as const;
 
 // ============================================================
 // 视图代码块

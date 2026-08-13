@@ -1,5 +1,6 @@
 /**
  * [INPUT]: 依赖 obsidian 的 ButtonComponent/Modal/Notice/TFile/TFolder/Vault/normalizePath 与 App 类型，
+ *          依赖 core/commands 的 TRANSITION_COMMANDS，
  *          依赖 core/constants 的 TRANSITIONS、STATUS_LABELS、FIELDS 与流转类型，依赖 core/time 的 today，
  *          依赖 core/folders 的 ensureFolderPath、normalizeFolderPath，
  *          依赖 core/types 的 ZiminosContext 与 DEFAULT_SETTINGS，依赖 core/frontmatter 的 Frontmatter 类型
@@ -22,6 +23,7 @@
 import { ButtonComponent, Modal, Notice, TFile, TFolder, Vault, normalizePath } from 'obsidian';
 import type { App } from 'obsidian';
 
+import { TRANSITION_COMMANDS } from '../../core/commands';
 import { FIELDS, STATUS_LABELS, TRANSITIONS } from '../../core/constants';
 import type { FolderRole, ProjectTransition, TransitionAction } from '../../core/constants';
 import { ensureFolderPath, normalizeFolderPath } from '../../core/folders';
@@ -39,28 +41,6 @@ const PROJECT_TYPE = 'project';
 
 /** 确认框容器的样式钩子类名，自原脚本原样保留（V1 无 styles.css，仅作标识） */
 const CONFIRM_MODAL_CLASS = 'qa-project-transition-confirm';
-
-/** 一条流转命令的注册信息 */
-interface TransitionCommand {
-    /** 命令 id，Obsidian 会加上插件前缀 */
-    readonly id: string;
-    /** 命令面板里显示的中文名 */
-    readonly name: string;
-    /** 对应 TRANSITIONS 中的动作键 */
-    readonly action: TransitionAction;
-}
-
-/**
- * 四条命令与四个动作的绑定表。
- * 原脚本靠 QuickAdd 设置里的 action 文本选择动作，插件里改为命令自带动作，
- * 用户不可能再填错动作名——这是「一个命令一个确定行为」的收敛。
- */
-const TRANSITION_COMMANDS: readonly TransitionCommand[] = [
-    { id: 'project-done', name: '完成项目', action: 'done' },
-    { id: 'project-paused', name: '暂停项目', action: 'paused' },
-    { id: 'project-dropped', name: '放弃项目', action: 'dropped' },
-    { id: 'project-active', name: '重新开始项目', action: 'active' },
-];
 
 // ============================================================
 // 流转计划：守卫全部通过后才生成，是执行阶段唯一的输入
@@ -115,13 +95,9 @@ interface TransitionProgress {
  */
 export function registerTransitionCommands(ctx: ZiminosContext): void {
     for (const command of TRANSITION_COMMANDS) {
-        ctx.plugin.addCommand({
-            id: command.id,
-            name: command.name,
-            // 回调不能是 async：流转内部已吃掉全部异常并转成 Notice，此处无需等待
-            callback: () => {
-                void runProjectTransition(ctx, command.action);
-            },
+        // 回调不能是 async：流转内部已吃掉全部异常并转成 Notice，此处无需等待
+        ctx.commands.register(command, () => {
+            void runProjectTransition(ctx, command.action);
         });
     }
 }

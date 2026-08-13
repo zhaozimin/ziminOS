@@ -1,7 +1,8 @@
 /**
- * [INPUT]: 依赖 Obsidian 的 Notice/TFile/TFolder/normalizePath，依赖 core 的设置上下文、目录保障、
- *          时间变量与输入弹窗，依赖同目录 templates 的纯文本生成和插入规则
- * [OUTPUT]: 对外提供 registerInspirationCaptureCommand，向命令面板注册「记录灵感」
+ * [INPUT]: 依赖 Obsidian 的 Notice/TFile/TFolder/normalizePath，依赖 core/commands 的 INSPIRATION_COMMAND，
+ *          依赖 core 的设置上下文、目录保障、时间变量与输入弹窗，
+ *          依赖同目录 templates 的纯文本生成和插入规则
+ * [OUTPUT]: 对外提供 registerInspirationCaptureCommand，经注册台登记「记录灵感」
  * [POS]: inspiration 模块的唯一副作用编排器：向人提问、解析目标路径、按需创建目录/笔记并原子写入；
  *        不持有第二份设置、不依赖 QuickAdd；Dataview 作为独立运行组件消费它生成的查询块，
  *        所有写入都先通过全局 SelfWriteGuard 登记
@@ -9,11 +10,8 @@
  */
 
 import { Notice, TFile, TFolder, normalizePath } from 'obsidian';
-import {
-    INSPIRATION_COMMAND,
-    INSPIRATION_DEFAULTS,
-    INSPIRATION_INSERT_POSITIONS,
-} from '../../core/constants';
+import { INSPIRATION_COMMAND } from '../../core/commands';
+import { INSPIRATION_DEFAULTS, INSPIRATION_INSERT_POSITIONS } from '../../core/constants';
 import type { InspirationInsertPosition } from '../../core/constants';
 import { ensureFolderPath, normalizeFolderPath } from '../../core/folders';
 import { TextInputModal } from '../../core/modals';
@@ -38,12 +36,8 @@ interface InspirationTarget {
 
 /** 注册一个显式命令；是否绑定键盘快捷键由用户在 Obsidian 设置里决定 */
 export function registerInspirationCaptureCommand(ctx: ZiminosContext): void {
-    ctx.plugin.addCommand({
-        id: INSPIRATION_COMMAND.id,
-        name: INSPIRATION_COMMAND.name,
-        callback: () => {
-            void captureInspiration(ctx);
-        },
+    ctx.commands.register(INSPIRATION_COMMAND, () => {
+        void captureInspiration(ctx);
     });
 }
 

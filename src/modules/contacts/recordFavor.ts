@@ -1,6 +1,7 @@
 /**
- * [INPUT]: 依赖 obsidian 的 Notice/TFile；依赖 core/constants 的 CONTACT_COMMANDS/DIARY_LOG_HEADING/
- *          LEDGER/NOTE_TYPES，core/modals 的 TextInputModal/ChoiceModal，core/types 的 ZiminosContext；
+ * [INPUT]: 依赖 obsidian 的 Notice/TFile；依赖 core/commands 的 CONTACT_COMMANDS，
+ *          core/constants 的 DIARY_LOG_HEADING/LEDGER/NOTE_TYPES，
+ *          core/modals 的 TextInputModal/ChoiceModal，core/types 的 ZiminosContext；
  *          依赖 ./identity 的 liveNotesOfType/descriptionOf
  * [OUTPUT]: 对外提供 DailyNoteProvider 契约与 registerRecordFavorCommand（注册「记人情」命令）
  * [POS]: 人情账本的录入口。它把四步点选变成日记里的一行标准账本行，
@@ -14,12 +15,8 @@
 
 import { Notice } from 'obsidian';
 import type { TFile } from 'obsidian';
-import {
-    CONTACT_COMMANDS,
-    DIARY_LOG_HEADING,
-    LEDGER,
-    NOTE_TYPES,
-} from '../../core/constants';
+import { CONTACT_COMMANDS } from '../../core/commands';
+import { DIARY_LOG_HEADING, LEDGER, NOTE_TYPES } from '../../core/constants';
 import { insertIntoSection } from '../../core/markdown';
 import { ChoiceModal, TextInputModal } from '../../core/modals';
 import type { ZiminosContext } from '../../core/types';
@@ -60,12 +57,8 @@ const STATUS_HINTS: Readonly<Record<string, string>> = {
 
 /** 注册「记人情」命令 */
 export function registerRecordFavorCommand(ctx: ZiminosContext, openDaily: DailyNoteProvider): void {
-    ctx.plugin.addCommand({
-        id: CONTACT_COMMANDS.favor.id,
-        name: CONTACT_COMMANDS.favor.name,
-        callback: () => {
-            void recordFavor(ctx, openDaily);
-        },
+    ctx.commands.register(CONTACT_COMMANDS.favor, () => {
+        void recordFavor(ctx, openDaily);
     });
 }
 

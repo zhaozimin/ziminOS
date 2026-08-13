@@ -1,25 +1,29 @@
 /**
- * [INPUT]: 依赖 obsidian 的 Plugin 基类；依赖 core 的 SelfWriteGuard、DEFAULT_SETTINGS、
+ * [INPUT]: 依赖 obsidian 的 Plugin 基类；依赖 core 的 SelfWriteGuard、CommandRegistry、
+ *          INIT_VAULT_COMMAND、normalizeRibbonCommands、DEFAULT_SETTINGS、
  *          ZiminosSettings/ZiminosContext/VaultSeed 契约、PERIODS 与 registerViewCodeBlock；
  *          依赖 modules/setup 的 initializeVault/applySeed，以及项目管理、灵感收集、复盘、
  *          人脉与客户五个模块各自的 seed、register 函数与视图数组，
- *          再加 modules/appearance 的 registerAppearanceSwitch
+ *          再加 modules/appearance 的 registerAppearanceSwitch 与 modules/ribbon 的 registerRibbon
  * [OUTPUT]: 默认导出 ZiminosPlugin，即 Obsidian 加载 main.js 时实例化的插件入口类
  * [POS]: 插件唯一入口与唯一装配点。它只做四件事：把磁盘上的设置读成一个对象、
  *        把它连同 app/plugin/guard 装配成 ZiminosContext、把上下文分发给各模块去自行注册、
  *        再把彼此需要但不该互相认识的能力接上线。
  *        最后这件事是 V2 新增的，也是本文件最有分量的部分：
  *        记人情要往当天日记里写一行，客户模块要按需长出自己的产物，
- *        设置页要能让状态栏上那个已经画好的按钮消失——
- *        三者分别需要复盘模块、开荒模块与外观模块的能力。
+ *        设置页要能让状态栏那个按钮与左侧边栏那列图标按新设置重新显隐——
+ *        它们分别需要复盘模块、开荒模块、外观模块与 ribbon 模块的能力。
  *        它们都不 import 对方，而是各自声明一个函数类型的洞，由这里填上。
  *        于是依赖图仍是一棵树：main 认识所有模块，模块之间彼此不认识，
- *        加一个模块只是在这里多几行，删一个模块只需删掉那几行
+ *        加一个模块只是在这里多几行，删一个模块只需删掉那几行。
+ *        这里还多了一条纪律：命令一律经 ctx.commands 注册，且左侧边栏必须最后装配——
+ *        它是照着花名册摆图标的，摆的时候花名册必须已经收齐
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { Plugin } from 'obsidian';
 import { registerViewCodeBlock } from './core/codeblock';
+import { CommandRegistry, INIT_VAULT_COMMAND, normalizeRibbonCommands } from './core/commands';
 import { PERIODS } from './core/constants';
 import { SelfWriteGuard } from './core/guard';
 import { DEFAULT_SETTINGS } from './core/types';
@@ -44,22 +48,9 @@ import { reviewProjectViews } from './modules/review/projectViews';
 import { reviewSeed } from './modules/review/seed';
 import { registerThemeCommand } from './modules/review/theme';
 import { reviewThemeViews } from './modules/review/views';
+import { registerRibbon } from './modules/ribbon/dock';
 import { applySeed, initializeVault } from './modules/setup/init';
 import { ZiminosSettingTab } from './settings';
-
-// ============================================================
-// 命令
-// ============================================================
-
-/**
- * 开荒命令。它是唯一在 main.ts 里直接注册的命令——
- * 因为开荒横跨全库骨架并要收齐各模块的诉求，不专属于任何一个功能模块；
- * 其余命令都由各自模块自行注册。
- */
-const INIT_VAULT_COMMAND = {
-    id: 'init-vault',
-    name: '初始化笔记库',
-} as const;
 
 // ============================================================
 // 插件入口
@@ -87,6 +78,8 @@ export default class ZiminosPlugin extends Plugin {
             saveSettings: () => this.saveData(this.settings),
             // 守卫必须全库唯一：写方标记与监听方查询共用同一份记录，自写抑制才成立
             guard: new SelfWriteGuard(),
+            // 注册台同样全库唯一：它手里那份花名册就是左侧边栏与设置页看到的命令清单
+            commands: new CommandRegistry(this),
         };
 
         // ============================================================
@@ -102,13 +95,9 @@ export default class ZiminosPlugin extends Plugin {
             contactsSeed(ctx),
         ];
 
-        this.addCommand({
-            id: INIT_VAULT_COMMAND.id,
-            name: INIT_VAULT_COMMAND.name,
-            // 开荒内部已把全部异常转成中文 Notice，此处无需等待也无需接住
-            callback: () => {
-                void initializeVault(ctx, collectSeeds());
-            },
+        // 开荒内部已把全部异常转成中文 Notice，此处无需等待也无需接住
+        ctx.commands.register(INIT_VAULT_COMMAND, () => {
+            void initializeVault(ctx, collectSeeds());
         });
 
         // ============================================================
@@ -138,6 +127,13 @@ export default class ZiminosPlugin extends Plugin {
         const syncAppearanceSwitch = registerAppearanceSwitch(ctx);
 
         // ============================================================
+        // 左侧边栏：必须在全部命令注册完之后，它摆的就是上面那些命令
+        // ============================================================
+
+        // 与外观开关同理：设置页改完勾选，得有人去推那列已经画出来的图标一把
+        const syncRibbon = registerRibbon(ctx);
+
+        // ============================================================
         // 视图引擎：一个代码块语言，二十一个视图；加视图不必改这里之外的任何装配代码
         // ============================================================
 
@@ -156,7 +152,11 @@ export default class ZiminosPlugin extends Plugin {
         // ============================================================
 
         this.addSettingTab(
-            new ZiminosSettingTab(ctx, () => initializeVault(ctx, collectSeeds()), syncAppearanceSwitch),
+            new ZiminosSettingTab(ctx, {
+                initialize: () => initializeVault(ctx, collectSeeds()),
+                syncAppearanceSwitch,
+                syncRibbon,
+            }),
         );
     }
 
@@ -169,5 +169,8 @@ export default class ZiminosPlugin extends Plugin {
         const stored = (await this.loadData()) as Partial<ZiminosSettings> | null;
 
         this.settings = { ...DEFAULT_SETTINGS, ...(stored ?? {}) };
+        // 唯一需要额外收敛的字段。浅合并对坏值毫无抵抗力，而它是全部设置里唯一一个
+        // 「值坏了会让设置页画到一半炸掉」的——理由与做法见 normalizeRibbonCommands
+        this.settings.ribbonCommands = normalizeRibbonCommands(this.settings.ribbonCommands);
     }
 }

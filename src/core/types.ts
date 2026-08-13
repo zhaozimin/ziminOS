@@ -1,5 +1,6 @@
 /**
  * [INPUT]: 依赖 obsidian 的 App/Plugin 类型，依赖 ./constants 的 PARA、时间与灵感收集默认值，
+ *          依赖 ./commands 的 DEFAULT_RIBBON_COMMANDS 与 CommandRegistry 类型，
  *          依赖 ./guard 的 SelfWriteGuard 类型
  * [OUTPUT]: 对外提供 ZiminosSettings 设置契约、DEFAULT_SETTINGS 默认值、ZiminosContext 运行时上下文，
  *           以及开荒贡献契约 VaultSeed/VaultSeedNote
@@ -10,6 +11,8 @@
  */
 
 import type { App, Plugin } from 'obsidian';
+import { DEFAULT_RIBBON_COMMANDS } from './commands';
+import type { CommandRegistry } from './commands';
 import {
     CLIENT_FOLDER,
     CONTACT_FOLDER,
@@ -61,6 +64,15 @@ export interface ZiminosSettings {
      * 关掉只是收起按钮，命令面板里的「打开外观开关」照常可用。
      */
     showAppearanceSwitch: boolean;
+    /**
+     * 摆进左侧边栏的命令 id 清单，顺序不由它决定——边栏顺序永远是命令的注册顺序。
+     *
+     * 类型是 readonly：DEFAULT_SETTINGS 与设置对象在「用户没调过」时共享同一个数组引用，
+     * 若允许原地 push/splice，用户第一次勾选就会把默认值本身改掉，
+     * 此后连「恢复默认」都恢复不回来。声明成只读，改动就只能是造一个新数组，
+     * 这条约束由编译器执行，不靠人记得。
+     */
+    ribbonCommands: readonly string[];
     /** 首次开荒完成的时间戳；空字符串表示尚未初始化，是「首次」与「补齐」的唯一判据 */
     initializedAt: string;
 }
@@ -84,6 +96,7 @@ export const DEFAULT_SETTINGS: ZiminosSettings = {
     clientSources: 'B站,抖音,小红书,公众号,朋友介绍,其他',
     clientProducts: '课程,咨询,陪跑',
     showAppearanceSwitch: true,
+    ribbonCommands: DEFAULT_RIBBON_COMMANDS,
     initializedAt: '',
 };
 
@@ -124,9 +137,18 @@ export interface VaultSeed {
  */
 export interface ZiminosContext {
     app: App;
-    /** 供模块调用 addCommand / registerEvent / register，生命周期由 Obsidian 托管 */
+    /**
+     * 供模块调用 addRibbonIcon / addStatusBarItem / registerEvent / register，
+     * 生命周期由 Obsidian 托管。唯独 addCommand 不在此列——命令一律经下面的 commands 注册台，
+     * 否则它只会出现在命令面板里，左侧边栏与设置页都看不见它。
+     */
     plugin: Plugin;
     settings: ZiminosSettings;
     saveSettings: () => Promise<void>;
     guard: SelfWriteGuard;
+    /**
+     * 命令注册台。模块一律经它注册命令而不直接调 plugin.addCommand——
+     * 那样命令才会同时出现在命令面板和左侧边栏的可选清单里，两处不会各说各话。
+     */
+    commands: CommandRegistry;
 }

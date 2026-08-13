@@ -10,10 +10,21 @@ import esbuild from 'esbuild';
 import process from 'process';
 import builtins from 'builtin-modules';
 
-// 产物顶部说明：提醒读者这是构建产物，源码在 src/
+/*
+ * 产物顶部说明：提醒读者这是构建产物，源码在 src/。
+ *
+ * 第二段是 Pikaicons 的许可声明，不能省：那二十一个图标的 path 数据被编译进了这个文件，
+ * 而 MIT 要求「副本或实质性部分」都带上版权与许可声明。写在 banner 而不是只留在
+ * icons.ts 的注释里，是因为注释能不能活到产物里取决于打包器的心情（改一次 minify 就没了），
+ * 而 banner 是我们自己保证的。
+ */
 const banner = `/*
 本文件由 esbuild 自 src/ 目录打包生成，请勿直接编辑。
 需要修改行为请改 src/ 下的 TypeScript 源码，然后运行 npm run build。
+
+图标来自 Pikaicons（https://pikaicons.com），MIT License，Copyright (c) 2022 Mau Joost。
+其中若干图形由 ziminOS 照同一套画法补画，同样以 MIT 授权分发。
+详见 docs/第三方组件.md。
 */
 `;
 

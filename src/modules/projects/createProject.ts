@@ -1,6 +1,7 @@
 /**
  * [INPUT]: 依赖 obsidian 的 MarkdownView/Notice/normalizePath 与 App/TFile 类型，
- *          依赖 core/constants 的 FOLDERS、core/folders 的 ensureFolderPath/normalizeFolderPath、
+ *          依赖 core/commands 的 PROJECT_COMMANDS、core/constants 的 FOLDERS、
+ *          core/folders 的 ensureFolderPath/normalizeFolderPath、
  *          core/modals 的 TextInputModal、core/time 的 nowStampAndUid、core/types 的 ZiminosContext，
  *          依赖同目录 templates 的 mocContent 与 mocFrontmatter
  * [OUTPUT]: 对外提供 CreateProjectPreset 预设契约、PersonPicker 选人能力契约、
@@ -17,6 +18,7 @@
 
 import { MarkdownView, Notice, normalizePath } from 'obsidian';
 import type { TFile } from 'obsidian';
+import { PROJECT_COMMANDS } from '../../core/commands';
 import { FIELDS, FOLDERS } from '../../core/constants';
 import { ensureFolderPath, normalizeFolderPath } from '../../core/folders';
 import { ChoiceModal, TextInputModal } from '../../core/modals';
@@ -264,11 +266,7 @@ export async function createProject(
 
 /** 注册「新建项目」命令。命令本身不做错误处理，失败提示由 createProject 内部统一给出 */
 export function registerCreateProjectCommand(ctx: ZiminosContext, pickPerson: PersonPicker): void {
-    ctx.plugin.addCommand({
-        id: 'create-project',
-        name: '新建项目',
-        callback: () => {
-            void createProject(ctx, undefined, pickPerson);
-        },
+    ctx.commands.register(PROJECT_COMMANDS.create, () => {
+        void createProject(ctx, undefined, pickPerson);
     });
 }

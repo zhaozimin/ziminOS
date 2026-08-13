@@ -1,6 +1,10 @@
 /*
 本文件由 esbuild 自 src/ 目录打包生成，请勿直接编辑。
 需要修改行为请改 src/ 下的 TypeScript 源码，然后运行 npm run build。
+
+图标来自 Pikaicons（https://pikaicons.com），MIT License，Copyright (c) 2022 Mau Joost。
+其中若干图形由 ziminOS 照同一套画法补画，同样以 MIT 授权分发。
+详见 docs/第三方组件.md。
 */
 
 "use strict";
@@ -28,7 +32,7 @@ __export(main_exports, {
   default: () => ZiminosPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian20 = require("obsidian");
+var import_obsidian22 = require("obsidian");
 
 // src/core/codeblock.ts
 var import_obsidian2 = require("obsidian");
@@ -77,10 +81,6 @@ var INSPIRATION_DEFAULTS = {
   heading: "# \u7075\u611F\u96C6",
   insertPosition: "heading-top",
   format: "- [ ]  {{content}} [[{{date}}]] {{time}}"
-};
-var INSPIRATION_COMMAND = {
-  id: "capture-inspiration",
-  name: "\u8BB0\u5F55\u7075\u611F"
 };
 var CARD_FIELDS = [
   "aliases",
@@ -184,8 +184,6 @@ var PERIODS = {
     key: "daily",
     type: NOTE_TYPES.diary,
     label: "\u65E5\u8BB0",
-    commandName: "\u6253\u5F00\u4ECA\u5929\u7684\u65E5\u8BB0",
-    commandId: "open-diary",
     folder: `${FOLDERS.diary}/01-daily`,
     titleFormat: DAY_FORMAT,
     startOfUnit: "day",
@@ -197,8 +195,6 @@ var PERIODS = {
     key: "weekly",
     type: NOTE_TYPES.weekly,
     label: "\u5468\u8BB0",
-    commandName: "\u6253\u5F00\u672C\u5468\u590D\u76D8",
-    commandId: "open-weekly",
     folder: `${FOLDERS.diary}/02-weekly`,
     // GGGG 是 ISO 周所属年，与 WW 配对才不会在跨年周上错位
     titleFormat: "GGGG-[W]WW",
@@ -211,8 +207,6 @@ var PERIODS = {
     key: "monthly",
     type: NOTE_TYPES.monthly,
     label: "\u6708\u8BB0",
-    commandName: "\u6253\u5F00\u672C\u6708\u590D\u76D8",
-    commandId: "open-monthly",
     folder: `${FOLDERS.diary}/03-monthly`,
     titleFormat: "YYYY-MM",
     startOfUnit: "month",
@@ -224,8 +218,6 @@ var PERIODS = {
     key: "quarterly",
     type: NOTE_TYPES.quarterly,
     label: "\u5B63\u8BB0",
-    commandName: "\u6253\u5F00\u672C\u5B63\u590D\u76D8",
-    commandId: "open-quarterly",
     folder: `${FOLDERS.diary}/04-quarterly`,
     titleFormat: "YYYY-[Q]Q",
     startOfUnit: "quarter",
@@ -237,8 +229,6 @@ var PERIODS = {
     key: "yearly",
     type: NOTE_TYPES.yearly,
     label: "\u5E74\u8BB0",
-    commandName: "\u6253\u5F00\u672C\u5E74\u590D\u76D8",
-    commandId: "open-yearly",
     folder: `${FOLDERS.diary}/05-yearly`,
     titleFormat: "YYYY",
     startOfUnit: "year",
@@ -256,10 +246,6 @@ var DIARY_FOLDERS = [
   PERIODS.yearly.folder
 ];
 var DIARY_LOG_HEADING = "## \u4ECA\u5929\u505A\u4E86\u4EC0\u4E48";
-var THEME_COMMAND = {
-  id: "write-theme",
-  name: "\u5199\u590D\u76D8\u4E3B\u9898"
-};
 var CONTACT_TIERS = ["\u5BC6", "\u8FD1", "\u719F", "\u8FDC"];
 var TIER_LIMITS = {
   \u5BC6: 7,
@@ -285,24 +271,10 @@ var PAYMENT_FIELDS = {
 };
 var CLIENT_PAYMENT_HEADING = "## \u4ED8\u8D39\u4E0E\u4EA4\u4ED8";
 var PROJECT_PAYMENT_HEADING = "## \u6536\u6B3E";
-var CLIENT_COMMANDS = {
-  setup: { id: "setup-clients", name: "\u521D\u59CB\u5316\u5BA2\u6237\u6A21\u5757" },
-  create: { id: "create-client", name: "\u65B0\u5EFA\u5BA2\u6237" },
-  payment: { id: "add-payment", name: "\u589E\u52A0\u4ED8\u8D39" },
-  receipt: { id: "record-receipt", name: "\u8BB0\u6536\u6B3E" }
-};
-var CONTACT_COMMANDS = {
-  create: { id: "create-contact", name: "\u65B0\u5EFA\u4EBA\u8109" },
-  favor: { id: "record-favor", name: "\u8BB0\u4EBA\u60C5" }
-};
 var SNIPPET_FOLDER_NAME = "snippets";
 var SNIPPET_EXTENSION = ".css";
 var APPEARANCE_FILE_NAME = "appearance.json";
 var ENABLED_SNIPPETS_KEY = "enabledCssSnippets";
-var APPEARANCE_COMMAND = {
-  id: "open-appearance-switch",
-  name: "\u6253\u5F00\u5916\u89C2\u5F00\u5173"
-};
 var VIEW_BLOCK_LANG = "ziminos";
 var VIEW_REFRESH_DEBOUNCE_MS = 200;
 
@@ -711,6 +683,219 @@ function parseBlock(source) {
   return { name: (_a = lines[0]) != null ? _a : "", params };
 }
 
+// src/core/commands.ts
+var COMMAND_GROUPS = {
+  setup: "\u5F00\u8352",
+  projects: "\u9879\u76EE",
+  inspiration: "\u7075\u611F",
+  review: "\u590D\u76D8",
+  contacts: "\u4EBA\u8109",
+  clients: "\u5BA2\u6237",
+  appearance: "\u5916\u89C2"
+};
+var COMMAND_ICONS = {
+  vault: "ziminos-vault",
+  project: "ziminos-project",
+  card: "ziminos-card",
+  done: "ziminos-done",
+  paused: "ziminos-paused",
+  dropped: "ziminos-dropped",
+  active: "ziminos-active",
+  inspiration: "ziminos-inspiration",
+  daily: "ziminos-daily",
+  weekly: "ziminos-weekly",
+  monthly: "ziminos-monthly",
+  quarterly: "ziminos-quarterly",
+  yearly: "ziminos-yearly",
+  theme: "ziminos-theme",
+  contact: "ziminos-contact",
+  favor: "ziminos-favor",
+  clients: "ziminos-clients",
+  client: "ziminos-client",
+  payment: "ziminos-payment",
+  receipt: "ziminos-receipt",
+  appearance: "ziminos-appearance"
+};
+var INIT_VAULT_COMMAND = {
+  id: "init-vault",
+  name: "\u521D\u59CB\u5316\u7B14\u8BB0\u5E93",
+  icon: COMMAND_ICONS.vault,
+  group: COMMAND_GROUPS.setup
+};
+var PROJECT_COMMANDS = {
+  create: {
+    id: "create-project",
+    name: "\u65B0\u5EFA\u9879\u76EE",
+    icon: COMMAND_ICONS.project,
+    group: COMMAND_GROUPS.projects
+  },
+  card: {
+    id: "init-card",
+    name: "\u521D\u59CB\u5316\u5F53\u524D\u5361\u7247",
+    icon: COMMAND_ICONS.card,
+    group: COMMAND_GROUPS.projects
+  }
+};
+var TRANSITION_COMMANDS = [
+  {
+    id: "project-done",
+    name: "\u5B8C\u6210\u9879\u76EE",
+    icon: COMMAND_ICONS.done,
+    group: COMMAND_GROUPS.projects,
+    action: "done"
+  },
+  {
+    id: "project-paused",
+    name: "\u6682\u505C\u9879\u76EE",
+    icon: COMMAND_ICONS.paused,
+    group: COMMAND_GROUPS.projects,
+    action: "paused"
+  },
+  {
+    id: "project-dropped",
+    name: "\u653E\u5F03\u9879\u76EE",
+    icon: COMMAND_ICONS.dropped,
+    group: COMMAND_GROUPS.projects,
+    action: "dropped"
+  },
+  {
+    id: "project-active",
+    name: "\u91CD\u65B0\u5F00\u59CB\u9879\u76EE",
+    icon: COMMAND_ICONS.active,
+    group: COMMAND_GROUPS.projects,
+    action: "active"
+  }
+];
+var INSPIRATION_COMMAND = {
+  id: "capture-inspiration",
+  name: "\u8BB0\u5F55\u7075\u611F",
+  icon: COMMAND_ICONS.inspiration,
+  group: COMMAND_GROUPS.inspiration
+};
+var PERIOD_COMMANDS = {
+  daily: {
+    id: "open-diary",
+    name: "\u6253\u5F00\u4ECA\u5929\u7684\u65E5\u8BB0",
+    icon: COMMAND_ICONS.daily,
+    group: COMMAND_GROUPS.review
+  },
+  weekly: {
+    id: "open-weekly",
+    name: "\u6253\u5F00\u672C\u5468\u590D\u76D8",
+    icon: COMMAND_ICONS.weekly,
+    group: COMMAND_GROUPS.review
+  },
+  monthly: {
+    id: "open-monthly",
+    name: "\u6253\u5F00\u672C\u6708\u590D\u76D8",
+    icon: COMMAND_ICONS.monthly,
+    group: COMMAND_GROUPS.review
+  },
+  quarterly: {
+    id: "open-quarterly",
+    name: "\u6253\u5F00\u672C\u5B63\u590D\u76D8",
+    icon: COMMAND_ICONS.quarterly,
+    group: COMMAND_GROUPS.review
+  },
+  yearly: {
+    id: "open-yearly",
+    name: "\u6253\u5F00\u672C\u5E74\u590D\u76D8",
+    icon: COMMAND_ICONS.yearly,
+    group: COMMAND_GROUPS.review
+  }
+};
+var THEME_COMMAND = {
+  id: "write-theme",
+  name: "\u5199\u590D\u76D8\u4E3B\u9898",
+  icon: COMMAND_ICONS.theme,
+  group: COMMAND_GROUPS.review
+};
+var CONTACT_COMMANDS = {
+  create: {
+    id: "create-contact",
+    name: "\u65B0\u5EFA\u4EBA\u8109",
+    icon: COMMAND_ICONS.contact,
+    group: COMMAND_GROUPS.contacts
+  },
+  favor: {
+    id: "record-favor",
+    name: "\u8BB0\u4EBA\u60C5",
+    icon: COMMAND_ICONS.favor,
+    group: COMMAND_GROUPS.contacts
+  }
+};
+var CLIENT_COMMANDS = {
+  setup: {
+    id: "setup-clients",
+    name: "\u521D\u59CB\u5316\u5BA2\u6237\u6A21\u5757",
+    icon: COMMAND_ICONS.clients,
+    group: COMMAND_GROUPS.clients
+  },
+  create: {
+    id: "create-client",
+    name: "\u65B0\u5EFA\u5BA2\u6237",
+    icon: COMMAND_ICONS.client,
+    group: COMMAND_GROUPS.clients
+  },
+  payment: {
+    id: "add-payment",
+    name: "\u589E\u52A0\u4ED8\u8D39",
+    icon: COMMAND_ICONS.payment,
+    group: COMMAND_GROUPS.clients
+  },
+  receipt: {
+    id: "record-receipt",
+    name: "\u8BB0\u6536\u6B3E",
+    icon: COMMAND_ICONS.receipt,
+    group: COMMAND_GROUPS.clients
+  }
+};
+var APPEARANCE_COMMAND = {
+  id: "open-appearance-switch",
+  name: "\u6253\u5F00\u5916\u89C2\u5F00\u5173",
+  icon: COMMAND_ICONS.appearance,
+  group: COMMAND_GROUPS.appearance
+};
+var DEFAULT_RIBBON_COMMANDS = [
+  PROJECT_COMMANDS.create.id,
+  INSPIRATION_COMMAND.id,
+  PERIOD_COMMANDS.daily.id,
+  THEME_COMMAND.id,
+  CONTACT_COMMANDS.create.id,
+  CONTACT_COMMANDS.favor.id,
+  APPEARANCE_COMMAND.id
+];
+function normalizeRibbonCommands(value) {
+  if (!Array.isArray(value)) return DEFAULT_RIBBON_COMMANDS;
+  return value.filter((item) => typeof item === "string");
+}
+var CommandRegistry = class {
+  constructor(plugin) {
+    this.entries = [];
+    this.plugin = plugin;
+  }
+  /**
+   * 注册一条命令。
+   *
+   * 一律用 callback 而非 checkCallback：命令必须在任何情况下都可见可点，
+   * 用户在错误的笔记上执行时该得到一句「为什么不行」，而不是眼看着命令凭空消失。
+   * 这条纪律同样适用于侧边栏——一个会自己隐身的图标比一句提示更让人困惑。
+   */
+  register(spec, run) {
+    this.plugin.addCommand({
+      id: spec.id,
+      name: spec.name,
+      icon: spec.icon,
+      callback: run
+    });
+    this.entries.push({ spec, run });
+  }
+  /** 花名册，顺序即注册顺序。交出只读视图，谁都别想往里塞一条没注册过的命令 */
+  list() {
+    return this.entries;
+  }
+};
+
 // src/core/guard.ts
 var SelfWriteGuard = class {
   constructor() {
@@ -759,6 +944,7 @@ var DEFAULT_SETTINGS = {
   clientSources: "B\u7AD9,\u6296\u97F3,\u5C0F\u7EA2\u4E66,\u516C\u4F17\u53F7,\u670B\u53CB\u4ECB\u7ECD,\u5176\u4ED6",
   clientProducts: "\u8BFE\u7A0B,\u54A8\u8BE2,\u966A\u8DD1",
   showAppearanceSwitch: true,
+  ribbonCommands: DEFAULT_RIBBON_COMMANDS,
   initializedAt: ""
 };
 
@@ -853,6 +1039,7 @@ var TEXTS = {
   failedReadPrefix: "\u8BFB\u4E0D\u5230\u7247\u6BB5\u76EE\u5F55\uFF1A",
   failedPrefix: "\u5199\u5165\u5931\u8D25\uFF1A"
 };
+var SAME_GESTURE_MS = 300;
 function registerAppearanceSwitch(ctx) {
   const swi = new AppearanceSwitch(ctx);
   return () => swi.syncVisibility();
@@ -863,6 +1050,18 @@ var AppearanceSwitch = class {
     this.panelEl = null;
     /** 关闭浮层用的解绑动作。开一次装一次、关一次拆干净，不给插件生命周期留监听残渣 */
     this.detachers = [];
+    /**
+     * 上一次「点了别处所以关掉」发生在什么时刻（performance.now）。
+     *
+     * 它解决的是第三个入口带来的一个具体麻烦：左侧边栏那个调色盘按钮不在放行名单里
+     * （状态栏按钮是构造时就拿到的引用，边栏按钮由 ribbon 模块发出，本文件够不着），
+     * 于是点它一下会被同一次手势处理两遍——mousedown 判定「点了别处」先关，
+     * 随后 click 触发命令又开回来，浮层闪一下还在，用户以为按钮坏了。
+     * 记一个时刻而不是维护一份放行名单，是因为「谁能打开我」这件事会随入口增加而增长，
+     * 名单迟早漏掉一个；而「这次打开是不是刚才那次关闭的同一个手势」是个恒定的问题。
+     * 判据与 SelfWriteGuard 同形：都是「这动作是不是我自己刚才引起的」。
+     */
+    this.dismissedAt = Number.NEGATIVE_INFINITY;
     this.ctx = ctx;
     this.statusEl = ctx.plugin.addStatusBarItem();
     this.statusEl.addClass("ziminos-appearance-switch");
@@ -871,11 +1070,7 @@ var AppearanceSwitch = class {
     this.paintIcon();
     this.syncVisibility();
     this.statusEl.addEventListener("click", () => this.toggle());
-    ctx.plugin.addCommand({
-      id: APPEARANCE_COMMAND.id,
-      name: APPEARANCE_COMMAND.name,
-      callback: () => this.toggle()
-    });
+    ctx.commands.register(APPEARANCE_COMMAND, () => this.toggle());
     ctx.plugin.register(() => this.close());
   }
   /** 按设置决定按钮显隐。关掉只是收起按钮，命令与浮层照常可用 */
@@ -895,8 +1090,14 @@ var AppearanceSwitch = class {
   // 开合
   // ============================================================
   toggle() {
-    if (this.panelEl) this.close();
-    else void this.open();
+    if (this.panelEl) {
+      this.close();
+      return;
+    }
+    const sameGesture = performance.now() - this.dismissedAt < SAME_GESTURE_MS;
+    this.dismissedAt = Number.NEGATIVE_INFINITY;
+    if (sameGesture) return;
+    void this.open();
   }
   /** 打开浮层。事实现读，因此「设置 → 外观」里的改动与新丢进目录的文件都会出现在这一次 */
   async open() {
@@ -943,6 +1144,7 @@ var AppearanceSwitch = class {
       const target = event.target;
       if (!(target instanceof Node)) return;
       if (panel.contains(target) || this.statusEl.contains(target)) return;
+      this.dismissedAt = performance.now();
       this.close();
     };
     const onKeyDown = (event) => {
@@ -2351,33 +2553,17 @@ function clientSeed(ctx) {
   };
 }
 function registerClientCommands(ctx, applySeed2) {
-  ctx.plugin.addCommand({
-    id: CLIENT_COMMANDS.setup.id,
-    name: CLIENT_COMMANDS.setup.name,
-    callback: () => {
-      void setupClients(ctx, applySeed2);
-    }
+  ctx.commands.register(CLIENT_COMMANDS.setup, () => {
+    void setupClients(ctx, applySeed2);
   });
-  ctx.plugin.addCommand({
-    id: CLIENT_COMMANDS.create.id,
-    name: CLIENT_COMMANDS.create.name,
-    callback: () => {
-      void createClient(ctx);
-    }
+  ctx.commands.register(CLIENT_COMMANDS.create, () => {
+    void createClient(ctx);
   });
-  ctx.plugin.addCommand({
-    id: CLIENT_COMMANDS.payment.id,
-    name: CLIENT_COMMANDS.payment.name,
-    callback: () => {
-      void addPayment(ctx);
-    }
+  ctx.commands.register(CLIENT_COMMANDS.payment, () => {
+    void addPayment(ctx);
   });
-  ctx.plugin.addCommand({
-    id: CLIENT_COMMANDS.receipt.id,
-    name: CLIENT_COMMANDS.receipt.name,
-    callback: () => {
-      void recordReceipt(ctx);
-    }
+  ctx.commands.register(CLIENT_COMMANDS.receipt, () => {
+    void recordReceipt(ctx);
   });
 }
 async function setupClients(ctx, applySeed2) {
@@ -2577,12 +2763,8 @@ var DIRECTION_HINTS = {
   \u5411\u4E0B: "\u7ED9\u673A\u4F1A\uFF0C\u7ED3\u5584\u7F18"
 };
 function registerCreateContactCommand(ctx) {
-  ctx.plugin.addCommand({
-    id: CONTACT_COMMANDS.create.id,
-    name: CONTACT_COMMANDS.create.name,
-    callback: () => {
-      void createContact(ctx);
-    }
+  ctx.commands.register(CONTACT_COMMANDS.create, () => {
+    void createContact(ctx);
   });
 }
 async function createContact(ctx) {
@@ -2887,12 +3069,8 @@ var STATUS_HINTS = {
   \u4ED6\u6B20: "\u4ED6\u8FD8\u6B20\u6211\u4E00\u4EFD"
 };
 function registerRecordFavorCommand(ctx, openDaily) {
-  ctx.plugin.addCommand({
-    id: CONTACT_COMMANDS.favor.id,
-    name: CONTACT_COMMANDS.favor.name,
-    callback: () => {
-      void recordFavor(ctx, openDaily);
-    }
+  ctx.commands.register(CONTACT_COMMANDS.favor, () => {
+    void recordFavor(ctx, openDaily);
   });
 }
 async function recordFavor(ctx, openDaily) {
@@ -3197,12 +3375,8 @@ function skipBlankLines(lines, start) {
 
 // src/modules/inspiration/capture.ts
 function registerInspirationCaptureCommand(ctx) {
-  ctx.plugin.addCommand({
-    id: INSPIRATION_COMMAND.id,
-    name: INSPIRATION_COMMAND.name,
-    callback: () => {
-      void captureInspiration(ctx);
-    }
+  ctx.commands.register(INSPIRATION_COMMAND, () => {
+    void captureInspiration(ctx);
   });
 }
 async function captureInspiration(ctx) {
@@ -3406,15 +3580,11 @@ async function initCard(ctx, file, opts) {
   }
 }
 function registerCardInitCommand(ctx) {
-  ctx.plugin.addCommand({
-    id: "init-card",
-    name: "\u521D\u59CB\u5316\u5F53\u524D\u5361\u7247",
-    callback: () => {
-      const activeFile = ctx.app.workspace.getActiveFile();
-      if (!activeFile) return;
-      void initCard(ctx, activeFile, { interactive: true }).catch(() => {
-      });
-    }
+  ctx.commands.register(PROJECT_COMMANDS.card, () => {
+    const activeFile = ctx.app.workspace.getActiveFile();
+    if (!activeFile) return;
+    void initCard(ctx, activeFile, { interactive: true }).catch(() => {
+    });
   });
 }
 function registerCardAutoInit(ctx) {
@@ -3673,12 +3843,8 @@ async function createProject(ctx, preset, pickPerson2) {
   }
 }
 function registerCreateProjectCommand(ctx, pickPerson2) {
-  ctx.plugin.addCommand({
-    id: "create-project",
-    name: "\u65B0\u5EFA\u9879\u76EE",
-    callback: () => {
-      void createProject(ctx, void 0, pickPerson2);
-    }
+  ctx.commands.register(PROJECT_COMMANDS.create, () => {
+    void createProject(ctx, void 0, pickPerson2);
   });
 }
 
@@ -3716,21 +3882,10 @@ async function createFirstProject(ctx) {
 var import_obsidian14 = require("obsidian");
 var PROJECT_TYPE = "project";
 var CONFIRM_MODAL_CLASS = "qa-project-transition-confirm";
-var TRANSITION_COMMANDS = [
-  { id: "project-done", name: "\u5B8C\u6210\u9879\u76EE", action: "done" },
-  { id: "project-paused", name: "\u6682\u505C\u9879\u76EE", action: "paused" },
-  { id: "project-dropped", name: "\u653E\u5F03\u9879\u76EE", action: "dropped" },
-  { id: "project-active", name: "\u91CD\u65B0\u5F00\u59CB\u9879\u76EE", action: "active" }
-];
 function registerTransitionCommands(ctx) {
   for (const command of TRANSITION_COMMANDS) {
-    ctx.plugin.addCommand({
-      id: command.id,
-      name: command.name,
-      // 回调不能是 async：流转内部已吃掉全部异常并转成 Notice，此处无需等待
-      callback: () => {
-        void runProjectTransition(ctx, command.action);
-      }
+    ctx.commands.register(command, () => {
+      void runProjectTransition(ctx, command.action);
     });
   }
 }
@@ -4183,12 +4338,8 @@ async function openPeriodNote(ctx, period, options) {
 }
 function registerPeriodicCommands(ctx) {
   for (const period of Object.values(PERIODS)) {
-    ctx.plugin.addCommand({
-      id: period.commandId,
-      name: period.commandName,
-      callback: () => {
-        void openPeriodNote(ctx, period);
-      }
+    ctx.commands.register(PERIOD_COMMANDS[period.key], () => {
+      void openPeriodNote(ctx, period);
     });
   }
 }
@@ -4485,12 +4636,8 @@ var MESSAGES5 = {
   failedPrefix: "\u5199\u4E3B\u9898\u5931\u8D25\uFF1A"
 };
 function registerThemeCommand(ctx) {
-  ctx.plugin.addCommand({
-    id: THEME_COMMAND.id,
-    name: THEME_COMMAND.name,
-    callback: () => {
-      void writeTheme(ctx);
-    }
+  ctx.commands.register(THEME_COMMAND, () => {
+    void writeTheme(ctx);
   });
 }
 async function writeTheme(ctx) {
@@ -4710,8 +4857,194 @@ function themeCell(view, note, missing) {
 }
 var reviewThemeViews = [dailyOutput, themeChain];
 
-// src/modules/setup/init.ts
+// src/modules/ribbon/dock.ts
+var import_obsidian19 = require("obsidian");
+
+// src/modules/ribbon/icons.ts
 var import_obsidian18 = require("obsidian");
+var GRID = 24;
+var BOX = 100;
+var STROKE = "var(--icon-stroke, 2)";
+var CIRCLE = "M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z";
+var CALENDAR = "M8 2V4.12777M8 6V4.12777M16 2V4.12777M16 6V4.12777M20.9597 10C21 10.7878 21 11.7554 21 13C21 15.7956 21 17.1935 20.5433 18.2961C19.9343 19.7663 18.7663 20.9343 17.2961 21.5433C16.1935 22 14.7956 22 12 22C9.20435 22 7.80653 22 6.7039 21.5433C5.23373 20.9343 4.06569 19.7663 3.45672 18.2961C3 17.1935 3 15.7956 3 13C3 11.7554 3 10.7878 3.0403 10M20.9597 10C20.9095 9.01824 20.7967 8.31564 20.5433 7.7039C19.9343 6.23373 18.7663 5.06569 17.2961 4.45672C16.9146 4.29871 16.4978 4.19536 16 4.12777M20.9597 10L3.0403 10M3.0403 10C3.09052 9.01824 3.20333 8.31564 3.45672 7.7039C4.06569 6.23373 5.23373 5.06569 6.7039 4.45672C7.08538 4.29871 7.50219 4.19536 8 4.12777M8 4.12777C8.94106 4 10.1716 4 12 4C13.8284 4 15.0589 4 16 4.12777";
+var ARTWORK = {
+  // ---------- 开荒 ----------
+  /** 初始化笔记库：三层叠起来的骨架。开荒做的就是一次把层次铺好（Pikaicons 原图） */
+  [COMMAND_ICONS.vault]: [
+    "M21 12C20.8809 12.2538 20.5097 12.4413 19.7673 12.8164L13.4417 16.012C12.9131 16.279 12.6488 16.4125 12.3715 16.4651C12.126 16.5116 11.874 16.5116 11.6285 16.4651C11.3513 16.4125 11.0869 16.279 10.5583 16.012L4.23275 12.8164C3.49033 12.4413 3.11912 12.2538 3 12M21 16.5C20.8809 16.7538 20.5097 16.9413 19.7673 17.3164L13.4417 20.512C12.9131 20.779 12.6488 20.9125 12.3715 20.9651C12.126 21.0116 11.874 21.0116 11.6285 20.9651C11.3512 20.9125 11.0869 20.779 10.5583 20.512L4.23275 17.3164C3.49033 16.9413 3.11912 16.7538 3 16.5M13.4293 11.5471L19.7007 8.58144C20.4368 8.23337 20.8048 8.05933 20.9229 7.82383C21.0257 7.61888 21.0257 7.38112 20.9229 7.17617C20.8048 6.94067 20.4368 6.76663 19.7007 6.41856L13.4293 3.45291C12.9052 3.20508 12.6432 3.08117 12.3683 3.0324C12.1249 2.9892 11.8751 2.9892 11.6317 3.0324C11.3568 3.08117 11.0948 3.20508 10.5707 3.45291L4.29927 6.41856C3.56321 6.76663 3.19518 6.94067 3.07708 7.17617C2.97431 7.38112 2.97431 7.61888 3.07708 7.82383C3.19518 8.05933 3.56321 8.23337 4.29927 8.58144L10.5707 11.5471C11.0948 11.7949 11.3568 11.9188 11.6317 11.9676C11.8751 12.0108 12.1249 12.0108 12.3683 11.9676C12.6432 11.9188 12.9052 11.7949 13.4293 11.5471Z"
+  ],
+  // ---------- 项目 ----------
+  /** 新建项目：插一面旗。项目与领域的区别就是它有终点，而旗子是插在终点上的（Pikaicons 原图） */
+  [COMMAND_ICONS.project]: [
+    "M5 3L5 21M6.4719 13.5167C8.2565 12.9141 10.2137 13.104 11.8491 14.0385C13.4338 14.9441 15.3231 15.1518 17.0666 14.6121L18.376 14.2068C18.747 14.092 19 13.7488 19 13.3604V4.48517C19 3.59568 17.3336 4.41833 16.9549 4.53557C15.2894 5.05107 13.4824 4.8202 12 3.90255C10.5176 2.98491 8.71058 2.75404 7.04513 3.26954L5.59885 3.71719C5.24278 3.82741 5 4.15669 5 4.52944V13.4561C5 14.2118 6.13797 13.6294 6.4719 13.5167Z"
+  ],
+  /** 初始化当前卡片：一页笔记。它做的事就是把眼前这一页登记成卡片（Pikaicons 原图） */
+  [COMMAND_ICONS.card]: [
+    "M14 2.05752V3.2C14 4.88016 14 5.72024 14.327 6.36197C14.6146 6.92646 15.0735 7.3854 15.638 7.67302C16.2798 8 17.1198 8 18.8 8L19.9425 8M14 2.05752C13.6065 2 13.136 2 12.349 2H10.4C8.15979 2 7.03968 2 6.18404 2.43597C5.43139 2.81947 4.81947 3.43139 4.43597 4.18404C4 5.03969 4 6.15979 4 8.4V15.6C4 17.8402 4 18.9603 4.43597 19.816C4.81947 20.5686 5.43139 21.1805 6.18404 21.564C7.03968 22 8.15979 22 10.4 22H13.6C15.8402 22 16.9603 22 17.816 21.564C18.5686 21.1805 19.1805 20.5686 19.564 19.816C20 18.9603 20 17.8402 20 15.6V9.65097C20 8.864 20 8.39354 19.9425 8M14 2.05752C14.0957 2.07151 14.1869 2.0889 14.2769 2.11052C14.6851 2.20851 15.0753 2.37013 15.4331 2.58944C15.8368 2.83681 16.1827 3.18271 16.8745 3.87452L18.1255 5.12548C18.8173 5.81729 19.1632 6.16319 19.4106 6.56686C19.6299 6.92475 19.7915 7.31493 19.8895 7.72307C19.9111 7.81313 19.9285 7.90429 19.9425 8"
+  ],
+  /** 完成项目：圈里一个勾（Pikaicons 原图） */
+  [COMMAND_ICONS.done]: [
+    "M8.5 12.5124L10.8412 14.851C11.9672 12.8821 13.5256 11.1944 15.3987 9.91536L15.5 9.84619M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+  ],
+  /** 暂停项目：圈里两竖。免费集里没有暂停，照圆底补画，圆与完成/放弃/重新开始共用同一个 */
+  [COMMAND_ICONS.paused]: ["M10 9.5V14.5M14 9.5V14.5", CIRCLE],
+  /** 放弃项目：圈里一个叉（Pikaicons 原图） */
+  [COMMAND_ICONS.dropped]: [
+    "M9.00006 15.0001L12.0001 12.0001M12.0001 12.0001L15.0001 9.00012M12.0001 12.0001L9.00006 9.00012M12.0001 12.0001L15.0001 15.0001M12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21Z"
+  ],
+  /** 重新开始项目：圈里一个播放三角。三角的三个角都拿曲线收圆，才与圆头描边是同一套语言 */
+  [COMMAND_ICONS.active]: [
+    "M10.6 9.35C10.6 8.87 11.13 8.58 11.53 8.83L16.06 11.48C16.45 11.71 16.45 12.29 16.06 12.52L11.53 15.17C11.13 15.42 10.6 15.13 10.6 14.65V9.35Z",
+    CIRCLE
+  ],
+  // ---------- 灵感 ----------
+  /**
+   * 记录灵感：灯泡。免费集里没有，照同一套画法补画——
+   * 玻璃泡是半径 6 的大圆弧，下面两道短线是灯头的螺纹。
+   * 螺纹保留两道而不是一道：只留一道时它在 18px 下会读成气球或定位针。
+   */
+  [COMMAND_ICONS.inspiration]: [
+    "M8.55 13.1a6 6 0 1 1 6.9 0c-.44.31-.7.82-.7 1.36V15.6h-5.5v-1.14c0-.54-.26-1.05-.7-1.36Z",
+    "M9.4 18.4H14.6",
+    "M10.6 21.2H13.4"
+  ],
+  // ---------- 复盘 ----------
+  /** 今天的日记：日历框里一个点，一天就是一个点 */
+  [COMMAND_ICONS.daily]: [CALENDAR, "M12 15.6H12.01"],
+  /** 本周复盘：日历框里一整行，一周就是一行 */
+  [COMMAND_ICONS.weekly]: [CALENDAR, "M8 15.6H16"],
+  /** 本月复盘：日历框里一片格子，一个月就是一片 */
+  [COMMAND_ICONS.monthly]: [
+    CALENDAR,
+    "M8 13.8H8.01M12 13.8H12.01M16 13.8H16.01M8 17.4H8.01M12 17.4H12.01M16 17.4H16.01"
+  ],
+  /**
+   * 本季复盘：一块四分之一饼。
+   * 季与年不再用日历框，是因为再密的格子在 18px 下都和月记长得一样；
+   * 而「四分之一」这件事，饼图是它唯一不会被误读的画法。
+   */
+  [COMMAND_ICONS.quarterly]: ["M12 12V3M12 12H21", CIRCLE],
+  /** 本年复盘：一枚勋章。年度复盘是一年的结算，不是更大的一格日历（Pikaicons 原图） */
+  [COMMAND_ICONS.yearly]: [
+    "M16.735 14.1556C18.1274 12.8762 19 11.04 19 9C19 5.13401 15.866 2 12 2C8.13401 2 5 5.13401 5 9C5 11.1635 5.98154 13.0978 7.52363 14.3819M16.735 14.1556C15.4887 15.3008 13.826 16 12 16C10.2976 16 8.73705 15.3922 7.52363 14.3819M16.735 14.1556L18.5 22L18.1414 21.7793C14.3983 19.4759 9.65688 19.5621 6 22L7.52363 14.3819"
+  ],
+  /** 写复盘主题：一支笔。主题是五级复盘里唯一要动笔写的字段（Pikaicons 原图） */
+  [COMMAND_ICONS.theme]: [
+    "M3.06616 18.3151C3.07546 17.9381 3.08011 17.7497 3.12568 17.5726C3.16608 17.4156 3.23007 17.2658 3.31544 17.1282C3.41171 16.973 3.54444 16.8396 3.8099 16.573L16.8626 3.46297C17.3862 2.93708 18.204 2.84896 18.8267 3.25131C19.565 3.7283 20.1957 4.3551 20.6785 5.09146L20.7123 5.14307C20.7368 5.18037 20.749 5.19902 20.7594 5.21582C21.1427 5.83327 21.0616 6.63294 20.5622 7.16005C20.5486 7.17439 20.5329 7.19018 20.5014 7.22177L7.52811 20.2521C7.25274 20.5287 7.11505 20.6669 6.95435 20.7658C6.81188 20.8534 6.65654 20.9178 6.49406 20.9568C6.31079 21.0008 6.11608 21.0005 5.72665 20.9999L3 20.9955L3.06616 18.3151Z"
+  ],
+  // ---------- 人脉 ----------
+  /** 新建人脉：人加一颗心。人脉与客户的分别就在这颗心上（Pikaicons 原图） */
+  [COMMAND_ICONS.contact]: [
+    "M9 15H7C4.79086 15 3 16.7909 3 19C3 20.1046 3.89543 21 5 21H11M15 7C15 9.20914 13.2091 11 11 11C8.79086 11 7 9.20914 7 7C7 4.79086 8.79086 3 11 3C13.2091 3 15 4.79086 15 7ZM17 21C16.6 21 13 19.0556 13 16.3335C13 14.9724 14.2 14.0003 15.4 14.0003C15.9896 14.0003 16.6 14.1947 17 14.778C17.4 14.1947 18 13.9918 18.6 14.0003C19.8 14.0171 21 14.9724 21 16.3335C21 19.0556 17.4 21 17 21Z"
+  ],
+  /** 记人情：一份礼。人情账本记的就是「谁送出去、谁欠着」（Pikaicons 原图） */
+  [COMMAND_ICONS.favor]: [
+    "M4.22222 12H19.7778M4.22222 12V17.5556C4.22222 19.1113 4.22222 19.8891 4.52498 20.4833C4.7913 21.006 5.21624 21.4309 5.73892 21.6972C6.33311 22 7.11097 22 8.66667 22H15.3333C16.889 22 17.6669 22 18.2611 21.6972C18.7838 21.4309 19.2087 21.006 19.475 20.4833C19.7778 19.8891 19.7778 19.1113 19.7778 17.5556V12M4.22222 12C3.91259 12 3.75778 12 3.62793 11.9819C2.7919 11.8653 2.13473 11.2081 2.01811 10.3721C2 10.2422 2 10.0874 2 9.77778C2 9.46815 2 9.31334 2.01811 9.18348C2.13473 8.34746 2.7919 7.69029 3.62793 7.57367C3.75778 7.55556 3.91259 7.55556 4.22222 7.55556H19.7778C20.0874 7.55556 20.2422 7.55556 20.3721 7.57367C21.2081 7.69029 21.8653 8.34746 21.9819 9.18348C22 9.31334 22 9.46815 22 9.77778C22 10.0874 22 10.2422 21.9819 10.3721C21.8653 11.2081 21.2081 11.8653 20.3721 11.9819C20.2422 12 20.0874 12 19.7778 12M12 7.55556H14.7778C16.3119 7.55556 17.5556 6.3119 17.5556 4.77778C17.5556 3.24365 16.3119 2 14.7778 2C13.2437 2 12 3.24365 12 4.77778M12 7.55556V4.77778M12 7.55556L12 22M12 7.55556H9.22222C7.6881 7.55556 6.44444 6.3119 6.44444 4.77778C6.44444 3.24365 7.6881 2 9.22222 2C10.7563 2 12 3.24365 12 4.77778"
+  ],
+  // ---------- 客户 ----------
+  /** 初始化客户模块：一只公文包。这条命令做的是「开张」，不是新增某一个客户（Pikaicons 原图） */
+  [COMMAND_ICONS.clients]: [
+    "M8 7.02163C8 6.09166 8 5.60504 8.10222 5.22354C8.37962 4.18827 9.18827 3.37962 10.2235 3.10222C10.605 3 11.07 3 12 3C12.93 3 13.395 3 13.7765 3.10222C14.8117 3.37962 15.6204 4.18827 15.8978 5.22354C16 5.60504 16 6.09166 16 7.02163M12 15V17M3.0233 11.9607C3.25404 14.2296 5.17027 16 7.5 16H16.5C18.8297 16 20.746 14.2296 20.9767 11.9607M3.0233 11.9607C3 12.4943 3 13.1501 3 14C3 15.8613 3 16.7919 3.24472 17.5451C3.73931 19.0673 4.93273 20.2607 6.45492 20.7553C7.20808 21 8.13872 21 10 21H14C15.8613 21 16.7919 21 17.5451 20.7553C19.0673 20.2607 20.2607 19.0673 20.7553 17.5451C21 16.7919 21 15.8613 21 14C21 13.1501 21 12.4943 20.9767 11.9607M3.0233 11.9607C3.05102 11.3258 3.11174 10.8642 3.24472 10.4549C3.73931 8.93273 4.93273 7.73931 6.45492 7.24472C7.20808 7 8.13872 7 10 7H14C15.8613 7 16.7919 7 17.5451 7.24472C19.0673 7.73931 20.2607 8.93273 20.7553 10.4549C20.8883 10.8642 20.949 11.3258 20.9767 11.9607"
+  ],
+  /** 新建客户：一个人。客户是陌生人，所以不给他人脉那颗心（Pikaicons 原图） */
+  [COMMAND_ICONS.client]: [
+    "M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z",
+    "M16 15H8C5.79086 15 4 16.7909 4 19C4 20.1046 4.89543 21 6 21H18C19.1046 21 20 20.1046 20 19C20 16.7909 18.2091 15 16 15Z"
+  ],
+  /** 增加付费：一个钱字。它记的是客户答应给多少（Pikaicons 原图） */
+  [COMMAND_ICONS.payment]: [
+    "M12 3V21M17 7.5C16.63 5.9473 15.3249 4.8 13.7717 4.8H12H10.3333C8.49238 4.8 7 6.41177 7 8.4C7 10.3882 8.49238 12 10.3333 12H12L13.6667 12C15.5076 12 17 13.6118 17 15.6C17 17.5882 15.5076 19.2 13.6667 19.2H12H10.2283C8.67512 19.2 7.37004 18.0527 7 16.5"
+  ],
+  /** 记收款：一只钱包。付费是承诺，收款是钱真的进了口袋，两件事两个图（Pikaicons 原图） */
+  [COMMAND_ICONS.receipt]: [
+    "M2 14.5V11C2 8.19974 2 6.79961 2.54497 5.73005C3.02433 4.78924 3.78924 4.02433 4.73005 3.54497C5.79961 3 7.19974 3 10 3H13.5C14.8978 3 15.5967 3 16.1481 3.22836C16.8831 3.53284 17.4672 4.11687 17.7716 4.85195C17.979 5.35251 17.9981 5.97475 17.9998 7.1313M2 14.5C2 15.8297 2 16.9946 2.3806 17.9134C2.88807 19.1386 3.86144 20.1119 5.08658 20.6194C6.00544 21 7.17029 21 9.5 21H14.5C16.8297 21 17.9946 21 18.9134 20.6194C20.1386 20.1119 21.1119 19.1386 21.6194 17.9134C22 16.9946 22 15.8297 22 14.5C22 12.1703 22 11.0054 21.6194 10.0866C21.1119 8.86144 20.1386 7.88807 18.9134 7.3806C18.639 7.26693 18.3426 7.18721 17.9998 7.1313M2 14.5C2 12.1703 2 11.0054 2.3806 10.0866C2.88807 8.86144 3.86144 7.88807 5.08658 7.3806C6.00544 7 7.17029 7 9.5 7H14.5C16.1339 7 17.1949 7 17.9998 7.1313M14 12H17"
+  ],
+  // ---------- 外观 ----------
+  /**
+   * 外观开关：一块调色盘。免费集里没有，照同一套画法补画。
+   * 盘身是一个被右下角的拇指口咬掉一块的圆，四个点是颜料——
+   * 点用「起点终点差 0.01」的零长线段画，靠圆头描边收成圆点，与免费集里的点画法一致。
+   */
+  [COMMAND_ICONS.appearance]: [
+    "M12 21.5C6.75 21.5 2.5 17.25 2.5 12S6.75 2.5 12 2.5C17.25 2.5 21.5 6.35 21.5 11.1C21.5 13.5 19.55 15.45 17.15 15.45H15.9C14.7 15.45 13.72 16.42 13.72 17.63C13.72 18.14 13.9 18.62 14.19 19C14.44 19.32 14.6 19.72 14.6 20.16C14.6 20.9 14 21.5 13.26 21.5H12Z",
+    "M7.5 12.6H7.51M9.5 8.7H9.51M13.7 7.5H13.71M17.2 10.4H17.21"
+  ]
+};
+function registerZiminosIcons(plugin) {
+  for (const [name, paths] of Object.entries(ARTWORK)) {
+    (0, import_obsidian18.addIcon)(name, wrap(paths));
+    plugin.register(() => (0, import_obsidian18.removeIcon)(name));
+  }
+}
+function wrap(paths) {
+  const body = paths.map((d) => `<path d="${d}"/>`).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${GRID} ${GRID}" width="${BOX}" height="${BOX}" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:${STROKE}">${body}</svg>`;
+}
+
+// src/modules/ribbon/dock.ts
+var ITEM_CLASS = "ziminos-ribbon-item";
+var HIDDEN_CLASS = "ziminos-ribbon-hidden";
+var MOBILE_PENDING = "\u5DF2\u53D6\u6D88\u3002\u624B\u673A\u7AEF\u8981\u91CD\u542F Obsidian \u540E\uFF0C\u5B83\u624D\u4F1A\u4ECE\u8FB9\u680F\u83DC\u5355\u91CC\u6D88\u5931\u3002";
+function registerRibbon(ctx) {
+  const dock = new RibbonDock(ctx);
+  return () => dock.syncVisibility();
+}
+var RibbonDock = class {
+  constructor(ctx) {
+    /** 已经发出去的按钮，键是命令 id。发出去的收不回来，所以这张表只增不减 */
+    this.buttons = /* @__PURE__ */ new Map();
+    this.ctx = ctx;
+    registerZiminosIcons(ctx.plugin);
+    this.syncVisibility();
+  }
+  /**
+   * 让边栏与设置对齐：勾上的建出来（或取消隐藏），取消勾选的藏起来。
+   *
+   * 这里有两条纪律，都来自 Obsidian 边栏的真实模型，不是口味问题：
+   *
+   * 其一，**只为勾上的命令建按钮**，而不是一次建齐二十一个再切显隐。
+   * Obsidian 的 leftRibbon 自己存着一份 items，手机端底栏的边栏菜单与
+   * 桌面「设置 → 外观 → 功能区」的管理弹窗都是遍历这份 items 画出来的，
+   * 两处的过滤条件都只有 item.hidden，与 DOM 无关（边栏右键菜单会多看一眼 buttonEl 在不在，
+   * 但那对我们没用——被藏起来的按钮 buttonEl 还在）。一次建齐的话，那两处永远列着全部二十一条，
+   * 包括「初始化笔记库」这种一辈子只该按一次的——那正是这个功能想消灭的杂乱。
+   *
+   * 其二，**藏起来走 class 不走 inline display**，理由见 HIDDEN_CLASS。
+   *
+   * 代价说清楚：Obsidian 没有公开的「撤下某一个边栏按钮」，所以本次会话内取消勾选的
+   * 只能先藏着，它在 items 里的那条记录要等下次重载才消失（重载时它压根不会被建出来）。
+   * 在那之前，另外三处入口仍然列着它、也点得动：手机端底栏的边栏菜单、
+   * 桌面「设置 → 外观 → 功能区」的管理弹窗、以及边栏空白处的右键菜单。
+   * 边栏那一列是主入口，用户看到的就是消失了，所以这个残留在桌面上无伤；
+   * 手机上则完全看不出变化，那一句 Notice 就是为它准备的。
+   */
+  syncVisibility() {
+    const enabled = new Set(this.ctx.settings.ribbonCommands);
+    for (const command of this.ctx.commands.list()) {
+      const id = command.spec.id;
+      const existing = this.buttons.get(id);
+      if (!enabled.has(id)) {
+        if (existing && !existing.hasClass(HIDDEN_CLASS)) {
+          existing.addClass(HIDDEN_CLASS);
+          if (import_obsidian19.Platform.isPhone) new import_obsidian19.Notice(MOBILE_PENDING);
+        }
+        continue;
+      }
+      if (existing) {
+        existing.removeClass(HIDDEN_CLASS);
+        continue;
+      }
+      const el = this.ctx.plugin.addRibbonIcon(command.spec.icon, command.spec.name, () => {
+        command.run();
+      });
+      el.addClass(ITEM_CLASS);
+      this.buttons.set(id, el);
+    }
+  }
+};
+
+// src/modules/setup/init.ts
+var import_obsidian20 = require("obsidian");
 
 // src/modules/setup/schemaNote.ts
 var SAMPLE_TYPE = "\u793A\u4F8B";
@@ -4850,7 +5183,7 @@ async function initializeVault(ctx, seeds) {
   try {
     const isFirstRun = ctx.settings.initializedAt === "";
     if (isFirstRun && hasUserNotes(ctx)) {
-      new import_obsidian18.Notice(MESSAGES6.notEmpty);
+      new import_obsidian20.Notice(MESSAGES6.notEmpty);
       return;
     }
     for (const folder of INIT_FOLDERS) {
@@ -4870,11 +5203,11 @@ async function initializeVault(ctx, seeds) {
       ctx.settings.initializedAt = nowStamp(ctx.settings.dateTimeFormat);
     }
     await ctx.saveSettings();
-    new import_obsidian18.Notice(MESSAGES6.done);
+    new import_obsidian20.Notice(MESSAGES6.done);
     await ctx.app.workspace.openLinkText(NAV_FILE, "", false);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian18.Notice(MESSAGES6.failedPrefix + message);
+    new import_obsidian20.Notice(MESSAGES6.failedPrefix + message);
   }
 }
 async function applySeed(ctx, seed) {
@@ -4896,7 +5229,7 @@ async function createFileIfMissing(ctx, path, content) {
 }
 
 // src/settings.ts
-var import_obsidian19 = require("obsidian");
+var import_obsidian21 = require("obsidian");
 var TEXTS2 = {
   initHeading: "\u5F00\u8352",
   initName: "\u521D\u59CB\u5316\u7B14\u8BB0\u5E93",
@@ -4920,6 +5253,11 @@ var TEXTS2 = {
   inspirationPositionDesc: "\u51B3\u5B9A\u65B0\u7075\u611F\u5199\u5728\u6807\u9898\u533A\u6216\u6574\u7BC7\u6B63\u6587\u7684\u5934\u5C3E\u3002\u7F6E\u9876\u4F1A\u81EA\u52A8\u907F\u5F00 YAML\u3001\u9875\u9762\u6807\u9898\u548C Dataview \u7B5B\u9009\u533A\u3002",
   inspirationFormatName: "\u5355\u6761\u683C\u5F0F",
   inspirationFormatDesc: "\u5FC5\u987B\u4FDD\u7559 {{content}}\uFF1B\u8FD8\u53EF\u4F7F\u7528 {{date}}\u3001{{time}}\u3001{{datetime}}\u3002",
+  ribbonHeading: "\u5DE6\u4FA7\u8FB9\u680F",
+  ribbonIntro: "\u52FE\u4E0A\u7684\u547D\u4EE4\u4F1A\u53D8\u6210\u6700\u5DE6\u8FB9\u90A3\u4E00\u5217\u56FE\u6807\uFF0C\u70B9\u4E00\u4E0B\u5C31\u6267\u884C\uFF0C\u4E0D\u7528\u518D\u6253\u5F00\u547D\u4EE4\u9762\u677F\u3002\u56FE\u6807\u662F Pikaicons\uFF0C\u8DDF\u7740\u4E3B\u9898\u7684\u989C\u8272\u4E0E\u63CF\u8FB9\u7C97\u7EC6\u8D70\u3002\u53D6\u6D88\u52FE\u9009\u540E\uFF0C\u5B83\u5728\u300C\u8BBE\u7F6E \u2192 \u5916\u89C2 \u2192 \u529F\u80FD\u533A\u300D\u548C\u624B\u673A\u7AEF\u7684\u8FB9\u680F\u83DC\u5355\u91CC\u8981\u91CD\u542F Obsidian \u624D\u6D88\u5931\uFF1B\u53CD\u8FC7\u6765\uFF0C\u4F60\u5728\u90A3\u4E24\u5904\u85CF\u6389\u7684\u56FE\u6807\uFF0C\u8FD9\u91CC\u52FE\u4E0A\u4E5F\u4E0D\u4F1A\u51FA\u73B0\u2014\u2014\u90A3\u662F Obsidian \u81EA\u5DF1\u7684\u5F00\u5173\uFF0C\u5F97\u56DE\u90A3\u513F\u6253\u5F00\u3002",
+  ribbonCountPrefix: "\u5DF2\u6446\u51FA ",
+  ribbonCountSeparator: " / ",
+  ribbonCountSuffix: " \u6761",
   appearanceHeading: "\u5916\u89C2",
   appearanceSwitchName: "\u72B6\u6001\u680F\u5916\u89C2\u5F00\u5173",
   appearanceSwitchDesc: "\u5728\u53F3\u4E0B\u89D2\u72B6\u6001\u680F\u653E\u4E00\u4E2A \u{1F3A8} \u6309\u94AE\uFF0C\u70B9\u5F00\u5C31\u80FD\u9010\u4E2A\u5F00\u5173 CSS \u7247\u6BB5\uFF0C\u4E0D\u5FC5\u518D\u8FDB\u8BBE\u7F6E\u7FFB\u5916\u89C2\u9875\u3002\u5173\u6389\u53EA\u662F\u6536\u8D77\u6309\u94AE\uFF0C\u547D\u4EE4\u9762\u677F\u91CC\u7684\u300C\u6253\u5F00\u5916\u89C2\u5F00\u5173\u300D\u7167\u5E38\u53EF\u7528\u3002",
@@ -4951,14 +5289,27 @@ var SYSTEM_MODULES = [
     name: "\u{1F3A8} \u5916\u89C2\u5305 v2",
     status: "\u8FD0\u884C\u4E2D \xB7 Minimal + Style Settings + \u5341\u4E8C\u4E2A CSS \u7247\u6BB5\uFF0C\u53F3\u4E0B\u89D2\u4E00\u952E\u5F00\u5173",
     running: true
+  },
+  {
+    name: "\u{1F9ED} \u5DE6\u4FA7\u8FB9\u680F v1",
+    status: "\u8FD0\u884C\u4E2D \xB7 \u4E8C\u5341\u4E00\u6761\u547D\u4EE4\u914D Pikaicons \u56FE\u6807\uFF0C\u9ED8\u8BA4\u6446\u51FA\u4E03\u6761",
+    running: true
   }
 ];
-var ZiminosSettingTab = class extends import_obsidian19.PluginSettingTab {
-  constructor(ctx, initialize, syncAppearanceSwitch) {
+var ZiminosSettingTab = class extends import_obsidian21.PluginSettingTab {
+  constructor(ctx, actions) {
     super(ctx.app, ctx.plugin);
+    /**
+     * 「已摆出 N / 21 条」那行字。
+     *
+     * 这是全页唯一一处持有 DOM 引用的地方，理由很具体：勾选要即时更新这个数，
+     * 而重建整页会把滚动条弹回顶部——二十一行排下来，用户勾第十八行时页面一跳，
+     * 他就得重新找回刚才那一行。持有的是一个渲染出来的节点，不是第二份状态：
+     * 数字仍然现算自设置对象，每次 display 也会把它换成新节点。
+     */
+    this.ribbonCountEl = null;
     this.ctx = ctx;
-    this.initialize = initialize;
-    this.syncAppearanceSwitch = syncAppearanceSwitch;
+    this.actions = actions;
   }
   /** 每次打开设置页都整体重建，保证显示的永远是设置对象的当前值 */
   display() {
@@ -4968,6 +5319,7 @@ var ZiminosSettingTab = class extends import_obsidian19.PluginSettingTab {
     this.renderAutomationSection(containerEl);
     this.renderInspirationSection(containerEl);
     this.renderAppearanceSection(containerEl);
+    this.renderRibbonSection(containerEl);
     this.renderAdvancedSection(containerEl);
     this.renderModulesSection(containerEl);
   }
@@ -4980,12 +5332,12 @@ var ZiminosSettingTab = class extends import_obsidian19.PluginSettingTab {
    * 状态说明随之从「尚未初始化」翻面成「已就绪」。
    */
   renderInitSection(containerEl) {
-    new import_obsidian19.Setting(containerEl).setName(TEXTS2.initHeading).setHeading();
-    new import_obsidian19.Setting(containerEl).setName(TEXTS2.initName).setDesc(this.describeInitState()).addButton((button) => {
+    new import_obsidian21.Setting(containerEl).setName(TEXTS2.initHeading).setHeading();
+    new import_obsidian21.Setting(containerEl).setName(TEXTS2.initName).setDesc(this.describeInitState()).addButton((button) => {
       button.setButtonText(TEXTS2.initButton).setCta().onClick(async () => {
         button.setDisabled(true);
         try {
-          await this.initialize();
+          await this.actions.initialize();
         } finally {
           this.display();
         }
@@ -5003,7 +5355,7 @@ var ZiminosSettingTab = class extends import_obsidian19.PluginSettingTab {
   // ============================================================
   /** 自动化区：两个开关，对应插件仅有的两个常驻监听 */
   renderAutomationSection(containerEl) {
-    new import_obsidian19.Setting(containerEl).setName(TEXTS2.autoHeading).setHeading();
+    new import_obsidian21.Setting(containerEl).setName(TEXTS2.autoHeading).setHeading();
     this.renderToggle(containerEl, "autoCardInit", TEXTS2.autoCardName, TEXTS2.autoCardDesc);
     this.renderToggle(containerEl, "autoUpdated", TEXTS2.autoUpdatedName, TEXTS2.autoUpdatedDesc);
   }
@@ -5014,7 +5366,7 @@ var ZiminosSettingTab = class extends import_obsidian19.PluginSettingTab {
    * 天然看得见新值；只有已经画在屏幕上的东西（状态栏按钮）才需要有人去推它一把。
    */
   renderToggle(containerEl, key, name, desc, onApplied) {
-    new import_obsidian19.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
+    new import_obsidian21.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
       toggle.setValue(this.ctx.settings[key]).onChange(async (value) => {
         this.ctx.settings[key] = value;
         await this.ctx.saveSettings();
@@ -5027,7 +5379,7 @@ var ZiminosSettingTab = class extends import_obsidian19.PluginSettingTab {
   // ============================================================
   /** 灵感区直接展示常用自定义项；这些字段就是「记录灵感」命令的下一次运行参数 */
   renderInspirationSection(containerEl) {
-    new import_obsidian19.Setting(containerEl).setName(TEXTS2.inspirationHeading).setHeading();
+    new import_obsidian21.Setting(containerEl).setName(TEXTS2.inspirationHeading).setHeading();
     this.renderInspirationTextField(
       containerEl,
       "inspirationFolder",
@@ -5049,14 +5401,14 @@ var ZiminosSettingTab = class extends import_obsidian19.PluginSettingTab {
       TEXTS2.inspirationTargetDesc,
       INSPIRATION_DEFAULTS.heading
     );
-    new import_obsidian19.Setting(containerEl).setName(TEXTS2.inspirationPositionName).setDesc(TEXTS2.inspirationPositionDesc).addDropdown((dropdown) => {
+    new import_obsidian21.Setting(containerEl).setName(TEXTS2.inspirationPositionName).setDesc(TEXTS2.inspirationPositionDesc).addDropdown((dropdown) => {
       dropdown.addOption("heading-top", "\u6807\u9898\u4E0B\u65B9\uFF08\u65B0\u5185\u5BB9\u5728\u524D\uFF09").addOption("heading-bottom", "\u6807\u9898\u533A\u672B\u5C3E\uFF08\u65B0\u5185\u5BB9\u5728\u540E\uFF09").addOption("file-top", "\u6B63\u6587\u9876\u90E8").addOption("file-bottom", "\u6B63\u6587\u5E95\u90E8").setValue(this.normalizeInspirationPosition(this.ctx.settings.inspirationInsertPosition)).onChange(async (value) => {
         const position = this.normalizeInspirationPosition(value);
         this.ctx.settings.inspirationInsertPosition = position;
         await this.ctx.saveSettings();
       });
     });
-    new import_obsidian19.Setting(containerEl).setName(TEXTS2.inspirationFormatName).setDesc(TEXTS2.inspirationFormatDesc).addTextArea((textArea) => {
+    new import_obsidian21.Setting(containerEl).setName(TEXTS2.inspirationFormatName).setDesc(TEXTS2.inspirationFormatDesc).addTextArea((textArea) => {
       textArea.setPlaceholder(INSPIRATION_DEFAULTS.format).setValue(this.ctx.settings.inspirationFormat).onChange(async (value) => {
         this.ctx.settings.inspirationFormat = value;
         await this.ctx.saveSettings();
@@ -5067,7 +5419,7 @@ var ZiminosSettingTab = class extends import_obsidian19.PluginSettingTab {
   }
   /** 灵感目录/文件/标题三个文本设置共用同一条即时落盘路径 */
   renderInspirationTextField(containerEl, key, name, desc, fallback) {
-    new import_obsidian19.Setting(containerEl).setName(name).setDesc(desc).addText((text) => {
+    new import_obsidian21.Setting(containerEl).setName(name).setDesc(desc).addText((text) => {
       text.setPlaceholder(fallback).setValue(this.ctx.settings[key]).onChange(async (value) => {
         this.ctx.settings[key] = value;
         await this.ctx.saveSettings();
@@ -5084,17 +5436,83 @@ var ZiminosSettingTab = class extends import_obsidian19.PluginSettingTab {
   // ============================================================
   /** 外观区：只有一个开关，管的是「右下角要不要常驻这个按钮」，不管片段本身开着还是关着 */
   renderAppearanceSection(containerEl) {
-    new import_obsidian19.Setting(containerEl).setName(TEXTS2.appearanceHeading).setHeading();
+    new import_obsidian21.Setting(containerEl).setName(TEXTS2.appearanceHeading).setHeading();
     this.renderToggle(
       containerEl,
       "showAppearanceSwitch",
       TEXTS2.appearanceSwitchName,
       TEXTS2.appearanceSwitchDesc,
-      this.syncAppearanceSwitch
+      this.actions.syncAppearanceSwitch
     );
   }
   // ============================================================
-  // 五、高级
+  // 五、左侧边栏
+  // ============================================================
+  /**
+   * 侧边栏区：一句说明 + 按分组排下来的二十一行。
+   *
+   * 清单现读花名册而不是自己维护一份，因此它与命令面板里能搜到的命令永远是同一批；
+   * 分组标题按「相邻两行的 group 不同」切出来，与外观开关面板用的是同一套画法——
+   * 分组顺序不需要另一张表，它就是命令的注册顺序。
+   */
+  renderRibbonSection(containerEl) {
+    const commands = this.ctx.commands.list();
+    new import_obsidian21.Setting(containerEl).setName(TEXTS2.ribbonHeading).setHeading();
+    const summary = new import_obsidian21.Setting(containerEl).setName(this.describeRibbonCount()).setDesc(TEXTS2.ribbonIntro);
+    this.ribbonCountEl = summary.nameEl;
+    let currentGroup = "";
+    for (const command of commands) {
+      if (command.spec.group !== currentGroup) {
+        currentGroup = command.spec.group;
+        containerEl.createDiv({ cls: "ziminos-ribbon-group", text: currentGroup });
+      }
+      this.renderRibbonRow(containerEl, command.spec.id, command.spec.icon, command.spec.name);
+    }
+  }
+  /** 只改那一个数字，不重建页面——重建会把滚动条弹回顶部 */
+  refreshRibbonCount() {
+    if (this.ribbonCountEl) this.ribbonCountEl.setText(this.describeRibbonCount());
+  }
+  /**
+   * 「已摆出 7 / 21 条」。给的是一个量级感：勾多了那条边栏会变成谁也不看的图标柱。
+   * 总数现算自花名册，不写死——这一区不认识任何一条具体命令，也就不该认识它们有几条。
+   */
+  describeRibbonCount() {
+    const total = this.ctx.commands.list().length;
+    return TEXTS2.ribbonCountPrefix + this.ctx.settings.ribbonCommands.length + TEXTS2.ribbonCountSeparator + total + TEXTS2.ribbonCountSuffix;
+  }
+  /** 一行：图标 + 命令名 + 开关。图标就是它在边栏上的样子，勾之前先看见 */
+  renderRibbonRow(containerEl, id, icon, name) {
+    const label = createFragment((frag) => {
+      const iconEl = frag.createSpan({ cls: "ziminos-ribbon-icon" });
+      (0, import_obsidian21.setIcon)(iconEl, icon);
+      frag.createSpan({ text: name });
+    });
+    new import_obsidian21.Setting(containerEl).setName(label).setClass("ziminos-ribbon-row").addToggle((toggle) => {
+      toggle.setValue(this.ctx.settings.ribbonCommands.includes(id)).onChange(async (value) => {
+        this.ctx.settings.ribbonCommands = this.nextRibbonCommands(id, value);
+        await this.ctx.saveSettings();
+        this.actions.syncRibbon();
+        this.refreshRibbonCount();
+      });
+    });
+  }
+  /**
+   * 算出勾选之后的新清单。
+   *
+   * 一律照花名册重排一遍而不是往旧数组里增删：其一，边栏顺序因此永远等于命令的注册顺序，
+   * 与用户先勾哪个无关；其二，data.json 里若混进了不认识的 id（换过版本、手改过文件），
+   * 第一次勾选就顺手扫掉，不会留一条永远没人认领的记录。
+   * 返回的是新数组，绝不原地改——ribbonCommands 在用户没调过时与 DEFAULT_SETTINGS 共用引用。
+   */
+  nextRibbonCommands(id, enabled) {
+    const chosen = new Set(this.ctx.settings.ribbonCommands);
+    if (enabled) chosen.add(id);
+    else chosen.delete(id);
+    return this.ctx.commands.list().map((command) => command.spec.id).filter((candidate) => chosen.has(candidate));
+  }
+  // ============================================================
+  // 六、高级
   // ============================================================
   /**
    * 高级区：默认折叠。
@@ -5118,7 +5536,7 @@ var ZiminosSettingTab = class extends import_obsidian19.PluginSettingTab {
    */
   renderTextField(containerEl, field) {
     const fallback = DEFAULT_SETTINGS[field.key];
-    new import_obsidian19.Setting(containerEl).setName(field.name).setDesc(`${field.hint}\u8BFE\u7A0B\u9ED8\u8BA4\u503C ${fallback}\uFF0C\u6539\u524D\u4E09\u601D\u3002`).addText((text) => {
+    new import_obsidian21.Setting(containerEl).setName(field.name).setDesc(`${field.hint}\u8BFE\u7A0B\u9ED8\u8BA4\u503C ${fallback}\uFF0C\u6539\u524D\u4E09\u601D\u3002`).addText((text) => {
       text.setPlaceholder(fallback).setValue(this.ctx.settings[field.key]).onChange(async (value) => {
         this.ctx.settings[field.key] = value;
         await this.ctx.saveSettings();
@@ -5126,24 +5544,20 @@ var ZiminosSettingTab = class extends import_obsidian19.PluginSettingTab {
     });
   }
   // ============================================================
-  // 六、系统模块
+  // 七、系统模块
   // ============================================================
   /** 模块区：纯展示，没有任何控件。未上线的模块以禁用态呈现，看得见但点不动 */
   renderModulesSection(containerEl) {
-    new import_obsidian19.Setting(containerEl).setName(TEXTS2.modulesHeading).setHeading();
+    new import_obsidian21.Setting(containerEl).setName(TEXTS2.modulesHeading).setHeading();
     for (const entry of SYSTEM_MODULES) {
-      const item = new import_obsidian19.Setting(containerEl).setName(entry.name).setDesc(entry.status);
+      const item = new import_obsidian21.Setting(containerEl).setName(entry.name).setDesc(entry.status);
       if (!entry.running) item.setDisabled(true);
     }
   }
 };
 
 // src/main.ts
-var INIT_VAULT_COMMAND = {
-  id: "init-vault",
-  name: "\u521D\u59CB\u5316\u7B14\u8BB0\u5E93"
-};
-var ZiminosPlugin = class extends import_obsidian20.Plugin {
+var ZiminosPlugin = class extends import_obsidian22.Plugin {
   constructor() {
     super(...arguments);
     /**
@@ -5161,20 +5575,17 @@ var ZiminosPlugin = class extends import_obsidian20.Plugin {
       settings: this.settings,
       saveSettings: () => this.saveData(this.settings),
       // 守卫必须全库唯一：写方标记与监听方查询共用同一份记录，自写抑制才成立
-      guard: new SelfWriteGuard()
+      guard: new SelfWriteGuard(),
+      // 注册台同样全库唯一：它手里那份花名册就是左侧边栏与设置页看到的命令清单
+      commands: new CommandRegistry(this)
     };
     const collectSeeds = () => [
       projectsSeed(ctx),
       reviewSeed(ctx),
       contactsSeed(ctx)
     ];
-    this.addCommand({
-      id: INIT_VAULT_COMMAND.id,
-      name: INIT_VAULT_COMMAND.name,
-      // 开荒内部已把全部异常转成中文 Notice，此处无需等待也无需接住
-      callback: () => {
-        void initializeVault(ctx, collectSeeds());
-      }
+    ctx.commands.register(INIT_VAULT_COMMAND, () => {
+      void initializeVault(ctx, collectSeeds());
     });
     registerCreateProjectCommand(ctx, (title, quiet) => pickPerson(ctx, title, quiet));
     registerCardInitCommand(ctx);
@@ -5188,6 +5599,7 @@ var ZiminosPlugin = class extends import_obsidian20.Plugin {
     registerRecordFavorCommand(ctx, () => openPeriodNote(ctx, PERIODS.daily, { reveal: false }));
     registerClientCommands(ctx, (seed) => applySeed(ctx, seed));
     const syncAppearanceSwitch = registerAppearanceSwitch(ctx);
+    const syncRibbon = registerRibbon(ctx);
     registerViewCodeBlock(ctx, [
       ...reviewThemeViews,
       ...reviewProjectViews,
@@ -5198,7 +5610,11 @@ var ZiminosPlugin = class extends import_obsidian20.Plugin {
       ...clientViews
     ]);
     this.addSettingTab(
-      new ZiminosSettingTab(ctx, () => initializeVault(ctx, collectSeeds()), syncAppearanceSwitch)
+      new ZiminosSettingTab(ctx, {
+        initialize: () => initializeVault(ctx, collectSeeds()),
+        syncAppearanceSwitch,
+        syncRibbon
+      })
     );
   }
   /**
@@ -5209,5 +5625,6 @@ var ZiminosPlugin = class extends import_obsidian20.Plugin {
   async loadSettings() {
     const stored = await this.loadData();
     this.settings = { ...DEFAULT_SETTINGS, ...stored != null ? stored : {} };
+    this.settings.ribbonCommands = normalizeRibbonCommands(this.settings.ribbonCommands);
   }
 };

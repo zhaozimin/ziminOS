@@ -1,8 +1,9 @@
 /*
  * ziminOS 视图样式
  *
- * 只服务插件自渲染的那二十一个视图，全部选择器都带 ziminos- 前缀，
- * 不碰用户笔记正文、不覆盖主题的任何既有规则。
+ * 服务插件自渲染的那二十一个视图、外观开关浮层，以及设置页里的侧边栏那一区，
+ * 全部选择器都带 ziminos- 前缀，不碰用户笔记正文。
+ * 除文末那一条藏边栏图标的规则外，不覆盖主题的任何既有规则——那一条的理由写在它自己头上。
  * 颜色一律取 Obsidian 的语义变量，因此跟随主题与 Style Settings 的配色走，
  * 换主题、切明暗、改配色都不需要动这个文件。
  */
@@ -205,4 +206,61 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
     color: var(--text-normal);
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* ── 左侧边栏：本次会话内被取消勾选的图标 ── */
+
+/*
+ * 这是全文件唯一一处 !important，值得写清楚为什么。
+ *
+ * 它不是在跟主题抢表现（表格撑满那处刻意用 min-width 绕开了那场竞争）。
+ * 这里要压住的是一个不确定的对手：Obsidian 核心给 .side-dock-ribbon-action 的规则，
+ * 加上任何主题可能追加的更高特异性选择器。而这条声明没有任何商量余地——
+ * 用户在设置里取消了勾选，这个图标就必须消失，输掉这场竞争等于功能不存在。
+ *
+ * inline display 这条通道不能用：Obsidian 的边栏重排会无条件覆写它（见 dock.ts）。
+ */
+.ziminos-ribbon-item.ziminos-ribbon-hidden {
+    display: none !important;
+}
+
+/* ── 左侧边栏：设置页里那二十一行的分组标签、图标与行距 ── */
+
+/*
+ * 分组标签。它不是 Obsidian 的 setting heading，因为它比分区标题矮一级——
+ * 「左侧边栏」是分区，「项目」「复盘」是分区里的组，两者不该长得一样。
+ */
+.ziminos-ribbon-group {
+    margin: 14px 0 2px;
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    font-weight: var(--font-semibold);
+    letter-spacing: 0.04em;
+}
+
+/*
+ * 二十一行挨着排，用 Obsidian 默认的行距会把这一区拉出两屏。
+ * 只收紧上下内边距，不动左右，行与页面其他设置项仍然对齐。
+ */
+.setting-item.ziminos-ribbon-row {
+    padding-top: 6px;
+    padding-bottom: 6px;
+    border-top: none;
+}
+
+/*
+ * 命令名前面那个图标：它就是这条命令在边栏上的样子，勾之前先让人看见。
+ * 尺寸取 --icon-s 而非写死像素，跟着 Obsidian 的图标标度走。
+ */
+.ziminos-ribbon-icon {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 8px;
+    color: var(--text-muted);
+    vertical-align: -0.2em;
+}
+
+.ziminos-ribbon-icon .svg-icon {
+    width: var(--icon-s, 16px);
+    height: var(--icon-s, 16px);
 }

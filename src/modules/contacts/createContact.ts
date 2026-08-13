@@ -1,6 +1,7 @@
 /**
- * [INPUT]: 依赖 obsidian 的 Notice/TFile；依赖 core/constants 的 CONTACT_COMMANDS/CONTACT_FOLDER/
- *          CONTACT_MOC/CONTACT_TIERS/CONTACT_DIRECTIONS/NOTE_TYPES，core/folders 的 ensureFolderPath/
+ * [INPUT]: 依赖 obsidian 的 Notice/TFile；依赖 core/commands 的 CONTACT_COMMANDS，
+ *          core/constants 的 CONTACT_FOLDER/CONTACT_MOC/CONTACT_TIERS/CONTACT_DIRECTIONS/NOTE_TYPES，
+ *          core/folders 的 ensureFolderPath/
  *          normalizeFolderPath，core/modals 的 TextInputModal/ChoiceModal，core/time 的 nowStampAndUid，
  *          core/types 的 ZiminosContext；依赖 ./templates 的 personNoteContent/basenameOf
  * [OUTPUT]: 对外提供 registerCreateContactCommand（注册「新建人脉」命令）
@@ -14,8 +15,8 @@
  */
 
 import { Notice, TFile } from 'obsidian';
+import { CONTACT_COMMANDS } from '../../core/commands';
 import {
-    CONTACT_COMMANDS,
     CONTACT_DIRECTIONS,
     CONTACT_FOLDER,
     CONTACT_MOC,
@@ -60,12 +61,8 @@ const DIRECTION_HINTS: Readonly<Record<string, string>> = {
 
 /** 注册「新建人脉」命令 */
 export function registerCreateContactCommand(ctx: ZiminosContext): void {
-    ctx.plugin.addCommand({
-        id: CONTACT_COMMANDS.create.id,
-        name: CONTACT_COMMANDS.create.name,
-        callback: () => {
-            void createContact(ctx);
-        },
+    ctx.commands.register(CONTACT_COMMANDS.create, () => {
+        void createContact(ctx);
     });
 }
 

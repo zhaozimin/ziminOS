@@ -1,9 +1,11 @@
 /**
  * [INPUT]: 依赖 obsidian 的 Notice/ToggleComponent/setIcon/setTooltip；
- *          依赖 core/constants 的 APPEARANCE_COMMAND、core/types 的 ZiminosContext；
+ *          依赖 core/commands 的 APPEARANCE_COMMAND、core/types 的 ZiminosContext；
  *          依赖 ./snippets 的 readSnippets/setSnippetEnabled/SnippetState
  * [OUTPUT]: 对外提供 registerAppearanceSwitch，返回一个「按设置重新决定按钮显隐」的同步函数
  * [POS]: 外观模块的呈现层：右下角状态栏的那个按钮，以及它弹出的片段清单面板。
+ *        打开这个面板有三条路——状态栏按钮、命令面板、左侧边栏那个调色盘图标；
+ *        后两条同源，因为本文件经 ctx.commands 注册命令，边栏是照花名册摆的。
  *        它不认识 Obsidian 的 CSS 子系统，只认识 snippets.ts 给出的那四个字段，
  *        因此内部实现怎么变都碰不到这个文件。
  *        面板刻意不是 Menu：MySnippets 正是把开关塞进 Menu 的内部 DOM 才在新版里散架的——
@@ -16,7 +18,7 @@
  */
 
 import { Notice, ToggleComponent, setIcon, setTooltip } from 'obsidian';
-import { APPEARANCE_COMMAND } from '../../core/constants';
+import { APPEARANCE_COMMAND } from '../../core/commands';
 import type { ZiminosContext } from '../../core/types';
 import { readSnippets, setSnippetEnabled } from './snippets';
 import type { SnippetState } from './snippets';
@@ -39,6 +41,13 @@ const TEXTS = {
     failedReadPrefix: '读不到片段目录：',
     failedPrefix: '写入失败：',
 } as const;
+
+/**
+ * 同一次点击的 mousedown 与 click 之间的最大间隔（毫秒）。
+ * 取值只需覆盖一次手势内两个事件的派发间隔（实际是同一帧内的微秒级），
+ * 又要短到不会把用户「关掉之后马上再点开」的第二次真实意图吃掉。
+ */
+const SAME_GESTURE_MS = 300;
 
 // ============================================================
 // 装配
@@ -72,6 +81,19 @@ class AppearanceSwitch {
     /** 关闭浮层用的解绑动作。开一次装一次、关一次拆干净，不给插件生命周期留监听残渣 */
     private readonly detachers: (() => void)[] = [];
 
+    /**
+     * 上一次「点了别处所以关掉」发生在什么时刻（performance.now）。
+     *
+     * 它解决的是第三个入口带来的一个具体麻烦：左侧边栏那个调色盘按钮不在放行名单里
+     * （状态栏按钮是构造时就拿到的引用，边栏按钮由 ribbon 模块发出，本文件够不着），
+     * 于是点它一下会被同一次手势处理两遍——mousedown 判定「点了别处」先关，
+     * 随后 click 触发命令又开回来，浮层闪一下还在，用户以为按钮坏了。
+     * 记一个时刻而不是维护一份放行名单，是因为「谁能打开我」这件事会随入口增加而增长，
+     * 名单迟早漏掉一个；而「这次打开是不是刚才那次关闭的同一个手势」是个恒定的问题。
+     * 判据与 SelfWriteGuard 同形：都是「这动作是不是我自己刚才引起的」。
+     */
+    private dismissedAt = Number.NEGATIVE_INFINITY;
+
     constructor(ctx: ZiminosContext) {
         this.ctx = ctx;
         this.statusEl = ctx.plugin.addStatusBarItem();
@@ -84,12 +106,8 @@ class AppearanceSwitch {
 
         this.statusEl.addEventListener('click', () => this.toggle());
 
-        // 按钮可以被用户收起来，命令是到达这个面板的另一条永远存在的路
-        ctx.plugin.addCommand({
-            id: APPEARANCE_COMMAND.id,
-            name: APPEARANCE_COMMAND.name,
-            callback: () => this.toggle(),
-        });
+        // 按钮可以被用户收起来，命令与左侧边栏是到达这个面板的另外两条路
+        ctx.commands.register(APPEARANCE_COMMAND, () => this.toggle());
 
         // 插件卸载时浮层挂在 body 上，不会随状态栏一起被回收，必须自己收走
         ctx.plugin.register(() => this.close());
@@ -116,8 +134,21 @@ class AppearanceSwitch {
     // ============================================================
 
     private toggle(): void {
-        if (this.panelEl) this.close();
-        else void this.open();
+        if (this.panelEl) {
+            this.close();
+
+            return;
+        }
+
+        // 同一次点击刚把浮层关掉，这一下就是那次关闭本身，不该再开回来。
+        // 判过一次就把印记清掉：一次关闭最多吞一次打开，否则窗口内连点第三下会被无故吃掉
+        const sameGesture = performance.now() - this.dismissedAt < SAME_GESTURE_MS;
+
+        this.dismissedAt = Number.NEGATIVE_INFINITY;
+
+        if (sameGesture) return;
+
+        void this.open();
     }
 
     /** 打开浮层。事实现读，因此「设置 → 外观」里的改动与新丢进目录的文件都会出现在这一次 */
@@ -181,6 +212,7 @@ class AppearanceSwitch {
             // 点按钮本身不在这里处理：让它落到按钮的 click 上，由 toggle 收起，否则会关了又开
             if (panel.contains(target) || this.statusEl.contains(target)) return;
 
+            this.dismissedAt = performance.now();
             this.close();
         };
 

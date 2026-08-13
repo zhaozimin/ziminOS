@@ -1,6 +1,8 @@
 /**
- * [INPUT]: 依赖 obsidian 的 Notice/TFile；依赖 core/constants 的 CLIENT_* 常量与 FIELDS/NOTE_TYPES/
- *          PAYMENT_FIELDS/TEMPLATE_FILES，core/folders 的 ensureFolderPath/normalizeFolderPath，
+ * [INPUT]: 依赖 obsidian 的 Notice/TFile；依赖 core/commands 的 CLIENT_COMMANDS，
+ *          core/constants 的 CLIENT_FOLDER/CLIENT_MOC/CLIENT_PAYMENT_HEADING/PROJECT_PAYMENT_HEADING
+ *          与 FIELDS/NOTE_TYPES/PAYMENT_FIELDS/TEMPLATE_FILES，
+ *          core/folders 的 ensureFolderPath/normalizeFolderPath，
  *          core/markdown 的 insertIntoSection，core/modals 的 TextInputModal/ChoiceModal，
  *          core/time 的 nowStampAndUid/today，core/types 的 ZiminosContext 与 VaultSeed；
  *          依赖 ./identity 的 liveNotesOfType/descriptionOf、./templates 的三个生成器
@@ -15,8 +17,8 @@
  */
 
 import { Notice, TFile } from 'obsidian';
+import { CLIENT_COMMANDS } from '../../core/commands';
 import {
-    CLIENT_COMMANDS,
     CLIENT_FOLDER,
     CLIENT_MOC,
     CLIENT_PAYMENT_HEADING,
@@ -90,36 +92,20 @@ export function clientSeed(ctx: ZiminosContext): VaultSeed {
 
 /** 注册客户模块的四条命令 */
 export function registerClientCommands(ctx: ZiminosContext, applySeed: SeedApplier): void {
-    ctx.plugin.addCommand({
-        id: CLIENT_COMMANDS.setup.id,
-        name: CLIENT_COMMANDS.setup.name,
-        callback: () => {
-            void setupClients(ctx, applySeed);
-        },
+    ctx.commands.register(CLIENT_COMMANDS.setup, () => {
+        void setupClients(ctx, applySeed);
     });
 
-    ctx.plugin.addCommand({
-        id: CLIENT_COMMANDS.create.id,
-        name: CLIENT_COMMANDS.create.name,
-        callback: () => {
-            void createClient(ctx);
-        },
+    ctx.commands.register(CLIENT_COMMANDS.create, () => {
+        void createClient(ctx);
     });
 
-    ctx.plugin.addCommand({
-        id: CLIENT_COMMANDS.payment.id,
-        name: CLIENT_COMMANDS.payment.name,
-        callback: () => {
-            void addPayment(ctx);
-        },
+    ctx.commands.register(CLIENT_COMMANDS.payment, () => {
+        void addPayment(ctx);
     });
 
-    ctx.plugin.addCommand({
-        id: CLIENT_COMMANDS.receipt.id,
-        name: CLIENT_COMMANDS.receipt.name,
-        callback: () => {
-            void recordReceipt(ctx);
-        },
+    ctx.commands.register(CLIENT_COMMANDS.receipt, () => {
+        void recordReceipt(ctx);
     });
 }
 

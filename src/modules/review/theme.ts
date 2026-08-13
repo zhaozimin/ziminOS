@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 obsidian 的 Notice 与 TFile；依赖 core/constants 的 FIELDS/PERIODS/THEME_COMMAND，
+ * [INPUT]: 依赖 obsidian 的 Notice 与 TFile；依赖 core/commands 的 THEME_COMMAND，core/constants 的 FIELDS/PERIODS，
  *          core/modals 的 TextInputModal，core/frontmatter 的 Frontmatter 类型，
  *          core/types 的 ZiminosContext；依赖 ./periodic 的 periodOfFile 与 openPeriodNote
  * [OUTPUT]: 对外提供 registerThemeCommand（注册「写复盘主题」命令）
@@ -16,7 +16,8 @@
 
 import { Notice } from 'obsidian';
 import type { TFile } from 'obsidian';
-import { FIELDS, PERIODS, THEME_COMMAND } from '../../core/constants';
+import { THEME_COMMAND } from '../../core/commands';
+import { FIELDS, PERIODS } from '../../core/constants';
 import type { PeriodDefinition } from '../../core/constants';
 import type { Frontmatter } from '../../core/frontmatter';
 import { TextInputModal } from '../../core/modals';
@@ -31,12 +32,8 @@ const MESSAGES = {
 
 /** 注册「写复盘主题」命令 */
 export function registerThemeCommand(ctx: ZiminosContext): void {
-    ctx.plugin.addCommand({
-        id: THEME_COMMAND.id,
-        name: THEME_COMMAND.name,
-        callback: () => {
-            void writeTheme(ctx);
-        },
+    ctx.commands.register(THEME_COMMAND, () => {
+        void writeTheme(ctx);
     });
 }
 
