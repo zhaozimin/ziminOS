@@ -1,0 +1,152 @@
+/* ====================
+来源：guangtou.me
+作者：光头obsidian教程
+功能：自动切换明暗模式，子文件夹引导线跟随父文件夹颜色。
+==================== */
+
+
+/* ■■■■■■■■ 浅色主题变量 ■■■■■■■■ */
+.theme-light {
+  --fold-1: rgb(243, 139, 168);
+  --fold-2: rgb(235, 160, 172);
+  --fold-3: rgb(250, 179, 135);
+  --fold-4: rgb(249, 226, 175);
+  --fold-5: rgb(166, 227, 161);
+  --fold-6: rgb(148, 226, 213);
+  --fold-7: rgb(137, 220, 235);
+  --fold-8: rgb(116, 199, 236);
+  --fold-9: rgb(135, 176, 249);
+  --fold-10: rgb(180, 190, 254);
+  --fold-11: rgb(203, 166, 247);
+}
+
+/* ■■■■■■■■ 暗色主题变量 ■■■■■■■■ */
+.theme-dark {
+  --fold-1: hsl(350, 55%, 26%);
+  --fold-2: hsl(5, 50%, 28%);
+  --fold-3: hsl(25, 55%, 27%);
+  --fold-4: hsl(42, 48%, 29%);
+  --fold-5: hsl(135, 50%, 25%);
+  --fold-6: hsl(170, 55%, 24%);
+  --fold-7: hsl(190, 55%, 25%);
+  --fold-8: hsl(205, 60%, 27%);
+  --fold-9: hsl(225, 55%, 28%);
+  --fold-10: hsl(245, 50%, 30%);
+  --fold-11: hsl(280, 50%, 27%);
+}
+
+/* 禁用默认引导线颜色，确保自定义颜色生效 */
+:root {
+  --nav-indentation-guide-color: transparent;
+  --nav-indentation-guide-width: 0;
+}
+
+/* 为根文件夹添加定位 */
+body .nav-files-container > div > .nav-folder {
+  position: relative;
+}
+
+/* 根文件夹背景颜色（通过伪元素） */
+body .nav-files-container > div > .nav-folder > .nav-folder-title::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -10px;
+  right: -10px;
+  bottom: 0;
+  background-color: var(--folder-color);
+  border-radius: 10px;
+  z-index: -1;
+}
+
+/* 调整根文件夹标题和折叠指示器的颜色 */
+body .nav-files-container > div > .nav-folder > .nav-folder-title,
+body .nav-files-container > div > .nav-folder > .nav-folder-collapse-indicator {
+  color: var(--text-normal) !important;
+  position: relative;
+}
+
+/* 根文件夹标题悬停效果 */
+body .nav-files-container > div > .nav-folder > .nav-folder-title:hover {
+  color: var(--text-normal) !important;
+  filter: brightness(1.15) saturate(1.2);
+}
+
+/* 根文件夹悬停效果（影响背景） */
+body .nav-files-container > div > .nav-folder:hover > .nav-folder-title::before {
+  filter: brightness(0.9);
+}
+
+/* 明确排除子文件夹的背景样式 */
+body .nav-files-container .nav-folder .nav-folder > .nav-folder-title::before {
+  display: none !important;
+}
+
+/* 确保子文件夹容器透明 */
+body .nav-files-container .nav-folder-children {
+  background: transparent !important;
+}
+
+/* 为根文件夹及其所有子文件夹的引导线设置颜色（继承根文件夹的 --folder-color） */
+body .nav-files-container > div > .nav-folder .nav-folder-children {
+  border-left: 2px solid var(--folder-color) !important;
+}
+
+/* 11 色循环 – 应用于根文件夹背景及其所有子文件夹引导线 */
+body .nav-files-container > div > .nav-folder:nth-child(11n + 2),
+body .nav-files-container > div > .nav-folder:nth-child(11n + 2) .nav-folder-children {
+  --folder-color: var(--fold-1);
+}
+
+body .nav-files-container > div > .nav-folder:nth-child(11n + 3),
+body .nav-files-container > div > .nav-folder:nth-child(11n + 3) .nav-folder-children {
+  --folder-color: var(--fold-2);
+}
+
+body .nav-files-container > div > .nav-folder:nth-child(11n + 4),
+body .nav-files-container > div > .nav-folder:nth-child(11n + 4) .nav-folder-children {
+  --folder-color: var(--fold-3);
+}
+
+body .nav-files-container > div > .nav-folder:nth-child(11n + 5),
+body .nav-files-container > div > .nav-folder:nth-child(11n + 5) .nav-folder-children {
+  --folder-color: var(--fold-4);
+}
+
+body .nav-files-container > div > .nav-folder:nth-child(11n + 6),
+body .nav-files-container > div > .nav-folder:nth-child(11n + 6) .nav-folder-children {
+  --folder-color: var(--fold-5);
+}
+
+body .nav-files-container > div > .nav-folder:nth-child(11n + 7),
+body .nav-files-container > div > .nav-folder:nth-child(11n + 7) .nav-folder-children {
+  --folder-color: var(--fold-6);
+}
+
+body .nav-files-container > div > .nav-folder:nth-child(11n + 8),
+body .nav-files-container > div > .nav-folder:nth-child(11n + 8) .nav-folder-children {
+  --folder-color: var(--fold-7);
+}
+
+body .nav-files-container > div > .nav-folder:nth-child(11n + 9),
+body .nav-files-container > div > .nav-folder:nth-child(11n + 9) .nav-folder-children {
+  --folder-color: var(--fold-8);
+}
+
+body .nav-files-container > div > .nav-folder:nth-child(11n + 10),
+body .nav-files-container > div > .nav-folder:nth-child(11n + 10) .nav-folder-children {
+  --folder-color: var(--fold-9);
+}
+
+body .nav-files-container > div > .nav-folder:nth-child(11n + 11),
+body .nav-files-container > div > .nav-folder:nth-child(11n + 11) .nav-folder-children {
+  --folder-color: var(--fold-10);
+}
+
+body .nav-files-container > div > .nav-folder:nth-child(11n + 12),
+body .nav-files-container > div > .nav-folder:nth-child(11n + 12) .nav-folder-children {
+  --folder-color: var(--fold-11);
+}
+
+
+

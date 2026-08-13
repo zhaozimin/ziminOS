@@ -1,0 +1,20 @@
+/* ====================
+来源：guangtou.me
+作者：光头obsidian教程
+功能：PDF导出时，添加列表参考线。
+原作者：https://forum.obsidian.md/u/jaichong/summary
+原来源：https://forum.obsidian.md/t/printing-indentation-lines-in-pdf-export/35254/4
+==================== */
+
+@media print {
+    li > ul::before,
+    li > ol::before {
+        content: "\200B";
+        position: absolute;
+        display: block;
+        left: -15px; /* ■ 左右偏移 ■ */
+        top: 1.8em; /* ■ 上方向下偏移 ■ */
+        bottom: 0.1em; /* ■ 下方向上偏移 ■ */
+        border-right: var(--indentation-guide-width) solid var(--indentation-guide-color);
+    }
+}

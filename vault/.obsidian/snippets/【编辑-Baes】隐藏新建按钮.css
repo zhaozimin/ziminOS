@@ -1,0 +1,16 @@
+/* ====================
+来源：guangtou.me
+作者：光头obsidian教程
+功能：隐藏数据库（Base）中的新建按钮。
+==================== */
+
+/* 1.9版本 隐藏新建笔记按钮 */
+div[aria-label="Create new note"] {
+  display: none !important;
+}
+
+
+/* 1.10版本 隐藏新建笔记按钮 */
+.bases-toolbar-item.bases-toolbar-new-item-menu {
+  display: none !important;
+}

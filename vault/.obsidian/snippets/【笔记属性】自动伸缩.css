@@ -1,0 +1,24 @@
+/* ====================
+来源：guangtou.me
+作者：光头obsidian教程
+功能：笔记属性根据鼠标互动自动展开与折叠。
+==================== */
+
+
+.markdown-preview-view .metadata-container,
+.markdown-source-view .metadata-container {
+  max-height: 2.7rem;
+  opacity: 0.6;
+  overflow: hidden;
+  transition: max-height 250ms ease-in-out, opacity 250ms;
+  margin-bottom: 0;
+}
+
+.markdown-preview-view .metadata-container:hover,
+.markdown-source-view .metadata-container:hover,
+.markdown-preview-view .metadata-container:focus-within,
+.markdown-source-view .metadata-container:focus-within {
+  max-height: 1000px;
+  opacity: 1;
+  transition: max-height 300ms ease-in-out, opacity 300ms;
+}

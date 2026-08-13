@@ -1,0 +1,38 @@
+/* ====================
+来源：guangtou.me
+作者：光头obsidian教程
+功能：为过长的代码添加水平滑轮
+ziminOS 调整：原片段的编辑区选择器写的是 .cm-content .cm-line，而 .cm-line 是
+              CodeMirror 里**每一行**（正文段落也是），一旦启用，整篇笔记的正文
+              都不再换行、改成横向滚动。这里把它收窄到 .HyperMD-codeblock，
+              只有代码块行受影响。滚动条颜色也从写死的 #888/#555 换成
+              Obsidian 的语义变量，跟随主题明暗走。
+==================== */
+
+
+/* 代码块不换行并显示水平滚动条（仅代码块行，正文段落照常换行） */
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock {
+  white-space: pre; /* 禁止换行，保留原始格式 */
+  overflow-x: auto; /* 水平超出时显示滚动条 */
+}
+
+/* 针对渲染视图中的代码块 */
+.markdown-rendered pre {
+  white-space: pre; /* 禁止换行 */
+  overflow-x: auto; /* 水平超出时显示滚动条 */
+}
+
+/* 可选：美化滚动条 */
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock::-webkit-scrollbar,
+.markdown-rendered pre::-webkit-scrollbar {
+  height: 8px; /* 滚动条高度 */
+}
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock::-webkit-scrollbar-thumb,
+.markdown-rendered pre::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-bg); /* 滚动条颜色，跟随主题 */
+  border-radius: 4px;
+}
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock::-webkit-scrollbar-thumb:hover,
+.markdown-rendered pre::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-active-thumb-bg); /* 滚动条悬停颜色 */
+}

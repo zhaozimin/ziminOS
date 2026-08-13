@@ -6,7 +6,7 @@
 
 ## 成员清单
 
-constants.ts: 全仓库唯一常量源，零 import，是依赖图最底层的叶子。七个根目录、系统笔记路径、卡片十字段序、统一字段名 FIELDS 与身份枚举 NOTE_TYPES、时间与日粒度格式、灵感默认值、自写窗口、项目状态机 TRANSITIONS、五级复盘周期表 PERIODS、人脉三轴与人情账本格式、付费流水字段、视图代码块契约，全在此。FIELDS 单独收口的理由是：视图靠字段认事实、命令靠字段写事实，两边写错一个字母就静默失联——而 YAML 里查不到的空字段既不报错也留不下痕迹。
+constants.ts: 全仓库唯一常量源，零 import，是依赖图最底层的叶子。七个根目录、系统笔记路径、卡片十字段序、统一字段名 FIELDS 与身份枚举 NOTE_TYPES、时间与日粒度格式、灵感默认值、自写窗口、项目状态机 TRANSITIONS、五级复盘周期表 PERIODS、人脉三轴与人情账本格式、付费流水字段、外观开关的片段目录名与 appearance.json 键名、视图代码块契约，全在此。片段扩展名之所以是常量而非就地写死，是因为它同时是筛选判据与截断长度，两处必须同源。FIELDS 单独收口的理由是：视图靠字段认事实、命令靠字段写事实，两边写错一个字母就静默失联——而 YAML 里查不到的空字段既不报错也留不下痕迹。
 types.ts: 契约层。ZiminosSettings 与 DEFAULT_SETTINGS 定义可持久化设置，ZiminosContext 定义模块获取能力的唯一形态，VaultSeed 定义一个模块对开荒的全部诉求。新字段以默认值打底，老库升级不需要迁移脚本。
 time.ts: 时间口径统一处，也是 dateTimeFormat 的守门人。原始脚本的手写时间统一收敛为 moment；nowStampAndUid 保证 created/UID 同源，nowLocalDateTimeParts 保证灵感模板的 date/time/datetime 在同一时刻生成。调用方不自行 new Date 拼时间，避免跨秒或跨分钟分叉。
 folders.ts: 目录保障。ensureFolderPath 逐级创建并在同名文件挡路时抛出明确错误；normalizeFolderPath 把用户在设置页敲进去的自由文本收敛成可用路径，空值回落默认——校验集中在读取侧，是设置页敢于不做校验的前提。

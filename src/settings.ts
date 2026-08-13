@@ -3,11 +3,14 @@
  *          灵感默认值/插入位置、./core/types 的 ZiminosContext/DEFAULT_SETTINGS
  * [OUTPUT]: 对外提供 ZiminosSettingTab，由 main.ts 在装配末尾挂载
  * [POS]: 插件唯一的图形界面，也是「人主导」这条红线的具象化——开荒只在用户按下按钮时发生，
- *        两个自动行为的开关随时可以关掉。它只读写 ctx.settings 并调 ctx.saveSettings，
+ *        两个自动行为、以及状态栏那个常驻按钮，随时都可以关掉。
+ *        它只读写 ctx.settings 并调 ctx.saveSettings，
  *        不持有任何自己的状态：面板每次 display 都从设置对象重新渲染，因此外部改动天然可见。
- *        五个分区的排列顺序即学员的使用顺序：先开荒，再决定自动化与灵感落点，
- *        其次才是项目目录与时间格式，最后是模块清单——它如实展示插件内的业务模块与外观包，
- *        同时为后续模块预留可见挂载位
+ *        六个分区的排列顺序即学员的使用顺序：先开荒，再决定自动化与灵感落点，
+ *        然后是外观，其次才是项目目录与时间格式，最后是模块清单——
+ *        它如实展示插件内的业务模块与外观包，同时为后续模块预留可见挂载位。
+ *        开荒动作与状态栏显隐同步都由 main 注入而非自己 import：
+ *        设置页因此既不认识参与开荒的模块名单，也不认识状态栏按钮的实现
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -47,6 +50,10 @@ const TEXTS = {
     inspirationFormatName: '单条格式',
     inspirationFormatDesc: '必须保留 {{content}}；还可使用 {{date}}、{{time}}、{{datetime}}。',
 
+    appearanceHeading: '外观',
+    appearanceSwitchName: '状态栏外观开关',
+    appearanceSwitchDesc: '在右下角状态栏放一个 🎨 按钮，点开就能逐个开关 CSS 片段，不必再进设置翻外观页。关掉只是收起按钮，命令面板里的「打开外观开关」照常可用。',
+
     advancedHeading: '高级设置（一般不用改）',
 
     modulesHeading: '系统模块',
@@ -55,6 +62,9 @@ const TEXTS = {
 // ============================================================
 // 高级区：四个文本框的声明式描述
 // ============================================================
+
+/** 走开关控件的设置项，全部是布尔字段 */
+type BooleanSettingKey = 'autoCardInit' | 'autoUpdated' | 'showAppearanceSwitch';
 
 /** 可由高级区文本框直接编辑的设置项，全部是字符串字段 */
 type TextSettingKey =
@@ -113,7 +123,11 @@ const SYSTEM_MODULES: readonly ModuleEntry[] = [
         status: '按需启用 · 命令面板运行「初始化客户模块」，长出 MOC 与八个视图',
         running: true,
     },
-    { name: '🎨 外观包 v1', status: 'Minimal + Style Settings 已就绪', running: true },
+    {
+        name: '🎨 外观包 v2',
+        status: '运行中 · Minimal + Style Settings + 十二个 CSS 片段，右下角一键开关',
+        running: true,
+    },
 ];
 
 // ============================================================
@@ -135,11 +149,23 @@ export class ZiminosSettingTab extends PluginSettingTab {
      */
     private readonly initialize: () => Promise<void>;
 
-    constructor(ctx: ZiminosContext, initialize: () => Promise<void>) {
+    /**
+     * 让状态栏按钮按当前设置重新决定显隐，同样由 main 注入。
+     * 设置页只会改设置对象并落盘，它无从知道屏幕上已经画着一个按钮——
+     * 谁画的谁负责收，这里只负责在改完之后叫一声。
+     */
+    private readonly syncAppearanceSwitch: () => void;
+
+    constructor(
+        ctx: ZiminosContext,
+        initialize: () => Promise<void>,
+        syncAppearanceSwitch: () => void,
+    ) {
         super(ctx.app, ctx.plugin);
 
         this.ctx = ctx;
         this.initialize = initialize;
+        this.syncAppearanceSwitch = syncAppearanceSwitch;
     }
 
     /** 每次打开设置页都整体重建，保证显示的永远是设置对象的当前值 */
@@ -151,6 +177,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
         this.renderInitSection(containerEl);
         this.renderAutomationSection(containerEl);
         this.renderInspirationSection(containerEl);
+        this.renderAppearanceSection(containerEl);
         this.renderAdvancedSection(containerEl);
         this.renderModulesSection(containerEl);
     }
@@ -209,12 +236,18 @@ export class ZiminosSettingTab extends PluginSettingTab {
         this.renderToggle(containerEl, 'autoUpdated', TEXTS.autoUpdatedName, TEXTS.autoUpdatedDesc);
     }
 
-    /** 渲染一个布尔开关。改动立即落盘，监听方每次触发都现读设置，故无需通知任何人 */
+    /**
+     * 渲染一个布尔开关。
+     *
+     * 改动立即落盘。两个自动化开关不需要 onApplied——监听方每次触发都现读设置，
+     * 天然看得见新值；只有已经画在屏幕上的东西（状态栏按钮）才需要有人去推它一把。
+     */
     private renderToggle(
         containerEl: HTMLElement,
-        key: 'autoCardInit' | 'autoUpdated',
+        key: BooleanSettingKey,
         name: string,
         desc: string,
+        onApplied?: () => void,
     ): void {
         new Setting(containerEl)
             .setName(name)
@@ -224,6 +257,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
                     this.ctx.settings[key] = value;
 
                     await this.ctx.saveSettings();
+                    onApplied?.();
                 });
             });
     }
@@ -323,7 +357,24 @@ export class ZiminosSettingTab extends PluginSettingTab {
     }
 
     // ============================================================
-    // 四、高级
+    // 四、外观
+    // ============================================================
+
+    /** 外观区：只有一个开关，管的是「右下角要不要常驻这个按钮」，不管片段本身开着还是关着 */
+    private renderAppearanceSection(containerEl: HTMLElement): void {
+        new Setting(containerEl).setName(TEXTS.appearanceHeading).setHeading();
+
+        this.renderToggle(
+            containerEl,
+            'showAppearanceSwitch',
+            TEXTS.appearanceSwitchName,
+            TEXTS.appearanceSwitchDesc,
+            this.syncAppearanceSwitch,
+        );
+    }
+
+    // ============================================================
+    // 五、高级
     // ============================================================
 
     /**
@@ -367,7 +418,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
     }
 
     // ============================================================
-    // 五、系统模块
+    // 六、系统模块
     // ============================================================
 
     /** 模块区：纯展示，没有任何控件。未上线的模块以禁用态呈现，看得见但点不动 */

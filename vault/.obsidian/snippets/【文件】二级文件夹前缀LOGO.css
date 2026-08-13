@@ -1,0 +1,88 @@
+/* ====================
+来源：guangtou.me
+作者：光头obsidian教程
+功能：二级文件夹通用前缀logo、不同文件后缀通用前缀logo。
+原来源：https://mp.weixin.qq.com/s/jatc7KVWVTAHCi9cI75TJg
+原作者：为主的祥助（公众号：跨境E站）
+==================== */
+
+
+/* ■■■■■ 子文件夹展开状态图标，仅针对嵌套的非根目录子文件夹 📂 ■■■■■ */
+.nav-folder-children .nav-folder:not(.mod-root):not(.is-collapsed) .nav-folder-title-content::before {
+  content: "✅";
+}
+
+/* ■■■■■ 子文件夹收起状态图标，仅针对嵌套的非根目录子文件夹 📁 ■■■■■ */
+.nav-folder-children .nav-folder:not(.mod-root).is-collapsed .nav-folder-title-content::before {
+  content: "☑️";
+}
+
+/* ■■■■■ 图片图标 ■■■■■ */
+div[data-path$='.png'] .nav-file-title-content::before,
+div[data-path$='.jpg'] .nav-file-title-content::before,
+div[data-path$='.jpeg'] .nav-file-title-content::before,
+div[data-path$='.gif'] .nav-file-title-content::before {
+  content: '🖼️';
+}
+
+/* ■■■■■ 压缩包图标 ■■■■■ */
+div[data-path$='.zip'] .nav-file-title-content::before {
+  content: '📚';
+}
+
+/* ■■■■■ JS图标 ■■■■■ */
+div[data-path$='.js'] .nav-file-title-content::before {
+  content: '🤖';
+}
+
+/* ■■■■■ JS图标 ■■■■■ */
+div[data-path$='.canvas'] .nav-file-title-content::before {
+  content: '📌';
+}
+
+/* ■■■■■ markdown图标 ■■■■■ */
+div[data-path$='.md'] .nav-file-title-content::before {
+  content: '📝';
+}
+
+/* ■■■■■ PDF图标 ■■■■■ */
+div[data-path$='.pdf'] .nav-file-title-content::before {
+  content: '📋';
+}
+
+/* ■■■■■ url图标 ■■■■■ */
+div[data-path$='.url'] .nav-file-title-content::before {
+  content: '🔗';
+}
+
+/* ■■■■■ Word图标 ■■■■■ */
+div[data-path$='.docx'] .nav-file-title-content::before {
+  content: '📑';
+}
+
+/* ■■■■■ excel图标 ■■■■■ */
+div[data-path$='.xlsx'] .nav-file-title-content::before {
+  content: '📈';
+}
+
+/* ■■■■■ ppt图标 ■■■■■ */
+div[data-path$='.ppt'] .nav-file-title-content::before {
+  content: '📊';
+}
+
+/* ■■■■■ txt图标 ■■■■■ */
+div[data-path$='.txt'] .nav-file-title-content::before, 
+div[data-path$='.ini'] .nav-file-title-content::before { 
+  content: '📄'; 
+}
+
+/* ■■■■■ 调logo大小 ■■■■■ */
+
+.nav-folder-title-content::before,
+.nav-file-title-content::before {
+  display: inline-block;
+  margin-right: 6px;
+  margin-bottom: 1px;
+  vertical-align: middle;
+  font-size: 1.0em;
+}

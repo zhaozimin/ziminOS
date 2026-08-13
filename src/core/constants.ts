@@ -8,7 +8,9 @@
  *           及其类型 ProjectStatus/TransitionAction/FolderRole/ProjectTransition，
  *           五级复盘周期表 PERIODS 及其类型 PeriodKey/PeriodDefinition，
  *           人脉三轴 CONTACT_TIERS/TIER_LIMITS/CONTACT_DIRECTIONS、人情账本格式 LEDGER、
- *           付费流水字段 PAYMENT_FIELDS，以及视图代码块契约 VIEW_BLOCK_LANG/VIEW_REFRESH_DEBOUNCE_MS
+ *           付费流水字段 PAYMENT_FIELDS，外观开关契约 SNIPPET_FOLDER_NAME/SNIPPET_EXTENSION/
+ *           APPEARANCE_FILE_NAME/ENABLED_SNIPPETS_KEY/APPEARANCE_COMMAND，
+ *           以及视图代码块契约 VIEW_BLOCK_LANG/VIEW_REFRESH_DEBOUNCE_MS
  * [POS]: 全仓库唯一的常量源。规格要求「禁魔法字符串」，任何目录名、字段名、状态名、时间格式
  *        都必须从这里取而不得就地硬编码；因为它零依赖，所有模块都可单向依赖它而不产生环
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -515,6 +517,38 @@ export const CLIENT_COMMANDS = {
 export const CONTACT_COMMANDS = {
     create: { id: 'create-contact', name: '新建人脉' },
     favor: { id: 'record-favor', name: '记人情' },
+} as const;
+
+// ============================================================
+// 外观：CSS 片段开关
+// ============================================================
+
+/**
+ * CSS 片段目录名，相对于 `.obsidian` 配置目录。
+ * 拼路径时一律用 `app.vault.configDir` 打头而不写死 `.obsidian`——
+ * 配置目录是可以被改名的，写死会让改过名的库里一个片段都读不到。
+ */
+export const SNIPPET_FOLDER_NAME = 'snippets';
+
+/**
+ * 片段文件扩展名。
+ *
+ * 必须小写：Obsidian 的片段加载器按小写后缀筛文件，一个名叫 `x.CSS` 的片段
+ * 在它眼里根本不存在——既不加载也不报错。外观开关沿用同一条判据，
+ * 于是开关里看到的清单与「设置 → 外观」里看到的永远是同一份。
+ */
+export const SNIPPET_EXTENSION = '.css';
+
+/** 外观配置文件名，相对于 `.obsidian` 配置目录 */
+export const APPEARANCE_FILE_NAME = 'appearance.json';
+
+/** appearance.json 中登记已启用片段的键；值是不含扩展名的文件基名数组 */
+export const ENABLED_SNIPPETS_KEY = 'enabledCssSnippets';
+
+/** 外观开关的命令入口。状态栏按钮可以被关掉，命令是它永远存在的另一条路 */
+export const APPEARANCE_COMMAND = {
+    id: 'open-appearance-switch',
+    name: '打开外观开关',
 } as const;
 
 // ============================================================

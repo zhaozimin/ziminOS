@@ -1,0 +1,15 @@
+/* ====================
+来源：guangtou.me
+作者：光头obsidian教程
+功能：让光标当前行高亮显示。
+==================== */
+
+.markdown-source-view.mod-cm6 .cm-active.cm-line {
+    background-color: rgba(var(--mono-rgb-100), 0.05) !important;
+}
+
+/* Active line number */
+.markdown-source-view.mod-cm6 .cm-lineNumbers .cm-active.cm-gutterElement {
+    font-weight: 600;
+    color: grey !important;
+}

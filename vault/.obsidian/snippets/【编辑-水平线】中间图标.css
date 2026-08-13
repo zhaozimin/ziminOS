@@ -1,0 +1,33 @@
+/* ====================
+来源：guangtou.me
+作者：光头obsidian教程
+功能：更换水平线样式
+==================== */
+
+
+.theme-light {
+  --hr-color-side: var(--background-primary);
+  --hr-color-center: #8f8f8f;
+}
+
+.theme-dark {
+  --hr-color-side: var(--background-primary);
+  --hr-color-center: #949292;
+}
+
+.markdown-source-view.mod-cm6 hr,
+.markdown-rendered hr {
+  border: none;
+  height: 1px;
+  background-image: linear-gradient(to right, var(--hr-color-side), var(--hr-color-center), var(--hr-color-side));
+}
+
+.markdown-source-view.mod-cm6 hr::after,
+.markdown-rendered hr::after {
+  content: '§';
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(60deg);
+  padding: 1rem;
+  background-color: var(--background-primary);
+}

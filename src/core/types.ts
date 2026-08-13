@@ -54,6 +54,13 @@ export interface ZiminosSettings {
     clientSources: string;
     /** 产品候选，逗号分隔。产品名是学员自己的，必须可配，但仍要枚举化 */
     clientProducts: string;
+    /**
+     * 是否在右下角状态栏摆出外观开关。
+     *
+     * 插件往用户屏幕上常驻一个图标，就必须给出撤走它的办法——这是「人主导」的最小兑现。
+     * 关掉只是收起按钮，命令面板里的「打开外观开关」照常可用。
+     */
+    showAppearanceSwitch: boolean;
     /** 首次开荒完成的时间戳；空字符串表示尚未初始化，是「首次」与「补齐」的唯一判据 */
     initializedAt: string;
 }
@@ -76,6 +83,7 @@ export const DEFAULT_SETTINGS: ZiminosSettings = {
     clientFolder: CLIENT_FOLDER,
     clientSources: 'B站,抖音,小红书,公众号,朋友介绍,其他',
     clientProducts: '课程,咨询,陪跑',
+    showAppearanceSwitch: true,
     initializedAt: '',
 };
 

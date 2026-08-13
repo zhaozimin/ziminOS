@@ -2,14 +2,16 @@
  * [INPUT]: 依赖 obsidian 的 Plugin 基类；依赖 core 的 SelfWriteGuard、DEFAULT_SETTINGS、
  *          ZiminosSettings/ZiminosContext/VaultSeed 契约、PERIODS 与 registerViewCodeBlock；
  *          依赖 modules/setup 的 initializeVault/applySeed，以及项目管理、灵感收集、复盘、
- *          人脉与客户五个模块各自的 seed、register 函数与视图数组
+ *          人脉与客户五个模块各自的 seed、register 函数与视图数组，
+ *          再加 modules/appearance 的 registerAppearanceSwitch
  * [OUTPUT]: 默认导出 ZiminosPlugin，即 Obsidian 加载 main.js 时实例化的插件入口类
  * [POS]: 插件唯一入口与唯一装配点。它只做四件事：把磁盘上的设置读成一个对象、
  *        把它连同 app/plugin/guard 装配成 ZiminosContext、把上下文分发给各模块去自行注册、
  *        再把彼此需要但不该互相认识的能力接上线。
  *        最后这件事是 V2 新增的，也是本文件最有分量的部分：
- *        记人情要往当天日记里写一行，客户模块要按需长出自己的产物——
- *        前者需要复盘模块的能力，后者需要开荒模块的能力。
+ *        记人情要往当天日记里写一行，客户模块要按需长出自己的产物，
+ *        设置页要能让状态栏上那个已经画好的按钮消失——
+ *        三者分别需要复盘模块、开荒模块与外观模块的能力。
  *        它们都不 import 对方，而是各自声明一个函数类型的洞，由这里填上。
  *        于是依赖图仍是一棵树：main 认识所有模块，模块之间彼此不认识，
  *        加一个模块只是在这里多几行，删一个模块只需删掉那几行
@@ -22,6 +24,7 @@ import { PERIODS } from './core/constants';
 import { SelfWriteGuard } from './core/guard';
 import { DEFAULT_SETTINGS } from './core/types';
 import type { VaultSeed, ZiminosContext, ZiminosSettings } from './core/types';
+import { registerAppearanceSwitch } from './modules/appearance/statusBar';
 import { circleViews } from './modules/contacts/circleViews';
 import { clientViews } from './modules/contacts/clientViews';
 import { registerClientCommands } from './modules/contacts/client';
@@ -130,6 +133,10 @@ export default class ZiminosPlugin extends Plugin {
         // 客户模块要按需长出自己的产物，同理只声明了一个「落一份开荒贡献」的洞
         registerClientCommands(ctx, (seed) => applySeed(ctx, seed));
 
+        // 外观开关在状态栏常驻一个按钮，而设置页只会改设置对象、没法让已经画出来的按钮消失，
+        // 因此它交回一个「按当前设置重新决定显隐」的函数，由下面转交给设置页
+        const syncAppearanceSwitch = registerAppearanceSwitch(ctx);
+
         // ============================================================
         // 视图引擎：一个代码块语言，二十一个视图；加视图不必改这里之外的任何装配代码
         // ============================================================
@@ -149,7 +156,7 @@ export default class ZiminosPlugin extends Plugin {
         // ============================================================
 
         this.addSettingTab(
-            new ZiminosSettingTab(ctx, () => initializeVault(ctx, collectSeeds())),
+            new ZiminosSettingTab(ctx, () => initializeVault(ctx, collectSeeds()), syncAppearanceSwitch),
         );
     }
 

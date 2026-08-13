@@ -1,0 +1,52 @@
+/* ====================
+来源：guangtou.me
+作者：光头obsidian教程
+功能：在根目录文件夹前增加Emoji图标。
+ziminOS 调整：原片段按 0_InBox / 1_Projects 一类的目录名匹配，
+              在 ziminOS 库里一条都命中不了（这里的七个根目录叫 00-inbox … 90-system），
+              所以图标区按 ziminOS 的骨架重写。选择器改用精确匹配 [data-path="…"]，
+              避免 04-archives 这类后缀被子目录同名路径误伤。
+              下方「调logo大小」一节与原片段一致。
+              在设置页把目录改过名的话，照着自己的新名字改这里的七行即可。
+==================== */
+
+/* ■■■■■ 图标增加区 ■■■■■ */
+
+.nav-folder-title[data-path="00-inbox"] > .tree-item-inner {
+    --folder-icon: "📥";
+}
+
+.nav-folder-title[data-path="01-projects"] > .tree-item-inner {
+    --folder-icon: "⏳";
+}
+
+.nav-folder-title[data-path="02-areas"] > .tree-item-inner {
+    --folder-icon: "📚";
+}
+
+.nav-folder-title[data-path="03-resources"] > .tree-item-inner {
+    --folder-icon: "🔖";
+}
+
+.nav-folder-title[data-path="04-archives"] > .tree-item-inner {
+    --folder-icon: "📦";
+}
+
+.nav-folder-title[data-path="05-diary"] > .tree-item-inner {
+    --folder-icon: "🗓️";
+}
+
+.nav-folder-title[data-path="90-system"] > .tree-item-inner {
+    --folder-icon: "⚙️";
+}
+
+/* ■■■■■ 调logo大小 ■■■■■ */
+
+.nav-folder-title > .tree-item-inner::before {
+    display: inline-block;
+    margin-right: 6px;
+    margin-bottom: 1px;
+    vertical-align: middle;
+    font-size: 1.0em;
+    content: var(--folder-icon, "");
+}

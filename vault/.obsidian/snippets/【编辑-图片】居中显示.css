@@ -1,0 +1,15 @@
+/* ====================
+来源：guangtou.me
+作者：光头obsidian教程
+功能：让图片可以居中显示。
+==================== */
+
+img {
+    display: block !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+ .markdown-source-view.mod-cm6 .cm-content > * {
+    margin: auto !important;
+}

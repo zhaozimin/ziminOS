@@ -2,14 +2,15 @@
 
 TypeScript 7.0 + esbuild 0.28 + Obsidian API 1.13（manifest minAppVersion 1.13.0）+ Dataview 0.5.68 + Minimal 9.0.2 + Style Settings 1.0.9
 
-三条不可违背的红线贯穿全仓库：人主导（一切写入由用户命令或用户建的文件触发，无定时器、无轮询）、脚本驱动（插件内零 AI 调用、零网络请求，同输入同结果）、只用官方公开 API。
+三条不可违背的红线贯穿全仓库：人主导（一切写入由用户命令或用户建的文件触发，无定时器、无轮询）、脚本驱动（插件内零 AI 调用、零网络请求，同输入同结果）、只用官方公开 API（唯一一处缺口是外观开关，见 deviations 第 3 条，已按三条纪律收窄并可整块摘除）。
 
 <directory>
 docs/ - 设计规格与第三方组件锁定记录；代码、交付物与规格必须同步
 skill/ - SKILL.md 桌面智能体交付契约；当前工作区就是用户已命名的笔记库，源码只在外部临时目录施工
 vault/ - 笔记库成品模板；同一交付物内独立放置 ziminOS、Dataview、Minimal、Style Settings、默认配色与自有 CSS
-vault/.obsidian/plugins/ziminos/ - 插件安装位；manifest.json 是版本号事实源，main.js 是刻意入库的构建产物，styles.css 是二十一个视图的三线表与待办样式（手工维护，不经 esbuild）
-src/ - 插件源码 (2子目录: core 无业务的基础设施与视图引擎、modules 含 setup 开荒、projects 项目管理、inspiration 灵感收集、review 五级复盘、contacts 人脉与客户)
+vault/.obsidian/plugins/ziminos/ - 插件安装位；manifest.json 是版本号事实源，main.js 是刻意入库的构建产物，styles.css 是二十一个视图的三线表与待办样式、外加外观开关浮层（手工维护，不经 esbuild）
+vault/.obsidian/snippets/ - 十二个 CSS 片段，外观包的可拆装部分；十个默认启用，全部由右下角外观开关逐个开关。appearance.json 的 enabledCssSnippets 是它们开着还是关着的唯一事实源
+src/ - 插件源码 (2子目录: core 无业务的基础设施与视图引擎、modules 含 setup 开荒、projects 项目管理、inspiration 灵感收集、review 五级复盘、contacts 人脉与客户、appearance 外观开关)
 </directory>
 
 <views>
@@ -28,11 +29,12 @@ docs/设计规格书-V2.md - 人脉与复盘（v0.4.0）的唯一事实源；与
 </config>
 
 <delivery>
-用户先创建并命名文件夹 A，再用桌面 Agent 打开 A；此时 A 同时是 Agent 工作区与最终 Obsidian 笔记库。安装时不再询问名称或路径，不创建子目录，不在 A 内克隆源码；GitHub 仓库只能进入 A 外部的系统临时目录，最终把 vault/ 的内部内容直接铺到 A 根。全新安装交付锁定的 Dataview 与外观包；升级只更新受管运行文件、合并必要开关，绝不覆盖用户配色与其他插件配置。禁止让用户打开仓库或仓库内的 vault/，禁止安装 Node/npm 依赖，交付后必须清理临时源码。
+用户先创建并命名文件夹 A，再用桌面 Agent 打开 A；此时 A 同时是 Agent 工作区与最终 Obsidian 笔记库。安装时不再询问名称或路径，不创建子目录，不在 A 内克隆源码；GitHub 仓库只能进入 A 外部的系统临时目录，最终把 vault/ 的内部内容直接铺到 A 根。全新安装交付锁定的 Dataview 与外观包（含十二个 CSS 片段与它们的默认启用清单）；升级只更新受管运行文件、合并必要开关，绝不覆盖用户配色、用户自己放进 snippets/ 的片段与其他插件配置。禁止让用户打开仓库或仓库内的 vault/，禁止安装 Node/npm 依赖，交付后必须清理临时源码。
 </delivery>
 
 <deviations>
-两处与规格书的被迫偏离，在此备案，不是疏漏：
+三处被迫偏离，在此备案，不是疏漏：
 1. tsconfig 的 moduleResolution 取 bundler 而非规格书 §2 写的 node —— 实际装到的 TypeScript 7.0.2 已移除 node10 解析模式（TS5108），规格的 node 与规格的「依赖用最新稳定版」自相冲突；bundler 是 esbuild 打包场景下的等价现代取值，其余编译选项全按规格保留。
 2. src/core/time.ts 存在全仓库唯一一处类型断言 —— obsidian 把 moment 作为命名空间导出，其类型不携带调用签名，断言只还原类型不改变运行时行为。
+3. src/modules/appearance/snippets.ts 借了一次 Obsidian 非公开 API，是「只用官方公开 API」这条红线唯一的缺口 —— 「让某个 CSS 片段此刻生效或失效」在 obsidian.d.ts（1.13.1，8482 行）里没有入口，全文既搜不到 customCss 也搜不到 snippet；能做到的只有 app.customCss.setCssEnabledStatus。不碰它，开关就退化成「改配置文件 + 请重启」，也就不再是开关。缺口按三条纪律收窄：其一，只有「让改动生效」这一步借用，片段清单与启用状态全部走公开的 vault.configDir + DataAdapter，因此开关显示的永远是磁盘上的事实；其二，用模块增强声明成可选成员并在运行时二次验形，TypeScript 强制判空，探不到就降级为改 appearance.json 并提示重载，功能退化但绝不抛异常；其三，声明与调用同处一个文件，不散进 .d.ts，删掉 modules/appearance 即可让红线重新完整。
 </deviations>
