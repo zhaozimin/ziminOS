@@ -265,20 +265,20 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
     height: var(--icon-s, 16px);
 }
 
-/* ── 关于作者：首页导航尾部与设置页开荒页尾共用的同一张名片（v0.9.3 磁贴版式） ── */
+/* ── 关于作者：首页导航尾部与设置页开荒页尾共用的同一张名片（v0.9.4 版式） ── */
 
-/* 上「海外」下「中国大陆」两个分区，区距比区内间距大一档，分组才读得出来 */
+/* 磁贴在上、两个频道分区在下，块间距一致 */
 .ziminos-about {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 16px;
     margin: 0.6em 0 1.2em;
 }
 
 .ziminos-about-region {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
 }
 
 /* 区名比页内小节标题矮一级：它是名片里的分组，不是页面的一节 */
@@ -292,25 +292,24 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
 /* 站点磁贴两枚并排，窄容器自动落成单列 */
 .ziminos-about-tiles {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 12px;
 }
 
-/* 一枚磁贴一个域名，整贴可点。hairline 描边、无底色、无阴影 */
+/* 一枚磁贴一个站：头部是身份，下面国内外两个域名各自成行。hairline 描边、无底色、无阴影 */
 .ziminos-about-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 12px;
+}
+
+.ziminos-about-tile-head {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 12px;
-    text-decoration: none;
-}
-
-.ziminos-about-tile:hover {
-    border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
-    background: var(--background-modifier-hover);
-    text-decoration: none;
 }
 
 .ziminos-about-logo-round {
@@ -336,10 +335,35 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
     line-height: 1.4;
 }
 
-.ziminos-about-tile-domain {
-    color: var(--text-muted);
+.ziminos-about-tile-sub {
+    color: var(--text-faint);
     font-size: var(--font-smaller, 0.875em);
     line-height: 1.4;
+}
+
+.ziminos-about-domains {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* 域名一行：域名靠左、部署地靠右，链接灰阶、悬停升正文色 */
+.ziminos-about-domain {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.ziminos-about-domain:hover {
+    color: var(--text-normal);
+    text-decoration: none;
+}
+
+.ziminos-about-domain-region {
+    color: var(--text-faint);
+    font-size: var(--font-smaller, 0.875em);
 }
 
 /* 频道胶囊一排，窄容器自动换行 */
