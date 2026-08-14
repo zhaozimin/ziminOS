@@ -4,7 +4,10 @@
 功能：让图片可以居中显示。
 ==================== */
 
-img {
+/* 只作用于笔记的编辑与阅读视图。裸 img 会连插件界面（设置页、状态栏、
+   ziminOS 名片）里的图片一起居中——那些界面的排版不归这个片段管。 */
+.markdown-source-view img,
+.markdown-preview-view img {
     display: block !important;
     margin-left: auto !important;
     margin-right: auto !important;

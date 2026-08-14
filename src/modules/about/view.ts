@@ -156,10 +156,12 @@ function renderSite(row: HTMLElement, site: Site): void {
     const head = tile.createDiv({ cls: 'ziminos-about-tile-head' });
 
     if (site.logo === 'avatar') {
-        head.createEl('img', {
-            cls: 'ziminos-about-logo-round',
-            attr: { src: AVATAR_DATA_URI, alt: '' },
-        });
+        // 刻意不用 <img>：外观包的「图片居中」片段（以及互联网上同款流行片段）
+        // 会给一切 img 加 margin:auto !important，在 flex 行里就是把头像推到中间、文字挤到边上。
+        // 背景图 div 不是 img，任何针对 img 的主题规则都够不着它——名片是第一屏广告，必须防身
+        const avatar = head.createDiv({ cls: 'ziminos-about-logo-round' });
+
+        avatar.style.backgroundImage = `url("${AVATAR_DATA_URI}")`;
     } else {
         renderEduLogo(head);
     }

@@ -1315,10 +1315,8 @@ function renderSite(row, site) {
   const tile = row.createDiv({ cls: "ziminos-about-tile" });
   const head = tile.createDiv({ cls: "ziminos-about-tile-head" });
   if (site.logo === "avatar") {
-    head.createEl("img", {
-      cls: "ziminos-about-logo-round",
-      attr: { src: AVATAR_DATA_URI, alt: "" }
-    });
+    const avatar = head.createDiv({ cls: "ziminos-about-logo-round" });
+    avatar.style.backgroundImage = `url("${AVATAR_DATA_URI}")`;
   } else {
     renderEduLogo(head);
   }

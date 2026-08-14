@@ -312,12 +312,17 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
     gap: 12px;
 }
 
+/*
+ * 头像是背景图 div 而不是 <img>：外观包的「图片居中」片段给一切 img 加
+ * margin:auto !important，flex 行里的头像会被推到中间、文字挤到边上。
+ * 背景图不吃任何针对 img 的规则，名片在任何主题任何片段下都站得稳。
+ */
 .ziminos-about-logo-round {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    object-fit: cover;
-    display: block;
+    background-size: cover;
+    background-position: center;
     flex-shrink: 0;
 }
 
