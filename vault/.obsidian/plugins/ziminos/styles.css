@@ -1,7 +1,7 @@
 /*
  * ziminOS 视图样式
  *
- * 服务插件自渲染的那二十二个视图、外观开关浮层，以及设置页的十张标签页，
+ * 服务插件自渲染的那二十二个视图、外观开关浮层，以及设置页的八张标签页与开荒页尾的落款，
  * 全部选择器都带 ziminos- 前缀，不碰用户笔记正文。
  * 除文末那一条藏边栏图标的规则外，不覆盖主题的任何既有规则——那一条的理由写在它自己头上。
  * 颜色一律取 Obsidian 的语义变量，因此跟随主题与 Style Settings 的配色走，
@@ -338,38 +338,33 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
 }
 
 /*
- * 分段式的槽。十枚标签其实只是十个位置，一条共享的凹槽把这层语义画出来：
- * 槽是次级底色，当前页用内容区底色从槽里凸起——材质关系（凹底托凸块）
- * 在任何主题、任何明暗下都成立，不依赖某个具体颜色。
+ * 标签行踩在一条通到底的基线上：细线属于整行，不属于哪一枚标签。
+ * 这条线把「导航」与「内容」分成上下两个世界——标签自然宽度、左对齐，
+ * 八枚两字标签一行排下，永远不换行（flex-wrap 只是极窄窗口下的保险）。
  */
 .ziminos-settings .ziminos-settings-tabrail {
     display: flex;
     flex-wrap: wrap;
-    gap: 2px;
-    padding: 3px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-l);
-    background-color: var(--background-secondary);
+    gap: 4px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--background-modifier-border);
 }
 
 /*
  * 一枚标签。它是真的 <button>，所以得先把浏览器与 Obsidian 给按钮的立体外观卸干净——
- * 十个自带底色投影的立体按钮排成一行，看着像十个待按的动作，而立体感属于槽，不属于它们。
- * flex: 1 让十枚均分整行；换行时新一行同样摊满，窄窗口下是两行齐整的格，不是一枚孤儿。
+ * 八个自带底色投影的立体按钮排成一行，看着像八个待按的动作，而它们其实只是八个位置。
  *
  * 选择器写成两级，与本文件里表格那处同理：主题也会给内容区里的 button 定规矩，
  * 单一个类名跟它打平手时，胜负就取决于谁的样式表后加载，那不是可以依赖的东西。
  */
 .ziminos-settings .ziminos-settings-tab {
-    flex: 1 1 auto;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
     gap: 6px;
     height: auto;
-    padding: 6px 10px;
+    padding: 5px 12px;
     border: none;
-    border-radius: calc(var(--radius-l) - 3px);
+    border-radius: var(--radius-m);
     background-color: transparent;
     box-shadow: none;
     color: var(--text-muted);
@@ -392,14 +387,13 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
 }
 
 /*
- * 当前页：从槽里凸起（内容区底色 + 投影），字重加粗，图标着强调色。
+ * 当前页：填充成一枚实底胶囊，字重加粗，图标着强调色。
  * 三个信号叠加而不只靠颜色——低对比度主题与色觉差异下也认得出。
  */
 .ziminos-settings .ziminos-settings-tab.is-active {
-    background-color: var(--background-primary);
+    background-color: var(--background-modifier-active-hover, var(--background-modifier-hover));
     color: var(--text-normal);
     font-weight: var(--font-semibold);
-    box-shadow: var(--shadow-s);
 }
 
 /* 标签上的笔画图标：与左侧边栏同一套图形，同一条描边变量 */
@@ -455,7 +449,23 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
     cursor: pointer;
 }
 
-/* ── 关于页：名片是那一页的全部内容，比笔记里那份大一号 ── */
+/* ── 开荒页尾：作者名片当落款，比笔记里那份大一号 ── */
+
+/* 落款与上方内容划一条细线：它不是设置，是这套交付物的署名 */
+.ziminos-settings-footer {
+    margin-top: 28px;
+    padding-top: 14px;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+/* 落款的小标题，比页头矮一级——它是页里的一节，不是一页 */
+.ziminos-settings-footer-title {
+    margin-bottom: 4px;
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    font-weight: var(--font-semibold);
+    letter-spacing: 0.04em;
+}
 
 .ziminos-settings-body .ziminos-about {
     margin-top: 6px;

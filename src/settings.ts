@@ -6,11 +6,11 @@
  *        两个自动行为、以及状态栏那个常驻按钮，随时都可以关掉。
  *        它只读写 ctx.settings 并调 ctx.saveSettings，不持有任何领域状态：
  *        每次 display 都从设置对象重新渲染，因此外部改动天然可见。
- *        V3 起页面按系统模块切成十张标签页，切法不是新发明的分类，就是 modules/ 下的目录本身——
+ *        V3 起页面按系统模块切成八张标签页，切法不是新发明的分类，就是 modules/ 下的目录本身——
  *        一页只回答一个系统的配置问题，目录名也各自归还给它服务的那个模块，
  *        于是「一页看完就不必再往下翻」，而不是二十来个设置项排成一条长路。
- *        末页「关于」是唯一没有设置项的一页，它照样按同名纪律来自 modules/about：
- *        名片与首页导航尾部画的是同一张，实现只有一份。
+ *        外观开关与作者名片并在「开荒」页里而不各占一页（一个控件撑一整页是把分页做成摆设）：
+ *        开关排在初始化之后，名片是页尾落款；名片与首页导航尾部画的是同一张，实现只有一份。
  *        侧边栏那一页不认识任何一条具体命令：清单现读 ctx.commands 的花名册，
  *        因此加一条命令、改一个图标，这个文件一个字都不用改。
  *        开荒动作、两处显隐同步与作者名片都由 main 注入而非自己 import：
@@ -27,7 +27,7 @@ import { DEFAULT_SETTINGS } from './core/types';
 import type { ZiminosContext } from './core/types';
 
 // ============================================================
-// 十张标签页：一页一个系统模块
+// 八张标签页：一页一个系统模块
 // ============================================================
 
 /**
@@ -35,6 +35,11 @@ import type { ZiminosContext } from './core/types';
  * 单列成页的理由与 COMMAND_GROUPS 里单列成组的理由是同一条：客户与人脉在业务上本就是两个物种）。
  * 同名不是巧合而是纪律——设置页的分页若与代码的模块边界对不上，
  * 学员问「客户的设置在哪」时，答案就会取决于当初谁把它排在了哪一段。
+ *
+ * appearance 与 about 两个模块刻意没有自己的页（v0.9.2 拍板）：
+ * 前者只有一个开关、后者只有一张名片，一个控件撑一整页是把分页做成了摆设，
+ * 而它们都天然属于「开荒」——外观是开荒交付物的一部分，名片是这套交付物的落款。
+ * 于是八张页一行排得下，标签栏永远不换行。
  */
 type TabId =
     | 'setup'
@@ -44,9 +49,7 @@ type TabId =
     | 'contacts'
     | 'clients'
     | 'format'
-    | 'appearance'
-    | 'ribbon'
-    | 'about';
+    | 'ribbon';
 
 /** 一张标签页的全部身份：标签栏上的那枚按钮，与它翻开之后的那句页头 */
 interface SettingsTab {
@@ -66,20 +69,19 @@ interface SettingsTab {
 }
 
 /**
- * 十张页，顺序即学员的使用顺序，也正好是 main.ts 的装配顺序与命令的注册顺序：
+ * 八张页，顺序即学员的使用顺序，也正好是 main.ts 的装配顺序与命令的注册顺序：
  * 先开荒，再是每天在用的三套（项目、灵感、复盘），然后是关系与生意（人脉、客户），
- * 接着两张管的都不是笔记而是屏幕（外观、边栏），最后一张谁也不管——那是作者本人。
+ * 最后两张管的不是笔记而是屏幕上的呈现（排版、边栏）。
  *
- * 末页「关于」是唯一没有设置项的一页。它仍然守同名纪律（modules/about），
- * 也仍然守页头那句承诺；只是它回答的不是「这个系统怎么配」，而是「这套东西是谁做的」。
- * 排在最末不是把它当边角料：那是十页里唯一一页，学员看完可以合上设置去找作者。
+ * 外观开关与作者名片住在「开荒」页里而不各占一页：一个控件撑一整页是把分页做成摆设，
+ * 且它们本就是开荒交付物的一部分与落款（见 TabId 的注释）。
  *
  * 这张表同时喂两处：标签栏上那枚两个字的按钮，与每页页头那句「这一页是谁、跑没跑起来」。
- * 一处事实两处呈现，因此不存在「标签上写着外观、页头却是另一句」这种事。
+ * 一处事实两处呈现，因此不存在「标签上写着排版、页头却是另一句」这种事。
  *
  * 曾经还有第三处——开荒页上一份逐行列出全部模块的清单。它被摘掉了，
- * 理由是标签栏本身就是那份清单：十张页一直摆在屏幕最上方，点一下即到，
- * 再在首页把同样十行重列一遍，是把「索引」误当成了「介绍」。
+ * 理由是标签栏本身就是那份清单：八张页一直摆在屏幕最上方，点一下即到，
+ * 再在首页把同样八行重列一遍，是把「索引」误当成了「介绍」。
  * status 那句话没有跟着一起消失，它搬进了各页页头——在那儿它回答的是「我现在在哪、这页管什么」，
  * 而不是「这套系统都有些什么」。
  */
@@ -134,25 +136,11 @@ const TABS: readonly SettingsTab[] = [
         status: '运行中 · 九条标准 Markdown 写法，改完走开就替你整理',
     },
     {
-        id: 'appearance',
-        label: '外观',
-        icon: COMMAND_ICONS.appearance,
-        module: '外观包 v2',
-        status: '运行中 · Minimal + Style Settings + 十二个 CSS 片段，右下角一键开关',
-    },
-    {
         id: 'ribbon',
         label: '边栏',
         icon: COMMAND_ICONS.dock,
         module: '左侧边栏 v1',
         status: '运行中 · 二十三条命令配 Pikaicons 图标，默认摆出七条',
-    },
-    {
-        id: 'about',
-        label: '关于',
-        icon: COMMAND_ICONS.theme,
-        module: '关于作者 v1',
-        status: '官网、教程与四个自媒体入口，随插件走——首页导航底部是同一张名片',
     },
 ];
 
@@ -283,7 +271,7 @@ export interface SettingActions {
     readonly syncAppearanceSwitch: () => void;
     /** 让左侧边栏那列图标按当前设置重新决定各自显隐 */
     readonly syncRibbon: () => void;
-    /** 把作者名片画进「关于」那一页。名片住在 about 模块，设置页因此不认识它 */
+    /** 把作者名片画进开荒页尾。名片住在 about 模块，设置页因此不认识它 */
     readonly renderAbout: (el: HTMLElement) => void;
 }
 
@@ -344,18 +332,19 @@ export class ZiminosSettingTab extends PluginSettingTab {
      * 在这里是一个编译错误，而不是一张点进去空空如也的页。
      */
     private readonly panels: Readonly<Record<TabId, PanelRenderer>> = {
-        setup: (el) => this.renderInitButton(el),
+        // 开荒页自有控件两件：初始化按钮，加外观开关的显隐——外观包是开荒交付物的一部分，
+        // 它唯一的开关跟着交付物走，不另占一页
+        setup: (el) => {
+            this.renderInitButton(el);
+            this.renderAppearancePanel(el);
+        },
         projects: (el) => this.renderProjectsPanel(el),
         inspiration: (el) => this.renderInspirationPanel(el),
         review: FIELDS_ONLY,
         contacts: FIELDS_ONLY,
         clients: FIELDS_ONLY,
         format: (el) => this.renderFormatPanel(el),
-        appearance: (el) => this.renderAppearancePanel(el),
         ribbon: (el) => this.renderRibbonPanel(el),
-        // 名片画什么由 about 模块决定，这里只递一个容器过去；
-        // 首页导航尾部那个「关于作者」视图块画的是同一张，两处不可能对不齐
-        about: (el) => this.actions.renderAbout(el),
     };
 
     constructor(ctx: ZiminosContext, actions: SettingActions) {
@@ -415,7 +404,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
 
         this.activeTab = tab;
         this.display();
-        // 换页等于换一屏内容，滚动条必须归零：从二十一行的边栏页切到只有一个开关的外观页，
+        // 换页等于换一屏内容，滚动条必须归零：从二十三行的边栏页切到只有几项的灵感页，
         // 不归零的话用户迎面是一片空白，会以为切坏了。containerEl 就是设置弹窗的滚动容器
         this.containerEl.scrollTop = 0;
     }
@@ -423,10 +412,13 @@ export class ZiminosSettingTab extends PluginSettingTab {
     /**
      * 一页的固定骨架：页头 → 明面上的文本字段 → 本页自有控件 → 高级折叠区。
      *
-     * 四段的先后是一条跨九页的承诺，两头各占一句：页头永远先说清这一页是谁、跑没跑起来；
+     * 四段的先后是一条跨八页的承诺，两头各占一句：页头永远先说清这一页是谁、跑没跑起来；
      * 折叠区永远在最后，于是任何一页往下翻到底，危险的东西都在同一个位置、同一个标题下，
      * 不需要每页重新找一遍。中间两段的顺序是「先说东西放哪儿，再说怎么用它」——
      * 灵感页把落点三问排在插入位置与格式之前，正是这条顺序，不必自己再画一次字段。
+     *
+     * 唯一排在折叠区之后的是开荒页尾的作者名片：它不是设置，是这套交付物的落款，
+     * 落款排在正文与附录之后，正是它在纸上的位置。
      */
     private renderPanel(body: HTMLElement): void {
         const tab = this.activeTab;
@@ -441,6 +433,20 @@ export class ZiminosSettingTab extends PluginSettingTab {
         this.renderTextFields(body, tab.id, false);
         this.panels[tab.id](body);
         this.renderAdvancedFold(body, tab.id);
+
+        if (tab.id === 'setup') this.renderAboutFooter(body);
+    }
+
+    /**
+     * 开荒页尾的作者名片。
+     * 名片画什么由 about 模块决定，这里只递一个容器过去；
+     * 首页导航尾部那个「关于作者」视图块画的是同一张，两处不可能对不齐。
+     */
+    private renderAboutFooter(body: HTMLElement): void {
+        const footer = body.createDiv({ cls: 'ziminos-settings-footer' });
+
+        footer.createDiv({ cls: 'ziminos-settings-footer-title', text: '关于作者' });
+        this.actions.renderAbout(footer);
     }
 
     // ============================================================
@@ -698,7 +704,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
     }
 
     // ============================================================
-    // 七、外观页：一个开关
+    // 七、外观开关：一个开关，随开荒页交付
     // ============================================================
 
     /** 这一页管的是「右下角要不要常驻这个按钮」，不管片段本身开着还是关着 */

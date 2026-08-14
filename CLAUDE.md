@@ -8,7 +8,7 @@ TypeScript 7.0 + esbuild 0.28 + Obsidian API 1.13（manifest minAppVersion 1.13.
 docs/ - 设计规格与第三方组件锁定记录；代码、交付物与规格必须同步
 skill/ - SKILL.md 桌面智能体交付契约；当前工作区就是用户已命名的笔记库，源码只在外部临时目录施工
 vault/ - 笔记库成品模板；同一交付物内独立放置 ziminOS、Dataview、Minimal、Style Settings、默认配色与自有 CSS
-vault/.obsidian/plugins/ziminos/ - 插件安装位；manifest.json 是版本号事实源，main.js 是刻意入库的构建产物（二十三个命令图标与五个品牌 logo 的 SVG 也在里面），styles.css 是二十二个视图的三线表与待办样式、外加外观开关浮层、设置页那十张标签页与作者名片（手工维护，不经 esbuild）
+vault/.obsidian/plugins/ziminos/ - 插件安装位；manifest.json 是版本号事实源，main.js 是刻意入库的构建产物（二十四个图形与五个品牌 logo 的 SVG 也在里面），styles.css 是二十二个视图的三线表与待办样式、外加外观开关浮层、设置页那八张标签页与作者名片（手工维护，不经 esbuild）
 vault/.obsidian/snippets/ - 十二个 CSS 片段，外观包的可拆装部分；十个默认启用，全部由右下角外观开关逐个开关。appearance.json 的 enabledCssSnippets 是它们开着还是关着的唯一事实源
 src/ - 插件源码 (2子目录: core 无业务的基础设施、命令注册台与视图引擎、modules 含 setup 开荒、projects 项目与领域、inspiration 灵感收集、review 五级复盘、contacts 人脉与客户、appearance 外观开关、format 排版整理、ribbon 左侧边栏命令、about 作者名片)
 </directory>
@@ -18,11 +18,11 @@ src/ - 插件源码 (2子目录: core 无业务的基础设施、命令注册台
 </commands>
 
 <settings>
-设置页按系统模块切成十张标签页（开荒 / 项目 / 灵感 / 复盘 / 人脉 / 客户 / 排版 / 外观 / 边栏 / 关于），页标识与 modules/ 下的目录同名，一页只回答一个系统的配置问题；目录名等设置也各自归还给它服务的那个模块，而不再堆在页尾一个统称「高级」的折叠区里——每页自己有一个，永远在页尾。末页「关于」是唯一没有设置项的一页，它照样守同名纪律（modules/about），画的与首页导航尾部是同一张作者名片。十张页的身份（短名 / 图标 / 模块全名 / 交付状态）收在 src/settings.ts 的 TABS 一张表里，标签栏与每页页头都从它出；图标取自 COMMAND_ICONS，与左侧边栏、命令面板同一套 Pikaicons 笔画图形（v0.9.1 起弃 emoji），标签栏画成分段式控件、当前页从槽里凸起；模块清单不再单列一份，标签栏本身就是那份清单。加一页 = TABS 加一行 + panels 表加一个渲染函数，后者的 Record<TabId, …> 会在漏写时报编译错。
+设置页按系统模块切成八张标签页（开荒 / 项目 / 灵感 / 复盘 / 人脉 / 客户 / 排版 / 边栏），页标识与 modules/ 下的目录同名，一页只回答一个系统的配置问题；目录名等设置也各自归还给它服务的那个模块，而不再堆在页尾一个统称「高级」的折叠区里——每页自己有一个，永远在页尾。外观开关与作者名片刻意不各占一页（v0.9.2 拍板：一个控件撑一整页是把分页做成摆设），都住在「开荒」页里：开关排在初始化之后（外观包是开荒交付物的一部分），名片是页尾落款、排在高级折叠之后，画的与首页导航尾部是同一张。八张页的身份（短名 / 图标 / 模块全名 / 交付状态）收在 src/settings.ts 的 TABS 一张表里，标签栏与每页页头都从它出；图标取自 COMMAND_ICONS，与左侧边栏、命令面板同一套 Pikaicons 笔画图形（v0.9.1 起弃 emoji），标签栏是「整行底线 + 当前页填充胶囊」的样式，标签自然宽度左对齐、一行排下不换行；模块清单不再单列一份，标签栏本身就是那份清单。加一页 = TABS 加一行 + panels 表加一个渲染函数，后者的 Record<TabId, …> 会在漏写时报编译错。
 </settings>
 
 <views>
-V2 起全部视图（现二十二个）由插件自渲染：笔记里只留一行 ```ziminos 代码块 + 视图名，逻辑住在 main.js、样式住在 styles.css。第二十二个是「关于作者」（v0.9.0）：作者的官网/教程双域名、GitHub 与四个自媒体频道连同 Simple Icons 品牌图形编译进 main.js，开荒写进导航页尾，同一张名片也是设置页第十张标签页——插件传到哪，名片跟到哪。表格是三线表，文本里的双链渲染成可点链接，任务行渲染成能勾的复选框并写回源文件。库内零 JS 文件，DataviewJS 保持关闭，升级只换 main.js 即全库生效。重算由 metadataCache 变更事件驱动，无定时器、无轮询。Dataview 仍随库交付，它的活儿只剩灵感集那条 TASK 查询。
+V2 起全部视图（现二十二个）由插件自渲染：笔记里只留一行 ```ziminos 代码块 + 视图名，逻辑住在 main.js、样式住在 styles.css。第二十二个是「关于作者」（v0.9.0）：作者的官网/教程双域名、GitHub 与四个自媒体频道连同 Simple Icons 品牌图形编译进 main.js，开荒写进导航页尾，同一张名片也是设置页开荒页尾的落款——插件传到哪，名片跟到哪。表格是三线表，文本里的双链渲染成可点链接，任务行渲染成能勾的复选框并写回源文件。库内零 JS 文件，DataviewJS 保持关闭，升级只换 main.js 即全库生效。重算由 metadataCache 变更事件驱动，无定时器、无轮询。Dataview 仍随库交付，它的活儿只剩灵感集那条 TASK 查询。
 </views>
 
 <config>

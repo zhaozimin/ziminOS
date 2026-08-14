@@ -5766,25 +5766,11 @@ var TABS = [
     status: "\u8FD0\u884C\u4E2D \xB7 \u4E5D\u6761\u6807\u51C6 Markdown \u5199\u6CD5\uFF0C\u6539\u5B8C\u8D70\u5F00\u5C31\u66FF\u4F60\u6574\u7406"
   },
   {
-    id: "appearance",
-    label: "\u5916\u89C2",
-    icon: COMMAND_ICONS.appearance,
-    module: "\u5916\u89C2\u5305 v2",
-    status: "\u8FD0\u884C\u4E2D \xB7 Minimal + Style Settings + \u5341\u4E8C\u4E2A CSS \u7247\u6BB5\uFF0C\u53F3\u4E0B\u89D2\u4E00\u952E\u5F00\u5173"
-  },
-  {
     id: "ribbon",
     label: "\u8FB9\u680F",
     icon: COMMAND_ICONS.dock,
     module: "\u5DE6\u4FA7\u8FB9\u680F v1",
     status: "\u8FD0\u884C\u4E2D \xB7 \u4E8C\u5341\u4E09\u6761\u547D\u4EE4\u914D Pikaicons \u56FE\u6807\uFF0C\u9ED8\u8BA4\u6446\u51FA\u4E03\u6761"
-  },
-  {
-    id: "about",
-    label: "\u5173\u4E8E",
-    icon: COMMAND_ICONS.theme,
-    module: "\u5173\u4E8E\u4F5C\u8005 v1",
-    status: "\u5B98\u7F51\u3001\u6559\u7A0B\u4E0E\u56DB\u4E2A\u81EA\u5A92\u4F53\u5165\u53E3\uFF0C\u968F\u63D2\u4EF6\u8D70\u2014\u2014\u9996\u9875\u5BFC\u822A\u5E95\u90E8\u662F\u540C\u4E00\u5F20\u540D\u7247"
   }
 ];
 var TEXTS3 = {
@@ -5859,18 +5845,19 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
      * 在这里是一个编译错误，而不是一张点进去空空如也的页。
      */
     this.panels = {
-      setup: (el) => this.renderInitButton(el),
+      // 开荒页自有控件两件：初始化按钮，加外观开关的显隐——外观包是开荒交付物的一部分，
+      // 它唯一的开关跟着交付物走，不另占一页
+      setup: (el) => {
+        this.renderInitButton(el);
+        this.renderAppearancePanel(el);
+      },
       projects: (el) => this.renderProjectsPanel(el),
       inspiration: (el) => this.renderInspirationPanel(el),
       review: FIELDS_ONLY,
       contacts: FIELDS_ONLY,
       clients: FIELDS_ONLY,
       format: (el) => this.renderFormatPanel(el),
-      appearance: (el) => this.renderAppearancePanel(el),
-      ribbon: (el) => this.renderRibbonPanel(el),
-      // 名片画什么由 about 模块决定，这里只递一个容器过去；
-      // 首页导航尾部那个「关于作者」视图块画的是同一张，两处不可能对不齐
-      about: (el) => this.actions.renderAbout(el)
+      ribbon: (el) => this.renderRibbonPanel(el)
     };
     this.ctx = ctx;
     this.actions = actions;
@@ -5919,10 +5906,13 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
   /**
    * 一页的固定骨架：页头 → 明面上的文本字段 → 本页自有控件 → 高级折叠区。
    *
-   * 四段的先后是一条跨九页的承诺，两头各占一句：页头永远先说清这一页是谁、跑没跑起来；
+   * 四段的先后是一条跨八页的承诺，两头各占一句：页头永远先说清这一页是谁、跑没跑起来；
    * 折叠区永远在最后，于是任何一页往下翻到底，危险的东西都在同一个位置、同一个标题下，
    * 不需要每页重新找一遍。中间两段的顺序是「先说东西放哪儿，再说怎么用它」——
    * 灵感页把落点三问排在插入位置与格式之前，正是这条顺序，不必自己再画一次字段。
+   *
+   * 唯一排在折叠区之后的是开荒页尾的作者名片：它不是设置，是这套交付物的落款，
+   * 落款排在正文与附录之后，正是它在纸上的位置。
    */
   renderPanel(body) {
     const tab = this.activeTab;
@@ -5933,6 +5923,17 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
     this.renderTextFields(body, tab.id, false);
     this.panels[tab.id](body);
     this.renderAdvancedFold(body, tab.id);
+    if (tab.id === "setup") this.renderAboutFooter(body);
+  }
+  /**
+   * 开荒页尾的作者名片。
+   * 名片画什么由 about 模块决定，这里只递一个容器过去；
+   * 首页导航尾部那个「关于作者」视图块画的是同一张，两处不可能对不齐。
+   */
+  renderAboutFooter(body) {
+    const footer = body.createDiv({ cls: "ziminos-settings-footer" });
+    footer.createDiv({ cls: "ziminos-settings-footer-title", text: "\u5173\u4E8E\u4F5C\u8005" });
+    this.actions.renderAbout(footer);
   }
   // ============================================================
   // 二、通用控件：开关、文本框、折叠区
@@ -6101,7 +6102,7 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
     return FORMAT_RULES.map((rule) => rule.key).filter((candidate) => chosen.has(candidate));
   }
   // ============================================================
-  // 七、外观页：一个开关
+  // 七、外观开关：一个开关，随开荒页交付
   // ============================================================
   /** 这一页管的是「右下角要不要常驻这个按钮」，不管片段本身开着还是关着 */
   renderAppearancePanel(containerEl) {
