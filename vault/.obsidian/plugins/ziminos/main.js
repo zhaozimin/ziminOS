@@ -1229,7 +1229,7 @@ var CHANNEL_REGIONS = [
     label: "\u4E2D\u56FD\u5927\u9646",
     channels: [
       { name: "\u54D4\u54E9\u54D4\u54E9", label: "\u5149\u5934obsidian\u6559\u7A0B", url: "https://b23.tv/E2UTPzQ", path: BILIBILI_PATH, color: "#00A1D6" },
-      { name: "\u5C0F\u7EA2\u4E66", label: "\u5149\u5934obsidian\u6559\u7A0B", url: "https://xhslink.cn/m/3NnLHIc6lQA", path: XIAOHONGSHU_PATH, color: "#FF2442" }
+      { name: "\u5C0F\u7EA2\u4E66", label: "\u5149\u5934obsidian\u6559\u7A0B", url: "https://xhslink.cn/m/3NnLHIc6lQA", path: XIAOHONGSHU_PATH, color: "#FF2442", wordmark: true }
     ]
   }
 ];
@@ -1288,6 +1288,7 @@ function renderChannel(row, channel) {
     cls: "ziminos-about-pill-icon",
     attr: { viewBox: "0 0 24 24", fill: "currentColor", "aria-hidden": "true" }
   });
+  if (channel.wordmark) icon.addClass("is-wordmark");
   icon.createSvg("path", { attr: { d: channel.path } });
   if (channel.color) icon.style.color = channel.color;
   pill.appendText(channel.label);

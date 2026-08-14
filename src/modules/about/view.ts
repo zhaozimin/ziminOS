@@ -50,6 +50,8 @@ interface Channel {
     readonly path: string;
     /** 品牌色；GitHub 与 X 的官方标就是黑白两版，留空取 currentColor 随主题走 */
     readonly color?: string;
+    /** 文字标（如小红书）：没有色块打底的纯字形，常规尺寸认不清，渲染时放大一档 */
+    readonly wordmark?: boolean;
 }
 
 /** 一个频道分区：区名 + 一排胶囊。只有频道分海外/大陆，站点磁贴国内外一体 */
@@ -110,7 +112,7 @@ const CHANNEL_REGIONS: readonly ChannelRegion[] = [
         label: '中国大陆',
         channels: [
             { name: '哔哩哔哩', label: '光头obsidian教程', url: 'https://b23.tv/E2UTPzQ', path: BILIBILI_PATH, color: '#00A1D6' },
-            { name: '小红书', label: '光头obsidian教程', url: 'https://xhslink.cn/m/3NnLHIc6lQA', path: XIAOHONGSHU_PATH, color: '#FF2442' },
+            { name: '小红书', label: '光头obsidian教程', url: 'https://xhslink.cn/m/3NnLHIc6lQA', path: XIAOHONGSHU_PATH, color: '#FF2442', wordmark: true },
         ],
     },
 ];
@@ -186,6 +188,9 @@ function renderChannel(row: HTMLElement, channel: Channel): void {
         cls: 'ziminos-about-pill-icon',
         attr: { viewBox: '0 0 24 24', fill: 'currentColor', 'aria-hidden': 'true' },
     });
+
+    // 第二个类名走 addClass 而不塞进 cls：带空格的类名串怎么被拆，取决于实现而非类型
+    if (channel.wordmark) icon.addClass('is-wordmark');
 
     icon.createSvg('path', { attr: { d: channel.path } });
 

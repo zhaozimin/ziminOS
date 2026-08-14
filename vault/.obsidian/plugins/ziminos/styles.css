@@ -403,6 +403,17 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
     flex-shrink: 0;
 }
 
+/*
+ * 字标（小红书）：它是三个汉字组成的文字标，没有色块打底，15px 根本认不清。
+ * 放大到 26px，负外边距抵掉多出的高度——字形只占方框中段约三分之一，
+ * 画出来的像素仍落在胶囊里，胶囊高度因此与同排其他胶囊分毫不差。
+ */
+.ziminos-about-pill-icon.is-wordmark {
+    width: 26px;
+    height: 26px;
+    margin: -6px 0;
+}
+
 /* ── 设置页：顶上那排标签，一页一个系统模块 ── */
 
 /*
@@ -412,13 +423,14 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
  * 背景必须是实心的，否则下面的行会从字缝里透上来；取 --background-primary，
  * 那正是设置弹窗内容区自己的底色，因此吸住时看不出接缝。
  */
-/* 吸顶的是这层外壳：实心底色，滚动的内容从它下面钻过去，不透字 */
+/*
+ * 标签栏随内容滚动，不吸顶。
+ * 吸顶版在真机上与 Obsidian 设置容器自身的内边距与滚动结构打架：
+ * 页头文字会从标签栏上方钻出来、被裁一半（v0.9.4 实测截图为证）。
+ * 换页本就是低频动作，滚回顶部的代价远小于一条永远错位的悬浮条。
+ */
 .ziminos-settings .ziminos-settings-tabs {
-    position: sticky;
-    top: 0;
-    z-index: 1;
     padding: 8px 0 12px;
-    background-color: var(--background-primary);
 }
 
 /*
