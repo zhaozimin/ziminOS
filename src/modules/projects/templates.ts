@@ -80,8 +80,26 @@ export interface MocFrontmatterOptions {
      * 同理见 cardInit 写 up 的方式——它也是 multitext，也写成单元素列表。
      */
     readonly author?: string;
+    /**
+     * 别名。书籍容器用它装带副标题的全名——文件名只能用主书名（副标题太长做不了文件名），
+     * 而搜索与双链要认得出全名，别名正是 Obsidian 为这件事准备的字段。
+     */
+    readonly aliases?: readonly string[];
+    /** 出处链接。书籍容器写豆瓣条目地址，字段名沿用全库统一的 source */
+    readonly source?: string;
     /** 与某个人的关系；自己独做的项目不带这一项，空键是登记表不是索引 */
     readonly relation?: ProjectRelation;
+}
+
+/**
+ * 正文里的一个小节：标题，以及可选的现成正文。
+ *
+ * body 是书籍容器带来的：书目信息（出版社、ISBN、评分）在建书那一刻就已经取回来了，
+ * 让它落在「书籍信息」小节里，学员打开就能看见，而不是留一个空标题等他自己抄。
+ */
+export interface ContainerSection {
+    readonly heading: string;
+    readonly body?: string;
 }
 
 /** MOC 正文的全部可变量：YAML 那一份，加上 base 视图要用的两个名字 */
@@ -94,10 +112,10 @@ export interface MocContentOptions extends MocFrontmatterOptions {
     /** 项目或领域的文件夹路径，base 视图据此收集同目录文件 */
     readonly projectFolderPath: string;
     /**
-     * 正文小节骨架，排在写字位之后、base 块之前，每个是一行二级标题。
+     * 正文小节骨架，排在写字位之后、base 块之前。
      * 只有书籍容器带它（书籍信息与全部划线两个落点）；项目与领域不带，产出与 V2 逐字相同。
      */
-    readonly sections?: readonly string[];
+    readonly sections?: readonly ContainerSection[];
     /** base 视图的显示名；缺省即项目的「项目文件」，书籍容器传「读书卡片」 */
     readonly baseViewName?: string;
 }
@@ -129,11 +147,14 @@ function toYamlString(value: string): string {
  * aliases/updated/tags 刻意留空：前者由用户自取，updated 交给自动维护，tags 属于个人分类习惯。
  */
 export function mocFrontmatter(options: MocFrontmatterOptions): string {
-    const { description, created, uid, type, status, author, relation } = options;
+    const { description, created, uid, type, status, author, aliases, source, relation } = options;
 
     return [
         '---',
-        'aliases:',
+        // 别名是列表类型（types.json 登记为 aliases），有值就逐条写成列表项
+        ...(aliases?.length
+            ? ['aliases:', ...aliases.map((alias) => `  - ${toYamlString(alias)}`)]
+            : ['aliases:']),
         `description: ${toYamlString(description)}`,
         `created: ${created}`,
         'updated:',
@@ -145,6 +166,8 @@ export function mocFrontmatter(options: MocFrontmatterOptions): string {
         // 只有书籍容器带作者，且学员跳过作者一问时整行不写——空键是登记表不是索引。
         // 写成单元素列表是因为 author 在 types.json 里是 multitext，理由见 MocFrontmatterOptions
         ...(author ? ['author:', `  - ${toYamlString(author)}`] : []),
+        // 出处：书籍写豆瓣条目地址。它是 text 类型，直接写裸链接，Obsidian 会渲染成可点的
+        ...(source ? [`source: ${source}`] : []),
         // 只在有值时才写这一行：空的 client 键会让这个项目被当成一笔没有客户的委托
         ...(relation ? [`${relation.field}: "[[${relation.target}]]"`] : []),
         '---',
@@ -210,7 +233,9 @@ export function mocContent(options: MocContentOptions): string {
         options.projectFolderPath,
         options.baseViewName,
     );
-    const sectionBlock = (options.sections ?? []).map((heading) => `${heading}\n\n`).join('');
+    const sectionBlock = (options.sections ?? [])
+        .map((section) => (section.body ? `${section.heading}\n\n${section.body}\n\n` : `${section.heading}\n\n`))
+        .join('');
 
     return `${frontmatter}\n\n\n\n${sectionBlock}${baseBlock}\n`;
 }

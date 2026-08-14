@@ -2,7 +2,9 @@
 
 TypeScript 7.0 + esbuild 0.28 + Obsidian API 1.13（manifest minAppVersion 1.13.0）+ Dataview 0.5.68 + Minimal 9.0.2 + Style Settings 1.0.9 + Pikaicons（图标，MIT，编译进 main.js）
 
-三条不可违背的红线贯穿全仓库：人主导（一切写入由用户命令或用户建的文件触发，无定时器、无轮询）、脚本驱动（插件内零 AI 调用、零网络请求，同输入同结果）、只用官方公开 API（唯一一处缺口是外观开关，见 deviations 第 3 条，已按三条纪律收窄并可整块摘除）。
+三条红线贯穿全仓库：人主导（一切写入由用户命令或用户建的文件触发，无定时器、无轮询）、脚本驱动（插件内零 AI 调用，同输入同结果）、只用官方公开 API。
+
+**第二条红线在 v0.13.0 被用户明令放宽：允许联网、允许登录。** 原文是「零网络请求」，代价是学员为了一本书要操作三步——豆瓣插件建档、划线插件导出、再手工把划线复制粘贴进 MOC。用户的判决是：那三步里有两步是机器该干的活儿，把它们留给人不是克制，是失职。放宽只对读书笔记这一个模块生效，且只用于两件事：查书目（豆瓣）与取本人划线（微信读书）。其余模块仍然零网络；「同输入同结果」在本机来源（苹果图书 SQLite、Kindle 的 My Clippings）上原样成立，网络来源则如实告知失败原因而不是装作没有数据。
 
 第二条红线最硬的一次兑现是读书笔记（v0.12.0）：微信读书、Kindle、苹果图书与豆瓣的同步插件全走各家私有网络接口，因此一个都不集成、一个都不捆绑；ziminOS 只认这三家**官方的纯文本导出**，学员复制、粘贴、确认，插件解析与合并。豆瓣同理——书籍详情留一个「书籍信息」小节当落点，装了豆瓣插件它是加速器，不装就手抄一行，主线不断。
 
@@ -17,7 +19,7 @@ src/ - 插件源码 (2子目录: core 无业务的基础设施、命令注册台
 </directory>
 
 <commands>
-二十六条命令，身份（id / 中文名 / 图标 / 分组）全在 src/core/commands.ts，一律经 CommandRegistry 注册——它在交给 Obsidian 的同时留一份花名册，左侧边栏与设置页照着它摆，三处因此不可能对不齐。默认七条摆进左侧边栏（新建项目、记录灵感、今天的日记、写复盘主题、新建人脉、记人情、外观开关），其余十九条勾一下就上；首次摆出的先后即命令的注册顺序，此后顺序归用户（Obsidian 自带的边栏拖拽）。图标全程只用公开 API（addIcon / addRibbonIcon / Command.icon），不构成第 4 处红线偏离。边栏图标与设置页清单按九个分组着功能色（GROUP_COLORS：垦土棕/工程蓝/朱批红/灯泡黄/沉思紫/玫红/钱绿/调色盘橙/青），颜色即索引，隔着半个屏幕就分得出组。
+二十九条命令，身份（id / 中文名 / 图标 / 分组）全在 src/core/commands.ts，一律经 CommandRegistry 注册——它在交给 Obsidian 的同时留一份花名册，左侧边栏与设置页照着它摆，三处因此不可能对不齐。默认七条摆进左侧边栏（新建项目、记录灵感、今天的日记、写复盘主题、新建人脉、记人情、外观开关），其余二十二条勾一下就上；首次摆出的先后即命令的注册顺序，此后顺序归用户（Obsidian 自带的边栏拖拽）。图标全程只用公开 API（addIcon / addRibbonIcon / Command.icon），不构成第 4 处红线偏离。边栏图标与设置页清单按九个分组着功能色（GROUP_COLORS：垦土棕/工程蓝/朱批红/灯泡黄/沉思紫/玫红/钱绿/调色盘橙/青），颜色即索引，隔着半个屏幕就分得出组。
 </commands>
 
 <settings>
@@ -44,8 +46,10 @@ docs/设计规格书-V2.md - 人脉与复盘（v0.4.0）、左侧边栏命令（
 </delivery>
 
 <deviations>
-三处被迫偏离，在此备案，不是疏漏：
+五处偏离，在此备案，不是疏漏：
 1. tsconfig 的 moduleResolution 取 bundler 而非规格书 §2 写的 node —— 实际装到的 TypeScript 7.0.2 已移除 node10 解析模式（TS5108），规格的 node 与规格的「依赖用最新稳定版」自相冲突；bundler 是 esbuild 打包场景下的等价现代取值，其余编译选项全按规格保留。
 2. src/core/time.ts 存在全仓库唯一一处类型断言 —— obsidian 把 moment 作为命名空间导出，其类型不携带调用签名，断言只还原类型不改变运行时行为。
+4. 读书笔记模块联网 —— 见开头那段：用户明令放宽第二条红线。落地上只有两个出口：`modules/books/douban.ts`（豆瓣搜索页与详情页，走 Obsidian **公开** API requestUrl）与 `modules/books/sourceWeread.ts`（微信读书的 /api/user/notebook 与 /web/* 接口，同样走 requestUrl）。两处都不碰账号密码；豆瓣不需要登录，微读的登录态由用户扫码后从会话里取。删掉 modules/books 即让零网络重新成立。
+5. src/modules/books/sourceWeread.ts 运行时 `require('@electron/remote')` 取 BrowserWindow —— 「只用官方公开 API」这条红线的第二处缺口，为的是让微信读书的登录是**扫码**而不是让学员去开发者工具里手抄一长串 Cookie。它按与第 3 条同样的三条纪律收窄：只有开登录窗口这一步借用（取数全走公开的 requestUrl）、探不到就整条命令降级为不可用而绝不抛异常、声明与调用同处一个文件。另注：那段登录轮询有明确起止与用户在场，与「无后台轮询」说的不是一回事。
 3. src/modules/appearance/snippets.ts 借了一次 Obsidian 非公开 API，是「只用官方公开 API」这条红线唯一的缺口 —— 「让某个 CSS 片段此刻生效或失效」在 obsidian.d.ts（1.13.1，8482 行）里没有入口，全文既搜不到 customCss 也搜不到 snippet；能做到的只有 app.customCss.setCssEnabledStatus。不碰它，开关就退化成「改配置文件 + 请重启」，也就不再是开关。缺口按三条纪律收窄：其一，只有「让改动生效」这一步借用，片段清单与启用状态全部走公开的 vault.configDir + DataAdapter，因此开关显示的永远是磁盘上的事实；其二，用模块增强声明成可选成员并在运行时二次验形，TypeScript 强制判空，探不到就降级为改 appearance.json 并提示重载，功能退化但绝不抛异常；其三，声明与调用同处一个文件，不散进 .d.ts，删掉 modules/appearance 即可让红线重新完整。
 </deviations>

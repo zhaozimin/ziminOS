@@ -1,0 +1,201 @@
+/**
+ * [INPUT]: 依赖 obsidian 的 Platform（判断桌面端）；依赖 Node 的 child_process/os/fs
+ *          （Obsidian 桌面端是 Electron，这三样在渲染进程里可用；移动端不可用，故全程 Platform 守卫）
+ * [OUTPUT]: 对外提供 appleBooksAvailable、listAppleBooks、readAppleBookHighlights 与 AppleBook 契约
+ * [POS]: 划线来源之一：苹果图书。它是三个来源里最确定的一个——数据就在本机两个 SQLite 里，
+ *        零网络、零登录、同输入同结果，「脚本驱动」这条红线在这一支上原样成立。
+ *        取数方式是 `spawn('sqlite3', [库, SQL, '-json'])`：macOS 自带 sqlite3（实测 3.51.0），
+ *        因此不必打包任何 sqlite 库，也不必碰原生模块——Obsidian 插件带原生模块是个死结。
+ *        它比「让学员在图书里复制粘贴」多给两样东西：**章节名**（ZFUTUREPROOFING5）
+ *        与**批注**（ZANNOTATIONNOTE）——那两样在复制出来的文本里根本不存在，
+ *        这正是「一步到位」比「三步手工」不只是省事、而是拿到更多东西的地方
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+import { Platform } from 'obsidian';
+import { spawn } from 'child_process';
+import { homedir } from 'os';
+import { existsSync, readdirSync } from 'fs';
+import { join } from 'path';
+import type { ParsedHighlight } from './parsers';
+
+// ============================================================
+// 契约
+// ============================================================
+
+/** 图书库里的一本书 */
+export interface AppleBook {
+    /** ZASSETID，划线表靠它认书 */
+    readonly id: string;
+    readonly title: string;
+    readonly author: string;
+}
+
+// ============================================================
+// 库文件定位
+// ============================================================
+
+/**
+ * 两个库的目录。文件名带版本后缀（`BKLibrary-1-091020131601.sqlite`、
+ * `AEAnnotation_v10312011_1727_local.sqlite`），且随 macOS 版本变过——
+ * 因此只认目录、扫里面的 .sqlite，不把那串数字写死。
+ */
+const LIBRARY_DIR = 'Library/Containers/com.apple.iBooksX/Data/Documents/BKLibrary';
+const ANNOTATION_DIR = 'Library/Containers/com.apple.iBooksX/Data/Documents/AEAnnotation';
+
+/** 目录里的第一个 .sqlite；没有就返回 null（没装图书、或从没打开过） */
+function firstSqliteIn(relative: string): string | null {
+    const dir = join(homedir(), relative);
+
+    if (!existsSync(dir)) return null;
+
+    // 排除 -wal / -shm 这些同名旁支，只要主库文件
+    const found = readdirSync(dir).filter((name) => name.endsWith('.sqlite'));
+
+    return found.length ? join(dir, found[0]) : null;
+}
+
+/**
+ * 这台机器上能不能读苹果图书。
+ * 三个条件缺一不可：桌面端（移动端没有 Node）、macOS（只有它有图书的库）、两个库文件都在。
+ */
+export function appleBooksAvailable(): boolean {
+    if (!Platform.isDesktopApp || process.platform !== 'darwin') return false;
+
+    return !!firstSqliteIn(LIBRARY_DIR) && !!firstSqliteIn(ANNOTATION_DIR);
+}
+
+// ============================================================
+// 取数
+// ============================================================
+
+/**
+ * 跑一句只读 SQL，拿回 JSON。
+ *
+ * 走 macOS 自带的 sqlite3 命令行而不是打包一个 sqlite 库：Obsidian 插件带原生模块
+ * 要为每个平台各编一份，而 wasm 版又要多塞几百 KB 进 main.js——
+ * 而这件事只在 macOS 上发生，那台机器上一定有 /usr/bin/sqlite3。
+ * 库文件只读不写，且 Obsidian 与图书 App 可能同时开着，因此以 file: URI 加
+ * `?immutable=1` 打开——不加的话 sqlite 会尝试建 -wal 文件，对别人正在用的库动手。
+ */
+async function query(dbPath: string, sql: string): Promise<Record<string, unknown>[]> {
+    return new Promise((resolve, reject) => {
+        const child = spawn('sqlite3', [`file:${dbPath}?immutable=1`, sql, '-json'], {
+            timeout: 20000,
+        });
+
+        let out = '';
+        let err = '';
+
+        child.stdout.on('data', (chunk) => {
+            out += String(chunk);
+        });
+        child.stderr.on('data', (chunk) => {
+            err += String(chunk);
+        });
+        child.on('error', (error) => reject(error));
+        child.on('close', (code) => {
+            if (code !== 0) {
+                reject(new Error(err.trim() || `sqlite3 退出码 ${code}`));
+
+                return;
+            }
+
+            // 空结果时 sqlite3 什么都不打印，那不是错误，是「这本书没有划线」
+            if (!out.trim()) {
+                resolve([]);
+
+                return;
+            }
+
+            try {
+                resolve(JSON.parse(out) as Record<string, unknown>[]);
+            } catch (error) {
+                reject(error instanceof Error ? error : new Error(String(error)));
+            }
+        });
+    });
+}
+
+/** 把 SQL 字面量里的单引号转义，防止书名里的 `'` 截断语句 */
+function quote(value: string): string {
+    return `'${value.replace(/'/g, "''")}'`;
+}
+
+/**
+ * 图书库里全部有划线的书。
+ *
+ * 只列有划线的：图书库里躺着一堆买了没读的书，全列出来会让选书弹窗变成一份购物记录。
+ * 两个库分属两个文件、sqlite3 一次只连一个，所以先取有划线的 assetId 集合，再回图书库要书名。
+ */
+export async function listAppleBooks(): Promise<readonly AppleBook[]> {
+    const libraryDb = firstSqliteIn(LIBRARY_DIR);
+    const annotationDb = firstSqliteIn(ANNOTATION_DIR);
+
+    if (!libraryDb || !annotationDb) return [];
+
+    const withHighlights = await query(
+        annotationDb,
+        `SELECT DISTINCT ZANNOTATIONASSETID AS id FROM ZAEANNOTATION
+         WHERE ZANNOTATIONSELECTEDTEXT IS NOT NULL AND ZANNOTATIONDELETED = 0`,
+    );
+    const ids = withHighlights
+        .map((row) => String(row.id ?? '').trim())
+        .filter(Boolean);
+
+    if (!ids.length) return [];
+
+    const books = await query(
+        libraryDb,
+        `SELECT ZASSETID AS id, ZTITLE AS title, ZAUTHOR AS author FROM ZBKLIBRARYASSET
+         WHERE ZASSETID IN (${ids.map(quote).join(',')})`,
+    );
+
+    return books
+        .map((row) => ({
+            id: String(row.id ?? '').trim(),
+            title: String(row.title ?? '').trim(),
+            author: String(row.author ?? '').trim(),
+        }))
+        .filter((book) => book.id && book.title);
+}
+
+/**
+ * 一本书的全部划线，按划线时刻排。
+ *
+ * 不按书里的物理位置排，是因为那一列（epubcfi 字符串）字典序不等于阅读序；
+ * 而划线时刻对线性阅读的人就是阅读序，且这一列一定存在。
+ *
+ * 四个字段各有出处：选中的原文是划线本身，ZANNOTATIONNOTE 是学员自己敲的批注（＝想法），
+ * ZFUTUREPROOFING5 是章节名——最后这个是复制粘贴那条路完全拿不到的东西。
+ * 删掉的划线（ZANNOTATIONDELETED）不要：苹果只是打个标记不真删，
+ * 照收会把学员明确删掉的句子又搬回来。
+ */
+export async function readAppleBookHighlights(assetId: string): Promise<readonly ParsedHighlight[]> {
+    const annotationDb = firstSqliteIn(ANNOTATION_DIR);
+
+    if (!annotationDb) return [];
+
+    const rows = await query(
+        annotationDb,
+        `SELECT ZANNOTATIONSELECTEDTEXT AS text, ZANNOTATIONNOTE AS note,
+                ZFUTUREPROOFING5 AS chapter, ZANNOTATIONLOCATION AS location
+         FROM ZAEANNOTATION
+         WHERE ZANNOTATIONASSETID = ${quote(assetId)}
+           AND ZANNOTATIONSELECTEDTEXT IS NOT NULL
+           AND ZANNOTATIONDELETED = 0
+         ORDER BY ZANNOTATIONCREATIONDATE`,
+    );
+
+    return rows
+        .map((row) => {
+            const note = String(row.note ?? '').trim();
+
+            return {
+                chapter: String(row.chapter ?? '').trim(),
+                text: String(row.text ?? '').trim(),
+                thoughts: note ? [note] : [],
+            };
+        })
+        .filter((highlight) => highlight.text);
+}

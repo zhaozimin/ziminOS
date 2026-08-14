@@ -18,6 +18,7 @@ import type { TFile } from 'obsidian';
 import { BOOK_COMMANDS } from '../../core/commands';
 import { TextInputModal } from '../../core/modals';
 import type { ZiminosContext } from '../../core/types';
+import type { ContainerSection } from '../projects/templates';
 
 /** 建书容器要交出去的全部答案。字段与 createContainer 的预设契约结构兼容 */
 export interface BookContainerPreset {
@@ -27,6 +28,12 @@ export interface BookContainerPreset {
     description: string;
     /** 作者；缺省即学员跳过了这一问 */
     author?: string;
+    /** 带副标题的全名，落成别名。只有走豆瓣那条路才有 */
+    aliases?: readonly string[];
+    /** 豆瓣条目地址，落成 source */
+    source?: string;
+    /** 已填好正文的小节骨架（书籍信息里那几行）。只有走豆瓣那条路才有 */
+    sections?: readonly ContainerSection[];
 }
 
 /**

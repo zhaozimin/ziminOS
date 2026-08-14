@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 obsidian 的 Plugin 类型；依赖 ./constants 的 PeriodKey 与 TransitionAction 两个类型
  * [OUTPUT]: 对外提供命令身份契约 CommandSpec、分组名 COMMAND_GROUPS、图标名 COMMAND_ICONS，
- *           二十六条命令的规格 INIT_VAULT_COMMAND/PROJECT_COMMANDS/TRANSITION_COMMANDS（含类型
+ *           二十九条命令的规格 INIT_VAULT_COMMAND/PROJECT_COMMANDS/TRANSITION_COMMANDS（含类型
  *           TransitionCommand）/BOOK_COMMANDS/INSPIRATION_COMMAND/PERIOD_COMMANDS/THEME_COMMAND/
  *           CONTACT_COMMANDS/CLIENT_COMMANDS/APPEARANCE_COMMAND/FORMAT_COMMAND，
  *           左侧边栏默认摆件 DEFAULT_RIBBON_COMMANDS
@@ -42,7 +42,7 @@ export interface CommandSpec {
      * `插件id + ":" + 标题` 当作一个边栏项的身份，也就是说这个**中文名**才是
      * 用户拖出来的顺序与「在 Obsidian 里藏掉它」这两件事被记进 workspace.json 的键。
      * 改名等于换一个新按钮，用户在边栏上的排布会静默丢失。
-     * 由此还得出一条不变式：二十六个 name 必须互不相同——撞名会让两条命令共用同一个边栏项。
+     * 由此还得出一条不变式：二十九个 name 必须互不相同——撞名会让两条命令共用同一个边栏项。
      */
     readonly name: string;
     /** 图标名，取值必须来自 COMMAND_ICONS */
@@ -100,7 +100,7 @@ export const GROUP_COLORS: Readonly<Record<CommandGroup, string>> = {
 };
 
 /**
- * 二十六个图标名。
+ * 二十九个图标名。
  *
  * 一律带 `ziminos-` 前缀：图标名是 Obsidian 全局共享的命名空间，
  * 不加前缀就可能盖掉 lucide 里的同名图标，或者被后装的插件盖掉。
@@ -118,6 +118,9 @@ export const COMMAND_ICONS = {
     dropped: 'ziminos-dropped',
     active: 'ziminos-active',
     book: 'ziminos-book',
+    readBook: 'ziminos-read-book',
+    weread: 'ziminos-weread',
+    syncHighlights: 'ziminos-sync-highlights',
     highlights: 'ziminos-highlights',
     excerpt: 'ziminos-excerpt',
     inspiration: 'ziminos-inspiration',
@@ -138,13 +141,13 @@ export const COMMAND_ICONS = {
     /**
      * 不属于任何命令的一枚：设置页「边栏」标签页的图标。
      * 边栏这个模块管的是屏幕上那一列，没有哪条命令天然长它的样子，
-     * 图形与其余二十六个同住 icons.ts，同一套画法
+     * 图形与其余二十九个同住 icons.ts，同一套画法
      */
     dock: 'ziminos-dock',
 } as const;
 
 // ============================================================
-// 二十六条命令：顺序即它们在左侧边栏里的先后
+// 二十九条命令：顺序即它们在左侧边栏里的先后
 // ============================================================
 
 /**
@@ -233,7 +236,36 @@ export const TRANSITION_COMMANDS: readonly TransitionCommand[] = [
  * 但它们单独成组：读书有自己的三样动作与自己的素材形态（划线），
  * 混进项目组会让「新建项目」与「新建读书笔记」在边栏上看起来是同一类事的两个按钮。
  */
-export const BOOK_COMMANDS: Readonly<Record<'create' | 'importNotes' | 'excerpt', CommandSpec>> = {
+export const BOOK_COMMANDS: Readonly<
+    Record<'read' | 'sync' | 'connectWeread' | 'create' | 'importNotes' | 'excerpt', CommandSpec>
+> = {
+    /**
+     * 主干命令：一步读一本书。
+     *
+     * 它取代的是学员原本的三步（豆瓣插件建档 → 划线插件导出 → 手工复制粘贴汇总）。
+     * 排在这一组的第一条，因为它是绝大多数时候唯一该按的那一条；
+     * 其余四条都是它覆盖不到的边角：手动建、粘贴导、再同步、炼卡。
+     */
+    read: {
+        id: 'read-book',
+        name: '读一本书',
+        icon: COMMAND_ICONS.readBook,
+        group: COMMAND_GROUPS.books,
+    },
+    /** 读到一半再拉一次划线。与建书共用同一套取数与合并，只是不再建档 */
+    sync: {
+        id: 'sync-book-highlights',
+        name: '同步这本书的划线',
+        icon: COMMAND_ICONS.syncHighlights,
+        group: COMMAND_GROUPS.books,
+    },
+    /** 连微信读书。一辈子按一次，扫码登录后划线才能自动来 */
+    connectWeread: {
+        id: 'connect-weread',
+        name: '连接微信读书',
+        icon: COMMAND_ICONS.weread,
+        group: COMMAND_GROUPS.books,
+    },
     create: {
         id: 'create-book',
         name: '新建读书笔记',
@@ -416,7 +448,7 @@ export const DEFAULT_RIBBON_COMMANDS: readonly string[] = [
  * 包括下面的高级设置。收敛一次，两个消费方（边栏与设置页）都不必各自判空。
  *
  * 不是数组就退回默认清单（等同于「这个键没写过」），是数组则只留下字符串项。
- * 空数组是合法的：用户把二十六条全取消了，那就一个图标都不摆。
+ * 空数组是合法的：用户把二十九条全取消了，那就一个图标都不摆。
  */
 export function normalizeRibbonCommands(value: unknown): readonly string[] {
     if (!Array.isArray(value)) return DEFAULT_RIBBON_COMMANDS;

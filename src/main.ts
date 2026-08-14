@@ -38,6 +38,11 @@ import { registerAppearanceSwitch } from './modules/appearance/statusBar';
 import { registerCreateBookCommand } from './modules/books/createBook';
 import { registerExcerptCardCommand } from './modules/books/extractCard';
 import { registerImportHighlightsCommand } from './modules/books/importHighlights';
+import {
+    registerConnectWereadCommand,
+    registerReadBookCommand,
+    registerSyncHighlightsCommand,
+} from './modules/books/readBook';
 import { registerFormatter } from './modules/format/formatter';
 import { circleViews } from './modules/contacts/circleViews';
 import { clientViews } from './modules/contacts/clientViews';
@@ -127,6 +132,11 @@ export default class ZiminosPlugin extends Plugin {
         // 一本书就是一个项目：建书要的「一个文件夹 + 一篇 MOC」正是 createContainer 那套流程，
         // 而 books 模块不认识 projects——它只声明了一个「建一个书籍容器」的洞，由这里填上。
         // BOOK_KIND 那张表说清了书与项目的全部差别，因此这里递的是规格，不是又一条流程
+        // 「读一本书」是主干：一条命令走完「查书目 → 建档 → 把设备里的划线灌进来」，
+        // 它与手动建书共用同一个容器洞，差别只在 preset 里的字段是查来的还是问来的
+        registerReadBookCommand(ctx, (preset) => createContainer(ctx, BOOK_KIND, preset));
+        registerSyncHighlightsCommand(ctx);
+        registerConnectWereadCommand(ctx);
         registerCreateBookCommand(ctx, (preset) => createContainer(ctx, BOOK_KIND, preset));
         registerImportHighlightsCommand(ctx);
         registerExcerptCardCommand(ctx);

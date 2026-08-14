@@ -90,6 +90,14 @@ export interface ZiminosSettings {
      * 老库升级时那条新规则默认不开，这与「不替用户改他没选过的东西」是同一条纪律。
      */
     formatRules: readonly string[];
+    /**
+     * 微信读书的登录态 Cookie，由「连接微信读书」扫码后写入。
+     *
+     * 它是全部设置里唯一一项**凭据**，因此三条纪律：只在本机 data.json 里、
+     * 绝不出现在任何笔记或提示文案里、过期时如实报「登录已过期」而不是装作没有划线。
+     * 空串＝没连过，那时读书命令只查本机的苹果图书与 Kindle。
+     */
+    wereadCookie: string;
     /** 首次开荒完成的时间戳；空字符串表示尚未初始化，是「首次」与「补齐」的唯一判据 */
     initializedAt: string;
 }
@@ -116,6 +124,7 @@ export const DEFAULT_SETTINGS: ZiminosSettings = {
     ribbonCommands: DEFAULT_RIBBON_COMMANDS,
     autoFormat: true,
     formatRules: DEFAULT_FORMAT_RULES,
+    wereadCookie: '',
     initializedAt: '',
 };
 

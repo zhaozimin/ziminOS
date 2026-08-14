@@ -28,7 +28,7 @@ import { nowStampAndUid } from '../../core/time';
 import type { ZiminosContext, ZiminosSettings } from '../../core/types';
 import { mocBasenameOf, mocPathOf } from './moc';
 import { mocContent, mocFrontmatter } from './templates';
-import type { ProjectRelation } from './templates';
+import type { ContainerSection, ProjectRelation } from './templates';
 
 /**
  * 「从库里选一个人」这项能力，由 main 在装配时注入。
@@ -121,7 +121,7 @@ export interface ContainerKind {
      */
     readonly asksOwnership: boolean;
     /** MOC 正文的小节骨架。只有书籍带（书籍信息与全部划线两个落点），项目与领域不带 */
-    readonly sections?: readonly string[];
+    readonly sections?: readonly ContainerSection[];
     /** base 视图的显示名。缺省即「项目文件」，书籍传「读书卡片」 */
     readonly baseViewName?: string;
 }
@@ -160,7 +160,7 @@ export const BOOK_KIND: ContainerKind = {
     folderKey: 'projectFolder',
     folderFallback: FOLDERS.projects,
     asksOwnership: false,
-    sections: [BOOK_HEADINGS.info, BOOK_HEADINGS.highlights],
+    sections: [{ heading: BOOK_HEADINGS.info }, { heading: BOOK_HEADINGS.highlights }],
     baseViewName: '读书卡片',
 };
 
@@ -176,6 +176,16 @@ export interface CreateContainerPreset {
     description: string;
     /** 作者，只有书籍预设带；有值才落 YAML 行 */
     author?: string;
+    /** 别名（书籍的带副标题全名），只有书籍预设带 */
+    aliases?: readonly string[];
+    /** 出处链接（书籍的豆瓣条目地址），只有书籍预设带 */
+    source?: string;
+    /**
+     * 覆盖 kind 自带的小节骨架。
+     * 书籍走这条把已经取回来的书目信息直接落进「书籍信息」小节——
+     * 那些字段建书那一刻就在手上了，留一个空标题等学员自己抄是把一步退回三步。
+     */
+    sections?: readonly ContainerSection[];
 }
 
 /**
@@ -328,6 +338,8 @@ export async function createContainer(
             status: kind.status,
             // 作者只可能来自书籍预设；交互路径从不问它，undefined 时那一行整行不写
             author: preset?.author,
+            aliases: preset?.aliases,
+            source: preset?.source,
             relation,
         };
 
@@ -335,7 +347,8 @@ export async function createContainer(
             ...identity,
             mocBasename,
             projectFolderPath: containerFolderPath,
-            sections: kind.sections,
+            // 预设带了小节就用预设的（书目信息已填好），否则用这一类容器的空骨架
+            sections: preset?.sections ?? kind.sections,
             baseViewName: kind.baseViewName,
         });
 
