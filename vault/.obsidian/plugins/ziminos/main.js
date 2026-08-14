@@ -32,7 +32,7 @@ __export(main_exports, {
   default: () => ZiminosPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian24 = require("obsidian");
+var import_obsidian27 = require("obsidian");
 
 // src/core/codeblock.ts
 var import_obsidian3 = require("obsidian");
@@ -169,6 +169,8 @@ var FIELDS = {
 var NOTE_TYPES = {
   project: "project",
   area: "area",
+  /** 读书笔记：一本书就是一个项目，住项目目录，读完走「完成项目」归档 */
+  book: "book",
   /** 人脉档案：认识的人，有生日有脾气有人情往来 */
   person: "person",
   /** 付费用户：陌生人买你的东西，你只知道渠道与联系方式，是与 person 并列的独立物种 */
@@ -179,6 +181,7 @@ var NOTE_TYPES = {
   quarterly: "quarterly",
   yearly: "yearly"
 };
+var CONTAINER_TYPES = [NOTE_TYPES.project, NOTE_TYPES.book];
 var MOC_PREFIX = "MOC-";
 var DAY_FORMAT = "YYYY-MM-DD";
 var PERIODS = {
@@ -273,6 +276,12 @@ var PAYMENT_FIELDS = {
 };
 var CLIENT_PAYMENT_HEADING = "## \u4ED8\u8D39\u4E0E\u4EA4\u4ED8";
 var PROJECT_PAYMENT_HEADING = "## \u6536\u6B3E";
+var BOOK_HEADINGS = {
+  info: "## \u4E66\u7C4D\u4FE1\u606F",
+  highlights: "## \u5168\u90E8\u5212\u7EBF"
+};
+var BOOK_CHAPTER_PREFIX = "### ";
+var BOOK_THOUGHT_PREFIX = "\u{1F4AD} ";
 var SNIPPET_FOLDER_NAME = "snippets";
 var SNIPPET_EXTENSION = ".css";
 var APPEARANCE_FILE_NAME = "appearance.json";
@@ -728,6 +737,7 @@ function parseBlock(source) {
 var COMMAND_GROUPS = {
   setup: "\u5F00\u8352",
   projects: "\u9879\u76EE",
+  books: "\u8BFB\u4E66",
   inspiration: "\u7075\u611F",
   review: "\u590D\u76D8",
   contacts: "\u4EBA\u8109",
@@ -740,6 +750,8 @@ var GROUP_COLORS = {
   // 开荒＝垦土，泥土棕
   [COMMAND_GROUPS.projects]: "#4C8DD6",
   // 项目＝蓝图，工程蓝
+  [COMMAND_GROUPS.books]: "#C15449",
+  // 读书＝批注用朱笔，朱批红
   [COMMAND_GROUPS.inspiration]: "#E3A93C",
   // 灵感＝灯泡，琥珀黄
   [COMMAND_GROUPS.review]: "#9A6BD6",
@@ -762,6 +774,9 @@ var COMMAND_ICONS = {
   paused: "ziminos-paused",
   dropped: "ziminos-dropped",
   active: "ziminos-active",
+  book: "ziminos-book",
+  highlights: "ziminos-highlights",
+  excerpt: "ziminos-excerpt",
   inspiration: "ziminos-inspiration",
   daily: "ziminos-daily",
   weekly: "ziminos-weekly",
@@ -780,7 +795,7 @@ var COMMAND_ICONS = {
   /**
    * 不属于任何命令的一枚：设置页「边栏」标签页的图标。
    * 边栏这个模块管的是屏幕上那一列，没有哪条命令天然长它的样子，
-   * 图形与其余二十三个同住 icons.ts，同一套画法
+   * 图形与其余二十六个同住 icons.ts，同一套画法
    */
   dock: "ziminos-dock"
 };
@@ -844,6 +859,28 @@ var TRANSITION_COMMANDS = [
     action: "active"
   }
 ];
+var BOOK_COMMANDS = {
+  create: {
+    id: "create-book",
+    name: "\u65B0\u5EFA\u8BFB\u4E66\u7B14\u8BB0",
+    icon: COMMAND_ICONS.book,
+    group: COMMAND_GROUPS.books
+  },
+  /** 把微信读书 / Kindle / 苹果图书导出的纯文本解析进书的 MOC；零网络，粘贴才动 */
+  importNotes: {
+    id: "import-book-highlights",
+    name: "\u5BFC\u5165\u8BFB\u4E66\u5212\u7EBF",
+    icon: COMMAND_ICONS.highlights,
+    group: COMMAND_GROUPS.books
+  },
+  /** 把选中的划线炼成一张十字段卡片，是读书笔记从素材走向知识的那一步 */
+  excerpt: {
+    id: "excerpt-book-card",
+    name: "\u6458\u6210\u5361\u7247",
+    icon: COMMAND_ICONS.excerpt,
+    group: COMMAND_GROUPS.books
+  }
+};
 var INSPIRATION_COMMAND = {
   id: "capture-inspiration",
   name: "\u8BB0\u5F55\u7075\u611F",
@@ -1644,114 +1681,226 @@ function describe(error) {
   return error instanceof Error ? error.message : String(error);
 }
 
-// src/modules/format/formatter.ts
+// src/modules/books/createBook.ts
+var import_obsidian6 = require("obsidian");
+
+// src/core/modals.ts
 var import_obsidian5 = require("obsidian");
-var FORMAT_DEBOUNCE_MS = 2e3;
-var RE_ENTRY_MS = 1e3;
-var TEXTS2 = {
-  formatted: "\u5DF2\u6309\u6807\u51C6\u5199\u6CD5\u6574\u7406\u8FD9\u4E00\u7BC7 \u2713",
-  unchanged: "\u8FD9\u4E00\u7BC7\u5DF2\u7ECF\u662F\u6807\u51C6\u5199\u6CD5\uFF0C\u6CA1\u6709\u53EF\u6539\u7684",
-  noFile: "\u5148\u6253\u5F00\u4E00\u7BC7\u7B14\u8BB0\uFF0C\u518D\u8FD0\u884C\u6574\u7406",
-  noRules: "\u6392\u7248\u89C4\u5219\u4E00\u6761\u90FD\u6CA1\u5F00\uFF0C\u5148\u53BB\u8BBE\u7F6E \u2192 ziminOS \u2192 \u6392\u7248\u6253\u5F00\u51E0\u6761",
-  failed: "\u6574\u7406\u6CA1\u80FD\u5199\u8FDB\u53BB\uFF0C\u8FD9\u4E00\u7BC7\u6CA1\u6709\u53D8\u3002\u7A0D\u540E\u518D\u8BD5\u4E00\u6B21"
-};
-function registerFormatter(ctx) {
-  const pendingTimeouts = /* @__PURE__ */ new Map();
-  const dirtyWhileOpen = /* @__PURE__ */ new Set();
-  const lastRun = /* @__PURE__ */ new Map();
-  let openPath = null;
-  const formatFile = async (file) => {
-    const rules = ctx.settings.formatRules;
-    const current = await ctx.app.vault.cachedRead(file);
-    if (formatMarkdown(current, rules) === current) return false;
-    lastRun.set(file.path, Date.now());
-    ctx.guard.mark(file.path);
-    await ctx.app.vault.process(file, (content) => formatMarkdown(content, rules));
-    return true;
-  };
-  const formatPath = async (path) => {
-    if (!ctx.settings.autoFormat) return;
-    const file = ctx.app.vault.getAbstractFileByPath(path);
-    if (!(file instanceof import_obsidian5.TFile) || file.extension !== "md") return;
-    await formatFile(file);
-  };
-  const cancel = (path) => {
-    const pending2 = pendingTimeouts.get(path);
-    if (pending2 === void 0) return;
-    window.clearTimeout(pending2);
-    pendingTimeouts.delete(path);
-  };
-  const schedule = (path) => {
-    cancel(path);
-    const timeoutId = window.setTimeout(() => {
-      pendingTimeouts.delete(path);
-      void formatPath(path).catch(() => {
-      });
-    }, FORMAT_DEBOUNCE_MS);
-    pendingTimeouts.set(path, timeoutId);
-  };
-  ctx.plugin.register(() => {
-    for (const timeoutId of pendingTimeouts.values()) window.clearTimeout(timeoutId);
-    pendingTimeouts.clear();
-  });
-  const shouldSkip = (path) => {
-    const last = lastRun.get(path);
-    return last !== void 0 && Date.now() - last < RE_ENTRY_MS;
-  };
-  ctx.app.workspace.onLayoutReady(() => {
-    var _a, _b;
-    openPath = (_b = (_a = ctx.app.workspace.getActiveFile()) == null ? void 0 : _a.path) != null ? _b : null;
-    ctx.plugin.registerEvent(
-      ctx.app.vault.on("modify", (file) => {
-        if (!ctx.settings.autoFormat) {
-          cancel(file.path);
-          dirtyWhileOpen.delete(file.path);
-          return;
-        }
-        if (!(file instanceof import_obsidian5.TFile) || file.extension !== "md") return;
-        if (shouldSkip(file.path)) return;
-        if (file.path === openPath) {
-          dirtyWhileOpen.add(file.path);
-          return;
-        }
-        schedule(file.path);
-      })
-    );
-    const leaveCurrent = () => {
-      var _a2, _b2;
-      const nextPath = (_b2 = (_a2 = ctx.app.workspace.getActiveFile()) == null ? void 0 : _a2.path) != null ? _b2 : null;
-      if (nextPath === openPath) return;
-      const leaving = openPath;
-      openPath = nextPath;
-      if (leaving === null || !dirtyWhileOpen.delete(leaving)) return;
-      void formatPath(leaving).catch(() => {
-      });
-    };
-    ctx.plugin.registerEvent(ctx.app.workspace.on("active-leaf-change", leaveCurrent));
-    ctx.plugin.registerEvent(ctx.app.workspace.on("file-open", leaveCurrent));
-  });
-  ctx.commands.register(FORMAT_COMMAND, () => {
-    const file = ctx.app.workspace.getActiveFile();
-    if (!file || file.extension !== "md") {
-      new import_obsidian5.Notice(TEXTS2.noFile);
-      return;
-    }
-    if (ctx.settings.formatRules.length === 0) {
-      new import_obsidian5.Notice(TEXTS2.noRules);
-      return;
-    }
-    void formatFile(file).then((changed) => {
-      dirtyWhileOpen.delete(file.path);
-      new import_obsidian5.Notice(changed ? TEXTS2.formatted : TEXTS2.unchanged);
-    }).catch(() => {
-      new import_obsidian5.Notice(TEXTS2.failed);
+var TextInputModal = class extends import_obsidian5.Modal {
+  constructor(app, options) {
+    super(app);
+    /** Promise 的 resolve 句柄；结算后置空，避免重复结算与引用滞留 */
+    this.resolver = null;
+    /** 是否已经结算过。关闭动作与提交动作都会走到结算，用它保证只生效一次 */
+    this.settled = false;
+    this.options = options;
+  }
+  /** 打开弹窗并等待用户作答：有输入返回文本，取消返回 null */
+  openAndGetValue() {
+    return new Promise((resolve) => {
+      this.resolver = resolve;
+      this.open();
     });
+  }
+  onOpen() {
+    var _a, _b;
+    this.titleEl.setText(this.options.title);
+    this.contentEl.empty();
+    const inputEl = this.contentEl.createEl("input", {
+      type: "text",
+      value: (_a = this.options.initial) != null ? _a : "",
+      placeholder: (_b = this.options.placeholder) != null ? _b : ""
+    });
+    inputEl.style.width = "100%";
+    inputEl.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || event.isComposing) return;
+      event.preventDefault();
+      this.submit(inputEl.value);
+    });
+    const buttonBar = this.contentEl.createDiv();
+    buttonBar.style.display = "flex";
+    buttonBar.style.justifyContent = "flex-end";
+    buttonBar.style.gap = "8px";
+    buttonBar.style.marginTop = "16px";
+    new import_obsidian5.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.close());
+    new import_obsidian5.ButtonComponent(buttonBar).setButtonText("\u786E\u8BA4").setCta().onClick(() => this.submit(inputEl.value));
+    inputEl.focus();
+    inputEl.select();
+  }
+  onClose() {
+    this.settle(null);
+    this.contentEl.empty();
+  }
+  /** 提交输入并关闭：先结算再关闭，onClose 里的兜底结算自然失效 */
+  submit(value) {
+    this.settle(value);
+    this.close();
+  }
+  /** 唯一结算点，保证 Promise 只被兑现一次 */
+  settle(value) {
+    if (this.settled) return;
+    this.settled = true;
+    const resolve = this.resolver;
+    this.resolver = null;
+    if (resolve) resolve(value);
+  }
+};
+var TextAreaModal = class extends import_obsidian5.Modal {
+  constructor(app, options) {
+    super(app);
+    /** Promise 的 resolve 句柄；结算后置空，避免重复结算与引用滞留 */
+    this.resolver = null;
+    /** 是否已经结算过。关闭动作与提交动作都会走到结算，用它保证只生效一次 */
+    this.settled = false;
+    this.options = options;
+  }
+  /** 打开弹窗并等待用户作答：有输入返回文本，取消返回 null */
+  openAndGetValue() {
+    return new Promise((resolve) => {
+      this.resolver = resolve;
+      this.open();
+    });
+  }
+  onOpen() {
+    var _a;
+    this.titleEl.setText(this.options.title);
+    this.contentEl.empty();
+    if (this.options.hint) {
+      const hintEl = this.contentEl.createEl("p", { text: this.options.hint });
+      hintEl.style.margin = "0 0 10px";
+      hintEl.style.color = "var(--text-muted)";
+      hintEl.style.lineHeight = "1.6";
+    }
+    const textareaEl = this.contentEl.createEl("textarea", {
+      placeholder: (_a = this.options.placeholder) != null ? _a : ""
+    });
+    textareaEl.rows = 12;
+    textareaEl.style.width = "100%";
+    textareaEl.style.resize = "vertical";
+    textareaEl.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || event.isComposing) return;
+      if (!event.metaKey && !event.ctrlKey) return;
+      event.preventDefault();
+      this.submit(textareaEl.value);
+    });
+    const buttonBar = this.contentEl.createDiv();
+    buttonBar.style.display = "flex";
+    buttonBar.style.justifyContent = "flex-end";
+    buttonBar.style.gap = "8px";
+    buttonBar.style.marginTop = "16px";
+    new import_obsidian5.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.close());
+    new import_obsidian5.ButtonComponent(buttonBar).setButtonText("\u786E\u8BA4").setCta().onClick(() => this.submit(textareaEl.value));
+    textareaEl.focus();
+  }
+  onClose() {
+    this.settle(null);
+    this.contentEl.empty();
+  }
+  /** 提交输入并关闭：先结算再关闭，onClose 里的兜底结算自然失效 */
+  submit(value) {
+    this.settle(value);
+    this.close();
+  }
+  /** 唯一结算点，保证 Promise 只被兑现一次 */
+  settle(value) {
+    if (this.settled) return;
+    this.settled = true;
+    const resolve = this.resolver;
+    this.resolver = null;
+    if (resolve) resolve(value);
+  }
+};
+var ChoiceModal = class extends import_obsidian5.FuzzySuggestModal {
+  constructor(app, options) {
+    super(app);
+    this.resolver = null;
+    this.settled = false;
+    this.options = options;
+    this.setPlaceholder(options.title);
+  }
+  /** 打开弹窗并等待用户作答：选中返回该项，取消返回 null */
+  openAndGetChoice() {
+    return new Promise((resolve) => {
+      this.resolver = resolve;
+      this.open();
+    });
+  }
+  getItems() {
+    return [...this.options.items];
+  }
+  getItemText(item) {
+    return this.options.labelOf(item);
+  }
+  onChooseItem(item) {
+    this.settle(item);
+  }
+  /**
+   * 关闭即取消——但不能立刻断定。
+   *
+   * Obsidian 的 SuggestModal 在用户选中一项时，是**先关闭弹窗、再回调 onChooseItem**。
+   * 若在这里同步结算成 null，每一次正常选择都会先被判成取消，随后的 onChooseItem
+   * 因为 settle 幂等而失效——表现就是四条走选择的命令永远只说「已取消」。
+   * 推迟一拍再结算，选中回调便有机会先落定；真正的取消（Esc / 遮罩）没有后续回调，
+   * 一拍之后照样结算成 null。顺序在两种路径下都成立，不依赖基类的实现细节。
+   */
+  onClose() {
+    super.onClose();
+    window.setTimeout(() => this.settle(null), 0);
+  }
+  /** 唯一结算点，保证 Promise 只被兑现一次 */
+  settle(value) {
+    if (this.settled) return;
+    this.settled = true;
+    const resolve = this.resolver;
+    this.resolver = null;
+    if (resolve) resolve(value);
+  }
+};
+
+// src/modules/books/createBook.ts
+var MESSAGES = {
+  namePrompt: "\u8FD9\u672C\u4E66\u53EB\u4EC0\u4E48\u540D\u5B57\uFF1F",
+  namePlaceholder: "\u4F8B\u5982\uFF1A\u5361\u7247\u7B14\u8BB0\u5199\u4F5C\u6CD5",
+  nameMissing: "\u672A\u8F93\u5165\u4E66\u540D\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002",
+  authorPrompt: "\u4F5C\u8005\u662F\u8C01\uFF1F\uFF08\u9009\u586B\uFF0CEsc \u8DF3\u8FC7\uFF09",
+  descriptionPrompt: "\u4E00\u53E5\u8BDD\uFF1A\u4E3A\u4EC0\u4E48\u60F3\u8BFB\u8FD9\u672C\u4E66\uFF1F\uFF08\u9009\u586B\uFF0CEsc \u8DF3\u8FC7\uFF09"
+};
+async function createBook(ctx, create) {
+  const nameInput = await new TextInputModal(ctx.app, {
+    title: MESSAGES.namePrompt,
+    placeholder: MESSAGES.namePlaceholder
+  }).openAndGetValue();
+  if (nameInput === null || !nameInput.trim()) {
+    new import_obsidian6.Notice(MESSAGES.nameMissing);
+    return null;
+  }
+  const name = wrapBookTitle(nameInput.trim());
+  const authorInput = await new TextInputModal(ctx.app, {
+    title: MESSAGES.authorPrompt
+  }).openAndGetValue();
+  const author = (authorInput != null ? authorInput : "").trim();
+  const descriptionInput = await new TextInputModal(ctx.app, {
+    title: MESSAGES.descriptionPrompt
+  }).openAndGetValue();
+  const description = (descriptionInput != null ? descriptionInput : "").trim();
+  return create({ name, description, ...author ? { author } : {} });
+}
+function registerCreateBookCommand(ctx, create) {
+  ctx.commands.register(BOOK_COMMANDS.create, () => {
+    void createBook(ctx, create);
   });
 }
+function wrapBookTitle(input) {
+  const inner = /^《(.+)》$/.exec(input);
+  return `\u300A${(inner ? inner[1] : input).trim()}\u300B`;
+}
+
+// src/modules/books/extractCard.ts
+var import_obsidian8 = require("obsidian");
 
 // src/core/time.ts
-var import_obsidian6 = require("obsidian");
-var momentFactory = import_obsidian6.moment;
+var import_obsidian7 = require("obsidian");
+var momentFactory = import_obsidian7.moment;
 function normalizeDateTimeFormat(value) {
   const candidate = typeof value === "string" ? value.trim() : "";
   return candidate || DEFAULT_DATETIME_FORMAT;
@@ -1832,106 +1981,914 @@ function titleOfDay(day, period) {
   return parsed.isValid() ? parsed.format(period.titleFormat) : null;
 }
 
-// src/modules/contacts/identity.ts
-var import_obsidian8 = require("obsidian");
+// src/modules/books/identity.ts
+function isBookMoc(ctx, file) {
+  var _a, _b;
+  const declared = (_b = (_a = ctx.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter) == null ? void 0 : _b[FIELDS.type];
+  const values = Array.isArray(declared) ? declared : [declared];
+  return values.some((value) => String(value != null ? value : "").trim() === NOTE_TYPES.book);
+}
+function bookNameOf(file) {
+  var _a, _b;
+  const folderName = (_b = (_a = file.parent) == null ? void 0 : _a.name) != null ? _b : "";
+  if (folderName) return folderName;
+  return file.basename.startsWith(MOC_PREFIX) ? file.basename.slice(MOC_PREFIX.length) : file.basename;
+}
+function allBookMocs(ctx) {
+  const matched = [];
+  for (const file of ctx.app.vault.getMarkdownFiles()) {
+    if (isSystemPath(file.path)) continue;
+    if (isBookMoc(ctx, file)) matched.push(file);
+  }
+  return matched.sort((left, right) => bookNameOf(left).localeCompare(bookNameOf(right), "zh"));
+}
+function isArchivedBook(ctx, file) {
+  return isInFolder(file.path, normalizeFolderPath(ctx.settings.archiveFolder, FOLDERS.archives));
+}
 
-// src/core/modals.ts
-var import_obsidian7 = require("obsidian");
-var TextInputModal = class extends import_obsidian7.Modal {
-  constructor(app, options) {
+// src/modules/books/templates.ts
+function highlightLines(highlight) {
+  if (!highlight.text) {
+    return highlight.thoughts.map((thought) => `- ${BOOK_THOUGHT_PREFIX}${thought}`);
+  }
+  return [
+    `- ${highlight.text}`,
+    ...highlight.thoughts.map((thought) => `	- ${BOOK_THOUGHT_PREFIX}${thought}`)
+  ];
+}
+function chapterHeadingLine(chapter) {
+  return `${BOOK_CHAPTER_PREFIX}${chapter}`;
+}
+function toYamlString(value) {
+  return JSON.stringify(String(value));
+}
+function excerptCardContent(options) {
+  const values = {
+    aliases: "aliases:",
+    description: options.description ? `description: ${toYamlString(options.description)}` : "description:",
+    created: `created: ${options.created}`,
+    updated: "updated:",
+    tags: "tags:",
+    UID: `UID: ${options.uid}`,
+    rating: "rating:",
+    author: "author:",
+    source: "source:",
+    // up 是列表类型（一张卡片可以同时属于多个 MOC），与 cardInit 首次登记同形
+    up: `up:
+  - ${toYamlString(options.upLink)}`
+  };
+  const quoteLines = options.quote.split("\n").map((line) => line.trim() ? `> ${line.trim()}` : ">");
+  return [
+    "---",
+    ...CARD_FIELDS.map((field) => values[field]),
+    "---",
+    "",
+    ...quoteLines,
+    "",
+    ""
+  ].join("\n");
+}
+
+// src/modules/books/extractCard.ts
+var MESSAGES2 = {
+  notBookMoc: "\u300C\u6458\u6210\u5361\u7247\u300D\u53EA\u80FD\u5728\u4E00\u672C\u4E66\u7684\u603B\u89C8\u9875\u4E0A\u7528\u3002\u5148\u6253\u5F00\u90A3\u672C\u4E66\u6587\u4EF6\u5939\u91CC MOC- \u5F00\u5934\u7684\u90A3\u4E00\u7BC7\u3002",
+  readingMode: "\u73B0\u5728\u662F\u9605\u8BFB\u6A21\u5F0F\uFF0C\u9009\u4E2D\u7684\u5B57\u63D2\u4EF6\u8BFB\u4E0D\u5230\u3002\u6309 Cmd/Ctrl + E \u5207\u56DE\u7F16\u8F91\u6A21\u5F0F\uFF0C\u91CD\u65B0\u9009\u4E2D\u518D\u8BD5\u3002",
+  noSelection: "\u5148\u9009\u4E2D\u4E00\u6BB5\u5212\u7EBF\uFF0C\u518D\u8FD0\u884C\u300C\u6458\u6210\u5361\u7247\u300D\u3002",
+  namePrompt: "\u8FD9\u5F20\u5361\u7247\u53EB\u4EC0\u4E48\u540D\u5B57\uFF1F",
+  nameMissing: "\u672A\u8F93\u5165\u5361\u7247\u540D\u79F0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002",
+  nameIllegal: "\u5361\u7247\u540D\u79F0\u4E0D\u80FD\u5305\u542B\u659C\u6760\u6216\u53CD\u659C\u6760\u3002",
+  /**
+   * 概述这一问的标题必须写明「选填，Esc 跳过」。
+   *
+   * 建书那三问里 Esc 就是跳过，两条流程隔着几十秒、同属读书模块；
+   * 这里若让 Esc 变成「整张卡片作废」，学员会照着刚学会的手势把自己的卡片按没——
+   * 而他还得回去重新选中那段划线、重新起名。名称那一问才是取消点，这一问不是。
+   */
+  descriptionPrompt: "\u8FD9\u5F20\u5361\u7247\u8BB2\u4EC0\u4E48\uFF1F\uFF08\u9009\u586B\uFF0CEsc \u8DF3\u8FC7\uFF09",
+  existsPrefix: "\u540C\u540D\u5361\u7247\u5DF2\u7ECF\u5B58\u5728\uFF0C\u672A\u6267\u884C\u8986\u76D6\uFF1A",
+  createdPrefix: "\u5361\u7247\u5DF2\u521B\u5EFA\uFF1A",
+  failedPrefix: "\u6458\u6210\u5361\u7247\u5931\u8D25\uFF1A"
+};
+function registerExcerptCardCommand(ctx) {
+  ctx.commands.register(BOOK_COMMANDS.excerpt, () => {
+    void excerptCard(ctx);
+  });
+}
+async function excerptCard(ctx) {
+  var _a, _b, _c;
+  const { app } = ctx;
+  try {
+    const view = app.workspace.getActiveViewOfType(import_obsidian8.MarkdownView);
+    const mocFile = (_a = view == null ? void 0 : view.file) != null ? _a : null;
+    if (!view || !mocFile || !isBookMoc(ctx, mocFile)) {
+      new import_obsidian8.Notice(MESSAGES2.notBookMoc);
+      return;
+    }
+    const selection = view.editor.getSelection().trim();
+    if (!selection) {
+      new import_obsidian8.Notice(view.getMode() === "preview" ? MESSAGES2.readingMode : MESSAGES2.noSelection);
+      return;
+    }
+    const nameInput = await new TextInputModal(app, {
+      title: MESSAGES2.namePrompt
+    }).openAndGetValue();
+    if (nameInput === null || !nameInput.trim()) {
+      new import_obsidian8.Notice(MESSAGES2.nameMissing);
+      return;
+    }
+    const cardName = nameInput.trim();
+    if (/[\\/]/.test(cardName)) {
+      new import_obsidian8.Notice(MESSAGES2.nameIllegal);
+      return;
+    }
+    const descriptionInput = await new TextInputModal(app, {
+      title: MESSAGES2.descriptionPrompt
+    }).openAndGetValue();
+    const folderPath = (_c = (_b = mocFile.parent) == null ? void 0 : _b.path) != null ? _c : "";
+    const cardPath = (0, import_obsidian8.normalizePath)(
+      folderPath ? `${folderPath}/${cardName}.md` : `${cardName}.md`
+    );
+    if (app.vault.getAbstractFileByPath(cardPath)) {
+      new import_obsidian8.Notice(MESSAGES2.existsPrefix + cardPath);
+      return;
+    }
+    const { stamp: created, uid } = nowStampAndUid(ctx.settings.dateTimeFormat);
+    const content = excerptCardContent({
+      description: (descriptionInput != null ? descriptionInput : "").trim(),
+      created,
+      uid,
+      upLink: `[[${mocFile.path.slice(0, -3)}|${bookNameOf(mocFile)}]]`,
+      quote: selection
+    });
+    ctx.guard.mark(cardPath);
+    const card = await app.vault.create(cardPath, content);
+    const leaf = app.workspace.getLeaf(false);
+    await leaf.openFile(card, { active: true, state: { mode: "source" } });
+    if (leaf.view instanceof import_obsidian8.MarkdownView) {
+      const editor = leaf.view.editor;
+      const lastLine = editor.lineCount() - 1;
+      editor.setCursor({ line: lastLine, ch: 0 });
+      editor.focus();
+    }
+    new import_obsidian8.Notice(MESSAGES2.createdPrefix + cardName);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    new import_obsidian8.Notice(MESSAGES2.failedPrefix + message);
+  }
+}
+
+// src/modules/books/importHighlights.ts
+var import_obsidian9 = require("obsidian");
+
+// src/modules/books/parsers.ts
+var KINDLE_SEPARATOR = /^={6,}\s*$/;
+var APPLE_MARKER = /^(?:摘录来自|Excerpt From)[:：]?\s*(.*)$/;
+function parseHighlightExport(raw) {
+  const text = raw.replace(/[﻿￼]/g, "").replace(/\r\n?/g, "\n");
+  const lines = text.split("\n");
+  if (lines.some((line) => KINDLE_SEPARATOR.test(line.trim()))) {
+    return {
+      source: "kindle",
+      sourceLabel: "Kindle\uFF08My Clippings\uFF09",
+      books: parseKindle(lines)
+    };
+  }
+  if (lines.some((line) => APPLE_MARKER.test(line.trim()))) {
+    return { source: "apple", sourceLabel: "\u82F9\u679C\u56FE\u4E66", books: parseApple(lines) };
+  }
+  const books = parseWeread(lines).filter((book) => book.highlights.length);
+  return books.length ? { source: "weread", sourceLabel: "\u5FAE\u4FE1\u8BFB\u4E66", books } : null;
+}
+var WEREAD_COUNT = /^\d+个笔记$/;
+var WEREAD_THOUGHT_NEW = /^◆\s*\d{4}\/\d{1,2}\/\d{1,2}发表想法[:：]?$/;
+var WEREAD_THOUGHT_OLD = /^\d{4}\/\d{1,2}\/\d{1,2}\s+发表想法[:：]?$/;
+var WEREAD_RATING = /^◆\s*\d{4}\/\d{1,2}\/\d{1,2}\s+认为/;
+var WEREAD_QUOTE = /^原文[:：]\s*(.*)$/;
+var WEREAD_SIGNATURE = /^--\s*来自微信读书$/;
+function parseWeread(lines) {
+  var _a;
+  const trimmed = lines.map((line) => line.trim());
+  const headerIndexes = [];
+  for (let cursor = 0; cursor < trimmed.length; cursor += 1) {
+    if (!/^《.+》$/.test(trimmed[cursor])) continue;
+    const lookahead = trimmed.slice(cursor + 1, cursor + 5);
+    if (lookahead.some((line) => WEREAD_COUNT.test(line))) headerIndexes.push(cursor);
+  }
+  if (!headerIndexes.length) {
+    const hasMarkers = trimmed.some((line) => line.startsWith("\u25C6") || line.startsWith(">>"));
+    return hasMarkers ? [parseWereadBook(trimmed, 0, trimmed.length, "", "")] : [];
+  }
+  const books = [];
+  for (let index = 0; index < headerIndexes.length; index += 1) {
+    const start = headerIndexes[index];
+    const end = (_a = headerIndexes[index + 1]) != null ? _a : trimmed.length;
+    const title = trimmed[start].replace(/^《|》$/g, "").trim();
+    let author = "";
+    let bodyStart = start + 1;
+    for (let cursor = start + 1; cursor < end; cursor += 1) {
+      const line = trimmed[cursor];
+      if (!line) continue;
+      if (WEREAD_COUNT.test(line)) {
+        bodyStart = cursor + 1;
+        break;
+      }
+      if (!author) author = line;
+    }
+    books.push(parseWereadBook(trimmed, bodyStart, end, title, author));
+  }
+  return books;
+}
+function parseWereadBook(trimmed, start, end, title, author) {
+  const oldStyle = hasOldStyleMarkers(trimmed, start, end);
+  const highlights = oldStyle ? parseWereadOld(trimmed, start, end) : parseWereadNew(trimmed, start, end);
+  return { title, author, highlights: dedupeWereadHighlights(highlights) };
+}
+function hasOldStyleMarkers(trimmed, start, end) {
+  for (let cursor = start; cursor < end; cursor += 1) {
+    if (trimmed[cursor].startsWith(">>")) return true;
+  }
+  return false;
+}
+function parseWereadOld(trimmed, start, end) {
+  const highlights = [];
+  let chapter = "";
+  let inRatingSection = false;
+  let pendingThought = [];
+  let current = null;
+  const flush = () => {
+    if (!current) return;
+    const thought = pendingThought.join(" ").trim();
+    highlights.push({
+      chapter,
+      text: current.join(" ").trim(),
+      thoughts: thought ? [thought] : []
+    });
+    pendingThought = [];
+    current = null;
+  };
+  for (let cursor = start; cursor < end; cursor += 1) {
+    const line = trimmed[cursor];
+    if (!line || WEREAD_SIGNATURE.test(line)) {
+      flush();
+      continue;
+    }
+    if (line.startsWith("\u25C6")) {
+      flush();
+      const body = line.replace(/^◆\s*/, "");
+      inRatingSection = body === "\u70B9\u8BC4";
+      if (!inRatingSection) chapter = body;
+      continue;
+    }
+    if (inRatingSection) continue;
+    if (WEREAD_THOUGHT_OLD.test(line)) {
+      flush();
+      continue;
+    }
+    if (line.startsWith(">>")) {
+      flush();
+      current = [line.replace(/^>>\s*/, "")];
+      continue;
+    }
+    if (current) current.push(line);
+    else pendingThought.push(line);
+  }
+  flush();
+  return highlights;
+}
+function parseWereadNew(trimmed, start, end) {
+  const highlights = [];
+  let chapter = "";
+  let beforeFirstChapter = true;
+  let current = null;
+  let thought = null;
+  let blanks = 0;
+  const flushHighlight = () => {
+    if (!current) return;
+    highlights.push({ chapter, text: current.join(" ").trim(), thoughts: [] });
+    current = null;
+  };
+  const flushThought = () => {
+    if (!thought) return;
+    const written = thought.paragraphs.join(" ").trim();
+    highlights.push({
+      chapter,
+      text: thought.quote.join(" ").trim(),
+      thoughts: written ? [written] : []
+    });
+    thought = null;
+  };
+  for (let cursor = start; cursor < end; cursor += 1) {
+    const line = trimmed[cursor];
+    if (!line) {
+      blanks += 1;
+      continue;
+    }
+    const leadingBlanks = blanks;
+    blanks = 0;
+    if (WEREAD_SIGNATURE.test(line)) {
+      flushHighlight();
+      flushThought();
+      continue;
+    }
+    if (line === "\u70B9\u8BC4" || WEREAD_RATING.test(line)) {
+      flushHighlight();
+      flushThought();
+      continue;
+    }
+    if (WEREAD_THOUGHT_NEW.test(line)) {
+      flushHighlight();
+      flushThought();
+      thought = { paragraphs: [], quote: [] };
+      continue;
+    }
+    if (line.startsWith("\u25C6")) {
+      flushHighlight();
+      flushThought();
+      current = [line.replace(/^◆\s*/, "")];
+      continue;
+    }
+    const quoteMatch = WEREAD_QUOTE.exec(line);
+    if (thought) {
+      const continues = quoteMatch ? true : thought.quote.length ? leadingBlanks === 0 : leadingBlanks <= 1;
+      if (continues) {
+        if (quoteMatch) thought.quote.push(quoteMatch[1]);
+        else if (thought.quote.length) thought.quote.push(line);
+        else thought.paragraphs.push(line);
+        continue;
+      }
+      flushThought();
+    }
+    if (current && leadingBlanks <= 1) {
+      current.push(line);
+      continue;
+    }
+    if (leadingBlanks >= 2 || beforeFirstChapter) {
+      flushHighlight();
+      chapter = line;
+      beforeFirstChapter = false;
+      continue;
+    }
+    flushHighlight();
+  }
+  flushHighlight();
+  flushThought();
+  return highlights;
+}
+function dedupeWereadHighlights(highlights) {
+  const seen = /* @__PURE__ */ new Map();
+  const merged = [];
+  for (const highlight of highlights) {
+    const key = highlight.text.replace(/\s+/g, "");
+    if (!key && !highlight.thoughts.length) continue;
+    const existingIndex = key ? seen.get(key) : void 0;
+    if (existingIndex === void 0) {
+      if (key) seen.set(key, merged.length);
+      merged.push(highlight);
+      continue;
+    }
+    const existing = merged[existingIndex];
+    const fresh = highlight.thoughts.filter(
+      (candidate) => !existing.thoughts.some((had) => had === candidate)
+    );
+    if (fresh.length) {
+      merged[existingIndex] = { ...existing, thoughts: [...existing.thoughts, ...fresh] };
+    }
+  }
+  return merged;
+}
+var KINDLE_KINDS = [
+  { pattern: /的标注|我的标注|Highlight|剪贴文章/i, kind: "highlight" },
+  { pattern: /的笔记|我的笔记|Note/i, kind: "note" },
+  { pattern: /的书签|我的书签|Bookmark/i, kind: "bookmark" }
+];
+var KINDLE_CLIP_LIMIT = /^[<＜].+[>＞]$/;
+function parseKindle(lines) {
+  const entries = [];
+  let block = [];
+  for (const line of lines) {
+    if (KINDLE_SEPARATOR.test(line.trim())) {
+      const entry = parseKindleBlock(block);
+      if (entry) entries.push(entry);
+      block = [];
+      continue;
+    }
+    block.push(line);
+  }
+  const tail = parseKindleBlock(block);
+  if (tail) entries.push(tail);
+  return groupKindleEntries(entries);
+}
+function parseKindleBlock(block) {
+  var _a;
+  const meaningful = block.map((line) => line.trim()).filter((line) => line.length > 0);
+  if (meaningful.length < 2) return null;
+  const [titleLine, metaLine, ...content] = meaningful;
+  if (!metaLine.startsWith("- ")) return null;
+  const kind = (_a = KINDLE_KINDS.find((candidate) => candidate.pattern.test(metaLine))) == null ? void 0 : _a.kind;
+  if (!kind) return null;
+  const authorMatch = /^(.*?)[（(]([^（()）]*)[)）]\s*$/.exec(titleLine);
+  const title = (authorMatch ? authorMatch[1] : titleLine).trim();
+  const author = (authorMatch ? authorMatch[2] : "").trim();
+  const text = content.join(" ").trim();
+  if (KINDLE_CLIP_LIMIT.test(text)) return null;
+  return {
+    title,
+    author,
+    kind,
+    // 「位置 #100-102」「位置100-102」「Location 100-102」「at location 98-99」都认
+    location: spanOf(/(?:位置\s*#?\s*|location\s+)(\d+)(?:\s*-\s*(\d+))?/i, metaLine),
+    // 「第 25 页」「on page ix」「page 14-14」；罗马数字页码取不到数值，按「没有页码」处理
+    page: spanOf(/(?:第\s*(\d+)(?:\s*-\s*(\d+))?\s*页|page\s+(\d+)(?:\s*-\s*(\d+))?)/i, metaLine),
+    text
+  };
+}
+function spanOf(pattern, metaLine) {
+  var _a, _b;
+  const matched = pattern.exec(metaLine);
+  if (!matched) return null;
+  const rawStart = (_a = matched[1]) != null ? _a : matched[3];
+  const rawEnd = (_b = matched[2]) != null ? _b : matched[4];
+  if (rawStart === void 0) return null;
+  const start = Number(rawStart);
+  return { start, end: rawEnd === void 0 ? start : Number(rawEnd) };
+}
+function groupKindleEntries(entries) {
+  var _a;
+  const books = /* @__PURE__ */ new Map();
+  for (const entry of entries) {
+    if (entry.kind === "bookmark" || !entry.text) continue;
+    const bucket = (_a = books.get(entry.title)) != null ? _a : { author: entry.author, entries: [] };
+    if (!books.has(entry.title)) books.set(entry.title, bucket);
+    if (!bucket.author && entry.author) bucket.author = entry.author;
+    bucket.entries.push(entry);
+  }
+  return [...books.entries()].map(([title, bucket]) => ({
+    title,
+    author: bucket.author,
+    highlights: attachKindleNotes(bucket.entries)
+  }));
+}
+function attachKindleNotes(entries) {
+  const highlights = [];
+  const slots = [];
+  const notes = [];
+  for (const entry of entries) {
+    if (entry.kind === "note") {
+      notes.push(entry);
+      continue;
+    }
+    highlights.push({ chapter: "", text: entry.text, thoughts: [] });
+    slots.push({ entry, slot: highlights.length - 1 });
+  }
+  for (const note of notes) {
+    const host = slots.find((candidate) => covers(candidate.entry, note));
+    if (host) highlights[host.slot].thoughts.push(note.text);
+    else highlights.push({ chapter: "", text: "", thoughts: [note.text] });
+  }
+  return highlights;
+}
+function covers(highlight, note) {
+  if (highlight.location && note.location) return within(highlight.location, note.location.start);
+  if (!highlight.location && !note.location && highlight.page && note.page) {
+    return within(highlight.page, note.page.start);
+  }
+  return false;
+}
+function within(span, point) {
+  return point >= span.start && point <= Math.max(span.end, span.start);
+}
+var APPLE_COPYRIGHT = /此材料(?:可能)?受版权保护|This material may be protected by copyright/;
+function parseApple(lines) {
+  var _a;
+  const trimmed = lines.map((line) => line.trim());
+  const books = /* @__PURE__ */ new Map();
+  let pending2 = [];
+  for (let cursor = 0; cursor < trimmed.length; cursor += 1) {
+    const line = trimmed[cursor];
+    const marker = APPLE_MARKER.exec(line);
+    if (!marker) {
+      if (line) pending2.push(line);
+      continue;
+    }
+    let title = marker[1].trim();
+    let author = "";
+    while (cursor + 1 < trimmed.length) {
+      const candidate = trimmed[cursor + 1];
+      if (!candidate) {
+        cursor += 1;
+        continue;
+      }
+      if (APPLE_COPYRIGHT.test(candidate)) {
+        cursor += 1;
+        break;
+      }
+      if (/^https?:\/\//.test(candidate)) {
+        cursor += 1;
+        continue;
+      }
+      if (!title) {
+        title = candidate;
+        cursor += 1;
+        continue;
+      }
+      if (!author) {
+        author = candidate;
+        cursor += 1;
+        continue;
+      }
+      break;
+    }
+    const text = stripQuotes(pending2.join(" ").trim());
+    pending2 = [];
+    if (!text) continue;
+    const key = stripBookBraces(title);
+    const bucket = (_a = books.get(key)) != null ? _a : { author, highlights: [] };
+    if (!books.has(key)) books.set(key, bucket);
+    if (!bucket.author && author) bucket.author = author;
+    bucket.highlights.push({ chapter: "", text, thoughts: [] });
+  }
+  return [...books.entries()].map(([title, bucket]) => ({
+    title,
+    author: bucket.author,
+    highlights: bucket.highlights
+  }));
+}
+function stripQuotes(text) {
+  return text.replace(/^[“”"'「『]+/, "").replace(/[“”"'」』]+$/, "").trim();
+}
+function stripBookBraces(title) {
+  const inner = /^《(.+)》$/.exec(title.trim());
+  return inner ? inner[1].trim() : title.trim();
+}
+
+// src/modules/books/importHighlights.ts
+var MESSAGES3 = {
+  noBooks: "\u8FD8\u6CA1\u6709\u4EFB\u4F55\u8BFB\u4E66\u7B14\u8BB0\u3002\u5148\u8FD0\u884C\u300C\u65B0\u5EFA\u8BFB\u4E66\u7B14\u8BB0\u300D\u5EFA\u4E00\u672C\uFF0C\u518D\u6765\u5BFC\u5165\u3002",
+  pickBook: "\u5BFC\u5165\u5230\u54EA\u672C\u4E66\uFF1F",
+  pasteTitle: "\u7C98\u8D34\u5212\u7EBF",
+  pasteHint: "\u628A\u4ECE\u5FAE\u4FE1\u8BFB\u4E66\uFF08\u7B14\u8BB0\u9875 \u2192 \u5206\u4EAB \u2192 \u590D\u5236\u5230\u526A\u8D34\u677F\uFF09\u3001Kindle\uFF08My Clippings.txt \u5168\u6587\uFF09\u6216\u82F9\u679C\u56FE\u4E66\uFF08\u9009\u4E2D\u5212\u7EBF\u540E\u590D\u5236\uFF09\u5F97\u5230\u7684\u6587\u672C\u539F\u6837\u7C98\u8D34\u8FDB\u6765\uFF0CCmd/Ctrl+Enter \u6216\u70B9\u786E\u8BA4\u63D0\u4EA4\u3002",
+  pastePlaceholder: "\u5728\u6B64\u7C98\u8D34\u2026\u2026",
+  pasteEmpty: "\u6CA1\u6709\u7C98\u8D34\u4EFB\u4F55\u5185\u5BB9\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002",
+  unrecognized: "\u8BA4\u4E0D\u51FA\u8FD9\u6BB5\u6587\u672C\u7684\u6765\u6E90\u3002\u76EE\u524D\u652F\u6301\u4E09\u79CD\u5B98\u65B9\u5BFC\u51FA\uFF1A\u5FAE\u4FE1\u8BFB\u4E66\uFF08\u5206\u4EAB \u2192 \u590D\u5236\u5230\u526A\u8D34\u677F\uFF09\u3001Kindle \u7684 My Clippings.txt\u3001\u82F9\u679C\u56FE\u4E66\u7684\u9009\u4E2D\u590D\u5236\u3002\u5177\u4F53\u5BFC\u51FA\u65B9\u6CD5\u89C1\u5E93\u6839\u7684 README\u3002",
+  pickParsedBook: "\u7C98\u8D34\u91CC\u6709\u597D\u51E0\u672C\u4E66\u7684\u5212\u7EBF\uFF0C\u5BFC\u5165\u54EA\u4E00\u672C\uFF1F",
+  /**
+   * 取消一律出声，一句话管三个取消点（选书、粘贴、选粘贴里的哪本书）。
+   *
+   * 这是仓库的既有惯例——建项目连「没输名字」都要说一句「操作已取消」——
+   * 而它在这条流程上格外要紧：学员可能刚粘完几百 KB 的 My Clippings，
+   * 屏幕上什么都不发生的话，他分不出「取消了」和「插件卡死了」。
+   * 补一句剪贴板还在，是因为那正是他此刻最想知道的下一步。
+   */
+  cancelled: "\u5DF2\u53D6\u6D88\uFF0C\u6CA1\u6709\u5199\u5165\u4EFB\u4F55\u5185\u5BB9\u3002\u521A\u624D\u590D\u5236\u7684\u4E1C\u897F\u8FD8\u5728\u526A\u8D34\u677F\u91CC\uFF0C\u53EF\u4EE5\u76F4\u63A5\u518D\u6765\u4E00\u6B21\u3002",
+  emptyBook: "\u89E3\u6790\u6210\u529F\uFF0C\u4F46\u8FD9\u672C\u4E66\u91CC\u6CA1\u6709\u4E00\u6761\u5212\u7EBF\u3002",
+  /**
+   * 认得出来源、却一条划线都没解析到。
+   *
+   * 与「认不出来源」必须是两句话：一份只含书签的 My Clippings 认得出是 Kindle，
+   * 只是里面没有可导入的东西；告诉他「认不出」，他会去怀疑自己复制错了，
+   * 而真正的原因是那份导出里本来就没有划线。
+   */
+  recognizedButEmptyPrefix: "\u8BA4\u51FA\u8FD9\u662F",
+  recognizedButEmptySuffix: "\u7684\u5BFC\u51FA\uFF0C\u4F46\u91CC\u9762\u6CA1\u6709\u53EF\u4EE5\u5BFC\u5165\u7684\u5212\u7EBF\uFF08\u4E66\u7B7E\u3001\u7A7A\u6761\u76EE\u4E0E\u53D7\u7248\u6743\u4FDD\u62A4\u7684\u5360\u4F4D\u53E5\u4E0D\u7B97\uFF09\u3002",
+  /** 归档过的书仍可导入（给读完的书补录划线是正当动作），但清单上要认得出来 */
+  archivedSuffix: "\uFF08\u5DF2\u5F52\u6863\uFF09",
+  unknownTitle: "\uFF08\u8FD9\u6BB5\u6587\u672C\u91CC\u6CA1\u6709\u4E66\u540D\uFF09",
+  titleMismatch: "\u8FD9\u6BB5\u5212\u7EBF\u770B\u8D77\u6765\u4E0D\u662F\u8FD9\u672C\u4E66\u7684\u3002\u5199\u5165\u4E0D\u53EF\u64A4\u9500\uFF0C\u8BF7\u5148\u786E\u8BA4\u3002",
+  failedPrefix: "\u5BFC\u5165\u5212\u7EBF\u5931\u8D25\uFF1A"
+};
+function registerImportHighlightsCommand(ctx) {
+  ctx.commands.register(BOOK_COMMANDS.importNotes, () => {
+    void runImport(ctx);
+  });
+}
+async function runImport(ctx) {
+  var _a;
+  try {
+    const target = await resolveTargetBook(ctx);
+    if (!target) {
+      if (allBookMocs(ctx).length) new import_obsidian9.Notice(MESSAGES3.cancelled);
+      return;
+    }
+    const raw = await new TextAreaModal(ctx.app, {
+      title: `${MESSAGES3.pasteTitle} \u2192 \u300A${stripBraces(bookNameOf(target))}\u300B`,
+      hint: MESSAGES3.pasteHint,
+      placeholder: MESSAGES3.pastePlaceholder
+    }).openAndGetValue();
+    if (raw === null) {
+      new import_obsidian9.Notice(MESSAGES3.cancelled);
+      return;
+    }
+    if (!raw.trim()) {
+      new import_obsidian9.Notice(MESSAGES3.pasteEmpty);
+      return;
+    }
+    const parsed = parseHighlightExport(raw);
+    if (!parsed) {
+      new import_obsidian9.Notice(MESSAGES3.unrecognized, 1e4);
+      return;
+    }
+    if (!parsed.books.length) {
+      new import_obsidian9.Notice(
+        MESSAGES3.recognizedButEmptyPrefix + parsed.sourceLabel + MESSAGES3.recognizedButEmptySuffix,
+        1e4
+      );
+      return;
+    }
+    const book = await resolveParsedBook(ctx, parsed.books);
+    if (!book) {
+      new import_obsidian9.Notice(MESSAGES3.cancelled);
+      return;
+    }
+    if (!book.highlights.length) {
+      new import_obsidian9.Notice(MESSAGES3.emptyBook);
+      return;
+    }
+    const targetName = bookNameOf(target);
+    const preview = mergeHighlights(await ctx.app.vault.read(target), book.highlights);
+    if (!preview.added && !preview.attachedThoughts) {
+      new import_obsidian9.Notice(
+        `\u6CA1\u6709\u65B0\u589E\u5185\u5BB9\uFF1A${book.highlights.length} \u6761\u5212\u7EBF\u5168\u90FD\u5DF2\u7ECF\u5728${targetName}\u91CC\u3002`
+      );
+      return;
+    }
+    const confirmed = await new ImportConfirmModal(ctx.app, {
+      sourceLabel: parsed.sourceLabel,
+      parsedTitle: book.title,
+      targetName,
+      preview
+    }).openAndGetChoice();
+    if (!confirmed) return;
+    if (((_a = ctx.app.workspace.getActiveFile()) == null ? void 0 : _a.path) !== target.path) {
+      await ctx.app.workspace.getLeaf(false).openFile(target, { active: true });
+    }
+    ctx.guard.mark(target.path);
+    await ctx.app.vault.process(
+      target,
+      (content) => mergeHighlights(content, book.highlights).content
+    );
+    new import_obsidian9.Notice(describeImported(preview, targetName));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    new import_obsidian9.Notice(MESSAGES3.failedPrefix + message);
+  }
+}
+function describeImported(outcome, targetName) {
+  const parts = [];
+  if (outcome.added) parts.push(`${outcome.added} \u6761\u5212\u7EBF`);
+  if (outcome.attachedThoughts) parts.push(`${outcome.attachedThoughts} \u6761\u60F3\u6CD5`);
+  return `\u5DF2\u5BFC\u5165 ${parts.join(" \u4E0E ")}\u5230${targetName}\u3002`;
+}
+async function resolveTargetBook(ctx) {
+  const active = ctx.app.workspace.getActiveFile();
+  if (active && isBookMoc(ctx, active)) return active;
+  const books = allBookMocs(ctx);
+  if (!books.length) {
+    new import_obsidian9.Notice(MESSAGES3.noBooks);
+    return null;
+  }
+  return new ChoiceModal(ctx.app, {
+    title: MESSAGES3.pickBook,
+    items: books,
+    // 归档的书照样能选（给读完的书补录划线是正当动作），但要一眼认得出来
+    labelOf: (file) => isArchivedBook(ctx, file) ? `${bookNameOf(file)}${MESSAGES3.archivedSuffix}` : bookNameOf(file)
+  }).openAndGetChoice();
+}
+async function resolveParsedBook(ctx, books) {
+  if (books.length === 1) return books[0];
+  return new ChoiceModal(ctx.app, {
+    title: MESSAGES3.pickParsedBook,
+    items: books,
+    labelOf: (book) => `${book.title || "\uFF08\u6CA1\u6709\u4E66\u540D\uFF09"}\u3000\u2014\u3000${book.highlights.length} \u6761`
+  }).openAndGetChoice();
+}
+function stripBraces(name) {
+  const inner = /^《(.+)》$/.exec(name);
+  return inner ? inner[1] : name;
+}
+function normalizedTitle(name) {
+  return stripBraces(name.trim()).replace(/\s+/g, "");
+}
+var SECTION_BOUNDARY = /^#{1,2}\s/;
+var TOP_BULLET = /^- /;
+var NESTED_BULLET = /^[ \t]+- /;
+function mergeHighlights(content, highlights) {
+  var _a;
+  let lines = content.split("\n");
+  let headingIndex = lines.findIndex((line) => line.trim() === BOOK_HEADINGS.highlights);
+  if (headingIndex < 0) {
+    lines = `${content.replace(/\s*$/, "")}
+
+${BOOK_HEADINGS.highlights}
+`.split("\n");
+    headingIndex = lines.findIndex((line) => line.trim() === BOOK_HEADINGS.highlights);
+  }
+  let sectionEnd = lines.length;
+  for (let cursor = headingIndex + 1; cursor < lines.length; cursor += 1) {
+    if (SECTION_BOUNDARY.test(lines[cursor]) || isFenceLine(lines[cursor])) {
+      sectionEnd = cursor;
+      break;
+    }
+  }
+  const existingHighlights = /* @__PURE__ */ new Map();
+  const chapterHeadingAt = /* @__PURE__ */ new Map();
+  let owner = null;
+  for (let cursor = headingIndex + 1; cursor < sectionEnd; cursor += 1) {
+    const raw = lines[cursor];
+    if (raw.startsWith(BOOK_CHAPTER_PREFIX)) {
+      chapterHeadingAt.set(normalizedKey(raw.slice(BOOK_CHAPTER_PREFIX.length)), cursor);
+      owner = null;
+      continue;
+    }
+    if (TOP_BULLET.test(raw)) {
+      owner = { line: cursor, thoughts: /* @__PURE__ */ new Set() };
+      existingHighlights.set(keyOfLineBody(raw.slice(2).trim()), owner);
+      continue;
+    }
+    if (NESTED_BULLET.test(raw)) {
+      owner == null ? void 0 : owner.thoughts.add(
+        normalizedKey(stripThoughtPrefix(raw.replace(NESTED_BULLET, "").trim()))
+      );
+    }
+  }
+  let sectionTail = sectionEnd;
+  while (sectionTail > headingIndex + 1 && lines[sectionTail - 1].trim() === "") sectionTail -= 1;
+  let chapterlessTail = sectionTail;
+  for (let cursor = headingIndex + 1; cursor < sectionEnd; cursor += 1) {
+    if (!lines[cursor].startsWith(BOOK_CHAPTER_PREFIX)) continue;
+    chapterlessTail = cursor;
+    while (chapterlessTail > headingIndex + 1 && lines[chapterlessTail - 1].trim() === "") {
+      chapterlessTail -= 1;
+    }
+    break;
+  }
+  const chapterTail = (headingLine) => {
+    let end = sectionEnd;
+    for (let cursor = headingLine + 1; cursor < sectionEnd; cursor += 1) {
+      if (lines[cursor].startsWith(BOOK_CHAPTER_PREFIX) || isFenceLine(lines[cursor])) {
+        end = cursor;
+        break;
+      }
+    }
+    while (end > headingLine + 1 && lines[end - 1].trim() === "") end -= 1;
+    return end;
+  };
+  const inserts = /* @__PURE__ */ new Map();
+  const bucketAt = (at) => {
+    var _a2;
+    const bucket = (_a2 = inserts.get(at)) != null ? _a2 : { thoughts: [], lines: [] };
+    inserts.set(at, bucket);
+    return bucket;
+  };
+  const pushThought = (at, extra) => {
+    bucketAt(at).thoughts.push(...extra);
+  };
+  const pushInsert = (at, extra) => {
+    bucketAt(at).lines.push(...extra);
+  };
+  const freshChapters = /* @__PURE__ */ new Map();
+  let added = 0;
+  let skipped = 0;
+  let attachedThoughts = 0;
+  for (const highlight of highlights) {
+    const key = keyOfHighlight(highlight);
+    if (!key) continue;
+    const existing = existingHighlights.get(key);
+    if (existing) {
+      skipped += 1;
+      if (highlight.text && existing.line >= 0) {
+        const fresh = highlight.thoughts.filter(
+          (thought) => !existing.thoughts.has(normalizedKey(thought))
+        );
+        if (fresh.length) {
+          let at = existing.line + 1;
+          while (at < sectionEnd && NESTED_BULLET.test(lines[at])) at += 1;
+          pushThought(at, fresh.map((thought) => `	- ${BOOK_THOUGHT_PREFIX}${thought}`));
+          for (const thought of fresh) existing.thoughts.add(normalizedKey(thought));
+          attachedThoughts += fresh.length;
+        }
+      }
+      continue;
+    }
+    existingHighlights.set(key, {
+      line: -1,
+      thoughts: new Set(highlight.thoughts.map(normalizedKey))
+    });
+    const rendered = highlightLines(highlight);
+    const chapter = highlight.chapter.trim();
+    added += 1;
+    if (!chapter) {
+      pushInsert(chapterlessTail, rendered);
+      continue;
+    }
+    const chapterKey = normalizedKey(chapter);
+    const headingLine = chapterHeadingAt.get(chapterKey);
+    if (headingLine !== void 0) {
+      pushInsert(chapterTail(headingLine), rendered);
+      continue;
+    }
+    const block = (_a = freshChapters.get(chapterKey)) != null ? _a : ["", chapterHeadingLine(chapter)];
+    block.push(...rendered);
+    freshChapters.set(chapterKey, block);
+  }
+  for (const block of freshChapters.values()) pushInsert(sectionTail, block);
+  const positions = [...inserts.keys()].sort((left, right) => right - left);
+  for (const at of positions) {
+    const bucket = inserts.get(at);
+    if (bucket) lines.splice(at, 0, ...bucket.thoughts, ...bucket.lines);
+  }
+  return { content: lines.join("\n"), added, skipped, attachedThoughts };
+}
+function isFenceLine(line) {
+  return line.replace(/^\s+/, "").startsWith("```");
+}
+function normalizedKey(text) {
+  return text.replace(/[\s*_~=`]/g, "");
+}
+function keyOfHighlight(highlight) {
+  var _a;
+  if (highlight.text) return normalizedKey(highlight.text);
+  const thoughtKey = normalizedKey((_a = highlight.thoughts[0]) != null ? _a : "");
+  return thoughtKey ? BOOK_THOUGHT_PREFIX.trim() + thoughtKey : "";
+}
+function keyOfLineBody(body) {
+  const marker = BOOK_THOUGHT_PREFIX.trim();
+  if (body.startsWith(marker)) return marker + normalizedKey(body.slice(marker.length));
+  return normalizedKey(body);
+}
+function stripThoughtPrefix(body) {
+  const marker = BOOK_THOUGHT_PREFIX.trim();
+  return body.startsWith(marker) ? body.slice(marker.length).trim() : body;
+}
+var ImportConfirmModal = class extends import_obsidian9.Modal {
+  constructor(app, summary) {
     super(app);
     /** Promise 的 resolve 句柄；结算后置空，避免重复结算与引用滞留 */
     this.resolver = null;
-    /** 是否已经结算过。关闭动作与提交动作都会走到结算，用它保证只生效一次 */
+    /** 按钮结算与关闭结算都会走到 settle，用它保证只生效一次 */
     this.settled = false;
-    this.options = options;
+    this.summary = summary;
   }
-  /** 打开弹窗并等待用户作答：有输入返回文本，取消返回 null */
-  openAndGetValue() {
-    return new Promise((resolve) => {
-      this.resolver = resolve;
-      this.open();
-    });
-  }
-  onOpen() {
-    var _a, _b;
-    this.titleEl.setText(this.options.title);
-    this.contentEl.empty();
-    const inputEl = this.contentEl.createEl("input", {
-      type: "text",
-      value: (_a = this.options.initial) != null ? _a : "",
-      placeholder: (_b = this.options.placeholder) != null ? _b : ""
-    });
-    inputEl.style.width = "100%";
-    inputEl.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter" || event.isComposing) return;
-      event.preventDefault();
-      this.submit(inputEl.value);
-    });
-    const buttonBar = this.contentEl.createDiv();
-    buttonBar.style.display = "flex";
-    buttonBar.style.justifyContent = "flex-end";
-    buttonBar.style.gap = "8px";
-    buttonBar.style.marginTop = "16px";
-    new import_obsidian7.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.close());
-    new import_obsidian7.ButtonComponent(buttonBar).setButtonText("\u786E\u8BA4").setCta().onClick(() => this.submit(inputEl.value));
-    inputEl.focus();
-    inputEl.select();
-  }
-  onClose() {
-    this.settle(null);
-    this.contentEl.empty();
-  }
-  /** 提交输入并关闭：先结算再关闭，onClose 里的兜底结算自然失效 */
-  submit(value) {
-    this.settle(value);
-    this.close();
-  }
-  /** 唯一结算点，保证 Promise 只被兑现一次 */
-  settle(value) {
-    if (this.settled) return;
-    this.settled = true;
-    const resolve = this.resolver;
-    this.resolver = null;
-    if (resolve) resolve(value);
-  }
-};
-var ChoiceModal = class extends import_obsidian7.FuzzySuggestModal {
-  constructor(app, options) {
-    super(app);
-    this.resolver = null;
-    this.settled = false;
-    this.options = options;
-    this.setPlaceholder(options.title);
-  }
-  /** 打开弹窗并等待用户作答：选中返回该项，取消返回 null */
+  /** 打开弹窗并等待授权：确认返回 true，其余一切关闭路径返回 false */
   openAndGetChoice() {
     return new Promise((resolve) => {
       this.resolver = resolve;
       this.open();
     });
   }
-  getItems() {
-    return [...this.options.items];
+  onOpen() {
+    const { sourceLabel, parsedTitle, targetName, preview } = this.summary;
+    const mismatched = !!parsedTitle && normalizedTitle(parsedTitle) !== normalizedTitle(targetName);
+    this.titleEl.setText("\u786E\u8BA4\u5BFC\u5165\u5212\u7EBF");
+    this.contentEl.empty();
+    const summary = this.contentEl.createDiv();
+    summary.style.padding = "12px 14px";
+    summary.style.borderRadius = "10px";
+    summary.style.background = "var(--background-secondary)";
+    summary.style.border = "1px solid var(--background-modifier-border)";
+    this.renderRow(summary, "\u6765\u6E90", sourceLabel);
+    this.renderRow(summary, "\u8BC6\u522B\u51FA", parsedTitle ? `\u300A${parsedTitle}\u300B` : MESSAGES3.unknownTitle);
+    this.renderRow(summary, "\u5199\u5165", targetName, true);
+    if (mismatched) {
+      const warning = this.contentEl.createDiv({ text: `\u26A0\uFE0F ${MESSAGES3.titleMismatch}` });
+      warning.style.marginTop = "12px";
+      warning.style.padding = "10px 12px";
+      warning.style.borderRadius = "8px";
+      warning.style.lineHeight = "1.6";
+      warning.style.color = "var(--text-warning)";
+      warning.style.background = "var(--background-modifier-error-hover)";
+    }
+    const counts = [`\u65B0\u589E ${preview.added} \u6761`];
+    if (preview.skipped) counts.push(`\u8DF3\u8FC7 ${preview.skipped} \u6761\u5DF2\u6709`);
+    if (preview.attachedThoughts) counts.push(`\u8865\u6302 ${preview.attachedThoughts} \u6761\u60F3\u6CD5`);
+    this.renderRow(summary, "\u6570\u91CF", counts.join(" \xB7 "));
+    const buttonBar = this.contentEl.createDiv();
+    buttonBar.style.display = "flex";
+    buttonBar.style.justifyContent = "flex-end";
+    buttonBar.style.gap = "8px";
+    buttonBar.style.marginTop = "18px";
+    new import_obsidian9.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.settle(false));
+    new import_obsidian9.ButtonComponent(buttonBar).setButtonText("\u786E\u8BA4\u5BFC\u5165").setCta().onClick(() => this.settle(true));
   }
-  getItemText(item) {
-    return this.options.labelOf(item);
-  }
-  onChooseItem(item) {
-    this.settle(item);
-  }
-  /**
-   * 关闭即取消——但不能立刻断定。
-   *
-   * Obsidian 的 SuggestModal 在用户选中一项时，是**先关闭弹窗、再回调 onChooseItem**。
-   * 若在这里同步结算成 null，每一次正常选择都会先被判成取消，随后的 onChooseItem
-   * 因为 settle 幂等而失效——表现就是四条走选择的命令永远只说「已取消」。
-   * 推迟一拍再结算，选中回调便有机会先落定；真正的取消（Esc / 遮罩）没有后续回调，
-   * 一拍之后照样结算成 null。顺序在两种路径下都成立，不依赖基类的实现细节。
-   */
   onClose() {
-    super.onClose();
-    window.setTimeout(() => this.settle(null), 0);
+    this.settle(false);
+    this.contentEl.empty();
+  }
+  /** 一行「标签 + 值」 */
+  renderRow(parent, label, value, emphasize = false) {
+    const row = parent.createDiv();
+    row.style.display = "grid";
+    row.style.gridTemplateColumns = "4em minmax(0, 1fr)";
+    row.style.gap = "10px";
+    row.style.padding = "5px 0";
+    const labelEl = row.createDiv({ text: label });
+    labelEl.style.color = "var(--text-muted)";
+    const valueEl = row.createDiv({ text: value });
+    valueEl.style.overflowWrap = "anywhere";
+    valueEl.style.lineHeight = "1.5";
+    if (emphasize) {
+      valueEl.style.fontWeight = "600";
+      valueEl.style.color = "var(--text-normal)";
+    }
   }
   /** 唯一结算点，保证 Promise 只被兑现一次 */
   settle(value) {
@@ -1940,10 +2897,117 @@ var ChoiceModal = class extends import_obsidian7.FuzzySuggestModal {
     const resolve = this.resolver;
     this.resolver = null;
     if (resolve) resolve(value);
+    this.close();
   }
 };
 
+// src/modules/format/formatter.ts
+var import_obsidian10 = require("obsidian");
+var FORMAT_DEBOUNCE_MS = 2e3;
+var RE_ENTRY_MS = 1e3;
+var TEXTS2 = {
+  formatted: "\u5DF2\u6309\u6807\u51C6\u5199\u6CD5\u6574\u7406\u8FD9\u4E00\u7BC7 \u2713",
+  unchanged: "\u8FD9\u4E00\u7BC7\u5DF2\u7ECF\u662F\u6807\u51C6\u5199\u6CD5\uFF0C\u6CA1\u6709\u53EF\u6539\u7684",
+  noFile: "\u5148\u6253\u5F00\u4E00\u7BC7\u7B14\u8BB0\uFF0C\u518D\u8FD0\u884C\u6574\u7406",
+  noRules: "\u6392\u7248\u89C4\u5219\u4E00\u6761\u90FD\u6CA1\u5F00\uFF0C\u5148\u53BB\u8BBE\u7F6E \u2192 ziminOS \u2192 \u6392\u7248\u6253\u5F00\u51E0\u6761",
+  failed: "\u6574\u7406\u6CA1\u80FD\u5199\u8FDB\u53BB\uFF0C\u8FD9\u4E00\u7BC7\u6CA1\u6709\u53D8\u3002\u7A0D\u540E\u518D\u8BD5\u4E00\u6B21"
+};
+function registerFormatter(ctx) {
+  const pendingTimeouts = /* @__PURE__ */ new Map();
+  const dirtyWhileOpen = /* @__PURE__ */ new Set();
+  const lastRun = /* @__PURE__ */ new Map();
+  let openPath = null;
+  const formatFile = async (file) => {
+    const rules = ctx.settings.formatRules;
+    const current = await ctx.app.vault.cachedRead(file);
+    if (formatMarkdown(current, rules) === current) return false;
+    lastRun.set(file.path, Date.now());
+    ctx.guard.mark(file.path);
+    await ctx.app.vault.process(file, (content) => formatMarkdown(content, rules));
+    return true;
+  };
+  const formatPath = async (path) => {
+    if (!ctx.settings.autoFormat) return;
+    const file = ctx.app.vault.getAbstractFileByPath(path);
+    if (!(file instanceof import_obsidian10.TFile) || file.extension !== "md") return;
+    await formatFile(file);
+  };
+  const cancel = (path) => {
+    const pending2 = pendingTimeouts.get(path);
+    if (pending2 === void 0) return;
+    window.clearTimeout(pending2);
+    pendingTimeouts.delete(path);
+  };
+  const schedule = (path) => {
+    cancel(path);
+    const timeoutId = window.setTimeout(() => {
+      pendingTimeouts.delete(path);
+      void formatPath(path).catch(() => {
+      });
+    }, FORMAT_DEBOUNCE_MS);
+    pendingTimeouts.set(path, timeoutId);
+  };
+  ctx.plugin.register(() => {
+    for (const timeoutId of pendingTimeouts.values()) window.clearTimeout(timeoutId);
+    pendingTimeouts.clear();
+  });
+  const shouldSkip = (path) => {
+    const last = lastRun.get(path);
+    return last !== void 0 && Date.now() - last < RE_ENTRY_MS;
+  };
+  ctx.app.workspace.onLayoutReady(() => {
+    var _a, _b;
+    openPath = (_b = (_a = ctx.app.workspace.getActiveFile()) == null ? void 0 : _a.path) != null ? _b : null;
+    ctx.plugin.registerEvent(
+      ctx.app.vault.on("modify", (file) => {
+        if (!ctx.settings.autoFormat) {
+          cancel(file.path);
+          dirtyWhileOpen.delete(file.path);
+          return;
+        }
+        if (!(file instanceof import_obsidian10.TFile) || file.extension !== "md") return;
+        if (shouldSkip(file.path)) return;
+        if (file.path === openPath) {
+          dirtyWhileOpen.add(file.path);
+          return;
+        }
+        schedule(file.path);
+      })
+    );
+    const leaveCurrent = () => {
+      var _a2, _b2;
+      const nextPath = (_b2 = (_a2 = ctx.app.workspace.getActiveFile()) == null ? void 0 : _a2.path) != null ? _b2 : null;
+      if (nextPath === openPath) return;
+      const leaving = openPath;
+      openPath = nextPath;
+      if (leaving === null || !dirtyWhileOpen.delete(leaving)) return;
+      void formatPath(leaving).catch(() => {
+      });
+    };
+    ctx.plugin.registerEvent(ctx.app.workspace.on("active-leaf-change", leaveCurrent));
+    ctx.plugin.registerEvent(ctx.app.workspace.on("file-open", leaveCurrent));
+  });
+  ctx.commands.register(FORMAT_COMMAND, () => {
+    const file = ctx.app.workspace.getActiveFile();
+    if (!file || file.extension !== "md") {
+      new import_obsidian10.Notice(TEXTS2.noFile);
+      return;
+    }
+    if (ctx.settings.formatRules.length === 0) {
+      new import_obsidian10.Notice(TEXTS2.noRules);
+      return;
+    }
+    void formatFile(file).then((changed) => {
+      dirtyWhileOpen.delete(file.path);
+      new import_obsidian10.Notice(changed ? TEXTS2.formatted : TEXTS2.unchanged);
+    }).catch(() => {
+      new import_obsidian10.Notice(TEXTS2.failed);
+    });
+  });
+}
+
 // src/modules/contacts/identity.ts
+var import_obsidian11 = require("obsidian");
 function archiveFolderOf(ctx) {
   return normalizeFolderPath(ctx.settings.archiveFolder, FOLDERS.archives);
 }
@@ -1974,7 +3038,7 @@ async function pickPerson(ctx, title) {
     ...liveNotesOfType(ctx, NOTE_TYPES.client)
   ];
   if (!candidates.length) {
-    new import_obsidian8.Notice("\u8FD8\u6CA1\u6709\u4EFB\u4F55\u4EBA\u8109\u6216\u5BA2\u6237\u6863\u6848\u3002\u5148\u8FD0\u884C\u300C\u65B0\u5EFA\u4EBA\u8109\u300D\u5EFA\u4E00\u4E2A\uFF0C\u518D\u6765\u5173\u8054\u3002");
+    new import_obsidian11.Notice("\u8FD8\u6CA1\u6709\u4EFB\u4F55\u4EBA\u8109\u6216\u5BA2\u6237\u6863\u6848\u3002\u5148\u8FD0\u884C\u300C\u65B0\u5EFA\u4EBA\u8109\u300D\u5EFA\u4E00\u4E2A\uFF0C\u518D\u6765\u5173\u8054\u3002");
     return null;
   }
   return new ChoiceModal(ctx.app, {
@@ -2571,7 +3635,7 @@ var clientViews = [
 ];
 
 // src/modules/contacts/client.ts
-var import_obsidian9 = require("obsidian");
+var import_obsidian12 = require("obsidian");
 
 // src/core/markdown.ts
 var VIEW_FENCE = "```" + VIEW_BLOCK_LANG;
@@ -2990,7 +4054,7 @@ function clientMocContent(created, uid) {
 
 // src/modules/contacts/client.ts
 var ILLEGAL_NAME = /[\\/:*?"<>|#^[\]]/;
-var MESSAGES = {
+var MESSAGES4 = {
   setupDone: "\u5BA2\u6237\u6A21\u5757\u5DF2\u5C31\u7EEA \u2705",
   namePrompt: "\u600E\u4E48\u79F0\u547C\u4ED6\uFF1F\uFF08\u6863\u6848\u5C31\u7528\u5B83\u547D\u540D\uFF09",
   namePlaceholder: "\u4F8B\u5982\uFF1A\u738B\u4E94",
@@ -3040,7 +4104,7 @@ async function setupClients(ctx, applySeed2) {
   try {
     const folder = normalizeFolderPath(ctx.settings.clientFolder, CLIENT_FOLDER);
     await applySeed2(clientSeed(ctx));
-    new import_obsidian9.Notice(MESSAGES.setupDone);
+    new import_obsidian12.Notice(MESSAGES4.setupDone);
     await ctx.app.workspace.openLinkText(`${folder}/${basenameOf(CLIENT_MOC)}.md`, "", false);
   } catch (error) {
     notifyFailure(error);
@@ -3049,39 +4113,39 @@ async function setupClients(ctx, applySeed2) {
 async function createClient(ctx) {
   try {
     const answer = await new TextInputModal(ctx.app, {
-      title: MESSAGES.namePrompt,
-      placeholder: MESSAGES.namePlaceholder
+      title: MESSAGES4.namePrompt,
+      placeholder: MESSAGES4.namePlaceholder
     }).openAndGetValue();
     const name = (answer != null ? answer : "").trim();
     if (!name) {
-      new import_obsidian9.Notice(MESSAGES.cancelled);
+      new import_obsidian12.Notice(MESSAGES4.cancelled);
       return;
     }
     if (ILLEGAL_NAME.test(name)) {
-      new import_obsidian9.Notice(MESSAGES.illegalName);
+      new import_obsidian12.Notice(MESSAGES4.illegalName);
       return;
     }
     const source = await new ChoiceModal(ctx.app, {
-      title: MESSAGES.sourcePrompt,
+      title: MESSAGES4.sourcePrompt,
       items: optionsOf(ctx.settings.clientSources),
       labelOf: (item) => item
     }).openAndGetChoice();
     if (!source) {
-      new import_obsidian9.Notice(MESSAGES.cancelled);
+      new import_obsidian12.Notice(MESSAGES4.cancelled);
       return;
     }
     const contact = await new TextInputModal(ctx.app, {
-      title: MESSAGES.contactPrompt
+      title: MESSAGES4.contactPrompt
     }).openAndGetValue();
     if (contact === null) {
-      new import_obsidian9.Notice(MESSAGES.cancelled);
+      new import_obsidian12.Notice(MESSAGES4.cancelled);
       return;
     }
     const folder = normalizeFolderPath(ctx.settings.clientFolder, CLIENT_FOLDER);
     const path = `${folder}/${name}.md`;
     const existing = ctx.app.vault.getAbstractFileByPath(path);
-    if (existing instanceof import_obsidian9.TFile) {
-      new import_obsidian9.Notice(MESSAGES.existsPrefix + name);
+    if (existing instanceof import_obsidian12.TFile) {
+      new import_obsidian12.Notice(MESSAGES4.existsPrefix + name);
       await ctx.app.workspace.getLeaf(false).openFile(existing);
       return;
     }
@@ -3096,7 +4160,7 @@ async function createClient(ctx) {
     await ensureFolderPath(ctx.app, folder);
     ctx.guard.mark(path);
     const file = await ctx.app.vault.create(path, content);
-    new import_obsidian9.Notice(MESSAGES.createdPrefix + name);
+    new import_obsidian12.Notice(MESSAGES4.createdPrefix + name);
     await ctx.app.workspace.getLeaf(false).openFile(file);
   } catch (error) {
     notifyFailure(error);
@@ -3106,11 +4170,11 @@ async function addPayment(ctx) {
   try {
     const clients = liveNotesOfType(ctx, NOTE_TYPES.client);
     if (!clients.length) {
-      new import_obsidian9.Notice(MESSAGES.noClients);
+      new import_obsidian12.Notice(MESSAGES4.noClients);
       return;
     }
     const client = await new ChoiceModal(ctx.app, {
-      title: MESSAGES.clientPrompt,
+      title: MESSAGES4.clientPrompt,
       items: clients,
       labelOf: (file) => {
         const hint = descriptionOf(ctx, file);
@@ -3118,16 +4182,16 @@ async function addPayment(ctx) {
       }
     }).openAndGetChoice();
     if (!client) {
-      new import_obsidian9.Notice(MESSAGES.cancelled);
+      new import_obsidian12.Notice(MESSAGES4.cancelled);
       return;
     }
     const product = await new ChoiceModal(ctx.app, {
-      title: MESSAGES.productPrompt,
+      title: MESSAGES4.productPrompt,
       items: optionsOf(ctx.settings.clientProducts),
       labelOf: (item) => item
     }).openAndGetChoice();
     if (!product) {
-      new import_obsidian9.Notice(MESSAGES.cancelled);
+      new import_obsidian12.Notice(MESSAGES4.cancelled);
       return;
     }
     const amount = await askAmount(ctx);
@@ -3138,7 +4202,7 @@ async function addPayment(ctx) {
       client,
       (content) => insertIntoSection(content, CLIENT_PAYMENT_HEADING, line)
     );
-    new import_obsidian9.Notice(`${MESSAGES.paidPrefix}${client.basename} \xB7 ${product} \xB7 ${amount}`);
+    new import_obsidian12.Notice(`${MESSAGES4.paidPrefix}${client.basename} \xB7 ${product} \xB7 ${amount}`);
   } catch (error) {
     notifyFailure(error);
   }
@@ -3147,16 +4211,16 @@ async function recordReceipt(ctx) {
   try {
     const projects = clientProjects2(ctx);
     if (!projects.length) {
-      new import_obsidian9.Notice(MESSAGES.noProjects);
+      new import_obsidian12.Notice(MESSAGES4.noProjects);
       return;
     }
     const project = await new ChoiceModal(ctx.app, {
-      title: MESSAGES.projectPrompt,
+      title: MESSAGES4.projectPrompt,
       items: projects,
       labelOf: (file) => file.basename
     }).openAndGetChoice();
     if (!project) {
-      new import_obsidian9.Notice(MESSAGES.cancelled);
+      new import_obsidian12.Notice(MESSAGES4.cancelled);
       return;
     }
     const amount = await askAmount(ctx);
@@ -3167,7 +4231,7 @@ async function recordReceipt(ctx) {
       project,
       (content) => insertIntoSection(content, PROJECT_PAYMENT_HEADING, line)
     );
-    new import_obsidian9.Notice(`${MESSAGES.receiptPrefix}${project.basename} \xB7 ${amount}`);
+    new import_obsidian12.Notice(`${MESSAGES4.receiptPrefix}${project.basename} \xB7 ${amount}`);
   } catch (error) {
     notifyFailure(error);
   }
@@ -3186,16 +4250,16 @@ function clientProjects2(ctx) {
 }
 async function askAmount(ctx) {
   const answer = await new TextInputModal(ctx.app, {
-    title: MESSAGES.amountPrompt,
+    title: MESSAGES4.amountPrompt,
     placeholder: "\u4F8B\u5982\uFF1A365"
   }).openAndGetValue();
   if (answer === null) {
-    new import_obsidian9.Notice(MESSAGES.cancelled);
+    new import_obsidian12.Notice(MESSAGES4.cancelled);
     return null;
   }
   const amount = Number(answer.trim());
   if (!Number.isFinite(amount) || amount <= 0) {
-    new import_obsidian9.Notice(MESSAGES.amountInvalid);
+    new import_obsidian12.Notice(MESSAGES4.amountInvalid);
     return null;
   }
   return amount;
@@ -3205,13 +4269,13 @@ function optionsOf(raw) {
 }
 function notifyFailure(error) {
   const message = error instanceof Error ? error.message : String(error);
-  new import_obsidian9.Notice(MESSAGES.failedPrefix + message);
+  new import_obsidian12.Notice(MESSAGES4.failedPrefix + message);
 }
 
 // src/modules/contacts/createContact.ts
-var import_obsidian10 = require("obsidian");
+var import_obsidian13 = require("obsidian");
 var ILLEGAL_NAME2 = /[\\/:*?"<>|#^[\]]/;
-var MESSAGES2 = {
+var MESSAGES5 = {
   namePrompt: "\u8FD9\u4E2A\u4EBA\u53EB\u4EC0\u4E48\uFF1F\uFF08\u771F\u540D\uFF0C\u6863\u6848\u5C31\u7528\u5B83\u547D\u540D\uFF09",
   namePlaceholder: "\u4F8B\u5982\uFF1A\u5F20\u4E09",
   cancelled: "\u5DF2\u53D6\u6D88\uFF0C\u6CA1\u6709\u5EFA\u6863\u3002",
@@ -3241,20 +4305,20 @@ function registerCreateContactCommand(ctx) {
 async function createContact(ctx) {
   try {
     const answer = await new TextInputModal(ctx.app, {
-      title: MESSAGES2.namePrompt,
-      placeholder: MESSAGES2.namePlaceholder
+      title: MESSAGES5.namePrompt,
+      placeholder: MESSAGES5.namePlaceholder
     }).openAndGetValue();
     const name = (answer != null ? answer : "").trim();
     if (!name) {
-      new import_obsidian10.Notice(MESSAGES2.cancelled);
+      new import_obsidian13.Notice(MESSAGES5.cancelled);
       return;
     }
     if (ILLEGAL_NAME2.test(name)) {
-      new import_obsidian10.Notice(MESSAGES2.illegalName);
+      new import_obsidian13.Notice(MESSAGES5.illegalName);
       return;
     }
     const tier = await new ChoiceModal(ctx.app, {
-      title: MESSAGES2.tierPrompt,
+      title: MESSAGES5.tierPrompt,
       items: CONTACT_TIERS,
       labelOf: (item) => {
         var _a;
@@ -3262,11 +4326,11 @@ async function createContact(ctx) {
       }
     }).openAndGetChoice();
     if (!tier) {
-      new import_obsidian10.Notice(MESSAGES2.cancelled);
+      new import_obsidian13.Notice(MESSAGES5.cancelled);
       return;
     }
     const direction = await new ChoiceModal(ctx.app, {
-      title: MESSAGES2.directionPrompt,
+      title: MESSAGES5.directionPrompt,
       items: CONTACT_DIRECTIONS,
       labelOf: (item) => {
         var _a;
@@ -3274,14 +4338,14 @@ async function createContact(ctx) {
       }
     }).openAndGetChoice();
     if (!direction) {
-      new import_obsidian10.Notice(MESSAGES2.cancelled);
+      new import_obsidian13.Notice(MESSAGES5.cancelled);
       return;
     }
     const folder = normalizeFolderPath(ctx.settings.contactFolder, CONTACT_FOLDER);
     const path = `${folder}/${name}.md`;
     const existing = ctx.app.vault.getAbstractFileByPath(path);
-    if (existing instanceof import_obsidian10.TFile) {
-      new import_obsidian10.Notice(MESSAGES2.existsPrefix + name);
+    if (existing instanceof import_obsidian13.TFile) {
+      new import_obsidian13.Notice(MESSAGES5.existsPrefix + name);
       await ctx.app.workspace.getLeaf(false).openFile(existing);
       return;
     }
@@ -3297,11 +4361,11 @@ async function createContact(ctx) {
     await ensureFolderPath(ctx.app, folder);
     ctx.guard.mark(path);
     const file = await ctx.app.vault.create(path, content);
-    new import_obsidian10.Notice(MESSAGES2.donePrefix + name);
+    new import_obsidian13.Notice(MESSAGES5.donePrefix + name);
     await ctx.app.workspace.getLeaf(false).openFile(file);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian10.Notice(MESSAGES2.failedPrefix + message);
+    new import_obsidian13.Notice(MESSAGES5.failedPrefix + message);
   }
 }
 
@@ -3517,8 +4581,8 @@ var personViews = [
 ];
 
 // src/modules/contacts/recordFavor.ts
-var import_obsidian11 = require("obsidian");
-var MESSAGES3 = {
+var import_obsidian14 = require("obsidian");
+var MESSAGES6 = {
   noContacts: "\u8FD8\u6CA1\u6709\u4EFB\u4F55\u6863\u6848\u3002\u5148\u8FD0\u884C\u300C\u65B0\u5EFA\u4EBA\u8109\u300D\u5EFA\u4E00\u4E2A\uFF0C\u518D\u6765\u8BB0\u8D26\u3002",
   personPrompt: "\u8FD9\u7B14\u4EBA\u60C5\uFF0C\u662F\u8DDF\u8C01\uFF1F",
   kindPrompt: "\u4EBA\u60C5\u5F80\u54EA\u4E2A\u65B9\u5411\u8D70\uFF1F",
@@ -3551,11 +4615,11 @@ async function recordFavor(ctx, openDaily) {
       ...liveNotesOfType(ctx, NOTE_TYPES.client)
     ];
     if (!candidates.length) {
-      new import_obsidian11.Notice(MESSAGES3.noContacts);
+      new import_obsidian14.Notice(MESSAGES6.noContacts);
       return;
     }
     const person = await new ChoiceModal(ctx.app, {
-      title: MESSAGES3.personPrompt,
+      title: MESSAGES6.personPrompt,
       items: candidates,
       labelOf: (file) => {
         const hint = descriptionOf(ctx, file);
@@ -3563,11 +4627,11 @@ async function recordFavor(ctx, openDaily) {
       }
     }).openAndGetChoice();
     if (!person) {
-      new import_obsidian11.Notice(MESSAGES3.cancelled);
+      new import_obsidian14.Notice(MESSAGES6.cancelled);
       return;
     }
     const kind = await new ChoiceModal(ctx.app, {
-      title: MESSAGES3.kindPrompt,
+      title: MESSAGES6.kindPrompt,
       items: LEDGER.kinds,
       labelOf: (item2) => {
         var _a;
@@ -3575,20 +4639,20 @@ async function recordFavor(ctx, openDaily) {
       }
     }).openAndGetChoice();
     if (!kind) {
-      new import_obsidian11.Notice(MESSAGES3.cancelled);
+      new import_obsidian14.Notice(MESSAGES6.cancelled);
       return;
     }
     const answer = await new TextInputModal(ctx.app, {
-      title: MESSAGES3.itemPrompt,
-      placeholder: MESSAGES3.itemPlaceholder
+      title: MESSAGES6.itemPrompt,
+      placeholder: MESSAGES6.itemPlaceholder
     }).openAndGetValue();
     const item = cleanItem(answer != null ? answer : "");
     if (!item) {
-      new import_obsidian11.Notice(MESSAGES3.cancelled);
+      new import_obsidian14.Notice(MESSAGES6.cancelled);
       return;
     }
     const status = await new ChoiceModal(ctx.app, {
-      title: MESSAGES3.statusPrompt,
+      title: MESSAGES6.statusPrompt,
       items: LEDGER.statuses,
       labelOf: (value) => {
         var _a;
@@ -3596,12 +4660,12 @@ async function recordFavor(ctx, openDaily) {
       }
     }).openAndGetChoice();
     if (!status) {
-      new import_obsidian11.Notice(MESSAGES3.cancelled);
+      new import_obsidian14.Notice(MESSAGES6.cancelled);
       return;
     }
     const diary = await openDaily();
     if (!diary) {
-      new import_obsidian11.Notice(MESSAGES3.noDiary);
+      new import_obsidian14.Notice(MESSAGES6.noDiary);
       return;
     }
     const line = ledgerLine(person.basename, kind, item, status);
@@ -3610,10 +4674,10 @@ async function recordFavor(ctx, openDaily) {
       diary,
       (content) => insertIntoSection(content, DIARY_LOG_HEADING, line)
     );
-    new import_obsidian11.Notice(MESSAGES3.donePrefix + line);
+    new import_obsidian14.Notice(MESSAGES6.donePrefix + line);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian11.Notice(MESSAGES3.failedPrefix + message);
+    new import_obsidian14.Notice(MESSAGES6.failedPrefix + message);
   }
 }
 function cleanItem(raw) {
@@ -3639,7 +4703,7 @@ function contactsSeed(ctx) {
 }
 
 // src/modules/inspiration/capture.ts
-var import_obsidian12 = require("obsidian");
+var import_obsidian15 = require("obsidian");
 
 // src/modules/inspiration/templates.ts
 var TEMPLATE_TOKENS = {
@@ -3859,14 +4923,14 @@ async function captureInspiration(ctx) {
     }).openAndGetValue();
     const inspiration = normalizeInspiration(input);
     if (!inspiration) {
-      new import_obsidian12.Notice("\u672A\u8F93\u5165\u5185\u5BB9\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
+      new import_obsidian15.Notice("\u672A\u8F93\u5165\u5185\u5BB9\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
       return;
     }
     const target = resolveInspirationTarget(ctx);
     const timeParts = nowLocalDateTimeParts(ctx.settings.dateTimeFormat);
     const entry = renderInspirationEntry(target.format, inspiration, timeParts);
     let targetEntry = ctx.app.vault.getAbstractFileByPath(target.path);
-    if (targetEntry instanceof import_obsidian12.TFolder) {
+    if (targetEntry instanceof import_obsidian15.TFolder) {
       throw new Error(`\u76EE\u6807\u8DEF\u5F84\u662F\u6587\u4EF6\u5939\uFF0C\u65E0\u6CD5\u5199\u5165\uFF1A${target.path}`);
     }
     if (!targetEntry) {
@@ -3877,7 +4941,7 @@ async function captureInspiration(ctx) {
         buildInitialInspirationContent(entry, target.heading, target.path)
       );
     } else {
-      if (!(targetEntry instanceof import_obsidian12.TFile) || targetEntry.extension.toLowerCase() !== "md") {
+      if (!(targetEntry instanceof import_obsidian15.TFile) || targetEntry.extension.toLowerCase() !== "md") {
         throw new Error(`\u76EE\u6807\u8DEF\u5F84\u4E0D\u662F Markdown \u6587\u4EF6\uFF1A${target.path}`);
       }
       await ctx.app.vault.process(targetEntry, (content) => {
@@ -3892,16 +4956,16 @@ async function captureInspiration(ctx) {
         return updatedContent;
       });
     }
-    new import_obsidian12.Notice(`\u5DF2\u8BB0\u5F55\u7075\u611F\uFF1A${inspiration}`);
+    new import_obsidian15.Notice(`\u5DF2\u8BB0\u5F55\u7075\u611F\uFF1A${inspiration}`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian12.Notice(`\u8BB0\u5F55\u7075\u611F\u5931\u8D25\uFF1A${message}`);
+    new import_obsidian15.Notice(`\u8BB0\u5F55\u7075\u611F\u5931\u8D25\uFF1A${message}`);
   }
 }
 function resolveInspirationTarget(ctx) {
   const folder = normalizeFolderPath(ctx.settings.inspirationFolder, INSPIRATION_DEFAULTS.folder);
   const fileName = normalizeInspirationFileName(ctx.settings.inspirationFileName);
-  const path = (0, import_obsidian12.normalizePath)(folder ? `${folder}/${fileName}` : fileName);
+  const path = (0, import_obsidian15.normalizePath)(folder ? `${folder}/${fileName}` : fileName);
   if (folder.split("/").some((part) => part === "." || part === "..")) {
     throw new Error("\u7075\u611F\u6587\u4EF6\u5939\u4E0D\u80FD\u5305\u542B . \u6216 .. \u8DEF\u5F84\u6BB5\u3002");
   }
@@ -3927,7 +4991,7 @@ function normalizeInsertPosition(value) {
 }
 
 // src/modules/projects/cardInit.ts
-var import_obsidian14 = require("obsidian");
+var import_obsidian17 = require("obsidian");
 
 // src/core/frontmatter.ts
 function hasValue(value) {
@@ -3970,15 +5034,15 @@ function reorderFrontmatter(frontmatter, cardValues) {
 }
 
 // src/modules/projects/moc.ts
-var import_obsidian13 = require("obsidian");
+var import_obsidian16 = require("obsidian");
 function mocBasenameOf(containerName) {
   return `${MOC_PREFIX}${containerName}`;
 }
 function mocPathOf(folderPath, containerName) {
-  return (0, import_obsidian13.normalizePath)(`${folderPath}/${mocBasenameOf(containerName)}.md`);
+  return (0, import_obsidian16.normalizePath)(`${folderPath}/${mocBasenameOf(containerName)}.md`);
 }
 function legacyMocPathOf(folderPath, containerName) {
-  return (0, import_obsidian13.normalizePath)(`${folderPath}/${containerName}.md`);
+  return (0, import_obsidian16.normalizePath)(`${folderPath}/${containerName}.md`);
 }
 function resolveMocPath(app, folderPath, containerName) {
   const current = mocPathOf(folderPath, containerName);
@@ -4003,7 +5067,7 @@ function resolveRoots(settings) {
   );
 }
 function getCardContext(app, filePath, roots) {
-  const normalizedFilePath = (0, import_obsidian14.normalizePath)(filePath);
+  const normalizedFilePath = (0, import_obsidian17.normalizePath)(filePath);
   for (const root of roots) {
     const prefix = `${root.path}/`;
     if (!normalizedFilePath.startsWith(prefix)) continue;
@@ -4066,7 +5130,7 @@ async function initCard(ctx, file, opts) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian14.Notice(`\u5361\u7247\u7B14\u8BB0\u521D\u59CB\u5316\u5931\u8D25\uFF1A${message}`);
+    new import_obsidian17.Notice(`\u5361\u7247\u7B14\u8BB0\u521D\u59CB\u5316\u5931\u8D25\uFF1A${message}`);
     throw error;
   }
 }
@@ -4083,7 +5147,7 @@ function registerCardAutoInit(ctx) {
     ctx.plugin.registerEvent(
       ctx.app.vault.on("create", (file) => {
         if (!ctx.settings.autoCardInit) return;
-        if (!(file instanceof import_obsidian14.TFile) || file.extension !== "md") return;
+        if (!(file instanceof import_obsidian17.TFile) || file.extension !== "md") return;
         if (ctx.guard.isRecent(file.path)) return;
         if (!getCardContext(ctx.app, file.path, resolveRoots(ctx.settings))) return;
         if (file.stat.size !== 0) return;
@@ -4095,7 +5159,7 @@ function registerCardAutoInit(ctx) {
 }
 
 // src/modules/projects/createContainer.ts
-var import_obsidian15 = require("obsidian");
+var import_obsidian18 = require("obsidian");
 
 // src/modules/projects/templates.ts
 var MOC_FIELDS = [
@@ -4115,15 +5179,15 @@ var NAV_VIEWS = [
   { name: "\u9886\u57DF", filter: 'type == "area"' },
   { name: "\u4E66\u7C4D", filter: 'type == "book"' }
 ];
-function toYamlString(value) {
+function toYamlString2(value) {
   return JSON.stringify(String(value));
 }
 function mocFrontmatter(options) {
-  const { description, created, uid, type, status, relation } = options;
+  const { description, created, uid, type, status, author, relation } = options;
   return [
     "---",
     "aliases:",
-    `description: ${toYamlString(description)}`,
+    `description: ${toYamlString2(description)}`,
     `created: ${created}`,
     "updated:",
     "tags:",
@@ -4131,12 +5195,15 @@ function mocFrontmatter(options) {
     `type: ${type}`,
     // 领域没有状态，那一行整行不写；空的 status 键会让它出现在「正在进行中」那张表里
     ...status ? [`status: ${status}`] : [],
+    // 只有书籍容器带作者，且学员跳过作者一问时整行不写——空键是登记表不是索引。
+    // 写成单元素列表是因为 author 在 types.json 里是 multitext，理由见 MocFrontmatterOptions
+    ...author ? ["author:", `  - ${toYamlString2(author)}`] : [],
     // 只在有值时才写这一行：空的 client 键会让这个项目被当成一笔没有客户的委托
     ...relation ? [`${relation.field}: "[[${relation.target}]]"`] : [],
     "---"
   ].join("\n");
 }
-function mocBaseBlock(mocBasename, projectFolderPath) {
+function mocBaseBlock(mocBasename, projectFolderPath, viewName = "\u9879\u76EE\u6587\u4EF6") {
   return [
     "```base",
     "filters:",
@@ -4149,7 +5216,7 @@ function mocBaseBlock(mocBasename, projectFolderPath) {
     "    displayName: \u8BC4\u5206",
     "views:",
     "  - type: table",
-    "    name: \u9879\u76EE\u6587\u4EF6",
+    `    name: ${viewName}`,
     "    filters:",
     "      or:",
     // 这一行必须是 MOC 自己的文件名，不是文件夹名：卡片的 up 指向的是这篇笔记。
@@ -4171,13 +5238,21 @@ function mocBaseBlock(mocBasename, projectFolderPath) {
   ].join("\n");
 }
 function mocContent(options) {
+  var _a;
   const frontmatter = mocFrontmatter(options);
-  const baseBlock = mocBaseBlock(options.mocBasename, options.projectFolderPath);
+  const baseBlock = mocBaseBlock(
+    options.mocBasename,
+    options.projectFolderPath,
+    options.baseViewName
+  );
+  const sectionBlock = ((_a = options.sections) != null ? _a : []).map((heading) => `${heading}
+
+`).join("");
   return `${frontmatter}
 
 
 
-${baseBlock}
+${sectionBlock}${baseBlock}
 `;
 }
 function emptyFrontmatter(fields) {
@@ -4248,6 +5323,16 @@ var AREA_KIND = {
   folderFallback: FOLDERS.areas,
   asksOwnership: false
 };
+var BOOK_KIND = {
+  label: "\u8BFB\u4E66\u7B14\u8BB0",
+  type: NOTE_TYPES.book,
+  status: "active",
+  folderKey: "projectFolder",
+  folderFallback: FOLDERS.projects,
+  asksOwnership: false,
+  sections: [BOOK_HEADINGS.info, BOOK_HEADINGS.highlights],
+  baseViewName: "\u8BFB\u4E66\u5361\u7247"
+};
 async function createContainer(ctx, kind, preset, pickPerson2) {
   const { app } = ctx;
   try {
@@ -4257,12 +5342,12 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
       title: `\u8BF7\u8F93\u5165\u65B0\u5EFA${kind.label}\u7684\u540D\u79F0`
     }).openAndGetValue();
     if (nameInput === null || !nameInput.trim()) {
-      new import_obsidian15.Notice(`\u672A\u8F93\u5165${kind.label}\u540D\u79F0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
+      new import_obsidian18.Notice(`\u672A\u8F93\u5165${kind.label}\u540D\u79F0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
       return null;
     }
     const containerName = nameInput.trim();
     if (/[\\/]/.test(containerName)) {
-      new import_obsidian15.Notice(`${kind.label}\u540D\u79F0\u4E0D\u80FD\u5305\u542B\u659C\u6760\u6216\u53CD\u659C\u6760\u3002`);
+      new import_obsidian18.Notice(`${kind.label}\u540D\u79F0\u4E0D\u80FD\u5305\u542B\u659C\u6760\u6216\u53CD\u659C\u6760\u3002`);
       return null;
     }
     let relation;
@@ -4273,14 +5358,14 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
         labelOf: (item) => item.label
       }).openAndGetChoice();
       if (!ownership) {
-        new import_obsidian15.Notice(`\u672A\u9009\u62E9${kind.label}\u5F52\u5C5E\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
+        new import_obsidian18.Notice(`\u672A\u9009\u62E9${kind.label}\u5F52\u5C5E\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
         return null;
       }
       if (ownership.link && pickPerson2) {
         const { field, ask, required } = ownership.link;
         const person = await pickPerson2(ask);
         if (required && !person) {
-          new import_obsidian15.Notice("\u672A\u9009\u62E9\u5BA2\u6237\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
+          new import_obsidian18.Notice("\u672A\u9009\u62E9\u5BA2\u6237\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
           return null;
         }
         if (person) {
@@ -4295,18 +5380,18 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
       title: `\u8BF7\u8F93\u5165${kind.label}\u6982\u8FF0`
     }).openAndGetValue();
     if (descriptionInput === null) {
-      new import_obsidian15.Notice(`\u5DF2\u53D6\u6D88\u8F93\u5165${kind.label}\u6982\u8FF0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
+      new import_obsidian18.Notice(`\u5DF2\u53D6\u6D88\u8F93\u5165${kind.label}\u6982\u8FF0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
       return null;
     }
     const description = descriptionInput.trim();
-    const containerFolderPath = (0, import_obsidian15.normalizePath)(`${baseFolder}/${containerName}`);
+    const containerFolderPath = (0, import_obsidian18.normalizePath)(`${baseFolder}/${containerName}`);
     const mocBasename = mocBasenameOf(containerName);
     const mocFilePath = mocPathOf(containerFolderPath, containerName);
     await ensureFolderPath(app, baseFolder);
     await ensureFolderPath(app, containerFolderPath);
     const existingMocFile = app.vault.getAbstractFileByPath(mocFilePath);
     if (existingMocFile) {
-      new import_obsidian15.Notice(`${kind.label} MOC \u7B14\u8BB0\u5DF2\u7ECF\u5B58\u5728\uFF0C\u672A\u6267\u884C\u8986\u76D6\uFF1A${mocFilePath}`);
+      new import_obsidian18.Notice(`${kind.label} MOC \u7B14\u8BB0\u5DF2\u7ECF\u5B58\u5728\uFF0C\u672A\u6267\u884C\u8986\u76D6\uFF1A${mocFilePath}`);
       return null;
     }
     const { stamp: created, uid } = nowStampAndUid(settings.dateTimeFormat);
@@ -4316,12 +5401,16 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
       uid,
       type: kind.type,
       status: kind.status,
+      // 作者只可能来自书籍预设；交互路径从不问它，undefined 时那一行整行不写
+      author: preset == null ? void 0 : preset.author,
       relation
     };
     const mocMarkdown = mocContent({
       ...identity,
       mocBasename,
-      projectFolderPath: containerFolderPath
+      projectFolderPath: containerFolderPath,
+      sections: kind.sections,
+      baseViewName: kind.baseViewName
     });
     const frontmatter = mocFrontmatter(identity);
     ctx.guard.mark(mocFilePath);
@@ -4333,7 +5422,7 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
         mode: "source"
       }
     });
-    if (leaf.view instanceof import_obsidian15.MarkdownView) {
+    if (leaf.view instanceof import_obsidian18.MarkdownView) {
       const editor = leaf.view.editor;
       const secondBlankLine = frontmatter.split("\n").length + 1;
       const cursorPosition = {
@@ -4352,11 +5441,11 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
         );
       }
     }
-    new import_obsidian15.Notice(`${kind.label}\u5DF2\u521B\u5EFA\uFF1A${containerName}`);
+    new import_obsidian18.Notice(`${kind.label}\u5DF2\u521B\u5EFA\uFF1A${containerName}`);
     return mocFile;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian15.Notice(`\u521B\u5EFA${kind.label}\u5931\u8D25\uFF1A${message}`);
+    new import_obsidian18.Notice(`\u521B\u5EFA${kind.label}\u5931\u8D25\uFF1A${message}`);
     return null;
   }
 }
@@ -4383,7 +5472,7 @@ function registerCreateProjectCommand(ctx, pickPerson2) {
 
 // src/modules/projects/seed.ts
 var FIRST_PROJECT_SUFFIX = "OS_v1";
-var MESSAGES4 = {
+var MESSAGES7 = {
   namePrompt: "\u4F60\u7684\u540D\u5B57\uFF08\u7528\u4E8E\u521B\u5EFA\u7B2C\u4E00\u4E2A\u9879\u76EE\uFF0CEsc \u8DF3\u8FC7\uFF09",
   namePlaceholder: "\u4F8B\u5982\uFF1A\u5C0F\u660E"
 };
@@ -4400,8 +5489,8 @@ function projectsSeed(ctx) {
 }
 async function createFirstProject(ctx) {
   const answer = await new TextInputModal(ctx.app, {
-    title: MESSAGES4.namePrompt,
-    placeholder: MESSAGES4.namePlaceholder
+    title: MESSAGES7.namePrompt,
+    placeholder: MESSAGES7.namePlaceholder
   }).openAndGetValue();
   const ownerName = (answer != null ? answer : "").trim();
   if (!ownerName) return;
@@ -4412,8 +5501,8 @@ async function createFirstProject(ctx) {
 }
 
 // src/modules/projects/transitions.ts
-var import_obsidian16 = require("obsidian");
-var PROJECT_TYPE = "project";
+var import_obsidian19 = require("obsidian");
+var MOVABLE_TYPES = CONTAINER_TYPES;
 var CONFIRM_MODAL_CLASS = "qa-project-transition-confirm";
 function registerTransitionCommands(ctx) {
   for (const command of TRANSITION_COMMANDS) {
@@ -4426,7 +5515,7 @@ async function runProjectTransition(ctx, action) {
   try {
     const transition = TRANSITIONS[action];
     if (!transition) {
-      new import_obsidian16.Notice(`\u672A\u77E5\u7684\u9879\u76EE\u6D41\u8F6C\u52A8\u4F5C\uFF1A${action}`);
+      new import_obsidian19.Notice(`\u672A\u77E5\u7684\u9879\u76EE\u6D41\u8F6C\u52A8\u4F5C\uFF1A${action}`);
       return;
     }
     const plan = resolveTransitionPlan(ctx, transition);
@@ -4436,15 +5525,15 @@ async function runProjectTransition(ctx, action) {
     const basePathChanged = await applyTransition(ctx, plan);
     await reopenMovedMoc(ctx, plan.targetMocPath);
     if (!basePathChanged) {
-      new import_obsidian16.Notice(
+      new import_obsidian19.Notice(
         "\u9879\u76EE\u6D41\u8F6C\u6210\u529F\uFF0C\u4F46 MOC\uFF08\u9879\u76EE\u5BFC\u822A\u7B14\u8BB0\uFF09\u4E2D\u6CA1\u6709\u627E\u5230\u9700\u8981\u66F4\u65B0\u7684 file.folder\uFF08\u6587\u4EF6\u5939\uFF09\u7B5B\u9009\u6761\u4EF6\u3002"
       );
     }
-    new import_obsidian16.Notice(
+    new import_obsidian19.Notice(
       `\u9879\u76EE\u5DF2${transition.label}\uFF1A${plan.projectName} \u2192 ${formatStatusForDisplay(transition.status)}`
     );
   } catch (error) {
-    new import_obsidian16.Notice(`\u9879\u76EE\u72B6\u6001\u6D41\u8F6C\u5931\u8D25\uFF1A${getErrorMessage(error)}`);
+    new import_obsidian19.Notice(`\u9879\u76EE\u72B6\u6001\u6D41\u8F6C\u5931\u8D25\uFF1A${getErrorMessage(error)}`);
   }
 }
 function resolveTransitionPlan(ctx, transition) {
@@ -4453,46 +5542,46 @@ function resolveTransitionPlan(ctx, transition) {
   const activeFolder = normalizeFolderPath(settings.projectFolder, DEFAULT_SETTINGS.projectFolder);
   const archiveFolder = normalizeFolderPath(settings.archiveFolder, DEFAULT_SETTINGS.archiveFolder);
   if (activeFolder === archiveFolder) {
-    new import_obsidian16.Notice("\u9879\u76EE\u76EE\u5F55\u548C\u5F52\u6863\u76EE\u5F55\u4E0D\u80FD\u8BBE\u7F6E\u4E3A\u540C\u4E00\u8DEF\u5F84\u3002");
+    new import_obsidian19.Notice("\u9879\u76EE\u76EE\u5F55\u548C\u5F52\u6863\u76EE\u5F55\u4E0D\u80FD\u8BBE\u7F6E\u4E3A\u540C\u4E00\u8DEF\u5F84\u3002");
     return null;
   }
   const sourceRoot = transition.source === "active" ? activeFolder : archiveFolder;
   const targetRoot = transition.target === "active" ? activeFolder : archiveFolder;
   const mocFile = app.workspace.getActiveFile();
-  if (!(mocFile instanceof import_obsidian16.TFile) || mocFile.extension !== "md") {
-    new import_obsidian16.Notice("\u8BF7\u5148\u6253\u5F00\u9700\u8981\u8FDB\u884C\u72B6\u6001\u6D41\u8F6C\u7684\u9879\u76EE MOC\u3002");
+  if (!(mocFile instanceof import_obsidian19.TFile) || mocFile.extension !== "md") {
+    new import_obsidian19.Notice("\u8BF7\u5148\u6253\u5F00\u9700\u8981\u8FDB\u884C\u72B6\u6001\u6D41\u8F6C\u7684\u9879\u76EE MOC\u3002");
     return null;
   }
   const projectFolder = mocFile.parent;
-  if (!(projectFolder instanceof import_obsidian16.TFolder)) {
-    new import_obsidian16.Notice("\u65E0\u6CD5\u8BC6\u522B\u5F53\u524D\u9879\u76EE\u6587\u4EF6\u5939\u3002");
+  if (!(projectFolder instanceof import_obsidian19.TFolder)) {
+    new import_obsidian19.Notice("\u65E0\u6CD5\u8BC6\u522B\u5F53\u524D\u9879\u76EE\u6587\u4EF6\u5939\u3002");
     return null;
   }
   const projectName = projectFolder.name;
-  const sourceProjectPath = (0, import_obsidian16.normalizePath)(`${sourceRoot}/${projectName}`);
+  const sourceProjectPath = (0, import_obsidian19.normalizePath)(`${sourceRoot}/${projectName}`);
   const expectedMocPath = resolveMocPath(app, sourceProjectPath, projectName);
-  if ((0, import_obsidian16.normalizePath)(mocFile.path) !== expectedMocPath) {
-    new import_obsidian16.Notice(`\u5F53\u524D\u547D\u4EE4\u53EA\u80FD\u5728\u4EE5\u4E0B\u9879\u76EE MOC \u4E2D\u6267\u884C\uFF1A${expectedMocPath}`);
+  if ((0, import_obsidian19.normalizePath)(mocFile.path) !== expectedMocPath) {
+    new import_obsidian19.Notice(`\u5F53\u524D\u547D\u4EE4\u53EA\u80FD\u5728\u4EE5\u4E0B\u9879\u76EE MOC \u4E2D\u6267\u884C\uFF1A${expectedMocPath}`);
     return null;
   }
   const frontmatter = (_a = app.metadataCache.getFileCache(mocFile)) == null ? void 0 : _a.frontmatter;
   const type = normalizeText(frontmatter == null ? void 0 : frontmatter.type);
   const currentStatus = normalizeText(frontmatter == null ? void 0 : frontmatter.status);
-  if (type !== PROJECT_TYPE) {
-    new import_obsidian16.Notice("\u5F53\u524D\u7B14\u8BB0\u4E0D\u662F\u9879\u76EE MOC\uFF1A\u7F3A\u5C11 type: project\uFF08\u9879\u76EE\uFF09\u3002");
+  if (!MOVABLE_TYPES.includes(type)) {
+    new import_obsidian19.Notice("\u5F53\u524D\u7B14\u8BB0\u4E0D\u662F\u9879\u76EE\u6216\u8BFB\u4E66\u7B14\u8BB0 MOC\uFF1A\u7F3A\u5C11 type: project\uFF08\u9879\u76EE\uFF09\u6216 type: book\uFF08\u4E66\uFF09\u3002");
     return null;
   }
   if (!transition.allowedStatuses.includes(currentStatus)) {
-    new import_obsidian16.Notice(
+    new import_obsidian19.Notice(
       `\u9879\u76EE\u5F53\u524D\u72B6\u6001\u4E3A\u201C${formatStatusForDisplay(currentStatus)}\u201D\uFF0C\u4E0D\u80FD\u6267\u884C\u201C${transition.label}\u201D\u64CD\u4F5C\u3002`
     );
     return null;
   }
-  const targetProjectPath = (0, import_obsidian16.normalizePath)(`${targetRoot}/${projectName}`);
-  const targetMocPath = (0, import_obsidian16.normalizePath)(`${targetProjectPath}/${mocFile.name}`);
+  const targetProjectPath = (0, import_obsidian19.normalizePath)(`${targetRoot}/${projectName}`);
+  const targetMocPath = (0, import_obsidian19.normalizePath)(`${targetProjectPath}/${mocFile.name}`);
   const existingTarget = app.vault.getAbstractFileByPath(targetProjectPath);
   if (existingTarget) {
-    new import_obsidian16.Notice(`\u76EE\u6807\u4F4D\u7F6E\u5DF2\u7ECF\u5B58\u5728\u540C\u540D\u9879\u76EE\uFF0C\u64CD\u4F5C\u5DF2\u505C\u6B62\uFF1A${targetProjectPath}`);
+    new import_obsidian19.Notice(`\u76EE\u6807\u4F4D\u7F6E\u5DF2\u7ECF\u5B58\u5728\u540C\u540D\u9879\u76EE\uFF0C\u64CD\u4F5C\u5DF2\u505C\u6B62\uFF1A${targetProjectPath}`);
     return null;
   }
   return {
@@ -4521,13 +5610,13 @@ async function applyTransition(ctx, plan) {
     await app.fileManager.renameFile(plan.projectFolder, plan.targetProjectPath);
     progress.moved = true;
     const movedMoc = app.vault.getAbstractFileByPath(plan.targetMocPath);
-    if (!(movedMoc instanceof import_obsidian16.TFile)) {
+    if (!(movedMoc instanceof import_obsidian19.TFile)) {
       throw new Error(`\u79FB\u52A8\u540E\u6CA1\u6709\u627E\u5230\u9879\u76EE MOC\uFF1A${plan.targetMocPath}`);
     }
     guard.mark(movedMoc.path);
     await app.fileManager.processFrontMatter(movedMoc, (movedFrontmatter) => {
-      if (normalizeText(movedFrontmatter.type) !== PROJECT_TYPE) {
-        throw new Error("\u79FB\u52A8\u540E\u7684 MOC \u7F3A\u5C11 type: project\uFF08\u9879\u76EE\uFF09\u3002");
+      if (!MOVABLE_TYPES.includes(normalizeText(movedFrontmatter.type))) {
+        throw new Error("\u79FB\u52A8\u540E\u7684 MOC \u7F3A\u5C11 type: project\uFF08\u9879\u76EE\uFF09\u6216 type: book\uFF08\u4E66\uFF09\u3002");
       }
       movedFrontmatter.status = plan.transition.status;
       progress.previousArchived = movedFrontmatter[FIELDS.archived];
@@ -4560,16 +5649,16 @@ function markFolderTree(ctx, folder, targetPath) {
   const sourcePath = folder.path;
   guard.mark(sourcePath);
   guard.mark(targetPath);
-  import_obsidian16.Vault.recurseChildren(folder, (child) => {
-    if (!(child instanceof import_obsidian16.TFile)) return;
+  import_obsidian19.Vault.recurseChildren(folder, (child) => {
+    if (!(child instanceof import_obsidian19.TFile)) return;
     const relativePath = child.path.slice(sourcePath.length + 1);
     guard.mark(child.path);
-    guard.mark((0, import_obsidian16.normalizePath)(`${targetPath}/${relativePath}`));
+    guard.mark((0, import_obsidian19.normalizePath)(`${targetPath}/${relativePath}`));
   });
 }
 async function reopenMovedMoc(ctx, targetMocPath) {
   const movedMoc = ctx.app.vault.getAbstractFileByPath(targetMocPath);
-  if (!(movedMoc instanceof import_obsidian16.TFile)) return;
+  if (!(movedMoc instanceof import_obsidian19.TFile)) return;
   try {
     await ctx.app.workspace.getLeaf(false).openFile(movedMoc, { active: true });
   } catch (e) {
@@ -4593,7 +5682,7 @@ async function rollbackTransition(ctx, plan, progress) {
   const { app, guard } = ctx;
   try {
     const currentFolder = (_a = app.vault.getAbstractFileByPath(plan.targetProjectPath)) != null ? _a : plan.projectFolder;
-    if (!(currentFolder instanceof import_obsidian16.TFolder)) {
+    if (!(currentFolder instanceof import_obsidian19.TFolder)) {
       throw new Error(`\u56DE\u6EDA\u65F6\u6CA1\u6709\u627E\u5230\u9879\u76EE\u76EE\u5F55\uFF1A${plan.targetProjectPath}`);
     }
     if (app.vault.getAbstractFileByPath(plan.sourceProjectPath)) {
@@ -4602,7 +5691,7 @@ async function rollbackTransition(ctx, plan, progress) {
     markFolderTree(ctx, currentFolder, plan.sourceProjectPath);
     await app.fileManager.renameFile(currentFolder, plan.sourceProjectPath);
     const restoredMoc = app.vault.getAbstractFileByPath(plan.expectedMocPath);
-    if (!(restoredMoc instanceof import_obsidian16.TFile)) {
+    if (!(restoredMoc instanceof import_obsidian19.TFile)) {
       throw new Error(`\u56DE\u6EDA\u540E\u6CA1\u6709\u627E\u5230\u9879\u76EE MOC\uFF1A${plan.expectedMocPath}`);
     }
     if (progress.statusChanged) {
@@ -4631,7 +5720,7 @@ async function showProjectTransitionConfirm(app, plan) {
     new ProjectTransitionConfirmModal(app, plan, resolve).open();
   });
 }
-var ProjectTransitionConfirmModal = class extends import_obsidian16.Modal {
+var ProjectTransitionConfirmModal = class extends import_obsidian19.Modal {
   constructor(app, plan, resolver) {
     super(app);
     /** 按钮结算与关闭结算都会走到 settle，用它保证只生效一次 */
@@ -4682,8 +5771,8 @@ var ProjectTransitionConfirmModal = class extends import_obsidian16.Modal {
     buttonBar.style.justifyContent = "flex-end";
     buttonBar.style.gap = "8px";
     buttonBar.style.marginTop = "18px";
-    new import_obsidian16.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.settle(false));
-    const confirmButton = new import_obsidian16.ButtonComponent(buttonBar).setButtonText(`\u786E\u8BA4${transition.label}`).setCta().onClick(() => this.settle(true));
+    new import_obsidian19.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.settle(false));
+    const confirmButton = new import_obsidian19.ButtonComponent(buttonBar).setButtonText(`\u786E\u8BA4${transition.label}`).setCta().onClick(() => this.settle(true));
     confirmButton.buttonEl.focus();
   }
   onClose() {
@@ -4734,7 +5823,7 @@ function getErrorMessage(error) {
 }
 
 // src/modules/projects/updatedMaintainer.ts
-var import_obsidian17 = require("obsidian");
+var import_obsidian20 = require("obsidian");
 var UPDATED_DEBOUNCE_MS = 2e3;
 var SYSTEM_PREFIX = `${FOLDERS.system}/`;
 function registerUpdatedMaintainer(ctx) {
@@ -4744,7 +5833,7 @@ function registerUpdatedMaintainer(ctx) {
     if (!ctx.settings.autoUpdated) return;
     if (path.startsWith(SYSTEM_PREFIX)) return;
     const file = ctx.app.vault.getAbstractFileByPath(path);
-    if (!(file instanceof import_obsidian17.TFile)) return;
+    if (!(file instanceof import_obsidian20.TFile)) return;
     if (!((_a = ctx.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter)) return;
     ctx.guard.mark(path);
     await ctx.app.fileManager.processFrontMatter(file, (frontmatter) => {
@@ -4781,7 +5870,7 @@ function registerUpdatedMaintainer(ctx) {
           cancelUpdate(file.path);
           return;
         }
-        if (!(file instanceof import_obsidian17.TFile) || file.extension !== "md") return;
+        if (!(file instanceof import_obsidian20.TFile) || file.extension !== "md") return;
         if (file.path.startsWith(SYSTEM_PREFIX)) {
           cancelUpdate(file.path);
           return;
@@ -4798,7 +5887,7 @@ function registerUpdatedMaintainer(ctx) {
 }
 
 // src/modules/review/periodic.ts
-var import_obsidian18 = require("obsidian");
+var import_obsidian21 = require("obsidian");
 function periodFolderOf(ctx, period) {
   const root = normalizeFolderPath(ctx.settings.diaryFolder, FOLDERS.diary);
   const leaf = period.folder.slice(FOLDERS.diary.length + 1);
@@ -4847,8 +5936,8 @@ async function openPeriodNote(ctx, period, options) {
     const folder = periodFolderOf(ctx, period);
     const path = `${folder}/${title}.md`;
     const existing = ctx.app.vault.getAbstractFileByPath(path);
-    if (existing && !(existing instanceof import_obsidian18.TFile)) {
-      new import_obsidian18.Notice(`\u540C\u540D\u7684\u4E0D\u662F\u7B14\u8BB0\u800C\u662F\u6587\u4EF6\u5939\uFF1A${path}`);
+    if (existing && !(existing instanceof import_obsidian21.TFile)) {
+      new import_obsidian21.Notice(`\u540C\u540D\u7684\u4E0D\u662F\u7B14\u8BB0\u800C\u662F\u6587\u4EF6\u5939\uFF1A${path}`);
       return null;
     }
     const content = periodNoteContent(period, title, ctx.settings.dateTimeFormat);
@@ -4865,7 +5954,7 @@ async function openPeriodNote(ctx, period, options) {
     return file;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian18.Notice(`\u6253\u5F00${period.label}\u5931\u8D25\uFF1A${message}`);
+    new import_obsidian21.Notice(`\u6253\u5F00${period.label}\u5931\u8D25\uFF1A${message}`);
     return null;
   }
 }
@@ -4903,7 +5992,7 @@ var projectActivity = {
     const periodName = (_a = PERIOD_NAMES[scope.period.key]) != null ? _a : "\u672C\u5468\u671F";
     const root = normalizeFolderPath(view.ctx.settings.projectFolder, FOLDERS.projects);
     const entries = /* @__PURE__ */ new Map();
-    const within = (day) => !!day && day >= scope.start && day < scope.end;
+    const within2 = (day) => !!day && day >= scope.start && day < scope.end;
     for (const file of view.index.allNotes()) {
       const folder = (_c = (_b = file.parent) == null ? void 0 : _b.path) != null ? _c : "";
       if (!isInFolder(folder, root) || folder === root) continue;
@@ -4916,16 +6005,16 @@ var projectActivity = {
         touched: 0,
         last: ""
       };
-      if (toText(view.index.fieldOf(file, FIELDS.type)) === NOTE_TYPES.project) {
+      if (CONTAINER_TYPES.includes(toText(view.index.fieldOf(file, FIELDS.type)))) {
         entry.moc = file;
         entry.status = toText(view.index.fieldOf(file, FIELDS.status));
       }
       const created = (_e = dayText(view.index.fieldOf(file, FIELDS.created))) != null ? _e : dayOfMillis(file.stat.ctime);
       const updated = (_f = dayText(view.index.fieldOf(file, FIELDS.updated))) != null ? _f : dayOfMillis(file.stat.mtime);
-      if (within(created)) {
+      if (within2(created)) {
         entry.born += 1;
         if (created > entry.last) entry.last = created;
-      } else if (within(updated)) {
+      } else if (within2(updated)) {
         entry.touched += 1;
         if (updated > entry.last) entry.last = updated;
       }
@@ -4968,7 +6057,7 @@ function warnOrphans(view, orphans) {
   if (!orphans.length) return;
   renderNote(
     view.el,
-    `\u26A0\uFE0F \u53E6\u6709 ${orphans.length} \u4E2A\u6587\u4EF6\u5939\u6709\u6539\u52A8\u4F46\u7F3A\u5C11\u540C\u540D\u7684 type: project \u7B14\u8BB0\uFF0C\u672A\u8BA1\u5165\uFF1A${orphans.map((entry) => entry.name).join("\u3001")}`
+    `\u26A0\uFE0F \u53E6\u6709 ${orphans.length} \u4E2A\u6587\u4EF6\u5939\u6709\u6539\u52A8\u4F46\u7F3A\u5C11\u540C\u540D\u7684 MOC\uFF08type \u4E3A project \u6216 book\uFF09\uFF0C\u672A\u8BA1\u5165\uFF1A${orphans.map((entry) => entry.name).join("\u3001")}`
   );
 }
 var finishedProjects = {
@@ -5010,7 +6099,7 @@ var yearlyOverview = {
       renderEmpty(view.el, "\u8FD9\u7BC7\u7B14\u8BB0\u7B97\u4E0D\u51FA\u5468\u671F\u5750\u6807\u3002\u7528\u300C\u6253\u5F00\u672C\u5E74\u590D\u76D8\u300D\u5EFA\u7684\u7B14\u8BB0\uFF0C\u672C\u533A\u5757\u81EA\u52A8\u751F\u6548\u3002");
       return;
     }
-    const within = (day) => !!day && day >= scope.start && day < scope.end;
+    const within2 = (day) => !!day && day >= scope.start && day < scope.end;
     const monthIndex = (day) => Number(day.slice(5, 7)) - 1;
     const year = scope.start.slice(0, 4);
     const born = [];
@@ -5018,11 +6107,11 @@ var yearlyOverview = {
     const monthlyBorn = new Array(12).fill(0);
     const monthlyDone = new Array(12).fill(0);
     for (const project of collectProjects(view)) {
-      if (within(project.born)) {
+      if (within2(project.born)) {
         born.push(project);
         monthlyBorn[monthIndex(project.born)] += 1;
       }
-      if (project.status !== "active" && within(project.closed)) {
+      if (project.status !== "active" && within2(project.closed)) {
         const bucket = buckets.get(project.status);
         if (bucket) bucket.push(project);
         else buckets.set(project.status, [project]);
@@ -5123,7 +6212,11 @@ function collectProjects(view) {
   const projectRoot = normalizeFolderPath(view.ctx.settings.projectFolder, FOLDERS.projects);
   const archiveRoot = normalizeFolderPath(view.ctx.settings.archiveFolder, FOLDERS.archives);
   const collected = [];
-  for (const file of view.index.notesOfType(NOTE_TYPES.project)) {
+  const containers = [];
+  for (const type of CONTAINER_TYPES) {
+    for (const file of view.index.notesOfType(type)) containers.push(file);
+  }
+  for (const file of containers) {
     if (!isInFolder(file.path, projectRoot) && !isInFolder(file.path, archiveRoot)) continue;
     collected.push({
       file,
@@ -5162,8 +6255,8 @@ function reviewSeed(ctx) {
 }
 
 // src/modules/review/theme.ts
-var import_obsidian19 = require("obsidian");
-var MESSAGES5 = {
+var import_obsidian22 = require("obsidian");
+var MESSAGES8 = {
   unchanged: "\u4E3B\u9898\u6CA1\u6709\u53D8\u5316\uFF08\u7559\u7A7A\u4E0D\u4F1A\u6E05\u6389\u5DF2\u7ECF\u5199\u597D\u7684\u4E3B\u9898\uFF09",
   donePrefix: "\u5DF2\u5199\u5165",
   failedPrefix: "\u5199\u4E3B\u9898\u5931\u8D25\uFF1A"
@@ -5190,17 +6283,17 @@ async function writeTheme(ctx) {
     if (answer === null) return;
     const theme = answer.trim();
     if (!theme) {
-      new import_obsidian19.Notice(MESSAGES5.unchanged);
+      new import_obsidian22.Notice(MESSAGES8.unchanged);
       return;
     }
     ctx.guard.mark(file.path);
     await ctx.app.fileManager.processFrontMatter(file, (frontmatter) => {
       frontmatter[FIELDS.theme] = theme;
     });
-    new import_obsidian19.Notice(`${MESSAGES5.donePrefix}${period.label}\u4E3B\u9898\uFF1A${theme}`);
+    new import_obsidian22.Notice(`${MESSAGES8.donePrefix}${period.label}\u4E3B\u9898\uFF1A${theme}`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian19.Notice(MESSAGES5.failedPrefix + message);
+    new import_obsidian22.Notice(MESSAGES8.failedPrefix + message);
   }
 }
 async function resolveTarget(ctx) {
@@ -5391,14 +6484,15 @@ function themeCell(view, note, missing) {
 var reviewThemeViews = [dailyOutput, themeChain];
 
 // src/modules/ribbon/dock.ts
-var import_obsidian21 = require("obsidian");
+var import_obsidian24 = require("obsidian");
 
 // src/modules/ribbon/icons.ts
-var import_obsidian20 = require("obsidian");
+var import_obsidian23 = require("obsidian");
 var GRID = 24;
 var BOX = 100;
 var STROKE = "var(--icon-stroke, 2)";
 var CIRCLE = "M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z";
+var PANEL = "M7 3H17C19.2091 3 21 4.79086 21 7V17C21 19.2091 19.2091 21 17 21H7C4.79086 21 3 19.2091 3 17V7C3 4.79086 4.79086 3 7 3Z";
 var CALENDAR = "M8 2V4.12777M8 6V4.12777M16 2V4.12777M16 6V4.12777M20.9597 10C21 10.7878 21 11.7554 21 13C21 15.7956 21 17.1935 20.5433 18.2961C19.9343 19.7663 18.7663 20.9343 17.2961 21.5433C16.1935 22 14.7956 22 12 22C9.20435 22 7.80653 22 6.7039 21.5433C5.23373 20.9343 4.06569 19.7663 3.45672 18.2961C3 17.1935 3 15.7956 3 13C3 11.7554 3 10.7878 3.0403 10M20.9597 10C20.9095 9.01824 20.7967 8.31564 20.5433 7.7039C19.9343 6.23373 18.7663 5.06569 17.2961 4.45672C16.9146 4.29871 16.4978 4.19536 16 4.12777M20.9597 10L3.0403 10M3.0403 10C3.09052 9.01824 3.20333 8.31564 3.45672 7.7039C4.06569 6.23373 5.23373 5.06569 6.7039 4.45672C7.08538 4.29871 7.50219 4.19536 8 4.12777M8 4.12777C8.94106 4 10.1716 4 12 4C13.8284 4 15.0589 4 16 4.12777";
 var ARTWORK = {
   // ---------- 开荒 ----------
@@ -5440,6 +6534,37 @@ var ARTWORK = {
     "M10.6 9.35C10.6 8.87 11.13 8.58 11.53 8.83L16.06 11.48C16.45 11.71 16.45 12.29 16.06 12.52L11.53 15.17C11.13 15.42 10.6 15.13 10.6 14.65V9.35Z",
     CIRCLE
   ],
+  // ---------- 读书 ----------
+  /**
+   * 新建读书笔记：一本摊开的书。免费集里没有，照同一套画法补画。
+   *
+   * 摊开而不是合上，是因为这条命令建的是「正在读的这本」——
+   * 合上的书在 18px 下与卡片（一页纸）几乎同形，而摊开的双页有一条中缝，一眼分得出。
+   */
+  [COMMAND_ICONS.book]: [
+    "M12 6.5V20",
+    "M12 6.5C10.5 5.2 8.6 4.5 6.5 4.5H4C3.44772 4.5 3 4.94772 3 5.5V17C3 17.5523 3.44772 18 4 18H6.5C8.6 18 10.5 18.7 12 20",
+    "M12 6.5C13.5 5.2 15.4 4.5 17.5 4.5H20C20.5523 4.5 21 4.94772 21 5.5V17C21 17.5523 20.5523 18 20 18H17.5C15.4 18 13.5 18.7 12 20"
+  ],
+  /**
+   * 导入读书划线：三行字里有一行被荧光笔压住。免费集里没有，补画。
+   *
+   * 画的是「划线」这件事本身而不是常见的下载箭头：箭头在 18px 下与任何一个
+   * 「导入/保存/下载」都同形，而学员要认的是「这条命令处理的是我划过的那些句子」。
+   * 被压住的那一行不再画字，只留高亮框——框里再塞一根线，两条线会在缩小后糊成一团。
+   */
+  [COMMAND_ICONS.highlights]: [
+    "M4 5.5H20",
+    "M4.5 9.5H19.5C20.0523 9.5 20.5 9.94772 20.5 10.5V13.5C20.5 14.0523 20.0523 14.5 19.5 14.5H4.5C3.94772 14.5 3.5 14.0523 3.5 13.5V10.5C3.5 9.94772 3.94772 9.5 4.5 9.5Z",
+    "M4 18.5H16"
+  ],
+  /**
+   * 摘成卡片：一张卡片，里面是一段引用（左边一条竖线，右边两行短横）。
+   *
+   * 外框复用 PANEL（与设置页边栏标签同一个方框），里面画的正是这条命令的产物——
+   * 摘出来的卡片开头就是一个引用块，图标画的就是那张卡片本人。
+   */
+  [COMMAND_ICONS.excerpt]: [PANEL, "M8 8V16", "M11.5 10H16.5", "M11.5 14H16.5"],
   // ---------- 灵感 ----------
   /**
    * 记录灵感：灯泡。免费集里没有，照同一套画法补画——
@@ -5523,16 +6648,12 @@ var ARTWORK = {
   [COMMAND_ICONS.format]: ["M4 3V21", "M8 7H20", "M8 12H16", "M8 17H19"],
   // ---------- 设置页 ----------
   /** 边栏标签页：一块带左栏的面板，左栏里两粒图标位。它就是屏幕最左边那一列（补画） */
-  [COMMAND_ICONS.dock]: [
-    "M7 3H17C19.2091 3 21 4.79086 21 7V17C21 19.2091 19.2091 21 17 21H7C4.79086 21 3 19.2091 3 17V7C3 4.79086 4.79086 3 7 3Z",
-    "M9 3V21",
-    "M6 7H6.01M6 10.5H6.01"
-  ]
+  [COMMAND_ICONS.dock]: [PANEL, "M9 3V21", "M6 7H6.01M6 10.5H6.01"]
 };
 function registerZiminosIcons(plugin) {
   for (const [name, paths] of Object.entries(ARTWORK)) {
-    (0, import_obsidian20.addIcon)(name, wrap(paths));
-    plugin.register(() => (0, import_obsidian20.removeIcon)(name));
+    (0, import_obsidian23.addIcon)(name, wrap(paths));
+    plugin.register(() => (0, import_obsidian23.removeIcon)(name));
   }
 }
 function wrap(paths) {
@@ -5561,11 +6682,11 @@ var RibbonDock = class {
    *
    * 这里有两条纪律，都来自 Obsidian 边栏的真实模型，不是口味问题：
    *
-   * 其一，**只为勾上的命令建按钮**，而不是一次建齐二十三个再切显隐。
+   * 其一，**只为勾上的命令建按钮**，而不是一次建齐二十六个再切显隐。
    * Obsidian 的 leftRibbon 自己存着一份 items，手机端底栏的边栏菜单与
    * 桌面「设置 → 外观 → 功能区」的管理弹窗都是遍历这份 items 画出来的，
    * 两处的过滤条件都只有 item.hidden，与 DOM 无关（边栏右键菜单会多看一眼 buttonEl 在不在，
-   * 但那对我们没用——被藏起来的按钮 buttonEl 还在）。一次建齐的话，那两处永远列着全部二十三条，
+   * 但那对我们没用——被藏起来的按钮 buttonEl 还在）。一次建齐的话，那两处永远列着全部二十六条，
    * 包括「初始化笔记库」这种一辈子只该按一次的——那正是这个功能想消灭的杂乱。
    *
    * 其二，**藏起来走 class 不走 inline display**，理由见 HIDDEN_CLASS。
@@ -5585,7 +6706,7 @@ var RibbonDock = class {
       if (!enabled.has(id)) {
         if (existing && !existing.hasClass(HIDDEN_CLASS)) {
           existing.addClass(HIDDEN_CLASS);
-          if (import_obsidian21.Platform.isPhone) new import_obsidian21.Notice(MOBILE_PENDING);
+          if (import_obsidian24.Platform.isPhone) new import_obsidian24.Notice(MOBILE_PENDING);
         }
         continue;
       }
@@ -5604,7 +6725,7 @@ var RibbonDock = class {
 };
 
 // src/modules/setup/init.ts
-var import_obsidian22 = require("obsidian");
+var import_obsidian25 = require("obsidian");
 
 // src/modules/setup/schemaNote.ts
 var SAMPLE_TYPE = "\u793A\u4F8B";
@@ -5732,7 +6853,7 @@ function schemaNoteContent(created, uid) {
 }
 
 // src/modules/setup/init.ts
-var MESSAGES6 = {
+var MESSAGES9 = {
   notEmpty: "\u68C0\u6D4B\u5230\u5DF2\u6709\u7B14\u8BB0\uFF0CziminOS \u53EA\u5728\u7A7A\u5E93\u5F00\u8352\u3002\u8BF7\u65B0\u5EFA\u4E00\u4E2A\u7A7A\u5E93\u518D\u8BD5\u3002",
   done: "\u5F00\u8352\u5B8C\u6210 \u2705",
   failedPrefix: "\u521D\u59CB\u5316\u5931\u8D25\uFF1A"
@@ -5742,7 +6863,7 @@ async function initializeVault(ctx, seeds) {
   try {
     const isFirstRun = ctx.settings.initializedAt === "";
     if (isFirstRun && hasUserNotes(ctx)) {
-      new import_obsidian22.Notice(MESSAGES6.notEmpty);
+      new import_obsidian25.Notice(MESSAGES9.notEmpty);
       return;
     }
     for (const folder of INIT_FOLDERS) {
@@ -5762,12 +6883,12 @@ async function initializeVault(ctx, seeds) {
       ctx.settings.initializedAt = nowStamp(ctx.settings.dateTimeFormat);
     }
     await ctx.saveSettings();
-    new import_obsidian22.Notice(MESSAGES6.done);
+    new import_obsidian25.Notice(MESSAGES9.done);
     const landing = ctx.app.vault.getAbstractFileByPath(README_FILE) ? README_FILE : NAV_FILE;
     await ctx.app.workspace.openLinkText(landing, "", false);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian22.Notice(MESSAGES6.failedPrefix + message);
+    new import_obsidian25.Notice(MESSAGES9.failedPrefix + message);
   }
 }
 async function applySeed(ctx, seed) {
@@ -5789,7 +6910,7 @@ async function createFileIfMissing(ctx, path, content) {
 }
 
 // src/settings.ts
-var import_obsidian23 = require("obsidian");
+var import_obsidian26 = require("obsidian");
 var TABS = [
   {
     id: "setup",
@@ -5845,7 +6966,7 @@ var TABS = [
     label: "\u8FB9\u680F",
     icon: COMMAND_ICONS.dock,
     module: "\u5DE6\u4FA7\u8FB9\u680F v1",
-    status: "\u8FD0\u884C\u4E2D \xB7 \u4E8C\u5341\u4E09\u6761\u547D\u4EE4\u914D Pikaicons \u56FE\u6807\uFF0C\u9ED8\u8BA4\u6446\u51FA\u4E03\u6761"
+    status: "\u8FD0\u884C\u4E2D \xB7 \u4E8C\u5341\u516D\u6761\u547D\u4EE4\u914D Pikaicons \u56FE\u6807\uFF0C\u9ED8\u8BA4\u6446\u51FA\u4E03\u6761"
   }
 ];
 var TEXTS3 = {
@@ -5892,7 +7013,7 @@ var TEXT_FIELDS = [
 ];
 var FIELDS_ONLY = () => {
 };
-var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
+var ZiminosSettingTab = class extends import_obsidian26.PluginSettingTab {
   constructor(ctx, actions) {
     super(ctx.app, ctx.plugin);
     /**
@@ -5905,10 +7026,10 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
      */
     this.activeTab = TABS[0];
     /**
-     * 「已摆出 N / 21 条」那行字。
+     * 「已摆出 N / 26 条」那行字。
      *
      * 这是全页唯一一处持有 DOM 引用的地方，理由很具体：勾选要即时更新这个数，
-     * 而重建整页会把滚动条弹回顶部——二十三行排下来，用户勾第十八行时页面一跳，
+     * 而重建整页会把滚动条弹回顶部——二十六行排下来，用户勾第十八行时页面一跳，
      * 他就得重新找回刚才那一行。持有的是一个渲染出来的节点，不是第二份状态：
      * 数字仍然现算自设置对象，每次 display 也会把它换成新节点。
      */
@@ -5966,7 +7087,7 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
         attr: { type: "button", "aria-pressed": String(active) }
       });
       if (active) button.addClass("is-active");
-      (0, import_obsidian23.setIcon)(button.createSpan({ cls: "ziminos-settings-tab-icon" }), tab.icon);
+      (0, import_obsidian26.setIcon)(button.createSpan({ cls: "ziminos-settings-tab-icon" }), tab.icon);
       button.createSpan({ text: tab.label });
       button.addEventListener("click", () => this.switchTo(tab));
     }
@@ -5991,9 +7112,9 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
    */
   renderPanel(body) {
     const tab = this.activeTab;
-    const header = new import_obsidian23.Setting(body).setDesc(tab.status).setHeading();
+    const header = new import_obsidian26.Setting(body).setDesc(tab.status).setHeading();
     const title = header.nameEl.createSpan({ cls: "ziminos-settings-page-title" });
-    (0, import_obsidian23.setIcon)(title.createSpan({ cls: "ziminos-settings-page-icon" }), tab.icon);
+    (0, import_obsidian26.setIcon)(title.createSpan({ cls: "ziminos-settings-page-icon" }), tab.icon);
     title.createSpan({ text: tab.module });
     this.renderTextFields(body, tab.id, false);
     this.panels[tab.id](body);
@@ -6020,7 +7141,7 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
    * 天然看得见新值；只有已经画在屏幕上的东西（状态栏按钮）才需要有人去推它一把。
    */
   renderToggle(containerEl, key, name, desc, onApplied) {
-    new import_obsidian23.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
+    new import_obsidian26.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
       toggle.setValue(this.ctx.settings[key]).onChange(async (value) => {
         this.ctx.settings[key] = value;
         await this.ctx.saveSettings();
@@ -6056,7 +7177,7 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
   renderTextField(containerEl, field) {
     const fallback = DEFAULT_SETTINGS[field.key];
     const desc = field.advanced ? `${field.hint}${TEXTS3.advancedSuffixPrefix}${fallback}${TEXTS3.advancedSuffixTail}` : field.hint;
-    new import_obsidian23.Setting(containerEl).setName(field.name).setDesc(desc).addText((text) => {
+    new import_obsidian26.Setting(containerEl).setName(field.name).setDesc(desc).addText((text) => {
       text.setPlaceholder(fallback).setValue(this.ctx.settings[field.key]).onChange(async (value) => {
         this.ctx.settings[field.key] = value;
         await this.ctx.saveSettings();
@@ -6072,7 +7193,7 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
    * 状态说明随之从「尚未初始化」翻面成「已就绪」——停留的页不变，重建的是内容。
    */
   renderInitButton(containerEl) {
-    new import_obsidian23.Setting(containerEl).setName(TEXTS3.initName).setDesc(this.describeInitState()).addButton((button) => {
+    new import_obsidian26.Setting(containerEl).setName(TEXTS3.initName).setDesc(this.describeInitState()).addButton((button) => {
       button.setButtonText(TEXTS3.initButton).setCta().onClick(async () => {
         button.setDisabled(true);
         try {
@@ -6105,14 +7226,14 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
    * 落点那三个文本框已由骨架照字段表画在上方，这里只补两个非文本控件。
    */
   renderInspirationPanel(containerEl) {
-    new import_obsidian23.Setting(containerEl).setName(TEXTS3.inspirationPositionName).setDesc(TEXTS3.inspirationPositionDesc).addDropdown((dropdown) => {
+    new import_obsidian26.Setting(containerEl).setName(TEXTS3.inspirationPositionName).setDesc(TEXTS3.inspirationPositionDesc).addDropdown((dropdown) => {
       dropdown.addOption("heading-top", "\u6807\u9898\u4E0B\u65B9\uFF08\u65B0\u5185\u5BB9\u5728\u524D\uFF09").addOption("heading-bottom", "\u6807\u9898\u533A\u672B\u5C3E\uFF08\u65B0\u5185\u5BB9\u5728\u540E\uFF09").addOption("file-top", "\u6B63\u6587\u9876\u90E8").addOption("file-bottom", "\u6B63\u6587\u5E95\u90E8").setValue(this.normalizeInspirationPosition(this.ctx.settings.inspirationInsertPosition)).onChange(async (value) => {
         const position = this.normalizeInspirationPosition(value);
         this.ctx.settings.inspirationInsertPosition = position;
         await this.ctx.saveSettings();
       });
     });
-    new import_obsidian23.Setting(containerEl).setName(TEXTS3.inspirationFormatName).setDesc(TEXTS3.inspirationFormatDesc).addTextArea((textArea) => {
+    new import_obsidian26.Setting(containerEl).setName(TEXTS3.inspirationFormatName).setDesc(TEXTS3.inspirationFormatDesc).addTextArea((textArea) => {
       textArea.setPlaceholder(INSPIRATION_DEFAULTS.format).setValue(this.ctx.settings.inspirationFormat).onChange(async (value) => {
         this.ctx.settings.inspirationFormat = value;
         await this.ctx.saveSettings();
@@ -6143,7 +7264,7 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
       TEXTS3.autoFormatName,
       TEXTS3.autoFormatDesc
     );
-    new import_obsidian23.Setting(containerEl).setName(TEXTS3.formatRulesHeading).setDesc(TEXTS3.formatRulesIntro).setHeading();
+    new import_obsidian26.Setting(containerEl).setName(TEXTS3.formatRulesHeading).setDesc(TEXTS3.formatRulesIntro).setHeading();
     for (const rule of FORMAT_RULES) {
       this.renderRuleRow(containerEl, rule.key, rule.name, rule.desc);
     }
@@ -6151,12 +7272,12 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
   /**
    * 一条规则一行。
    *
-   * 它与边栏那二十三行是同一种控件——勾选决定一个 id 在不在清单里，而不是翻一个布尔字段。
+   * 它与边栏那二十六行是同一种控件——勾选决定一个 id 在不在清单里，而不是翻一个布尔字段。
    * 存清单而不是九个布尔字段，是为了让「加一条规则」不必动设置契约：
    * 老库升级时那条新规则不在清单里，于是默认不开，这与「不替用户改他没选过的东西」同源。
    */
   renderRuleRow(containerEl, key, name, desc) {
-    new import_obsidian23.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
+    new import_obsidian26.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
       toggle.setValue(this.ctx.settings.formatRules.includes(key)).onChange(async (value) => {
         this.ctx.settings.formatRules = this.nextFormatRules(key, value);
         await this.ctx.saveSettings();
@@ -6190,17 +7311,17 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
     );
   }
   // ============================================================
-  // 八、边栏页：二十三行
+  // 八、边栏页：二十六行
   // ============================================================
   /**
-   * 边栏页：一句说明 + 按分组排下来的二十三行。
+   * 边栏页：一句说明 + 按分组排下来的二十六行。
    *
    * 清单现读花名册而不是自己维护一份，因此它与命令面板里能搜到的命令永远是同一批；
    * 分组标题按「相邻两行的 group 不同」切出来，与外观开关面板用的是同一套画法——
    * 分组顺序不需要另一张表，它就是命令的注册顺序。
    */
   renderRibbonPanel(containerEl) {
-    const summary = new import_obsidian23.Setting(containerEl).setName(this.describeRibbonCount()).setDesc(TEXTS3.ribbonIntro);
+    const summary = new import_obsidian26.Setting(containerEl).setName(this.describeRibbonCount()).setDesc(TEXTS3.ribbonIntro);
     this.ribbonCountEl = summary.nameEl;
     let currentGroup = "";
     for (const command of this.ctx.commands.list()) {
@@ -6216,7 +7337,7 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
     if (this.ribbonCountEl) this.ribbonCountEl.setText(this.describeRibbonCount());
   }
   /**
-   * 「已摆出 7 / 22 条」。给的是一个量级感：勾多了那条边栏会变成谁也不看的图标柱。
+   * 「已摆出 7 / 26 条」。给的是一个量级感：勾多了那条边栏会变成谁也不看的图标柱。
    * 总数现算自花名册，不写死——这一页不认识任何一条具体命令，也就不该认识它们有几条。
    */
   describeRibbonCount() {
@@ -6228,11 +7349,11 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
     const { id, icon, name } = spec;
     const label = createFragment((frag) => {
       const iconEl = frag.createSpan({ cls: "ziminos-ribbon-icon" });
-      (0, import_obsidian23.setIcon)(iconEl, icon);
+      (0, import_obsidian26.setIcon)(iconEl, icon);
       iconEl.style.color = GROUP_COLORS[spec.group];
       frag.createSpan({ text: name });
     });
-    new import_obsidian23.Setting(containerEl).setName(label).setClass("ziminos-ribbon-row").addToggle((toggle) => {
+    new import_obsidian26.Setting(containerEl).setName(label).setClass("ziminos-ribbon-row").addToggle((toggle) => {
       toggle.setValue(this.ctx.settings.ribbonCommands.includes(id)).onChange(async (value) => {
         this.ctx.settings.ribbonCommands = this.nextRibbonCommands(id, value);
         await this.ctx.saveSettings();
@@ -6258,7 +7379,7 @@ var ZiminosSettingTab = class extends import_obsidian23.PluginSettingTab {
 };
 
 // src/main.ts
-var ZiminosPlugin = class extends import_obsidian24.Plugin {
+var ZiminosPlugin = class extends import_obsidian27.Plugin {
   constructor() {
     super(...arguments);
     /**
@@ -6294,6 +7415,9 @@ var ZiminosPlugin = class extends import_obsidian24.Plugin {
     registerCardAutoInit(ctx);
     registerTransitionCommands(ctx);
     registerUpdatedMaintainer(ctx);
+    registerCreateBookCommand(ctx, (preset) => createContainer(ctx, BOOK_KIND, preset));
+    registerImportHighlightsCommand(ctx);
+    registerExcerptCardCommand(ctx);
     registerInspirationCaptureCommand(ctx);
     registerPeriodicCommands(ctx);
     registerThemeCommand(ctx);

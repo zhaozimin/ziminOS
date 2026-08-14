@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 obsidian 的 TFile 类型；依赖 core/codeblock 的 ViewContext/ViewDefinition，
- *          core/constants 的 FIELDS/FOLDERS/NOTE_TYPES，core/folders 的 isInFolder/normalizeFolderPath，
+ *          core/constants 的 FIELDS/FOLDERS/CONTAINER_TYPES，core/folders 的 isInFolder/normalizeFolderPath，
  *          core/table 的渲染原语，core/time 的 dayText/dayOfMillis/daysBetween/today，
  *          core/vaultIndex 的 toText；依赖 ./periodic 的 resolveScope
  * [OUTPUT]: 对外提供 reviewProjectViews（项目动态、完成的项目、年度全景三个视图定义）
@@ -10,13 +10,17 @@
  *        月与季看「完成了哪些」（周期长，新建只说明起了念头，完成才说明真推进了），
  *        年看格局（四态分布与月度节奏，事件被折叠成计数）。
  *        「完成」的判定一律以 MOC 的 archived 为准——那是状态流转命令与 status 同一次写入落的
- *        确定事实；回落 updated 只为兼容 V2 之前建的项目
+ *        确定事实；回落 updated 只为兼容 V2 之前建的项目。
+ *        三个视图认的容器是 CONTAINER_TYPES（project 与 book）而不只是 project：
+ *        一本书就是一个项目，它同样住项目目录、同样经「完成项目」归档，
+ *        只认 project 会让读书这件事在整套复盘里彻底隐身，还会让「项目动态」
+ *        把每一本在读的书当成没有 MOC 的孤儿点名报警
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import type { TFile } from 'obsidian';
 import type { ViewContext, ViewDefinition } from '../../core/codeblock';
-import { FIELDS, FOLDERS, NOTE_TYPES } from '../../core/constants';
+import { CONTAINER_TYPES, FIELDS, FOLDERS } from '../../core/constants';
 import { isInFolder, normalizeFolderPath } from '../../core/folders';
 import { noteLink, renderEmpty, renderHeading, renderNote, renderSummary, renderTable } from '../../core/table';
 import type { Cell } from '../../core/table';
@@ -69,6 +73,8 @@ interface ActivityEntry {
  * 本周期哪些项目在动。
  * 只扫进行中的项目目录：归档的项目属于「完成的项目」那张表，
  * 让它们挤进本周前排，会把「我这周推进了什么」变成「我这周碰过什么」。
+ * 正在读的书也住在这个目录里，因此也会出现在这张表上——一本书就是一个项目，
+ * 它这周有没有动（新划线、新卡片）与别的项目是同一个问题。
  */
 const projectActivity: ViewDefinition = {
     name: '项目动态',
@@ -102,7 +108,10 @@ const projectActivity: ViewDefinition = {
                 last: '',
             };
 
-            if (toText(view.index.fieldOf(file, FIELDS.type)) === NOTE_TYPES.project) {
+            // 项目与书都是住在这个目录里的容器，两种 MOC 都算数。
+            // 只认 project 的话，学员每读一本书，这张表就会把那本书的文件夹当成
+            // 「有改动却没有 MOC 的孤儿」点名报警——而他根本看不懂那是在说什么
+            if (CONTAINER_TYPES.includes(toText(view.index.fieldOf(file, FIELDS.type)))) {
                 entry.moc = file;
                 entry.status = toText(view.index.fieldOf(file, FIELDS.status));
             }
@@ -173,7 +182,7 @@ function warnOrphans(view: ViewContext, orphans: readonly ActivityEntry[]): void
 
     renderNote(
         view.el,
-        `⚠️ 另有 ${orphans.length} 个文件夹有改动但缺少同名的 type: project 笔记，未计入：${orphans
+        `⚠️ 另有 ${orphans.length} 个文件夹有改动但缺少同名的 MOC（type 为 project 或 book），未计入：${orphans
             .map((entry) => entry.name)
             .join('、')}`,
     );
@@ -419,15 +428,26 @@ function renderActiveGroup(
 // ============================================================
 
 /**
- * 全部项目 MOC，连同它们的诞生日与归档日。
+ * 全部容器 MOC（项目与书），连同它们的诞生日与归档日。
  * 两个根目录都要扫：完成的项目已经被状态流转命令整个文件夹搬进了归档目录。
+ *
+ * 书一并收进来，因为读完一本书与做完一个项目在复盘里是同一件事——
+ * 它同样有起点、有终点、有历时，同样经「完成项目」落下 archived。
+ * 不收的话，学员今年读完的十二本书在月记、季记、年记里一本都看不见，
+ * 而他明明在这套系统里读的它们。表格里那一行写着《书名》，是书是项目一眼可辨。
  */
 function collectProjects(view: ViewContext): ClosedProject[] {
     const projectRoot = normalizeFolderPath(view.ctx.settings.projectFolder, FOLDERS.projects);
     const archiveRoot = normalizeFolderPath(view.ctx.settings.archiveFolder, FOLDERS.archives);
     const collected: ClosedProject[] = [];
+    // 逐个 type 取而不是 flatMap 拼：目标是 ES2018，那个方法要 ES2019 才有
+    const containers: TFile[] = [];
 
-    for (const file of view.index.notesOfType(NOTE_TYPES.project)) {
+    for (const type of CONTAINER_TYPES) {
+        for (const file of view.index.notesOfType(type)) containers.push(file);
+    }
+
+    for (const file of containers) {
         if (!isInFolder(file.path, projectRoot) && !isInFolder(file.path, archiveRoot)) continue;
 
         collected.push({

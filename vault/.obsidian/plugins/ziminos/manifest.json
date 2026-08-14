@@ -1,9 +1,9 @@
 {
   "id": "ziminos",
   "name": "ziminOS",
-  "version": "0.10.2",
+  "version": "0.12.0",
   "minAppVersion": "1.13.0",
-  "description": "个人知识管理一键开荒管家：PARA 骨架、项目工作流、灵感收集、人脉经营、五级复盘，常用命令一键摆进左侧边栏。",
+  "description": "个人知识管理一键开荒管家：PARA 骨架、项目工作流、读书划线导入、灵感收集、人脉经营、五级复盘，常用命令一键摆进左侧边栏。",
   "author": "zhaozimin",
   "authorUrl": "https://edu.zhaozimin.com",
   "isDesktopOnly": false

@@ -1,6 +1,7 @@
 /**
  * [INPUT]: 依赖 obsidian 的 Modal/FuzzySuggestModal 基类、ButtonComponent 与 App 类型
- * [OUTPUT]: 对外提供 TextInputOptions 配置与 TextInputModal 弹窗类（openAndGetValue），
+ * [OUTPUT]: 对外提供 TextInputOptions 配置与 TextInputModal 弹窗类（openAndGetValue）、
+ *           TextAreaOptions 配置与 TextAreaModal 多行粘贴弹窗（openAndGetValue），
  *           以及 ChoiceModal 选择弹窗（openAndGetChoice）
  * [POS]: core 的唯一人机问答通道，取代原脚本对 QuickAdd inputPrompt 的依赖。
  *        它把「弹窗生命周期」翻译成一个 Promise：有输入返回文本，取消返回 null，
@@ -90,6 +91,117 @@ export class TextInputModal extends Modal {
 
         inputEl.focus();
         inputEl.select();
+    }
+
+    onClose(): void {
+        // Esc、遮罩点击、取消按钮最终都汇到这里；已提交过则此次结算无效
+        this.settle(null);
+        this.contentEl.empty();
+    }
+
+    /** 提交输入并关闭：先结算再关闭，onClose 里的兜底结算自然失效 */
+    private submit(value: string): void {
+        this.settle(value);
+        this.close();
+    }
+
+    /** 唯一结算点，保证 Promise 只被兑现一次 */
+    private settle(value: string | null): void {
+        if (this.settled) return;
+
+        this.settled = true;
+
+        const resolve = this.resolver;
+        this.resolver = null;
+
+        if (resolve) resolve(value);
+    }
+}
+
+/** 多行粘贴弹窗的配置 */
+export interface TextAreaOptions {
+    /** 弹窗标题，同时充当提问语 */
+    title: string;
+    /** 标题下的一行说明，弱化显示；不传就不画 */
+    hint?: string;
+    /** 文本域占位提示 */
+    placeholder?: string;
+}
+
+/**
+ * 多行文本粘贴弹窗，为「把一大段导出文本交给插件」这类动作而生。
+ *
+ * 与 TextInputModal 分成两个类而不是一个开关，是因为两者的回车语义相反：
+ * 单行弹窗里回车即提交，多行弹窗里回车是换行——粘贴进来的文本自己就带换行，
+ * 提交改由 Cmd/Ctrl+Enter 或「确认」按钮承担。取消语义与其余弹窗一致：
+ * Esc、遮罩、取消按钮一律返回 null，调用方仍然一条 if 就能中止流程。
+ */
+export class TextAreaModal extends Modal {
+    private readonly options: TextAreaOptions;
+
+    /** Promise 的 resolve 句柄；结算后置空，避免重复结算与引用滞留 */
+    private resolver: ((value: string | null) => void) | null = null;
+
+    /** 是否已经结算过。关闭动作与提交动作都会走到结算，用它保证只生效一次 */
+    private settled = false;
+
+    constructor(app: App, options: TextAreaOptions) {
+        super(app);
+        this.options = options;
+    }
+
+    /** 打开弹窗并等待用户作答：有输入返回文本，取消返回 null */
+    openAndGetValue(): Promise<string | null> {
+        return new Promise<string | null>((resolve) => {
+            this.resolver = resolve;
+            this.open();
+        });
+    }
+
+    onOpen(): void {
+        this.titleEl.setText(this.options.title);
+        this.contentEl.empty();
+
+        if (this.options.hint) {
+            const hintEl = this.contentEl.createEl('p', { text: this.options.hint });
+            hintEl.style.margin = '0 0 10px';
+            hintEl.style.color = 'var(--text-muted)';
+            hintEl.style.lineHeight = '1.6';
+        }
+
+        const textareaEl = this.contentEl.createEl('textarea', {
+            placeholder: this.options.placeholder ?? '',
+        });
+        textareaEl.rows = 12;
+        textareaEl.style.width = '100%';
+        textareaEl.style.resize = 'vertical';
+
+        // Cmd/Ctrl+Enter 提交；裸回车留给换行，输入法组合期间的回车照旧属于选词
+        textareaEl.addEventListener('keydown', (event: KeyboardEvent) => {
+            if (event.key !== 'Enter' || event.isComposing) return;
+            if (!event.metaKey && !event.ctrlKey) return;
+
+            event.preventDefault();
+            this.submit(textareaEl.value);
+        });
+
+        const buttonBar = this.contentEl.createDiv();
+        buttonBar.style.display = 'flex';
+        buttonBar.style.justifyContent = 'flex-end';
+        buttonBar.style.gap = '8px';
+        buttonBar.style.marginTop = '16px';
+
+        // 取消不需要单独结算：关闭弹窗会走 onClose，在那里统一结算为 null
+        new ButtonComponent(buttonBar)
+            .setButtonText('取消')
+            .onClick(() => this.close());
+
+        new ButtonComponent(buttonBar)
+            .setButtonText('确认')
+            .setCta()
+            .onClick(() => this.submit(textareaEl.value));
+
+        textareaEl.focus();
     }
 
     onClose(): void {
