@@ -60,6 +60,7 @@ var INIT_FOLDERS = [
 var CONTACT_FOLDER = `${FOLDERS.areas}/\u4EBA\u8109`;
 var CLIENT_FOLDER = `${FOLDERS.areas}/\u5BA2\u6237`;
 var NAV_FILE = `${FOLDERS.system}/\u5BFC\u822A.md`;
+var README_FILE = "README.md";
 var SCHEMA_NOTE = `${FOLDERS.system}/\u5C5E\u6027\u7C7B\u578B\u793A\u4F8B.md`;
 var TEMPLATE_FILES = {
   moc: `${FOLDERS.template}/MOC \u6A21\u677F.md`,
@@ -5733,7 +5734,6 @@ function schemaNoteContent(created, uid) {
 }
 
 // src/modules/setup/init.ts
-var VAULT_README_PATH = "README.md";
 var MESSAGES6 = {
   notEmpty: "\u68C0\u6D4B\u5230\u5DF2\u6709\u7B14\u8BB0\uFF0CziminOS \u53EA\u5728\u7A7A\u5E93\u5F00\u8352\u3002\u8BF7\u65B0\u5EFA\u4E00\u4E2A\u7A7A\u5E93\u518D\u8BD5\u3002",
   done: "\u5F00\u8352\u5B8C\u6210 \u2705",
@@ -5765,7 +5765,8 @@ async function initializeVault(ctx, seeds) {
     }
     await ctx.saveSettings();
     new import_obsidian22.Notice(MESSAGES6.done);
-    await ctx.app.workspace.openLinkText(NAV_FILE, "", false);
+    const landing = ctx.app.vault.getAbstractFileByPath(README_FILE) ? README_FILE : NAV_FILE;
+    await ctx.app.workspace.openLinkText(landing, "", false);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     new import_obsidian22.Notice(MESSAGES6.failedPrefix + message);
@@ -5781,7 +5782,7 @@ async function applySeed(ctx, seed) {
 }
 function hasUserNotes(ctx) {
   const systemPrefix = `${FOLDERS.system}/`;
-  return ctx.app.vault.getMarkdownFiles().some((file) => file.path !== VAULT_README_PATH && !file.path.startsWith(systemPrefix));
+  return ctx.app.vault.getMarkdownFiles().some((file) => file.path !== README_FILE && !file.path.startsWith(systemPrefix));
 }
 async function createFileIfMissing(ctx, path, content) {
   if (ctx.app.vault.getAbstractFileByPath(path)) return;

@@ -1,5 +1,5 @@
 /**
- * [INPUT]: 依赖 obsidian 的 Notice；依赖 core/constants 的 FOLDERS/INIT_FOLDERS/NAV_FILE、
+ * [INPUT]: 依赖 obsidian 的 Notice；依赖 core/constants 的 FOLDERS/INIT_FOLDERS/NAV_FILE/README_FILE、
  *          core/folders 的 ensureFolderPath、core/time 的 nowStamp/nowStampAndUid、
  *          ./schemaNote 的 schemaNoteContent、
  *          core/types 的 ZiminosContext 与 VaultSeed
@@ -11,13 +11,14 @@
  *        其余一切产物——模板、导航、复盘时间轴、人脉 MOC——都由各功能模块自报 VaultSeed，
  *        由 main 装配后递进来。因此本文件不 import 任何兄弟模块，
  *        新增一个模块只是在 main 里多传一个 seed，这里一行不改（OCP）。
+ *        开荒完成后第一个打开 README（头部是作者名片，正文是说明书；缺 README 回落导航）。
  *        两条原则压倒一切：绝不覆盖——所有写入都先查存在性，故可反复执行；
  *        绝不半途报错吓人——首个项目跳过、弹窗取消都不算失败，只有真异常才提示
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { Notice } from 'obsidian';
-import { FOLDERS, INIT_FOLDERS, NAV_FILE, SCHEMA_NOTE } from '../../core/constants';
+import { FOLDERS, INIT_FOLDERS, NAV_FILE, README_FILE, SCHEMA_NOTE } from '../../core/constants';
 import { ensureFolderPath } from '../../core/folders';
 import { nowStamp, nowStampAndUid } from '../../core/time';
 import { schemaNoteContent } from './schemaNote';
@@ -26,9 +27,6 @@ import type { VaultSeed, ZiminosContext } from '../../core/types';
 // ============================================================
 // 开荒常量
 // ============================================================
-
-/** 库内导游文件。它随 vault 模板一起分发，空库检查必须放行，否则模板库自己就过不了关 */
-const VAULT_README_PATH = 'README.md';
 
 /** 全部用户可见文案集中在此，避免同一句话在多处各写一遍 */
 const MESSAGES = {
@@ -97,7 +95,7 @@ export async function initializeVault(
         }
 
         // ============================================================
-        // 5. 收尾：记录开荒时间、落盘设置、把学员送到导航页
+        // 5. 收尾：记录开荒时间、落盘设置、把学员送到 README
         // ============================================================
 
         // 只在首次落笔。字段名与设置页文案都说的是「首次开荒于」，
@@ -110,7 +108,11 @@ export async function initializeVault(
 
         new Notice(MESSAGES.done);
 
-        await ctx.app.workspace.openLinkText(NAV_FILE, '', false);
+        // 开荒完成后第一眼是 README：头部是作者名片，正文是说明书。
+        // 只拿到 main.js 的库没有 README，那就回落到导航——两者必有其一是这次开荒刚建的
+        const landing = ctx.app.vault.getAbstractFileByPath(README_FILE) ? README_FILE : NAV_FILE;
+
+        await ctx.app.workspace.openLinkText(landing, '', false);
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
 
@@ -146,9 +148,10 @@ export async function applySeed(ctx: ZiminosContext, seed: VaultSeed): Promise<v
 function hasUserNotes(ctx: ZiminosContext): boolean {
     const systemPrefix = `${FOLDERS.system}/`;
 
+    // README 随模板分发、90-system 归插件自己，都不算用户笔记——计入会让开荒被自己挡住
     return ctx.app.vault
         .getMarkdownFiles()
-        .some((file) => file.path !== VAULT_README_PATH && !file.path.startsWith(systemPrefix));
+        .some((file) => file.path !== README_FILE && !file.path.startsWith(systemPrefix));
 }
 
 /**

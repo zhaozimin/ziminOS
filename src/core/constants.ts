@@ -70,6 +70,13 @@ export const CLIENT_FOLDER = `${FOLDERS.areas}/客户`;
 export const NAV_FILE = `${FOLDERS.system}/导航.md`;
 
 /**
+ * 随库交付的 README，住在库根。
+ * 开荒完成后第一个打开的是它而不是导航——它的头部是作者名片，正文是整套系统的说明书；
+ * 学员日常的入口仍是导航，README 只在这种「刚开完荒」的时刻被主动送到眼前。
+ */
+export const README_FILE = 'README.md';
+
+/**
  * 属性类型示例笔记：全部属性各出现一次，每个都带一个正确格式的样例值。
  *
  * 它解决的是一个很具体的麻烦：模板里的空字段在属性面板里一律显示成「文本」，

@@ -1,3 +1,9 @@
+```ziminos
+关于作者
+```
+
+（ziminOS 启用后，上面会显示一张带链接的名片。插件还没启用时链接在这里：官网 [zhaozimin.cn](https://zhaozimin.cn) / [zhaozimin.com](https://zhaozimin.com)，插件教程 [edu.zhaozimin.cn](https://edu.zhaozimin.cn) / [edu.zhaozimin.com](https://edu.zhaozimin.com)，.cn 在大陆、.com 在海外，哪边快用哪边。）
+
 # 欢迎回家
 
 这里是你的笔记库。
@@ -20,7 +26,7 @@
 
 屏幕右上角冒出「开荒完成 ✅」，就成了。
 
-这时候会自动打开一个叫「导航」的页面。以后每天，都从它开始。
+这时候会自动打开这份 README——也就是你现在看的这一篇，往下翻就是日常用法。每天办事的入口是 `90-system/导航`，把它钉在标签页上，以后每天都从它开始。
 
 ---
 
@@ -191,8 +197,4 @@
 
 ## 想学得更系统
 
-```ziminos
-关于作者
-```
-
-（ziminOS 启用后，上面会显示一张带链接的名片。插件还没启用时链接在这里：官网 [zhaozimin.cn](https://zhaozimin.cn) / [zhaozimin.com](https://zhaozimin.com)，插件教程 [edu.zhaozimin.cn](https://edu.zhaozimin.cn) / [edu.zhaozimin.com](https://edu.zhaozimin.com)，.cn 在大陆、.com 在海外，哪边快用哪边。同一张名片也在设置 → ziminOS → 开荒页的最底部。）
+插件教程和系统课在最上面那张名片里——回到本页顶部就能看到。同一张名片也在设置 → ziminOS → 开荒页的最底部。

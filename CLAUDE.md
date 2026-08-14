@@ -22,7 +22,7 @@ src/ - 插件源码 (2子目录: core 无业务的基础设施、命令注册台
 </settings>
 
 <views>
-V2 起全部视图（现二十二个）由插件自渲染：笔记里只留一行 ```ziminos 代码块 + 视图名，逻辑住在 main.js、样式住在 styles.css。第二十二个是「关于作者」（v0.9.0）：作者的官网/教程双域名、GitHub 与四个自媒体频道连同 Simple Icons 品牌图形与头像照片编译进 main.js，名片住在 README（v0.10.0 起，导航是工位不放署名）与设置页开荒页尾——插件传到哪，名片跟到哪。视图检索一律排除 90-system 功能目录（排除收口在 vaultIndex 与 isSystemPath）。表格是三线表，文本里的双链渲染成可点链接，任务行渲染成能勾的复选框并写回源文件。库内零 JS 文件，DataviewJS 保持关闭，升级只换 main.js 即全库生效。重算由 metadataCache 变更事件驱动，无定时器、无轮询。Dataview 仍随库交付，它的活儿只剩灵感集那条 TASK 查询。
+V2 起全部视图（现二十二个）由插件自渲染：笔记里只留一行 ```ziminos 代码块 + 视图名，逻辑住在 main.js、样式住在 styles.css。第二十二个是「关于作者」（v0.9.0）：作者的官网/教程双域名、GitHub 与四个自媒体频道连同 Simple Icons 品牌图形与头像照片编译进 main.js，名片只在两处：README 最前（开荒完成后第一个打开的就是它，v0.10.1）与设置页开荒页尾——插件传到哪，名片跟到哪，其余任何界面不加广告。视图检索一律排除 90-system 功能目录（排除收口在 vaultIndex 与 isSystemPath）。表格是三线表，文本里的双链渲染成可点链接，任务行渲染成能勾的复选框并写回源文件。库内零 JS 文件，DataviewJS 保持关闭，升级只换 main.js 即全库生效。重算由 metadataCache 变更事件驱动，无定时器、无轮询。Dataview 仍随库交付，它的活儿只剩灵感集那条 TASK 查询。
 </views>
 
 <config>
