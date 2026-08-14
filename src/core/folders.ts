@@ -1,7 +1,7 @@
 /**
- * [INPUT]: 依赖 obsidian 的 TFolder、normalizePath 与 App 类型
- * [OUTPUT]: 对外提供 ensureFolderPath（逐级建目录）、normalizeFolderPath（规范化设置里的目录路径）
- *           与 isInFolder（路径归属判定）
+ * [INPUT]: 依赖 obsidian 的 TFolder、normalizePath 与 App 类型，依赖 ./constants 的 FOLDERS
+ * [OUTPUT]: 对外提供 ensureFolderPath（逐级建目录）、normalizeFolderPath（规范化设置里的目录路径）、
+ *           isInFolder（路径归属判定）与 isSystemPath（功能目录判定，一切检索的统一排除口）
  * [POS]: core 的目录安全层，是所有会创建目录的模块（开荒、建项目、项目搬移）的共同入口。
  *        它的存在只为守住一条底线：绝不覆盖用户已有的同名文件——遇到就抛错中止，
  *        由调用方转成 Notice 呈现，插件本身永远不做破坏性写入
@@ -10,6 +10,17 @@
 
 import { TFolder, normalizePath } from 'obsidian';
 import type { App } from 'obsidian';
+import { FOLDERS } from './constants';
+
+/**
+ * 路径是否在功能目录（90-system）内。
+ * 功能目录里住的是导航、模板与属性示例——它们是系统的零件，没有知识属性，
+ * 因此不参与任何检索：不进反向链接表、不进 type 名录、不进任何一张视图。
+ * 判定收口在此一处，二十二个视图与两处直扫共用，不散写二十几遍前缀比较。
+ */
+export function isSystemPath(path: string): boolean {
+    return path === FOLDERS.system || path.startsWith(`${FOLDERS.system}/`);
+}
 
 /**
  * 逐级创建路径中缺失的每一层目录。

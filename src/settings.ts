@@ -19,7 +19,8 @@
  */
 
 import { PluginSettingTab, Setting, setIcon } from 'obsidian';
-import { COMMAND_ICONS } from './core/commands';
+import { COMMAND_ICONS, GROUP_COLORS } from './core/commands';
+import type { CommandSpec } from './core/commands';
 import { INSPIRATION_DEFAULTS, INSPIRATION_INSERT_POSITIONS } from './core/constants';
 import type { InspirationInsertPosition } from './core/constants';
 import { FORMAT_RULES } from './core/markdownStyle';
@@ -744,7 +745,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
                 containerEl.createDiv({ cls: 'ziminos-ribbon-group', text: currentGroup });
             }
 
-            this.renderRibbonRow(containerEl, command.spec.id, command.spec.icon, command.spec.name);
+            this.renderRibbonRow(containerEl, command.spec);
         }
     }
 
@@ -769,17 +770,15 @@ export class ZiminosSettingTab extends PluginSettingTab {
         );
     }
 
-    /** 一行：图标 + 命令名 + 开关。图标就是它在边栏上的样子，勾之前先看见 */
-    private renderRibbonRow(
-        containerEl: HTMLElement,
-        id: string,
-        icon: string,
-        name: string,
-    ): void {
+    /** 一行：图标 + 命令名 + 开关。图标带着它的分组功能色，就是它在边栏上的样子，勾之前先看见 */
+    private renderRibbonRow(containerEl: HTMLElement, spec: CommandSpec): void {
+        const { id, icon, name } = spec;
         const label = createFragment((frag) => {
             const iconEl = frag.createSpan({ cls: 'ziminos-ribbon-icon' });
 
             setIcon(iconEl, icon);
+            // 与边栏同一张色表：这一行的图标就是按钮本人，颜色自然也得是本人的
+            iconEl.style.color = GROUP_COLORS[spec.group];
             frag.createSpan({ text: name });
         });
 

@@ -28,7 +28,7 @@ import {
     PROJECT_PAYMENT_HEADING,
     TEMPLATE_FILES,
 } from '../../core/constants';
-import { ensureFolderPath, normalizeFolderPath } from '../../core/folders';
+import { ensureFolderPath, isSystemPath, normalizeFolderPath } from '../../core/folders';
 import { insertIntoSection } from '../../core/markdown';
 import { ChoiceModal, TextInputModal } from '../../core/modals';
 import { nowStampAndUid, today } from '../../core/time';
@@ -307,6 +307,8 @@ function clientProjects(ctx: ZiminosContext): TFile[] {
     const found: TFile[] = [];
 
     for (const file of ctx.app.vault.getMarkdownFiles()) {
+        if (isSystemPath(file.path)) continue;
+
         const frontmatter = ctx.app.metadataCache.getFileCache(file)?.frontmatter;
 
         if (String(frontmatter?.[FIELDS.type] ?? '').trim() !== NOTE_TYPES.project) continue;

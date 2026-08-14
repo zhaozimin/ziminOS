@@ -12,6 +12,7 @@
  */
 
 import { Notice, Platform } from 'obsidian';
+import { GROUP_COLORS } from '../../core/commands';
 import type { ZiminosContext } from '../../core/types';
 import { registerZiminosIcons } from './icons';
 
@@ -132,6 +133,9 @@ class RibbonDock {
             });
 
             el.addClass(ITEM_CLASS);
+            // 功能色按分组上：同画法的笔画图标排成一列时，颜色隔着半个屏幕就分了组。
+            // 图标 stroke 取 currentColor，染容器即染图形
+            el.style.color = GROUP_COLORS[command.spec.group];
             this.buttons.set(id, el);
         }
     }

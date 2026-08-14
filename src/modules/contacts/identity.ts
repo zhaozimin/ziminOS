@@ -16,7 +16,7 @@ import { Notice, TFile } from 'obsidian';
 import type { ViewContext } from '../../core/codeblock';
 import { FIELDS, FOLDERS, NOTE_TYPES } from '../../core/constants';
 import { ChoiceModal } from '../../core/modals';
-import { isInFolder, normalizeFolderPath } from '../../core/folders';
+import { isInFolder, isSystemPath, normalizeFolderPath } from '../../core/folders';
 import { dayOfTitle } from '../../core/time';
 import type { ZiminosContext } from '../../core/types';
 
@@ -41,6 +41,7 @@ export function liveNotesOfType(ctx: ZiminosContext, type: string): TFile[] {
     const matched: TFile[] = [];
 
     for (const file of ctx.app.vault.getMarkdownFiles()) {
+        if (isSystemPath(file.path)) continue;
         if (!isLivePath(archive, file.path)) continue;
 
         const declared = ctx.app.metadataCache.getFileCache(file)?.frontmatter?.[FIELDS.type];

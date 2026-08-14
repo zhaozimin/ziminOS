@@ -17,8 +17,14 @@
  */
 
 import type { ViewDefinition } from '../../core/codeblock';
-import { ABOUT_VIEW } from '../../core/constants';
 import { AVATAR_DATA_URI } from './avatar';
+
+/**
+ * 「关于作者」视图的名字。
+ * 唯一的库内消费方是 vault/README.md 里那个手写的代码块——README 是静态交付物，
+ * import 不到常量，所以改这个名字必须同步改 README，两处都在本仓库里，肉眼可核。
+ */
+const ABOUT_VIEW = '关于作者';
 
 // ============================================================
 // 链接与图形（本模块唯一的数据源，改链接只改这里）

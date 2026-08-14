@@ -46,8 +46,11 @@ export interface CommandSpec {
     readonly name: string;
     /** 图标名，取值必须来自 COMMAND_ICONS */
     readonly icon: string;
-    /** 所属分组，取值必须来自 COMMAND_GROUPS */
-    readonly group: string;
+    /**
+     * 所属分组，类型收成 COMMAND_GROUPS 的值联合而非 string：
+     * GROUP_COLORS 按组查色，组名写错一个字就查不到——收窄成联合类型让这种错在编译期倒下。
+     */
+    readonly group: CommandGroup;
 }
 
 /**
@@ -69,6 +72,29 @@ export const COMMAND_GROUPS = {
     appearance: '外观',
     format: '排版',
 } as const;
+
+/** 分组名的联合类型，供按组建表的地方做穷尽检查 */
+export type CommandGroup = (typeof COMMAND_GROUPS)[keyof typeof COMMAND_GROUPS];
+
+/**
+ * 每个分组一种功能色，左侧边栏的图标与设置页边栏清单照它上色。
+ *
+ * 色不是装饰，是索引：二十三个同画法的笔画图标排成一列时，形状要凑近看才认得出，
+ * 颜色隔着半个屏幕就分了组。取色全部从功能的天然联想出发，学员不需要背——
+ * 开荒是垦土、灵感是灯泡、复盘是沉思、人脉是心、客户是钱、外观是调色盘。
+ * 全部取中间明度，深浅两种主题下都立得住；写成十六进制而非主题变量，
+ * 因为它们是身份不是皮肤——主题可以换掉界面的灰，不该换掉「灵感是黄色的」这件事。
+ */
+export const GROUP_COLORS: Readonly<Record<CommandGroup, string>> = {
+    [COMMAND_GROUPS.setup]: '#A8763E',       // 开荒＝垦土，泥土棕
+    [COMMAND_GROUPS.projects]: '#4C8DD6',    // 项目＝蓝图，工程蓝
+    [COMMAND_GROUPS.inspiration]: '#E3A93C', // 灵感＝灯泡，琥珀黄
+    [COMMAND_GROUPS.review]: '#9A6BD6',      // 复盘＝沉思，紫
+    [COMMAND_GROUPS.contacts]: '#E06C8A',    // 人脉＝心，玫红
+    [COMMAND_GROUPS.clients]: '#43A868',     // 客户＝生意与钱，绿
+    [COMMAND_GROUPS.appearance]: '#E07B39',  // 外观＝调色盘，橙
+    [COMMAND_GROUPS.format]: '#3BAFBF',      // 排版＝整洁，青
+};
 
 /**
  * 二十三个图标名。

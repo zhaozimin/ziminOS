@@ -16,6 +16,7 @@
 
 import { TFile } from 'obsidian';
 import type { App, ListItemCache } from 'obsidian';
+import { isSystemPath } from './folders';
 
 /**
  * 一条列表行的解析结果。
@@ -81,9 +82,13 @@ export class VaultIndex {
         this.revision += 1;
     }
 
-    /** 全库 Markdown 笔记 */
+    /**
+     * 全库 Markdown 笔记，功能目录（90-system）除外。
+     * 那里住的是导航、模板与属性示例——系统的零件，没有知识属性，不参与检索。
+     * 排除做在这一层，notesOfType 与所有靠它遍历的视图自动继承，不必各自记得。
+     */
     allNotes(): TFile[] {
-        return this.app.vault.getMarkdownFiles();
+        return this.app.vault.getMarkdownFiles().filter((file) => !isSystemPath(file.path));
     }
 
     /** 某篇笔记的 frontmatter；没有 YAML 时返回 undefined */
@@ -139,6 +144,9 @@ export class VaultIndex {
             const resolved = this.app.metadataCache.resolvedLinks;
 
             for (const sourcePath of Object.keys(resolved)) {
+                // 功能目录里的链接不算数：属性示例里的「[[某位客户]]」是教材，不是事实
+                if (isSystemPath(sourcePath)) continue;
+
                 const source = this.app.vault.getAbstractFileByPath(sourcePath);
 
                 if (!(source instanceof TFile)) continue;

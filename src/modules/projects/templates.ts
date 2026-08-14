@@ -1,6 +1,5 @@
 /**
- * [INPUT]: 依赖 ../../core/constants 的 CARD_FIELDS（卡片十字段的权威顺序）与
- *          ABOUT_VIEW/VIEW_BLOCK_LANG（导航页尾的「关于作者」视图块照它们拼写）。
+ * [INPUT]: 依赖 ../../core/constants 的 CARD_FIELDS（卡片十字段的权威顺序）。
  *          MOC 的文件名由调用方经 ./moc 算好递进来，本文件不认识命名约定
  * [OUTPUT]: 对外提供 MocContentOptions 类型与七个纯生成函数：mocFrontmatter、mocBaseBlock、mocContent、
  *           cardTemplateFile、mocTemplateFile、navContent、firstProjectDescription
@@ -12,7 +11,7 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { ABOUT_VIEW, CARD_FIELDS, VIEW_BLOCK_LANG } from '../../core/constants';
+import { CARD_FIELDS } from '../../core/constants';
 
 // ============================================================
 // 模板骨架的字段与视图定义
@@ -210,11 +209,11 @@ export function mocTemplateFile(): string {
 // ============================================================
 
 /**
- * 生成 90-system/导航.md 的全文：一行说明 + 一个 base 块 + 页尾的「关于作者」视图块。
+ * 生成 90-system/导航.md 的全文：一行说明 + 一个 base 块。
  * 导航页自身不写 frontmatter，因此不会被任何一个视图筛中，也不会被 updated 维护碰到——
  * 它是库的地图，不是库的一份笔记。
- * 页尾那个块只有一行视图名，画什么由 main.js 里的 about 模块决定：
- * 名片内容随插件升级而更新，不随这篇建库时写下的笔记冻结。
+ * 作者名片不在这里（v0.10.0 起）：导航是学员每天办事的工位，名片住在 README——
+ * 那是介绍这套系统的文档，作者署名在文档里才是署名，在工位上是打扰。
  */
 export function navContent(): string {
     const lines: string[] = [
@@ -243,7 +242,7 @@ export function navContent(): string {
         );
     }
 
-    lines.push('', '```', '', '---', '', '```' + VIEW_BLOCK_LANG, ABOUT_VIEW, '```', '');
+    lines.push('', '```', '');
 
     return lines.join('\n');
 }
