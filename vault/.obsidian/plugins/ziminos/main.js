@@ -394,13 +394,19 @@ function renderHeading(el, level, text) {
 function renderSummary(el, text) {
   renderRichText(el.createEl("p", { cls: "ziminos-summary" }), text);
 }
+var RICH_MARKUP = /`([^`]+)`|\*\*([^*]+)\*\*/g;
 function renderRichText(parent, text) {
-  const segments = text.split("**");
-  segments.forEach((segment, position) => {
-    if (!segment) return;
-    if (position % 2 === 1) parent.createEl("strong", { text: segment });
-    else parent.appendText(segment);
-  });
+  RICH_MARKUP.lastIndex = 0;
+  let cursor = 0;
+  let match = RICH_MARKUP.exec(text);
+  while (match) {
+    if (match.index > cursor) parent.appendText(text.slice(cursor, match.index));
+    if (match[1] !== void 0) parent.createEl("code", { text: match[1] });
+    else parent.createEl("strong", { text: match[2] });
+    cursor = match.index + match[0].length;
+    match = RICH_MARKUP.exec(text);
+  }
+  if (cursor < text.length) parent.appendText(text.slice(cursor));
 }
 
 // src/core/vaultIndex.ts
