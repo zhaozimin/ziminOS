@@ -1,7 +1,7 @@
 /*
  * ziminOS 视图样式
  *
- * 服务插件自渲染的那二十一个视图、外观开关浮层，以及设置页的八张标签页，
+ * 服务插件自渲染的那二十一个视图、外观开关浮层，以及设置页的九张标签页，
  * 全部选择器都带 ziminos- 前缀，不碰用户笔记正文。
  * 除文末那一条藏边栏图标的规则外，不覆盖主题的任何既有规则——那一条的理由写在它自己头上。
  * 颜色一律取 Obsidian 的语义变量，因此跟随主题与 Style Settings 的配色走，
@@ -15,24 +15,44 @@
     overflow-x: auto;
     width: 100%;
     margin: 0.6em 0 1.2em;
+
+    /*
+     * 表宽这件事改的是变量，不是宽度本身——理由值得写清楚，它是本文件最容易改错的一处。
+     *
+     * Minimal 把「表格多宽」整个接管了（theme.css 约 2198 行）：
+     *     .markdown-source-view.mod-cm6.is-readable-line-width … > .cm-content table,
+     *     .markdown-preview-view.is-readable-line-width .markdown-preview-sizer table {
+     *         width: var(--table-width);
+     *         min-width: var(--table-min-width);
+     *         max-width: var(--table-max-width);
+     *         margin-inline: var(--table-margin); }
+     * 编辑态那一条打头六个类，特异性 (0,6,1)；我们这条 (0,2,2)，class 数先比，压不住。
+     * 也就是说 width / min-width / max-width 三条全归它管，取的是 body 上的默认值：
+     * --table-width: auto，而 --table-min-width 干脆没定义（等于 auto）。
+     * auto 正是「按内容收缩」——于是同一页上两张表各算各的宽，宽窄不一。
+     *
+     * 出路不是把特异性堆得更高，更不是 !important：那条规则是主题的实现，
+     * 变量才是主题给出的接口。在包裹层上写这四个变量，主题自己那条规则算出来的
+     * 就是整行宽——不覆盖、不竞争，只是回答了它提出的那个问题。
+     * 认识这些变量的主题走这里，不认识的走下面那条 100%，两条路得到同一个结果。
+     */
+    --table-width: 100%;
+    --table-min-width: 100%;
+    --table-max-width: 100%;
+    --table-margin: 0;
 }
 
 /*
- * 选择器刻意写成「元素.类 > 元素.类」两级。
- * Minimal 一类的主题会给 table 设收缩宽度（max-content / fit-content），
- * 单一个 .ziminos-table 压不住它——表格于是缩成内容宽度，几列全挤在左边，
- * 一句概述被压成三行，而右边大片空白没人用。
+ * 选择器写成「元素.类 > 元素.类」两级，是为了把这张表与用户笔记里的普通表格分开，
+ * 而不是为了跟主题抢宽度——那场仗按特异性打是打不赢的，宽度已在上面用变量解决。
  */
 div.ziminos-table-wrap > table.ziminos-table {
     border-collapse: collapse;
     table-layout: auto;
     /*
-     * min-width 才是真正撑满的那一条，width 只是它的后备。
-     * Minimal 把表格宽度做成了 Style Settings 里的一个选项，落地时可能是
-     * `width: fit-content !important` —— 带 !important 的声明，再高的特异性也压不过。
-     * 但 min-width 不参与那场竞争：浏览器先算出 width 的用值，再拿 min-width 去夹，
-     * 于是无论主题把 width 设成什么，最终宽度都不会小于整行。
-     * 这比自己也写一个 !important 干净：我们没有覆盖主题的意图，只是声明一条下限。
+     * 给不认识上面那组变量的主题兜底：三条一起写，是因为「占满整行」这件事
+     * 只有 width 会被 max-width 夹、被 min-width 顶，三条同向才不会互相拆台。
+     * 列太多时 min-content 大于整行，表格照样溢出，由包裹层的 overflow-x 接住。
      */
     width: 100%;
     min-width: 100%;
@@ -224,7 +244,7 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
     display: none !important;
 }
 
-/* ── 左侧边栏：设置页里那二十一行的分组标签、图标与行距 ── */
+/* ── 左侧边栏：设置页里那二十三行的分组标签、图标与行距 ── */
 
 /*
  * 分组标签。它不是 Obsidian 的 setting heading，因为它比页头矮一级——
@@ -239,7 +259,7 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
 }
 
 /*
- * 二十一行挨着排，用 Obsidian 默认的行距会把这一区拉出两屏。
+ * 二十三行挨着排，用 Obsidian 默认的行距会把这一区拉出两屏。
  * 只收紧上下内边距，不动左右，行与页面其他设置项仍然对齐。
  */
 .setting-item.ziminos-ribbon-row {
@@ -268,7 +288,7 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
 /* ── 设置页：顶上那排标签，一页一个系统模块 ── */
 
 /*
- * 标签栏吸顶。边栏那一页有二十一行，翻到第十八行时标签栏早已滚出视野，
+ * 标签栏吸顶。边栏那一页有二十三行，翻到第十八行时标签栏早已滚出视野，
  * 想换一页就得先滚回顶部——吸顶让「换页」随时可做，这是分页值不值的关键一环。
  *
  * 背景必须是实心的，否则下面的行会从字缝里透上来；取 --background-primary，
@@ -337,7 +357,7 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
 /* ── 设置页：每页末尾那个「高级设置（一般不用改）」折叠区 ── */
 
 /*
- * 八张页共用同一个折叠区样式，位置也一律在页尾。
+ * 九张页共用同一个折叠区样式，位置也一律在页尾。
  * 它比页头轻（muted + 小一号），因为它是「一般不用改」的东西，不该与页头抢注意力。
  */
 .ziminos-advanced > summary {
