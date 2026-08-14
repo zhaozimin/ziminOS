@@ -6,6 +6,7 @@ TypeScript 7.0 + esbuild 0.28 + Obsidian API 1.13（manifest minAppVersion 1.13.
 
 <directory>
 docs/ - 设计规格与第三方组件锁定记录；代码、交付物与规格必须同步
+fonts/ - 四款阅读字体的锁定资产 (4子目录: 文楷 GB 屏幕版＝默认正文、思源宋体 CN、朱雀仿宋、新晰黑＋)；OFL×3 + IPA×1 许可随行，安装时装进用户级字体目录，笔记库内零字节
 skill/ - SKILL.md 桌面智能体交付契约；当前工作区就是用户已命名的笔记库，源码只在外部临时目录施工
 vault/ - 笔记库成品模板；同一交付物内独立放置 ziminOS、Dataview、Minimal、Style Settings、默认配色与自有 CSS
 vault/.obsidian/plugins/ziminos/ - 插件安装位；manifest.json 是版本号事实源，main.js 是刻意入库的构建产物（二十四个图形与五个品牌 logo 的 SVG 也在里面），styles.css 是二十二个视图的三线表与待办样式、外加外观开关浮层、设置页那八张标签页与作者名片（手工维护，不经 esbuild）
@@ -31,13 +32,13 @@ package.json - 依赖与两条脚本：dev 常驻 watch，build 先 tsc 严格�
 tsconfig.json - 严格模式 + noEmit；类型检查与代码产出彻底分工，产出只由 esbuild 负责
 esbuild.config.mjs - 唯一构建出口；产物直接写入 vault 插件目录，构建即就位，无需任何同步脚本
 .gitignore - 只忽略 node_modules 与 .DS_Store；main.js 不忽略，学员克隆即可用
-.gitattributes - 锁定 Dataview、Minimal、Style Settings 发布资产的原始字节，防止 Git 换行/格式化破坏 SHA-256
-docs/第三方组件.md - Dataview / Minimal / Style Settings / Pikaicons / Simple Icons 的版本、上游、许可与升级边界
-docs/设计规格书-V2.md - 人脉与复盘（v0.4.0）、左侧边栏命令（v0.5.0）、设置页分页（v0.6.0）、排版整理（v0.7.0）、新建领域及 MOC 改名（v0.8.0）、作者名片（v0.9.0，§12）与检索排除功能目录、名片进 README、分组功能色（v0.10.0）的唯一事实源；与 V1 规格并存，交集处以它为准
+.gitattributes - 锁定 Dataview、Minimal、Style Settings 与 fonts/ 字体发布资产的原始字节，防止 Git 换行/格式化破坏 SHA-256
+docs/第三方组件.md - Dataview / Minimal / Style Settings / Pikaicons / Simple Icons / 四款正文字体的版本、上游、许可与升级边界
+docs/设计规格书-V2.md - 人脉与复盘（v0.4.0）、左侧边栏命令（v0.5.0）、设置页分页（v0.6.0）、排版整理（v0.7.0）、新建领域及 MOC 改名（v0.8.0）、作者名片（v0.9.0，§12）、检索排除功能目录、名片进 README、分组功能色（v0.10.0）与正文字体交付（v0.11.0，§18）的唯一事实源；与 V1 规格并存，交集处以它为准
 </config>
 
 <delivery>
-用户先创建并命名文件夹 A，再用桌面 Agent 打开 A；此时 A 同时是 Agent 工作区与最终 Obsidian 笔记库。安装时不再询问名称或路径，不创建子目录，不在 A 内克隆源码；GitHub 仓库只能进入 A 外部的系统临时目录，最终把 vault/ 的内部内容直接铺到 A 根。全新安装交付锁定的 Dataview 与外观包（含十二个 CSS 片段与它们的默认启用清单）；升级只更新受管运行文件、合并必要开关，绝不覆盖用户配色、用户自己放进 snippets/ 的片段与其他插件配置。禁止让用户打开仓库或仓库内的 vault/，禁止安装 Node/npm 依赖，交付后必须清理临时源码。
+用户先创建并命名文件夹 A，再用桌面 Agent 打开 A；此时 A 同时是 Agent 工作区与最终 Obsidian 笔记库。安装时不再询问名称或路径，不创建子目录，不在 A 内克隆源码；GitHub 仓库只能进入 A 外部的系统临时目录，最终把 vault/ 的内部内容直接铺到 A 根。全新安装交付锁定的 Dataview、外观包（含十二个 CSS 片段与它们的默认启用清单）与 fonts/ 的四款字体——字体装进用户级字体目录（免管理员，不碰系统级），appearance.json 的 textFontFamily 预设文楷 GB 屏幕版，正文换字走 Obsidian 官方设置正门、插件零参与；升级只更新受管运行文件、合并必要开关，绝不覆盖用户配色、用户自己放进 snippets/ 的片段、其他插件配置、用户自选的正文字体与用户字体目录里已存在的同名文件。禁止让用户打开仓库或仓库内的 vault/，禁止安装 Node/npm 依赖，交付后必须清理临时源码。
 </delivery>
 
 <deviations>
