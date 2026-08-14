@@ -265,60 +265,120 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
     height: var(--icon-s, 16px);
 }
 
-/* ── 关于作者：首页导航尾部与设置页底部共用的同一张名片 ── */
+/* ── 关于作者：首页导航尾部与设置页开荒页尾共用的同一张名片（v0.9.3 磁贴版式） ── */
 
+/* 上「海外」下「中国大陆」两个分区，区距比区内间距大一档，分组才读得出来 */
 .ziminos-about {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
     margin: 0.6em 0 1.2em;
 }
 
-/* 两行站点：官网与插件教程，各带 .cn / .com 双部署链接 */
-.ziminos-about-site {
-    margin: 0.15em 0;
-    color: var(--text-normal);
+.ziminos-about-region {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
-/* 双域名的解释。不解释的话，同一个站给两个链接就是两个谜 */
-.ziminos-about-hint {
-    margin: 0.2em 0 0.6em;
+/* 区名比页内小节标题矮一级：它是名片里的分组，不是页面的一节 */
+.ziminos-about-region-title {
+    color: var(--text-faint);
+    font-size: var(--font-ui-smaller);
+    font-weight: var(--font-semibold);
+    letter-spacing: 0.04em;
+}
+
+/* 站点磁贴两枚并排，窄容器自动落成单列 */
+.ziminos-about-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+/* 一枚磁贴一个域名，整贴可点。hairline 描边、无底色、无阴影 */
+.ziminos-about-tile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 12px;
+    text-decoration: none;
+}
+
+.ziminos-about-tile:hover {
+    border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
+    background: var(--background-modifier-hover);
+    text-decoration: none;
+}
+
+.ziminos-about-logo-round {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    flex-shrink: 0;
+}
+
+.ziminos-about-logo-square {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    display: block;
+    flex-shrink: 0;
+}
+
+.ziminos-about-tile-name {
+    color: var(--text-normal);
+    font-weight: var(--font-semibold);
+    line-height: 1.4;
+}
+
+.ziminos-about-tile-domain {
     color: var(--text-muted);
     font-size: var(--font-smaller, 0.875em);
+    line-height: 1.4;
 }
 
-/* 频道排一行，窄屏自动换行 */
-.ziminos-about-channels {
+/* 频道胶囊一排，窄容器自动换行 */
+.ziminos-about-pills {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
 }
 
 /*
- * 频道按钮：胶囊形，背景取次级底色。
- * 文字颜色取正文色而非链接色——这一排的身份已经由品牌 logo 说明了，
- * 五个下划线蓝字挤在一起反而谁都认不出。
+ * 频道胶囊：hairline 描边、无底色。文字取弱化色而非链接色——
+ * 身份已经由品牌原色的 logo 说明了，一排下划线蓝字反而谁都认不出。
  */
-.ziminos-about-channel {
+.ziminos-about-pill {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 3px 10px;
+    padding: 5px 14px;
+    border: 1px solid var(--background-modifier-border);
     border-radius: 999px;
-    background: var(--background-secondary);
-    color: var(--text-normal);
+    color: var(--text-muted);
     text-decoration: none;
     font-size: var(--font-smaller, 0.875em);
 }
 
-.ziminos-about-channel:hover {
-    background: var(--background-modifier-hover);
+.ziminos-about-pill:hover {
+    color: var(--text-normal);
+    border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
     text-decoration: none;
 }
 
-/* 品牌 logo：黑白标（GitHub、X）随 currentColor 走，彩标的颜色由数据写在元素上 */
-.ziminos-about-logo {
-    width: 16px;
-    height: 16px;
+/* 品牌图标：YouTube/B站/小红书的官方色由数据写在元素上；GitHub 与 X 官方即黑白，随 currentColor */
+.ziminos-about-pill-icon {
+    width: 15px;
+    height: 15px;
     display: block;
     flex-shrink: 0;
+}
+
 /* ── 设置页：顶上那排标签，一页一个系统模块 ── */
 
 /*
@@ -449,18 +509,18 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
     cursor: pointer;
 }
 
-/* ── 开荒页尾：作者名片当落款，比笔记里那份大一号 ── */
+/* ── 开荒页尾：作者名片当落款 ── */
 
 /* 落款与上方内容划一条细线：它不是设置，是这套交付物的署名 */
 .ziminos-settings-footer {
     margin-top: 28px;
-    padding-top: 14px;
+    padding-top: 16px;
     border-top: 1px solid var(--background-modifier-border);
 }
 
 /* 落款的小标题，比页头矮一级——它是页里的一节，不是一页 */
 .ziminos-settings-footer-title {
-    margin-bottom: 4px;
+    margin-bottom: 12px;
     color: var(--text-muted);
     font-size: var(--font-ui-smaller);
     font-weight: var(--font-semibold);
@@ -468,23 +528,5 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
 }
 
 .ziminos-settings-body .ziminos-about {
-    margin-top: 6px;
-}
-
-.ziminos-settings-body .ziminos-about-site {
-    margin: 0.3em 0;
-}
-
-.ziminos-settings-body .ziminos-about-channels {
-    gap: 10px;
-    margin-top: 4px;
-}
-
-.ziminos-settings-body .ziminos-about-channel {
-    padding: 6px 14px;
-}
-
-.ziminos-settings-body .ziminos-about-logo {
-    width: 18px;
-    height: 18px;
+    margin: 0;
 }
