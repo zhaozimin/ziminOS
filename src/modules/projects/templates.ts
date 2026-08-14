@@ -7,7 +7,9 @@
  *        全部函数无副作用、只吐字符串，既不碰 App 也不碰文件系统——因此建项目与开荒共用同一套骨架，
  *        库里所有 MOC 的 YAML 与 base 视图才可能长期同构；日后改版式只需动这一个文件。
  *        MOC 的 frontmatter 与 base 块自 create-project-moc.js 逐字移植，仅把项目名与路径参数化，
- *        任何"顺手优化"都会让存量笔记与新笔记分叉，禁止
+ *        任何"顺手优化"都会让存量笔记与新笔记分叉，禁止。
+ *        v0.12.0 为书籍容器添的三处可选参数（author 行、小节骨架、base 视图名）全部缺省即旧产出，
+ *        项目与领域的正文逐字节不变，授权见规格书-V2 §19
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -68,6 +70,16 @@ export interface MocFrontmatterOptions {
      * 而导航页那张「正在进行中」正是按 status 筛的，写了它就会混进去。
      */
     readonly status?: string;
+    /**
+     * 作者。只有书籍容器带它，且有值才写——空的 author 键是登记表不是索引。
+     *
+     * 落盘写成**单元素列表**而不是标量，因为 `author` 在库级属性注册表
+     * （`.obsidian/types.json`）里登记的是 multitext，属性示例笔记也写着「可以有好几位」。
+     * 属性类型是全库共享的一张表，某一篇笔记写成标量就与其余笔记不同构了；
+     * 而这种不同构既不报错也不会被任何视图挡下，只会让属性面板与查询各说各话。
+     * 同理见 cardInit 写 up 的方式——它也是 multitext，也写成单元素列表。
+     */
+    readonly author?: string;
     /** 与某个人的关系；自己独做的项目不带这一项，空键是登记表不是索引 */
     readonly relation?: ProjectRelation;
 }
@@ -81,6 +93,13 @@ export interface MocContentOptions extends MocFrontmatterOptions {
     readonly mocBasename: string;
     /** 项目或领域的文件夹路径，base 视图据此收集同目录文件 */
     readonly projectFolderPath: string;
+    /**
+     * 正文小节骨架，排在写字位之后、base 块之前，每个是一行二级标题。
+     * 只有书籍容器带它（书籍信息与全部划线两个落点）；项目与领域不带，产出与 V2 逐字相同。
+     */
+    readonly sections?: readonly string[];
+    /** base 视图的显示名；缺省即项目的「项目文件」，书籍容器传「读书卡片」 */
+    readonly baseViewName?: string;
 }
 
 /**
@@ -110,7 +129,7 @@ function toYamlString(value: string): string {
  * aliases/updated/tags 刻意留空：前者由用户自取，updated 交给自动维护，tags 属于个人分类习惯。
  */
 export function mocFrontmatter(options: MocFrontmatterOptions): string {
-    const { description, created, uid, type, status, relation } = options;
+    const { description, created, uid, type, status, author, relation } = options;
 
     return [
         '---',
@@ -123,6 +142,9 @@ export function mocFrontmatter(options: MocFrontmatterOptions): string {
         `type: ${type}`,
         // 领域没有状态，那一行整行不写；空的 status 键会让它出现在「正在进行中」那张表里
         ...(status ? [`status: ${status}`] : []),
+        // 只有书籍容器带作者，且学员跳过作者一问时整行不写——空键是登记表不是索引。
+        // 写成单元素列表是因为 author 在 types.json 里是 multitext，理由见 MocFrontmatterOptions
+        ...(author ? ['author:', `  - ${toYamlString(author)}`] : []),
         // 只在有值时才写这一行：空的 client 键会让这个项目被当成一笔没有客户的委托
         ...(relation ? [`${relation.field}: "[[${relation.target}]]"`] : []),
         '---',
@@ -135,7 +157,11 @@ export function mocFrontmatter(options: MocFrontmatterOptions): string {
  * 也收项目文件夹里的所有文件（附件、草稿、来不及登记的笔记），
  * 因此"整理"这件事对学员是可选的，而不是前提。
  */
-export function mocBaseBlock(mocBasename: string, projectFolderPath: string): string {
+export function mocBaseBlock(
+    mocBasename: string,
+    projectFolderPath: string,
+    viewName = '项目文件',
+): string {
     return [
         '```base',
         'filters:',
@@ -148,7 +174,7 @@ export function mocBaseBlock(mocBasename: string, projectFolderPath: string): st
         '    displayName: 评分',
         'views:',
         '  - type: table',
-        '    name: 项目文件',
+        `    name: ${viewName}`,
         '    filters:',
         '      or:',
         // 这一行必须是 MOC 自己的文件名，不是文件夹名：卡片的 up 指向的是这篇笔记。
@@ -174,12 +200,19 @@ export function mocBaseBlock(mocBasename: string, projectFolderPath: string): st
  * 拼出一篇完整 MOC 的正文。
  * 四个换行符使 YAML 与正文之间保留三个完整空行——这三行是留给用户写字的地方，
  * 建项目后光标正落在其中，脚本一的这条约定被完整保留。
+ * 书籍容器多一段小节骨架，排在写字位之后、base 块之前：
+ * 划线是原始数据、卡片表是汇总，数据在上汇总在下，与 insertIntoSection 守同一条阅读顺序。
  */
 export function mocContent(options: MocContentOptions): string {
     const frontmatter = mocFrontmatter(options);
-    const baseBlock = mocBaseBlock(options.mocBasename, options.projectFolderPath);
+    const baseBlock = mocBaseBlock(
+        options.mocBasename,
+        options.projectFolderPath,
+        options.baseViewName,
+    );
+    const sectionBlock = (options.sections ?? []).map((heading) => `${heading}\n\n`).join('');
 
-    return `${frontmatter}\n\n\n\n${baseBlock}\n`;
+    return `${frontmatter}\n\n\n\n${sectionBlock}${baseBlock}\n`;
 }
 
 // ============================================================

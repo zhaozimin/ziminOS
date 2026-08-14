@@ -11,7 +11,8 @@
  *        archived 是复盘「本月完成了哪些项目」唯一可信的时间事实：文件系统时间会被同步、
  *        rsync 与批量脚本改写，frontmatter 的 updated 又恰恰被自写抑制挡在门外（归档是插件的
  *        动作而非人的编辑），因此归档时刻若不在这里落笔，就再也无处可查。
- *        全部守卫（必须站在约定路径的同名 MOC 上、type 必须是 project、当前 status 必须在
+ *        全部守卫（必须站在约定路径的同名 MOC 上、type 必须在 MOVABLE_TYPES 内（project 或 book，
+ *        v0.12.0 起书与项目共用这台状态机）、当前 status 必须在
  *        allowedStatuses 内、目标位置不得已有同名项目）都前置在搬移之前；搬移之后任一步失败
  *        都整体回滚，绝不留下「文件夹已搬走但状态没改」的半截状态。这是全插件唯一会移动
  *        用户整个目录的写路径，因此它对确认框与回滚的谨慎程度必须高于其他模块，
@@ -24,7 +25,7 @@ import { ButtonComponent, Modal, Notice, TFile, TFolder, Vault, normalizePath } 
 import type { App } from 'obsidian';
 
 import { TRANSITION_COMMANDS } from '../../core/commands';
-import { FIELDS, STATUS_LABELS, TRANSITIONS } from '../../core/constants';
+import { CONTAINER_TYPES, FIELDS, STATUS_LABELS, TRANSITIONS } from '../../core/constants';
 import type { FolderRole, ProjectTransition, TransitionAction } from '../../core/constants';
 import { ensureFolderPath, normalizeFolderPath } from '../../core/folders';
 import type { Frontmatter } from '../../core/frontmatter';
@@ -37,8 +38,13 @@ import { resolveMocPath } from './moc';
 // 模块常量
 // ============================================================
 
-/** 项目 MOC 必须携带的 type 值；不是它的笔记一律拒绝流转 */
-const PROJECT_TYPE = 'project';
+/**
+ * 允许流转的容器类型，取自 core/constants 的 CONTAINER_TYPES。
+ * v0.12.0 起书与项目共用这台状态机——一本书就是一个项目，读完即归档（规格书-V2 §19 授权）；
+ * 两者的目录结构与 MOC 命名完全同构，搬移、回滚与 base 路径修正因此一行都不用改。
+ * 其余守卫（同名 MOC、allowedStatuses、防覆盖）对两类一视同仁。
+ */
+const MOVABLE_TYPES = CONTAINER_TYPES;
 
 /** 确认框容器的样式钩子类名，自原脚本原样保留（V1 无 styles.css，仅作标识） */
 const CONFIRM_MODAL_CLASS = 'qa-project-transition-confirm';
@@ -202,8 +208,8 @@ function resolveTransitionPlan(
     const type = normalizeText(frontmatter?.type);
     const currentStatus = normalizeText(frontmatter?.status);
 
-    if (type !== PROJECT_TYPE) {
-        new Notice('当前笔记不是项目 MOC：缺少 type: project（项目）。');
+    if (!MOVABLE_TYPES.includes(type)) {
+        new Notice('当前笔记不是项目或读书笔记 MOC：缺少 type: project（项目）或 type: book（书）。');
         return null;
     }
 
@@ -272,8 +278,8 @@ async function applyTransition(ctx: ZiminosContext, plan: TransitionPlan): Promi
         // 通过 Obsidian Frontmatter API 修改唯一 YAML，不直接拼接文本。
         guard.mark(movedMoc.path);
         await app.fileManager.processFrontMatter(movedMoc, (movedFrontmatter: Frontmatter) => {
-            if (normalizeText(movedFrontmatter.type) !== PROJECT_TYPE) {
-                throw new Error('移动后的 MOC 缺少 type: project（项目）。');
+            if (!MOVABLE_TYPES.includes(normalizeText(movedFrontmatter.type))) {
+                throw new Error('移动后的 MOC 缺少 type: project（项目）或 type: book（书）。');
             }
 
             movedFrontmatter.status = plan.transition.status;
