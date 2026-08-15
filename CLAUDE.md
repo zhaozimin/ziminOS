@@ -13,7 +13,7 @@ docs/ - 设计规格与第三方组件锁定记录；代码、交付物与规格
 fonts/ - 四款阅读字体的锁定资产 (4子目录: 文楷 GB 屏幕版＝默认正文、思源宋体 CN、朱雀仿宋、新晰黑＋)；OFL×3 + IPA×1 许可随行，安装时装进用户级字体目录，笔记库内零字节
 skill/ - SKILL.md 桌面智能体交付契约；当前工作区就是用户已命名的笔记库，源码只在外部临时目录施工
 vault/ - 笔记库成品模板；同一交付物内独立放置 ziminOS、Dataview、Minimal、Style Settings、默认配色与自有 CSS
-vault/.obsidian/plugins/ziminos/ - 插件安装位；manifest.json 是版本号事实源，main.js 是刻意入库的构建产物（二十七个图形与五个品牌 logo 的 SVG 也在里面），styles.css 是二十二个视图的三线表与待办样式、外加外观开关浮层、设置页那七张标签页、作者名片与页尾致谢（手工维护，不经 esbuild）
+vault/.obsidian/plugins/ziminos/ - 插件安装位；manifest.json 是版本号事实源，main.js 是刻意入库的构建产物（二十九枚命令图标、一枚设置页边栏图标与五个品牌 logo 的 SVG 也在里面），styles.css 是二十二个视图的三线表与待办样式、外加外观开关浮层、设置页那七张标签页、作者名片与页尾致谢（手工维护，不经 esbuild）
 vault/.obsidian/snippets/ - 十二个 CSS 片段，外观包的可拆装部分；十个默认启用，全部由右下角外观开关逐个开关。appearance.json 的 enabledCssSnippets 是它们开着还是关着的唯一事实源
 src/ - 插件源码 (2子目录: core 无业务的基础设施、命令注册台与视图引擎、modules 含 setup 开荒、projects 项目领域与容器流程、books 读书笔记与划线导入、inspiration 灵感收集、review 五级复盘、contacts 人脉与客户、appearance 外观开关、format 排版整理、ribbon 左侧边栏命令、about 作者名片)
 </directory>
@@ -32,6 +32,7 @@ V2 起全部视图（现二十二个）由插件自渲染：笔记里只留一�
 
 <config>
 AGENTS.md - 智能体任务路由；安装请求强制进入 skill/SKILL.md，开发请求进入项目规格
+README.md - GitHub 公开首页与安装入口；「一分钟安装」以单个可复制 `text` 代码块把桌面智能体导向默认分支的 skill/SKILL.md，不在首页复制第二份安装逻辑
 package.json - 依赖与两条脚本：dev 常驻 watch，build 先 tsc 严格检查再 esbuild 打包
 tsconfig.json - 严格模式 + noEmit；类型检查与代码产出彻底分工，产出只由 esbuild 负责
 esbuild.config.mjs - 唯一构建出口；产物直接写入 vault 插件目录，构建即就位，无需任何同步脚本
@@ -42,7 +43,7 @@ docs/设计规格书-V2.md - 人脉与复盘（v0.4.0）、左侧边栏命令（
 </config>
 
 <delivery>
-用户先创建并命名文件夹 A，再用桌面 Agent 打开 A；此时 A 同时是 Agent 工作区与最终 Obsidian 笔记库。安装时不再询问名称或路径，不创建子目录，不在 A 内克隆源码；GitHub 仓库只能进入 A 外部的系统临时目录，最终把 vault/ 的内部内容直接铺到 A 根。全新安装交付锁定的 Dataview、外观包（含十二个 CSS 片段与它们的默认启用清单）与 fonts/ 的四款字体——字体装进用户级字体目录（免管理员，不碰系统级），appearance.json 的 textFontFamily 预设文楷 GB 屏幕版，正文换字走 Obsidian 官方设置正门、插件零参与；升级只更新受管运行文件、合并必要开关，绝不覆盖用户配色、用户自己放进 snippets/ 的片段、其他插件配置、用户自选的正文字体与用户字体目录里已存在的同名文件。禁止让用户打开仓库或仓库内的 vault/，禁止安装 Node/npm 依赖，交付后必须清理临时源码。
+用户先创建并命名文件夹 A，再用桌面 Agent 打开 A；GitHub README 顶部那段「一分钟安装」是对人的入口，默认分支的 skill/SKILL.md 是 Agent 的唯一施工契约。此时 A 同时是 Agent 工作区与最终 Obsidian 笔记库。安装时不再询问名称或路径，不创建子目录，不在 A 内克隆源码；GitHub 仓库只能进入 A 外部的系统临时目录，最终把 vault/ 的内部内容直接铺到 A 根。全新安装交付锁定的 Dataview、外观包（含十二个 CSS 片段与它们的默认启用清单）与 fonts/ 的四款字体——字体装进用户级字体目录（免管理员，不碰系统级），appearance.json 的 textFontFamily 预设文楷 GB 屏幕版，正文换字走 Obsidian 官方设置正门、插件零参与；升级只更新受管运行文件、合并必要开关，绝不覆盖用户配色、用户自己放进 snippets/ 的片段、其他插件配置、用户自选的正文字体与用户字体目录里已存在的同名文件。禁止让用户打开仓库或仓库内的 vault/，禁止安装 Node/npm 依赖，交付后必须清理临时源码。
 </delivery>
 
 <deviations>

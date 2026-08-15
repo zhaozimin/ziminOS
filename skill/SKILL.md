@@ -106,7 +106,7 @@ git clone --depth 1 "https://github.com/zhaozimin/ziminOS.git" "$install_staging
 
 最后四份是笔记库的开箱设置，别当成可有可无的杂项：`app.json` 定下附件落在 `./附件`、粘链接用 wiki 语法并自动跟着改名；`templates.json` 把模板目录指向 `90-system/Template`，缺了它学员打开核心「模板」插件后得自己去翻路径；`community-plugins.json` 决定三个系统插件是否启用；`appearance.json` 决定主题与十个默认启用的片段。
 
-任一缺失就停止并说明仓库不完整。ziminOS（含左侧边栏命令坞与二十一枚图标，图标 SVG 已编进 `main.js`）、Dataview、Minimal 与 Style Settings 的运行产物已全部在 `vault/` 中，四款正文字体已全部锁定在 `fonts/` 中；不要运行 `npm install` / `npm run build`，不要安装 Node.js，也不要去 Obsidian 商店或网络另行下载主题/插件、图标包或字体。禁止额外安装 QuickAdd、Linter 等非系统组件。
+任一缺失就停止并说明仓库不完整。ziminOS（含左侧边栏命令坞、二十九枚命令图标与一枚设置页边栏图标，图标 SVG 已编进 `main.js`）、Dataview、Minimal 与 Style Settings 的运行产物已全部在 `vault/` 中，四款正文字体已全部锁定在 `fonts/` 中；不要运行 `npm install` / `npm run build`，不要安装 Node.js，也不要去 Obsidian 商店或网络另行下载主题/插件、图标包或字体。禁止额外安装 QuickAdd、Linter 等非系统组件。
 
 ## 三、原地搭建当前工作区
 
@@ -238,7 +238,7 @@ README.md
 
 确认：
 
-- `$vault_root/.obsidian/plugins/ziminos/main.js` 存在，且 `grep -c 'ziminos-vault' main.js` 大于 0 —— 侧边栏那二十一枚图标的 SVG 是编进产物里的，grep 不到就说明拿到的是旧版 `main.js`，装上去左边那列会是空的。
+- `$vault_root/.obsidian/plugins/ziminos/main.js` 存在，且 `grep -c 'ziminos-vault' main.js` 大于 0 —— 二十九枚命令图标与一枚设置页边栏图标都编进产物，grep 不到就说明拿到的是旧版 `main.js`，装上去左边那列会是空的。
 - `$vault_root/.obsidian/plugins/ziminos/manifest.json` 存在，`version` 与施工源一致；`styles.css` 存在。
 - `$vault_root/.obsidian/plugins/dataview/main.js` 存在，版本为 0.5.68。
 - `$vault_root/.obsidian/plugins/obsidian-style-settings/main.js` 存在，`data.json` 是合法 JSON 对象。
@@ -277,9 +277,9 @@ esac
 >
 > 现在直接用 Obsidian 打开这个文件夹，然后：
 > 1. Obsidian 询问信任时，点「信任作者并启用插件」。Dataview、Minimal 主题、Style Settings 和默认配色已就位。
-> 2. 打开设置，在左边找到 ziminOS，顶上第一张标签「开荒」里点「初始化」。设置按系统模块分成八张标签页，「记录灵感」那一套在「灵感」页。
+> 2. 打开设置，在左边找到 ziminOS，顶上第一张标签「开荒」里点「初始化」。设置按系统模块分成七张标签页，「记录灵感」那一套在「灵感」页。
 > 3. 看到「开荒完成 ✅」后，跟着笔记库里的 README 使用。
-> 4. 看**最左边一条竖栏**，七个常用命令已经摆好了：新建项目、记录灵感、今天的日记、写复盘主题、新建人脉、记人情、外观开关。点一下就走，不用背快捷键。还有十四条命令在设置 → ziminOS → 左侧边栏里勾一下就能摆出来，摆出来之后顺序可以直接拖。
+> 4. 看**最左边一条竖栏**，七个常用命令已经摆好了：新建项目、记录灵感、今天的日记、写复盘主题、新建人脉、记人情、外观开关。点一下就走，不用背快捷键。还有二十二条命令在设置 → ziminOS → 左侧边栏里勾一下就能摆出来，摆出来之后顺序可以直接拖。
 > 5. 看**右下角**，有个 🎨 按钮，点开就能逐个开关十二个外观片段——文件夹图标、彩虹引导线、代码块行号这些，看着不顺眼随手关掉，立刻生效不用重启。
 > 6. 笔记正文已经是**霞鹜文楷**（屏幕阅读版，四款阅读字体已一并装进你的系统）。想换口味：设置 → 外观 → 正文字体，下拉里还备着思源宋体 CN（书卷衬线）、朱雀仿宋（民国铅字）、霞鹜新晰黑＋（清爽黑体）。
 
@@ -295,7 +295,7 @@ esac
 - 不在当前工作区克隆 GitHub 仓库。
 - 不让用户打开仓库或仓库内的 `vault/`。
 - 不删除或覆盖用户笔记。
-- 只交付仓库已锁定的 ziminOS、Dataview、Minimal、Style Settings、ziminOS CSS 与 `fonts/` 里的四款字体；不临时下载或安装任何额外软件、插件、主题、图标包或字体。侧边栏那二十一枚图标的 SVG 已经编进 `main.js`，不需要也不允许另外下载。
+- 只交付仓库已锁定的 ziminOS、Dataview、Minimal、Style Settings、ziminOS CSS 与 `fonts/` 里的四款字体；不临时下载或安装任何额外软件、插件、主题、图标包或字体。二十九枚命令图标与一枚设置页边栏图标的 SVG 已经编进 `main.js`，不需要也不允许另外下载。
 - 字体只装进当前用户的字体目录，绝不碰系统级目录、绝不提权要密码；目标位置已有同名文件绝不覆盖。升级时用户已自选的 `textFontFamily` 绝不改动。
 - 全新安装可播种默认配色与默认启用的片段；升级绝不覆盖 **ziminOS 自己的 `data.json`**（侧边栏摆放与全部设置都在里面）、用户 Dataview / Style Settings `data.json`、非空自选主题、额外插件、自带片段，也绝不替用户重新打开他关掉的片段。
 - 判断不了当前目录是否安全时停止，不要猜。
