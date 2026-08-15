@@ -2,12 +2,14 @@
  * [INPUT]: 依赖 obsidian 的 Notice 与 TFile；依赖 core/commands 的 THEME_COMMAND，core/constants 的 FIELDS/PERIODS，
  *          core/modals 的 TextInputModal，core/frontmatter 的 Frontmatter 类型，
  *          core/types 的 ZiminosContext；依赖 ./periodic 的 periodOfFile 与 openPeriodNote
- * [OUTPUT]: 对外提供 registerThemeCommand（注册「写复盘主题」命令）
+ * [OUTPUT]: 对外提供 registerThemeCommand（注册「写复盘主题」命令）与
+ *           promptThemeIfMissing（只在日记尚无主题时询问一次）
  * [POS]: 主题链的唯一录入口。整条链——日→周→月→季→年——只需要人写这一句，
  *        其余四级全是它的投影，所以这条命令的可用性直接决定复盘系统成不成立。
  *        三个设计取舍都指向同一件事：让写下这句话的成本尽可能低。
- *        其一，建笔记时不问，傍晚回填——主题是对一天的结论，早上答不出；
- *        其二，一条命令覆盖五级：站在周记上写周主题，站在别处写今天的日主题，
+ *        其一，学员主动打开今天的日记时，缺主题才问、已有主题不打扰；
+ *        其二，「写复盘主题」是明确的修改入口，一条命令覆盖五级：
+ *        站在周记上写周主题，站在别处写今天的日主题，
  *        行为可预测，不必为每一级各记一条命令；
  *        其三，弹窗带出现有值可直接改写，但留空不清空——
  *        误触 Esc 或空回车不该把已经写好的结论抹掉
@@ -37,6 +39,22 @@ export function registerThemeCommand(ctx: ZiminosContext): void {
     });
 }
 
+/** 打开今天的日记时补齐缺失主题；已有内容时保持安静 */
+export async function promptThemeIfMissing(
+    ctx: ZiminosContext,
+    file: TFile,
+): Promise<void> {
+    try {
+        const current = themeOf(ctx, file);
+
+        if (current) return;
+
+        await promptAndWriteTheme(ctx, file, PERIODS.daily, current);
+    } catch (error) {
+        reportFailure(error);
+    }
+}
+
 /**
  * 找到该写主题的那篇笔记，问一句，写进去。
  *
@@ -51,37 +69,55 @@ async function writeTheme(ctx: ZiminosContext): Promise<void> {
         if (!target) return;
 
         const { file, period } = target;
-        const current = String(
-            ctx.app.metadataCache.getFileCache(file)?.frontmatter?.[FIELDS.theme] ?? '',
-        ).trim();
-
-        const answer = await new TextInputModal(ctx.app, {
-            title: promptOf(period),
-            placeholder: '一句话，写结论不写过程',
-            initial: current,
-        }).openAndGetValue();
-
-        if (answer === null) return;
-
-        const theme = answer.trim();
-
-        if (!theme) {
-            new Notice(MESSAGES.unchanged);
-
-            return;
-        }
-
-        ctx.guard.mark(file.path);
-        await ctx.app.fileManager.processFrontMatter(file, (frontmatter: Frontmatter) => {
-            frontmatter[FIELDS.theme] = theme;
-        });
-
-        new Notice(`${MESSAGES.donePrefix}${period.label}主题：${theme}`);
+        await promptAndWriteTheme(ctx, file, period, themeOf(ctx, file));
     } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-
-        new Notice(MESSAGES.failedPrefix + message);
+        reportFailure(error);
     }
+}
+
+/** 统一的询问与写入流程：自动补齐与主动修改只差在调用前是否过滤已有主题 */
+async function promptAndWriteTheme(
+    ctx: ZiminosContext,
+    file: TFile,
+    period: PeriodDefinition,
+    current: string,
+): Promise<void> {
+    const answer = await new TextInputModal(ctx.app, {
+        title: promptOf(period),
+        placeholder: '一句话，写结论不写过程',
+        initial: current,
+    }).openAndGetValue();
+
+    if (answer === null) return;
+
+    const theme = answer.trim();
+
+    if (!theme) {
+        new Notice(MESSAGES.unchanged);
+
+        return;
+    }
+
+    ctx.guard.mark(file.path);
+    await ctx.app.fileManager.processFrontMatter(file, (frontmatter: Frontmatter) => {
+        frontmatter[FIELDS.theme] = theme;
+    });
+
+    new Notice(`${MESSAGES.donePrefix}${period.label}主题：${theme}`);
+}
+
+/** 缓存里的 theme 是这条链的唯一判据：去空白后有值就算已完成 */
+function themeOf(ctx: ZiminosContext, file: TFile): string {
+    return String(
+        ctx.app.metadataCache.getFileCache(file)?.frontmatter?.[FIELDS.theme] ?? '',
+    ).trim();
+}
+
+/** 两个入口共用同一种中文错误反馈 */
+function reportFailure(error: unknown): void {
+    const message = error instanceof Error ? error.message : String(error);
+
+    new Notice(MESSAGES.failedPrefix + message);
 }
 
 /** 当前笔记是复盘笔记就用它，否则打开（必要时创建）今天的日记 */

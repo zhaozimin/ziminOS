@@ -4,7 +4,7 @@
  * [OUTPUT]: 对外提供单元格类型 Cell/NoteLink/RichText 与 noteLink/richText 构造器，
  *           渲染原语 renderTable / renderTaskList / renderEmpty / renderNote / renderHeading /
  *           renderSummary / renderRichText，以及任务行类型 TaskLine
- * [POS]: 视图引擎的呈现层，二十一个视图的唯一出口。它不认识任何业务概念，只认识
+ * [POS]: 视图引擎的呈现层，二十二个视图的唯一出口。它不认识任何业务概念，只认识
  *        「表头 + 行 + 单元格」与「一组任务」。三条纪律都来自真机对比：
  *        其一，文本里的 `[[双链]]` 必须渲染成可点的链接。视图检索出来的是日记原文，
  *        原文里的人名、项目名都是双链——渲染成死文本，等于把一张关系网拍平成一段字符串；
@@ -285,18 +285,37 @@ export function renderSummary(el: HTMLElement, text: string): void {
     renderRichText(el.createEl('p', { cls: 'ziminos-summary' }), text);
 }
 
+/** 我们自己写的文案里认得的两种标记：`**加粗**` 与 `` `行内代码` ``。先到先得，故代码里的 ** 不再是加粗 */
+const RICH_MARKUP = /`([^`]+)`|\*\*([^*]+)\*\*/g;
+
 /**
- * 只认识 `**加粗**` 的极小文本渲染，用于我们自己写的文案。
+ * 只认识 `**加粗**` 与 `` `行内代码` `` 的极小文本渲染，用于我们自己写的文案。
  * 用户数据一律走 renderTextWithLinks，两者的区别是：这里的文本是我们写的，那里的不是。
+ *
+ * 行内代码这一条是必须的，不是锦上添花：空态提示的正文就是「照着这行抄」——
+ * `- [[张三]]｜去｜事项｜两清` 是一行要被原样敲进日记的账本行，
+ * 把包着它的反引号原样打印出来，学员会连反引号一起抄进去，那一行就再也不会被解析成账。
+ * 提示语教的是语法，而教语法的句子自己必须先把语法显示对。
+ *
+ * 扫描一遍、先到先得，两种标记因此不会互相嵌套：反引号里的 ** 是代码的一部分，
+ * 不是加粗。落单的反引号或星号匹配不上，原样留着——文案里出现一个孤立的星号是常事，
+ * 让它吃掉后面半句比不认识它更糟。
  */
 export function renderRichText(parent: HTMLElement, text: string): void {
-    const segments = text.split('**');
+    RICH_MARKUP.lastIndex = 0;
 
-    segments.forEach((segment, position) => {
-        if (!segment) return;
+    let cursor = 0;
+    let match = RICH_MARKUP.exec(text);
 
-        // 奇数段落在两个 ** 之间，即加粗内容
-        if (position % 2 === 1) parent.createEl('strong', { text: segment });
-        else parent.appendText(segment);
-    });
+    while (match) {
+        if (match.index > cursor) parent.appendText(text.slice(cursor, match.index));
+
+        if (match[1] !== undefined) parent.createEl('code', { text: match[1] });
+        else parent.createEl('strong', { text: match[2] });
+
+        cursor = match.index + match[0].length;
+        match = RICH_MARKUP.exec(text);
+    }
+
+    if (cursor < text.length) parent.appendText(text.slice(cursor));
 }

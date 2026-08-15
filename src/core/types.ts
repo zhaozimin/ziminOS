@@ -15,6 +15,7 @@ import { DEFAULT_RIBBON_COMMANDS } from './commands';
 import type { CommandRegistry } from './commands';
 import { DEFAULT_FORMAT_RULES } from './markdownStyle';
 import {
+    BOOK_TAG_DEFAULTS,
     CLIENT_FOLDER,
     CONTACT_FOLDER,
     DEFAULT_DATETIME_FORMAT,
@@ -90,6 +91,29 @@ export interface ZiminosSettings {
      * 老库升级时那条新规则默认不开，这与「不替用户改他没选过的东西」是同一条纪律。
      */
     formatRules: readonly string[];
+    /**
+     * 书籍标签的前缀，默认「书籍」，于是豆瓣的「方法论」落成 `#书籍/方法论`。
+     *
+     * 有前缀而不是直接用分类词，是为了让书的标签**成片**：标签面板里 `书籍/` 一展开就是
+     * 整个书架的分类地图，而散着的「方法论」会与灵感、卡片、日记里同名的标签混成一堆，
+     * 从此分不出哪一条来自哪本书。允许改，是因为有人的库里这一层本该叫「阅读/书籍」。
+     */
+    bookTagPrefix: string;
+    /**
+     * 一本书最多写几个标签；0 即不写标签。
+     *
+     * 豆瓣的分类按投票数从高到低排，前几条是这本书的公认位置，往后很快滑向个人化的碎语。
+     * 因此这个数不是「够不够用」，是「从哪儿开始变成噪音」——默认 5。
+     */
+    bookTagCount: number;
+    /**
+     * 微信读书的登录态 Cookie，由「连接微信读书」扫码后写入。
+     *
+     * 它是全部设置里唯一一项**凭据**，因此三条纪律：只在本机 data.json 里、
+     * 绝不出现在任何笔记或提示文案里、过期时如实报「登录已过期」而不是装作没有划线。
+     * 空串＝没连过，那时读书命令只查本机的苹果图书与 Kindle。
+     */
+    wereadCookie: string;
     /** 首次开荒完成的时间戳；空字符串表示尚未初始化，是「首次」与「补齐」的唯一判据 */
     initializedAt: string;
 }
@@ -116,6 +140,9 @@ export const DEFAULT_SETTINGS: ZiminosSettings = {
     ribbonCommands: DEFAULT_RIBBON_COMMANDS,
     autoFormat: true,
     formatRules: DEFAULT_FORMAT_RULES,
+    bookTagPrefix: BOOK_TAG_DEFAULTS.prefix,
+    bookTagCount: BOOK_TAG_DEFAULTS.count,
+    wereadCookie: '',
     initializedAt: '',
 };
 

@@ -1,9 +1,10 @@
 /**
  * [INPUT]: 依赖 obsidian 的 Plugin 类型；依赖 ./constants 的 PeriodKey 与 TransitionAction 两个类型
  * [OUTPUT]: 对外提供命令身份契约 CommandSpec、分组名 COMMAND_GROUPS、图标名 COMMAND_ICONS，
- *           二十三条命令的规格 INIT_VAULT_COMMAND/PROJECT_COMMANDS/TRANSITION_COMMANDS（含类型
- *           TransitionCommand）/INSPIRATION_COMMAND/PERIOD_COMMANDS/THEME_COMMAND/CONTACT_COMMANDS/
- *           CLIENT_COMMANDS/APPEARANCE_COMMAND/FORMAT_COMMAND，左侧边栏默认摆件 DEFAULT_RIBBON_COMMANDS
+ *           二十九条命令的规格 INIT_VAULT_COMMAND/PROJECT_COMMANDS/TRANSITION_COMMANDS（含类型
+ *           TransitionCommand）/BOOK_COMMANDS/INSPIRATION_COMMAND/PERIOD_COMMANDS/THEME_COMMAND/
+ *           CONTACT_COMMANDS/CLIENT_COMMANDS/APPEARANCE_COMMAND/FORMAT_COMMAND，
+ *           左侧边栏默认摆件 DEFAULT_RIBBON_COMMANDS
  *           与它的读取侧兜底 normalizeRibbonCommands，
  *           以及注册台 CommandRegistry 与它交出的 RegisteredCommand
  * [POS]: 命令这件事的全部。constants.ts 回答「系统里有哪些东西」，本文件回答「用户能让系统做哪些事」——
@@ -41,7 +42,7 @@ export interface CommandSpec {
      * `插件id + ":" + 标题` 当作一个边栏项的身份，也就是说这个**中文名**才是
      * 用户拖出来的顺序与「在 Obsidian 里藏掉它」这两件事被记进 workspace.json 的键。
      * 改名等于换一个新按钮，用户在边栏上的排布会静默丢失。
-     * 由此还得出一条不变式：二十三个 name 必须互不相同——撞名会让两条命令共用同一个边栏项。
+     * 由此还得出一条不变式：二十九个 name 必须互不相同——撞名会让两条命令共用同一个边栏项。
      */
     readonly name: string;
     /** 图标名，取值必须来自 COMMAND_ICONS */
@@ -54,17 +55,18 @@ export interface CommandSpec {
 }
 
 /**
- * 八个命令分组。
+ * 九个命令分组。
  *
- * 它不是新发明的分类，而是照着插件自己的结构切的：七个同名于 modules/ 下的目录
- * （setup / projects / inspiration / review / contacts / appearance / format），
- * 第八个 clients 例外——客户不是独立目录，是 contacts 模块里 client.ts 那一支，
+ * 它不是新发明的分类，而是照着插件自己的结构切的：八个同名于 modules/ 下的目录
+ * （setup / projects / books / inspiration / review / contacts / appearance / format），
+ * 第九个 clients 例外——客户不是独立目录，是 contacts 模块里 client.ts 那一支，
  * 单列成组是因为客户与人脉在业务上本就是两个物种（见 contacts 的 L2）。
  * modules/ribbon 不在其中：它一条命令都不注册，只负责把别人的命令摆出来。
  */
 export const COMMAND_GROUPS = {
     setup: '开荒',
     projects: '项目',
+    books: '读书',
     inspiration: '灵感',
     review: '复盘',
     contacts: '人脉',
@@ -79,15 +81,16 @@ export type CommandGroup = (typeof COMMAND_GROUPS)[keyof typeof COMMAND_GROUPS];
 /**
  * 每个分组一种功能色，左侧边栏的图标与设置页边栏清单照它上色。
  *
- * 色不是装饰，是索引：二十三个同画法的笔画图标排成一列时，形状要凑近看才认得出，
+ * 色不是装饰，是索引：二十六个同画法的笔画图标排成一列时，形状要凑近看才认得出，
  * 颜色隔着半个屏幕就分了组。取色全部从功能的天然联想出发，学员不需要背——
- * 开荒是垦土、灵感是灯泡、复盘是沉思、人脉是心、客户是钱、外观是调色盘。
+ * 开荒是垦土、读书是朱批、灵感是灯泡、复盘是沉思、人脉是心、客户是钱、外观是调色盘。
  * 全部取中间明度，深浅两种主题下都立得住；写成十六进制而非主题变量，
  * 因为它们是身份不是皮肤——主题可以换掉界面的灰，不该换掉「灵感是黄色的」这件事。
  */
 export const GROUP_COLORS: Readonly<Record<CommandGroup, string>> = {
     [COMMAND_GROUPS.setup]: '#A8763E',       // 开荒＝垦土，泥土棕
     [COMMAND_GROUPS.projects]: '#4C8DD6',    // 项目＝蓝图，工程蓝
+    [COMMAND_GROUPS.books]: '#C15449',       // 读书＝批注用朱笔，朱批红
     [COMMAND_GROUPS.inspiration]: '#E3A93C', // 灵感＝灯泡，琥珀黄
     [COMMAND_GROUPS.review]: '#9A6BD6',      // 复盘＝沉思，紫
     [COMMAND_GROUPS.contacts]: '#E06C8A',    // 人脉＝心，玫红
@@ -97,7 +100,7 @@ export const GROUP_COLORS: Readonly<Record<CommandGroup, string>> = {
 };
 
 /**
- * 二十三个图标名。
+ * 二十九个图标名。
  *
  * 一律带 `ziminos-` 前缀：图标名是 Obsidian 全局共享的命名空间，
  * 不加前缀就可能盖掉 lucide 里的同名图标，或者被后装的插件盖掉。
@@ -114,6 +117,12 @@ export const COMMAND_ICONS = {
     paused: 'ziminos-paused',
     dropped: 'ziminos-dropped',
     active: 'ziminos-active',
+    book: 'ziminos-book',
+    readBook: 'ziminos-read-book',
+    weread: 'ziminos-weread',
+    syncHighlights: 'ziminos-sync-highlights',
+    highlights: 'ziminos-highlights',
+    excerpt: 'ziminos-excerpt',
     inspiration: 'ziminos-inspiration',
     daily: 'ziminos-daily',
     weekly: 'ziminos-weekly',
@@ -132,13 +141,13 @@ export const COMMAND_ICONS = {
     /**
      * 不属于任何命令的一枚：设置页「边栏」标签页的图标。
      * 边栏这个模块管的是屏幕上那一列，没有哪条命令天然长它的样子，
-     * 图形与其余二十三个同住 icons.ts，同一套画法
+     * 图形与其余二十九个同住 icons.ts，同一套画法
      */
     dock: 'ziminos-dock',
 } as const;
 
 // ============================================================
-// 二十三条命令：顺序即它们在左侧边栏里的先后
+// 二十九条命令：顺序即它们在左侧边栏里的先后
 // ============================================================
 
 /**
@@ -219,6 +228,65 @@ export const TRANSITION_COMMANDS: readonly TransitionCommand[] = [
         action: 'active',
     },
 ];
+
+/**
+ * 读书笔记模块的三条命令：建书、导划线、炼卡。
+ *
+ * 一本书就是一个项目（建书走的正是 createContainer 那条流程），
+ * 但它们单独成组：读书有自己的三样动作与自己的素材形态（划线），
+ * 混进项目组会让「新建项目」与「新建读书笔记」在边栏上看起来是同一类事的两个按钮。
+ */
+export const BOOK_COMMANDS: Readonly<
+    Record<'read' | 'sync' | 'connectWeread' | 'create' | 'importNotes' | 'excerpt', CommandSpec>
+> = {
+    /**
+     * 主干命令：一步读一本书。
+     *
+     * 它取代的是学员原本的三步（豆瓣插件建档 → 划线插件导出 → 手工复制粘贴汇总）。
+     * 排在这一组的第一条，因为它是绝大多数时候唯一该按的那一条；
+     * 其余四条都是它覆盖不到的边角：手动建、粘贴导、再同步、炼卡。
+     */
+    read: {
+        id: 'read-book',
+        name: '读一本书',
+        icon: COMMAND_ICONS.readBook,
+        group: COMMAND_GROUPS.books,
+    },
+    /** 读到一半再拉一次划线。与建书共用同一套取数与合并，只是不再建档 */
+    sync: {
+        id: 'sync-book-highlights',
+        name: '同步这本书的划线',
+        icon: COMMAND_ICONS.syncHighlights,
+        group: COMMAND_GROUPS.books,
+    },
+    /** 连微信读书。一辈子按一次，扫码登录后划线才能自动来 */
+    connectWeread: {
+        id: 'connect-weread',
+        name: '连接微信读书',
+        icon: COMMAND_ICONS.weread,
+        group: COMMAND_GROUPS.books,
+    },
+    create: {
+        id: 'create-book',
+        name: '新建读书笔记',
+        icon: COMMAND_ICONS.book,
+        group: COMMAND_GROUPS.books,
+    },
+    /** 把微信读书 / Kindle / 苹果图书导出的纯文本解析进书的 MOC；零网络，粘贴才动 */
+    importNotes: {
+        id: 'import-book-highlights',
+        name: '导入读书划线',
+        icon: COMMAND_ICONS.highlights,
+        group: COMMAND_GROUPS.books,
+    },
+    /** 把选中的划线炼成一张十字段卡片，是读书笔记从素材走向知识的那一步 */
+    excerpt: {
+        id: 'excerpt-book-card',
+        name: '摘成卡片',
+        icon: COMMAND_ICONS.excerpt,
+        group: COMMAND_GROUPS.books,
+    },
+};
 
 /** 灵感收集的唯一入口；不预占系统快捷键，用户可在 Obsidian 快捷键设置里自由绑定 */
 export const INSPIRATION_COMMAND: CommandSpec = {
@@ -345,11 +413,12 @@ export const FORMAT_COMMAND: CommandSpec = {
 /**
  * 全新库默认摆进左侧边栏的七条命令。
  *
- * 二十三条全摆上去等于把选择的负担丢回给学员——那条边栏会长成一根谁也不看的图标柱。
+ * 二十九条全摆上去等于把选择的负担丢回给学员——那条边栏会长成一根谁也不看的图标柱。
  * 这七条的判据是「一天里可能按不止一次」：记灵感、开日记、写主题是每天的动作，
  * 新建项目与新建人脉是每周的动作，记人情发生在关系推进的当下，外观开关是刚上手时天天在调的。
- * 其余十六条要么一辈子只按一次（初始化笔记库、初始化客户模块），
- * 要么发生在某个具体场景里（新建领域、初始化当前卡片、四条流转、三条客户流水、周月季年四级复盘）——
+ * 其余十九条要么一辈子只按一次（初始化笔记库、初始化客户模块），
+ * 要么发生在某个具体场景里（新建领域、初始化当前卡片、四条流转、读书三条、
+ * 三条客户流水、周月季年四级复盘）——
  * 那些场景里用户本来就停在对的笔记上，命令面板比一根图标柱更快。
  * 新建领域不在默认清单里，是因为一个人的领域屈指可数：健康、手艺、人脉，建完就是好几年；
  * 第十五条是「整理当前笔记格式」：默认开着自动整理，它是那条留给例外情况的手动路，
@@ -379,7 +448,7 @@ export const DEFAULT_RIBBON_COMMANDS: readonly string[] = [
  * 包括下面的高级设置。收敛一次，两个消费方（边栏与设置页）都不必各自判空。
  *
  * 不是数组就退回默认清单（等同于「这个键没写过」），是数组则只留下字符串项。
- * 空数组是合法的：用户把二十一条全取消了，那就一个图标都不摆。
+ * 空数组是合法的：用户把二十九条全取消了，那就一个图标都不摆。
  */
 export function normalizeRibbonCommands(value: unknown): readonly string[] {
     if (!Array.isArray(value)) return DEFAULT_RIBBON_COMMANDS;

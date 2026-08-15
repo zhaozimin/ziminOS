@@ -1,6 +1,7 @@
 {
   "accentColor": "",
   "cssTheme": "Minimal",
+  "textFontFamily": "LXGW WenKai GB Screen",
   "enabledCssSnippets": [
     "ziminos-quote-semantic-colors",
     "【文件】文件图标前缀",

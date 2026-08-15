@@ -2,8 +2,12 @@
  * [INPUT]: 依赖 obsidian 的 Plugin 基类；依赖 core 的 SelfWriteGuard、CommandRegistry、
  *          INIT_VAULT_COMMAND、normalizeRibbonCommands、DEFAULT_SETTINGS、
  *          ZiminosSettings/ZiminosContext/VaultSeed 契约、PERIODS 与 registerViewCodeBlock；
- *          依赖 modules/setup 的 initializeVault/applySeed，以及项目管理、灵感收集、复盘、
- *          人脉与客户五个模块各自的 seed、register 函数与视图数组，
+ *          依赖 modules/setup 的 initializeVault/applySeed，以及项目管理、读书笔记、灵感收集、
+ *          复盘、人脉与客户六个模块各自的 seed、register 函数与视图数组，
+ *          其中读书笔记那三条命令还要 modules/projects/createContainer 的 createContainer/BOOK_KIND
+ *          来填「建一个书籍容器」那个洞，设置页那颗「扫码连接」还要 modules/books/sourceWeread
+ *          的 loginWeread 来填「开微信读书的登录窗口」那个洞；
+ *          复盘的打开命令还要 theme 的 promptThemeIfMissing 来填「日记已打开」那个洞；
  *          再加 modules/format 的 registerFormatter、modules/appearance 的 registerAppearanceSwitch、
  *          modules/ribbon 的 registerRibbon 与 modules/about 的 aboutViews/renderAboutPanel
  * [OUTPUT]: 默认导出 ZiminosPlugin，即 Obsidian 加载 main.js 时实例化的插件入口类
@@ -12,8 +16,10 @@
  *        再把彼此需要但不该互相认识的能力接上线。
  *        最后这件事是 V2 新增的，也是本文件最有分量的部分：
  *        记人情要往当天日记里写一行，客户模块要按需长出自己的产物，
- *        设置页要能让状态栏那个按钮与左侧边栏那列图标按新设置重新显隐——
- *        它们分别需要复盘模块、开荒模块、外观模块与 ribbon 模块的能力。
+ *        建一本书要走项目模块那套「文件夹 + MOC」的流程，
+ *        设置页要能开出读书模块那个扫码登录窗口，
+ *        还要能让状态栏那个按钮与左侧边栏那列图标按新设置重新显隐——
+ *        它们分别需要复盘模块、开荒模块、项目模块、读书模块、外观模块与 ribbon 模块的能力。
  *        它们都不 import 对方，而是各自声明一个函数类型的洞，由这里填上。
  *        于是依赖图仍是一棵树：main 认识所有模块，模块之间彼此不认识，
  *        加一个模块只是在这里多几行，删一个模块只需删掉那几行。
@@ -32,6 +38,15 @@ import { DEFAULT_SETTINGS } from './core/types';
 import type { VaultSeed, ZiminosContext, ZiminosSettings } from './core/types';
 import { aboutViews, renderAboutPanel } from './modules/about/view';
 import { registerAppearanceSwitch } from './modules/appearance/statusBar';
+import { registerCreateBookCommand } from './modules/books/createBook';
+import { registerExcerptCardCommand } from './modules/books/extractCard';
+import { registerImportHighlightsCommand } from './modules/books/importHighlights';
+import {
+    registerConnectWereadCommand,
+    registerReadBookCommand,
+    registerSyncHighlightsCommand,
+} from './modules/books/readBook';
+import { loginWeread } from './modules/books/sourceWeread';
 import { registerFormatter } from './modules/format/formatter';
 import { circleViews } from './modules/contacts/circleViews';
 import { clientViews } from './modules/contacts/clientViews';
@@ -44,6 +59,7 @@ import { contactsSeed } from './modules/contacts/seed';
 import { registerInspirationCaptureCommand } from './modules/inspiration/capture';
 import { registerCardAutoInit, registerCardInitCommand } from './modules/projects/cardInit';
 import { registerCreateAreaCommand } from './modules/projects/createArea';
+import { BOOK_KIND, createContainer } from './modules/projects/createContainer';
 import { registerCreateProjectCommand } from './modules/projects/createProject';
 import { projectsSeed } from './modules/projects/seed';
 import { registerTransitionCommands } from './modules/projects/transitions';
@@ -51,7 +67,7 @@ import { registerUpdatedMaintainer } from './modules/projects/updatedMaintainer'
 import { openPeriodNote, registerPeriodicCommands } from './modules/review/periodic';
 import { reviewProjectViews } from './modules/review/projectViews';
 import { reviewSeed } from './modules/review/seed';
-import { registerThemeCommand } from './modules/review/theme';
+import { promptThemeIfMissing, registerThemeCommand } from './modules/review/theme';
 import { reviewThemeViews } from './modules/review/views';
 import { registerRibbon } from './modules/ribbon/dock';
 import { applySeed, initializeVault } from './modules/setup/init';
@@ -116,9 +132,24 @@ export default class ZiminosPlugin extends Plugin {
         registerCardAutoInit(ctx);
         registerTransitionCommands(ctx);
         registerUpdatedMaintainer(ctx);
+
+        // 一本书就是一个项目：建书要的「一个文件夹 + 一篇 MOC」正是 createContainer 那套流程，
+        // 而 books 模块不认识 projects——它只声明了一个「建一个书籍容器」的洞，由这里填上。
+        // BOOK_KIND 那张表说清了书与项目的全部差别，因此这里递的是规格，不是又一条流程
+        // 「读一本书」是主干：一条命令走完「查书目 → 建档 → 把设备里的划线灌进来」，
+        // 它与手动建书共用同一个容器洞，差别只在 preset 里的字段是查来的还是问来的
+        registerReadBookCommand(ctx, (preset) => createContainer(ctx, BOOK_KIND, preset));
+        registerSyncHighlightsCommand(ctx);
+        registerConnectWereadCommand(ctx);
+        registerCreateBookCommand(ctx, (preset) => createContainer(ctx, BOOK_KIND, preset));
+        registerImportHighlightsCommand(ctx);
+        registerExcerptCardCommand(ctx);
+
         registerInspirationCaptureCommand(ctx);
 
-        registerPeriodicCommands(ctx);
+        // 打开命令只管「打开」，主题模块只管「有没有主题」；
+        // 这里把两者接上，于是首次打开会问，已有主题再打开就安静
+        registerPeriodicCommands(ctx, (file) => promptThemeIfMissing(ctx, file));
         registerThemeCommand(ctx);
 
         registerCreateContactCommand(ctx);
@@ -167,6 +198,9 @@ export default class ZiminosPlugin extends Plugin {
         this.addSettingTab(
             new ZiminosSettingTab(ctx, {
                 initialize: () => initializeVault(ctx, collectSeeds()),
+                // 设置页里那颗「扫码连接」按钮，与命令面板那条「连接微信读书」是同一段登录流程；
+                // 设置页不 import books 模块，因此这项能力也走注入
+                connectWeread: () => loginWeread(ctx),
                 syncAppearanceSwitch,
                 syncRibbon,
                 // 设置页的「关于作者」区与导航页尾的视图块画同一张名片，实现只有 about 一份

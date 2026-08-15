@@ -1,6 +1,10 @@
 /**
- * [INPUT]: 依赖 core/constants 的 ABOUT_VIEW，依赖 core/codeblock 的 ViewDefinition 类型
+ * [INPUT]: 依赖 core/codeblock 的 ViewDefinition 类型与 ./avatar 的 AVATAR_DATA_URI；
+ *          视图名 ABOUT_VIEW 是本文件的局部常量——v0.10.0 名片从导航搬进 README 之后，
+ *          再没有第二个模块需要它，于是从 core/constants 收了回来
  * [OUTPUT]: 对外提供 renderAboutPanel（把作者名片画进任意容器）与 aboutViews（「关于作者」视图）
+ *           名片自 v0.14.0 起以「致谢」收尾：上半是思路来源（学到了什么，逐条写明），
+ *           下半是随库交付资产的署名（许可要求，非客套）
  * [POS]: 关于作者模块的全部。它把作者的入口编译进 main.js——插件传到哪，这张名片就跟到哪，
  *        不依赖库里任何一篇笔记还在不在。同一个渲染函数挂两处：开荒写进导航页尾的
  *        「关于作者」视图块，以及设置页开荒页尾的落款（没开过荒、只拿到 main.js 的库也看得见）。
@@ -124,6 +128,78 @@ const CHANNEL_REGIONS: readonly ChannelRegion[] = [
 ];
 
 // ============================================================
+// 致谢
+// ============================================================
+
+/** 一条致谢：项目名、它的地址，以及**我们究竟从它那里学到了什么** */
+interface Credit {
+    readonly name: string;
+    readonly url: string;
+    /** 一句话，必须具体到某个决定。写「很棒的插件」等于没写 */
+    readonly what: string;
+}
+
+/**
+ * 思路致谢：一行代码都没抄，但每一条都改变了 ziminOS 的某个决定。
+ *
+ * 名单的判据只有一条——**没有它，这里会走错**。因此每条后面那句话必须指得出具体的东西：
+ * 是它让我们知道豆瓣的 JSON 接口走不通、是它让我们知道苹果图书的划线躺在哪个 SQLite 里。
+ * 「优秀的开源项目」这种句子一条都不要，那是客套不是致谢；
+ * 读者看完这张表应该确切地知道欠了谁什么，而不只是知道我们心怀感激。
+ *
+ * 排序即欠得多少，不是字母序。
+ */
+const CREDITS: readonly Credit[] = [
+    {
+        name: 'obsidian-weread-plugin',
+        url: 'https://github.com/zhaohongxuan/obsidian-weread-plugin',
+        what: '微信读书的扫码登录与三个取数接口。「开一个真浏览器窗口让用户自己扫，成功后取走 Cookie」这条路是它走通的——否则只能让学员去开发者工具里手抄一长串 Cookie。',
+    },
+    {
+        name: 'obsidian-kindle-plugin',
+        url: 'https://github.com/hadynz/obsidian-kindle-plugin',
+        what: 'Kindle 的 My Clippings.txt 该去哪儿找、那份纯文本的分隔与元信息该怎么切。',
+    },
+    {
+        name: 'obsidian-apple-books-highlights-plugin',
+        url: 'https://github.com/bandantonio/obsidian-apple-books-highlights-plugin',
+        what: '苹果图书的划线原来就躺在本机两个 SQLite 里，连库路径与那两张表的字段名都是从它那儿认得的。',
+    },
+    {
+        name: 'obsidian-douban',
+        url: 'https://github.com/Wanxp/obsidian-douban',
+        what: '豆瓣的 JSON 接口对非浏览器一律拒绝、而 HTML 页面照常返回，以及被反爬拦下时页面长什么样——省了我们一整轮试错。',
+    },
+    {
+        name: 'QuickAdd',
+        url: 'https://github.com/chhoumann/quickadd',
+        what: 'ziminOS 的建项目、卡片登记与四态流转，本来是跑在它上面的三份脚本。这套系统是从那三份脚本长出来的。',
+    },
+    {
+        name: 'Obsidian Linter',
+        url: 'https://github.com/platers/obsidian-linter',
+        what: '「改完走开就替你整理」这件事本来该装它。排版模块那九条规则是照着它的行为重写的，为的是让学员少装一个插件。',
+    },
+];
+
+/** 随库或随 main.js 交付的第三方资产：这一段是许可要求的署名，不是客套 */
+const BUNDLED: readonly Credit[] = [
+    { name: 'Dataview', url: 'https://github.com/blacksmithgu/obsidian-dataview', what: 'MIT' },
+    { name: 'Minimal', url: 'https://github.com/kepano/obsidian-minimal', what: 'MIT' },
+    {
+        name: 'Style Settings',
+        url: 'https://github.com/community-archive/obsidian-style-settings',
+        what: 'GPL-3.0',
+    },
+    { name: 'Pikaicons', url: 'https://pikaicons.com', what: 'MIT' },
+    { name: 'Simple Icons', url: 'https://simpleicons.org', what: 'CC0' },
+    { name: '霞鹜文楷 GB 屏幕版', url: 'https://github.com/lxgw/LxgwWenKai-Screen', what: 'OFL' },
+    { name: '思源宋体 CN', url: 'https://github.com/adobe-fonts/source-han-serif', what: 'OFL' },
+    { name: '朱雀仿宋', url: 'https://github.com/TrionesType/zhuque', what: 'OFL' },
+    { name: '霞鹜新晰黑＋', url: 'https://github.com/lxgw/LxgwNeoXiHei', what: 'IPA' },
+];
+
+// ============================================================
 // 渲染
 // ============================================================
 
@@ -230,6 +306,59 @@ export function renderAboutPanel(el: HTMLElement): void {
 
         for (const channel of region.channels) renderChannel(pills, channel);
     }
+
+    renderCredits(panel);
+}
+
+/**
+ * 名片最下方的致谢，排在作者的一切之后。
+ *
+ * 位置就是态度：一张自我介绍的卡片，最后一段留给别人。
+ * 分两块——上面是**思路**（一行代码没抄，但少了谁就会走错），
+ * 下面是**随库交付的东西**（那一块是许可要求的署名，不是客套，所以只列名字与许可证）。
+ */
+function renderCredits(panel: HTMLElement): void {
+    const block = panel.createDiv({ cls: 'ziminos-about-credits' });
+
+    block.createDiv({ cls: 'ziminos-about-credits-title', text: '致谢' });
+    block.createDiv({
+        cls: 'ziminos-about-credits-intro',
+        text: '这些项目在前面，ziminOS 才走得到这里。一行代码都没有抄，但每一条都改变了它的某个决定。',
+    });
+
+    for (const credit of CREDITS) {
+        const item = block.createDiv({ cls: 'ziminos-about-credit' });
+
+        item.createEl('a', {
+            cls: 'ziminos-about-credit-name',
+            text: credit.name,
+            href: credit.url,
+            attr: { rel: 'noopener' },
+        });
+        item.createDiv({ cls: 'ziminos-about-credit-what', text: credit.what });
+    }
+
+    const bundled = block.createDiv({ cls: 'ziminos-about-bundled' });
+
+    bundled.createSpan({ text: '随库交付：' });
+
+    BUNDLED.forEach((entry, index) => {
+        if (index) bundled.appendText('、');
+
+        bundled.createEl('a', {
+            cls: 'ziminos-about-bundled-link',
+            text: entry.name,
+            href: entry.url,
+            attr: { rel: 'noopener', title: `${entry.name}（${entry.what}）` },
+        });
+    });
+
+    // 这一句必须逐项属实，否则它比不写更糟：学员照着去找一个根本不存在的许可文件，
+    // 得到的结论是这套系统在署名这件事上说了谎。三种安排各自为真，就分三句写
+    bundled.appendText(
+        '。Dataview、Minimal、Style Settings 与四款字体的许可证全文随文件交付；' +
+        'Pikaicons 的许可声明写在 main.js 开头；Simple Icons 是 CC0。',
+    );
 }
 
 /** 「关于作者」视图：内容与库无关，渲染即完成，重算对它是无害的重画 */

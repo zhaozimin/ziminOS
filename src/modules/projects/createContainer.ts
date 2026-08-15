@@ -4,11 +4,11 @@
  *          ensureFolderPath/normalizeFolderPath、core/modals 的 TextInputModal/ChoiceModal、
  *          core/time 的 nowStampAndUid、core/types 的 ZiminosContext/ZiminosSettings，
  *          依赖同目录 moc 的 mocBasenameOf/mocPathOf 与 templates 的 mocContent/mocFrontmatter
- * [OUTPUT]: 对外提供 ContainerKind 契约、PROJECT_KIND/AREA_KIND 两份规格、
+ * [OUTPUT]: 对外提供 ContainerKind 契约、PROJECT_KIND/AREA_KIND/BOOK_KIND 三份规格、
  *           CreateContainerPreset 预设契约、PersonPicker 选人能力契约、createContainer
- * [POS]: 「一个文件夹 + 一篇 MOC」这件事的唯一实现，项目与领域共用它。
- *        两者的差别只有三处，全部收在 ContainerKind 那张表里：落在哪个根目录、
- *        写什么 type、问不问归属。除此之外它们连一个字的提示文案都不该分叉——
+ * [POS]: 「一个文件夹 + 一篇 MOC」这件事的唯一实现，项目、领域与书籍共用它。
+ *        三者的差别全部收在 ContainerKind 那张表里：落在哪个根目录、
+ *        写什么 type、问不问归属、带不带小节骨架。除此之外它们连一个字的提示文案都不该分叉——
  *        分叉的代价不是重复代码，是「新建领域」某天悄悄少了一道防覆盖校验。
  *        名称合法性、防覆盖、光标落点这些规矩因此只在此处定义一次。
  *        问答顺序是设计过的：名称 → 归属 →（只有挂了人的归属才问）选人 → 概述。
@@ -21,14 +21,14 @@
 
 import { MarkdownView, Notice, normalizePath } from 'obsidian';
 import type { TFile } from 'obsidian';
-import { FIELDS, FOLDERS, NOTE_TYPES } from '../../core/constants';
+import { BOOK_HEADINGS, FIELDS, FOLDERS, NOTE_TYPES } from '../../core/constants';
 import { ensureFolderPath, normalizeFolderPath } from '../../core/folders';
 import { ChoiceModal, TextInputModal } from '../../core/modals';
 import { nowStampAndUid } from '../../core/time';
 import type { ZiminosContext, ZiminosSettings } from '../../core/types';
 import { mocBasenameOf, mocPathOf } from './moc';
 import { mocContent, mocFrontmatter } from './templates';
-import type { ProjectRelation } from './templates';
+import type { Bibliography, ContainerSection, ProjectRelation } from './templates';
 
 /**
  * 「从库里选一个人」这项能力，由 main 在装配时注入。
@@ -120,6 +120,10 @@ export interface ContainerKind {
      * 它天然只属于你自己，问一句「这是谁委托的」是在问一个不成立的问题。
      */
     readonly asksOwnership: boolean;
+    /** MOC 正文的小节骨架。只有书籍带（全部划线一个落点），项目与领域不带 */
+    readonly sections?: readonly ContainerSection[];
+    /** base 视图的显示名。缺省即「项目文件」，书籍传「读书卡片」 */
+    readonly baseViewName?: string;
 }
 
 export const PROJECT_KIND: ContainerKind = {
@@ -140,6 +144,29 @@ export const AREA_KIND: ContainerKind = {
 };
 
 /**
+ * 书籍：第三类容器，这张表当初预言的那一条。
+ *
+ * 一本书就是一个项目——读完是它的终点，所以有 status: active，
+ * 住项目目录（不新增设置字段），读完用既有的「完成项目」归档。
+ * 不问归属：书没有委托人。它比另两类多两样东西——正文的「全部划线」落点，
+ * 以及 base 视图的书面名字。曾经还有一个「书籍信息」小节，v0.14.0 撤了：
+ * 那一节是一张给人读的登记表，而那些值机器读得更多（按出版年排、按页数挑），
+ * 于是整体搬进 YAML——摆在正文里它们只是五行谁也不会读第二遍的字。
+ * 问答不走本流程：建书的三问（书名/作者/为什么读）由 books 模块自己问，
+ * 答案装进 preset 递进来，因此这里一句提示文案都不必分叉。
+ */
+export const BOOK_KIND: ContainerKind = {
+    label: '读书笔记',
+    type: NOTE_TYPES.book,
+    status: 'active',
+    folderKey: 'projectFolder',
+    folderFallback: FOLDERS.projects,
+    asksOwnership: false,
+    sections: [{ heading: BOOK_HEADINGS.highlights }],
+    baseViewName: '读书卡片',
+};
+
+/**
  * 免问答建容器的预设值。
  * 开荒流程已经从用户那里问到了名字，不该让人再答一遍，于是把答案直接递进来跳过两次弹窗；
  * 但预设值同样要过下面的名称校验——它源自用户输入，并不比手打的更可信。
@@ -149,6 +176,26 @@ export interface CreateContainerPreset {
     name: string;
     /** 概述，写入 MOC 的 description 字段 */
     description: string;
+    /** 作者，只有书籍预设带；有值才落 YAML 行 */
+    author?: string;
+    /** 别名（书籍的带副标题全名），只有书籍预设带 */
+    aliases?: readonly string[];
+    /** 标签（书籍的豆瓣分类词），只有书籍预设带 */
+    tags?: readonly string[];
+    /**
+     * 覆盖 UID。缺省即照惯例取 14 位时间戳。
+     *
+     * 只有书籍走这条：书自带 ISBN 这个全世界通用的号，给它再发一个只有本库认得的时间戳，
+     * 等于给同一个东西造两个主键。换不出数字（豆瓣没给 ISBN、或者那本根本是电子书）时
+     * 预设不带这一项，于是自动落回时间戳——本流程因此不需要知道 ISBN 是什么。
+     */
+    uid?: number;
+    /** 出处链接（书籍的豆瓣条目地址），只有书籍预设带 */
+    source?: string;
+    /** 书目字段（译者、出版社、出版年、页数、封面），只有书籍预设带 */
+    bibliography?: Bibliography;
+    /** 覆盖 kind 自带的小节骨架。目前无人使用，留着是因为容器规格本就允许各类自带骨架 */
+    sections?: readonly ContainerSection[];
 }
 
 /**
@@ -296,9 +343,16 @@ export async function createContainer(
         const identity = {
             description,
             created,
-            uid,
+            // 书籍预设带着 ISBN 进来时用它当 UID；其余一切情况仍是这一刻的 14 位时间戳
+            uid: preset?.uid ?? uid,
             type: kind.type,
             status: kind.status,
+            // 作者只可能来自书籍预设；交互路径从不问它，undefined 时那一行整行不写
+            author: preset?.author,
+            aliases: preset?.aliases,
+            tags: preset?.tags,
+            source: preset?.source,
+            bibliography: preset?.bibliography,
             relation,
         };
 
@@ -306,6 +360,9 @@ export async function createContainer(
             ...identity,
             mocBasename,
             projectFolderPath: containerFolderPath,
+            // 预设带了小节就用预设的（书目信息已填好），否则用这一类容器的空骨架
+            sections: preset?.sections ?? kind.sections,
+            baseViewName: kind.baseViewName,
         });
 
         // 光标落点只取决于 YAML 有多少行，故单独取一份 frontmatter 量行数；
