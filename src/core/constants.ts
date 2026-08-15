@@ -12,7 +12,7 @@
  *           BOOK_THOUGHT_PREFIX 与标签契约 BOOK_TAG_COUNTS/BOOK_TAG_DEFAULTS，外观开关契约 SNIPPET_FOLDER_NAME/SNIPPET_EXTENSION/
  *           APPEARANCE_FILE_NAME/ENABLED_SNIPPETS_KEY，
  *           以及视图代码块契约 VIEW_BLOCK_LANG/VIEW_REFRESH_DEBOUNCE_MS。
- *           二十九条命令的身份（id/名字/图标/分组）不在这里，在 ./commands——
+ *           三十条命令的身份（id/名字/图标/分组）不在这里，在 ./commands——
  *           本文件回答「系统里有哪些东西」，那里回答「用户能让系统做哪些事」
  * [POS]: 全仓库唯一的常量源。规格要求「禁魔法字符串」，任何目录名、字段名、状态名、时间格式
  *        都必须从这里取而不得就地硬编码；因为它零依赖，所有模块都可单向依赖它而不产生环
@@ -624,4 +624,3 @@ export const VIEW_BLOCK_LANG = 'ziminos';
  * 它靠一个 2500ms 的 setInterval 刷新，而「无定时器、无后台轮询」是红线。
  */
 export const VIEW_REFRESH_DEBOUNCE_MS = 200;
-

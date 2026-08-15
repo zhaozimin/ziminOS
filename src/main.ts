@@ -3,7 +3,7 @@
  *          INIT_VAULT_COMMAND、normalizeRibbonCommands、DEFAULT_SETTINGS、
  *          ZiminosSettings/ZiminosContext/VaultSeed 契约、PERIODS 与 registerViewCodeBlock；
  *          依赖 modules/setup 的 initializeVault/applySeed，以及项目管理、读书笔记、灵感收集、
- *          复盘、人脉与客户六个模块各自的 seed、register 函数与视图数组，
+ *          日历、复盘、人脉与客户七个模块各自的 seed、register 函数与视图数组，
  *          其中读书笔记那三条命令还要 modules/projects/createContainer 的 createContainer/BOOK_KIND
  *          来填「建一个书籍容器」那个洞，设置页那颗「扫码连接」还要 modules/books/sourceWeread
  *          的 loginWeread 来填「开微信读书的登录窗口」那个洞；
@@ -48,6 +48,7 @@ import {
 } from './modules/books/readBook';
 import { loginWeread } from './modules/books/sourceWeread';
 import { registerFormatter } from './modules/format/formatter';
+import { registerCalendar } from './modules/calendar/view';
 import { circleViews } from './modules/contacts/circleViews';
 import { clientViews } from './modules/contacts/clientViews';
 import { registerClientCommands } from './modules/contacts/client';
@@ -147,6 +148,14 @@ export default class ZiminosPlugin extends Plugin {
 
         registerInspirationCaptureCommand(ctx);
 
+        // 日历只表达“用户点了哪个时间坐标”，五级笔记的目录、模板与幂等创建仍归复盘模块。
+        // 这里把两者接上；点日记后再走同一条缺主题检查，日历入口与命令入口行为不分叉。
+        registerCalendar(ctx, async (periodKey, day) => {
+            const file = await openPeriodNote(ctx, PERIODS[periodKey], { day });
+
+            if (file && periodKey === 'daily') await promptThemeIfMissing(ctx, file);
+        });
+
         // 打开命令只管「打开」，主题模块只管「有没有主题」；
         // 这里把两者接上，于是首次打开会问，已有主题再打开就安静
         registerPeriodicCommands(ctx, (file) => promptThemeIfMissing(ctx, file));
@@ -176,7 +185,7 @@ export default class ZiminosPlugin extends Plugin {
         const syncRibbon = registerRibbon(ctx);
 
         // ============================================================
-        // 视图引擎：一个代码块语言，二十二个视图；加视图不必改这里之外的任何装配代码
+        // 代码块视图引擎：二十二个笔记内视图；日历是独立 ItemView，不在此处重复注册
         // ============================================================
 
         registerViewCodeBlock(ctx, [

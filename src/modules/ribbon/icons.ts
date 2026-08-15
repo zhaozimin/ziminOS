@@ -195,6 +195,8 @@ const ARTWORK: Readonly<Record<string, readonly string[]>> = {
     ],
 
     // ---------- 复盘 ----------
+    /** 中国日历：日历框内一横一竖分出月格；与“打开本月复盘”的六个点明确区分 */
+    [COMMAND_ICONS.calendar]: [CALENDAR, 'M8 13.5H16M8 17.5H16M12 11.5V19.5'],
     /** 今天的日记：日历框里一个点，一天就是一个点 */
     [COMMAND_ICONS.daily]: [CALENDAR, 'M12 15.6H12.01'],
     /** 本周复盘：日历框里一整行，一周就是一行 */

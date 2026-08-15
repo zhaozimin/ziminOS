@@ -4,7 +4,8 @@
  *          再没有第二个模块需要它，于是从 core/constants 收了回来
  * [OUTPUT]: 对外提供 renderAboutPanel（把作者名片画进任意容器）与 aboutViews（「关于作者」视图）
  *           名片自 v0.14.0 起以「致谢」收尾：上半是思路来源（学到了什么，逐条写明），
- *           下半是随库交付资产的署名（许可要求，非客套）
+ *           下半是随库交付资产的署名（许可要求，非客套）；
+ *           v0.15.0 起同步署名编译进 main.js 的 lunar-typescript 与内置节假日快照的 holiday-cn
  * [POS]: 关于作者模块的全部。它把作者的入口编译进 main.js——插件传到哪，这张名片就跟到哪，
  *        不依赖库里任何一篇笔记还在不在。同一个渲染函数挂两处：开荒写进导航页尾的
  *        「关于作者」视图块，以及设置页开荒页尾的落款（没开过荒、只拿到 main.js 的库也看得见）。
@@ -171,6 +172,11 @@ const CREDITS: readonly Credit[] = [
         what: '豆瓣的 JSON 接口对非浏览器一律拒绝、而 HTML 页面照常返回，以及被反爬拦下时页面长什么样——省了我们一整轮试错。',
     },
     {
+        name: 'Dust Calendar',
+        url: 'https://github.com/a-nano-dust/dust-obsidian-calendar',
+        what: '从日期、周数、月、季度到年的可点时间维度，让日历不只是展示，而是周期笔记的导航坐标。ziminOS 重写了实现，没有复制其代码。',
+    },
+    {
         name: 'QuickAdd',
         url: 'https://github.com/chhoumann/quickadd',
         what: 'ziminOS 的建项目、卡片登记与四态流转，本来是跑在它上面的三份脚本。这套系统是从那三份脚本长出来的。',
@@ -193,6 +199,8 @@ const BUNDLED: readonly Credit[] = [
     },
     { name: 'Pikaicons', url: 'https://pikaicons.com', what: 'MIT' },
     { name: 'Simple Icons', url: 'https://simpleicons.org', what: 'CC0' },
+    { name: 'lunar-typescript', url: 'https://github.com/6tail/lunar-typescript', what: 'MIT' },
+    { name: 'holiday-cn', url: 'https://github.com/NateScarlet/holiday-cn', what: 'MIT' },
     { name: '霞鹜文楷 GB 屏幕版', url: 'https://github.com/lxgw/LxgwWenKai-Screen', what: 'OFL' },
     { name: '思源宋体 CN', url: 'https://github.com/adobe-fonts/source-han-serif', what: 'OFL' },
     { name: '朱雀仿宋', url: 'https://github.com/TrionesType/zhuque', what: 'OFL' },
@@ -357,7 +365,8 @@ function renderCredits(panel: HTMLElement): void {
     // 得到的结论是这套系统在署名这件事上说了谎。三种安排各自为真，就分三句写
     bundled.appendText(
         '。Dataview、Minimal、Style Settings 与四款字体的许可证全文随文件交付；' +
-        'Pikaicons 的许可声明写在 main.js 开头；Simple Icons 是 CC0。',
+        'Pikaicons、lunar-typescript 与 holiday-cn 的许可声明写在 main.js 开头；' +
+        'Simple Icons 是 CC0。',
     );
 }
 
