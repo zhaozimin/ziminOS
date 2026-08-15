@@ -43,6 +43,14 @@ export interface SourceHit {
     readonly label: string;
     readonly title: string;
     readonly highlights: readonly ParsedHighlight[];
+    /**
+     * 这次取数少了什么、为什么。有值就原样说给学员听。
+     *
+     * 它存在是因为「一条都没取到」有两种成因：书上确实没划过，与接口取不到。
+     * 两者在数据上长得一模一样，只有来源自己分得出（微读拿书架上的计数对账）。
+     * 不把这句话带出来，插件就会在自己失手的时候说「这本书没有划线」。
+     */
+    readonly note?: string;
 }
 
 // ============================================================
@@ -73,7 +81,7 @@ export function availableSourceLabels(ctx: ZiminosContext): readonly string[] {
  */
 export async function collectHighlightsFor(
     ctx: ZiminosContext,
-    title: string,
+    names: readonly string[],
     author = '',
 ): Promise<readonly SourceHit[]> {
     const hits: SourceHit[] = [];
@@ -81,13 +89,14 @@ export async function collectHighlightsFor(
     try {
         if (wereadAvailable(ctx)) {
             const books = (await listWereadBooks(ctx)).map((book) => ({ ...book, label: '微信读书' }));
-            const matched = matchBook(books, title, author);
+            const matched = matchBook(books, names, author);
 
             if (matched) {
-                const highlights = await readWereadBookHighlights(ctx, matched.id);
+                const { highlights, note } = await readWereadBookHighlights(ctx, matched);
 
-                if (highlights.length) {
-                    hits.push({ label: '微信读书', title: matched.title, highlights });
+                // 一条都没取到但有话要说时也记一笔：那句话正是这次调用唯一的产出
+                if (highlights.length || note) {
+                    hits.push({ label: '微信读书', title: matched.title, highlights, note });
                 }
             }
         }
@@ -98,7 +107,7 @@ export async function collectHighlightsFor(
     try {
         if (appleBooksAvailable()) {
             const books = (await listAppleBooks()).map((book) => ({ ...book, label: '苹果图书' }));
-            const matched = matchBook(books, title, author);
+            const matched = matchBook(books, names, author);
 
             if (matched) {
                 const highlights = await readAppleBookHighlights(matched.id);
@@ -120,7 +129,7 @@ export async function collectHighlightsFor(
                 title: book.title,
                 author: book.author,
             }));
-            const matched = matchBook(books, title, author);
+            const matched = matchBook(books, names, author);
 
             if (matched) {
                 const highlights = readKindleBookHighlights(matched.title);
@@ -150,27 +159,51 @@ export async function collectHighlightsFor(
  * 但互相包含也要求较短的那个不少于四个字——两个字的书名（《活着》）
  * 会包含进太多别的书里，那种误配比漏配难发现得多。
  * 有作者信息时，第三轮还要求作者也对得上一半，再收一道口。
+ *
+ * **收 names 而不是一个 title**，是 2026-08-14 真机实测逼出来的一条。
+ * 那本书豆瓣写作「思维 : 关于决策、问题解决与预测的新科学」，
+ * 主书名只有「思维」两个字（文件名只能用主书名，副标题太长），
+ * 而微信读书那头写的是带副标题的全名。于是逐字不中、归一不中，
+ * 第三轮又被那道四字门槛挡在外面——一本明明有笔记的书，机器一条都取不到。
+ *
+ * 出路不是把门槛放宽到两个字（那会让《活着》匹配上一堆书，误配比漏配难发现得多），
+ * 而是**把这本书已知的每一个名字都拿来试**：主书名、带副标题的全名，都是它。
+ * 全名一到手，第二轮的归一比对就直接命中了，一道门槛都不用动。
+ * 这两个名字建书时本来就在手上（全名正是写进 aliases 的那个），从来不必现算。
  */
 function matchBook<T extends SourceBook>(
     books: readonly T[],
-    title: string,
+    names: readonly string[],
     author: string,
 ): T | null {
-    const exact = books.find((book) => book.title === title);
+    // 空名字不参与比对：normalize('') 是空串，而空串被任何字符串包含，
+    // 第三轮会拿它匹配上书架第一本书——一次静默的、100% 错的命中
+    const candidates = names.map((name) => name.trim()).filter(Boolean);
 
-    if (exact) return exact;
+    for (const name of candidates) {
+        const exact = books.find((book) => book.title === name);
 
-    const key = normalize(title);
-    const normalized = books.find((book) => normalize(book.title) === key);
+        if (exact) return exact;
+    }
 
-    if (normalized) return normalized;
+    for (const name of candidates) {
+        const key = normalize(name);
 
-    if (key.length < 4) return null;
+        if (!key) continue;
+
+        const normalized = books.find((book) => normalize(book.title) === key);
+
+        if (normalized) return normalized;
+    }
 
     const authorKey = normalize(author);
 
-    return (
-        books.find((book) => {
+    for (const name of candidates) {
+        const key = normalize(name);
+
+        if (key.length < 4) continue;
+
+        const loose = books.find((book) => {
             const candidate = normalize(book.title);
             const overlaps =
                 candidate.length >= 4 && (candidate.includes(key) || key.includes(candidate));
@@ -182,8 +215,12 @@ function matchBook<T extends SourceBook>(
             const bookAuthor = normalize(book.author);
 
             return !bookAuthor || bookAuthor.includes(authorKey) || authorKey.includes(bookAuthor);
-        }) ?? null
-    );
+        });
+
+        if (loose) return loose;
+    }
+
+    return null;
 }
 
 /** 归一：剥书名号、去掉全部空白与常见标点，只留「是不是同一本书」这件事 */

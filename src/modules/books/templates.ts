@@ -1,7 +1,7 @@
 /**
- * [INPUT]: 依赖 ../../core/constants 的 BOOK_CHAPTER_PREFIX/BOOK_THOUGHT_PREFIX 与
+ * [INPUT]: 依赖 ../../core/constants 的 BOOK_CALLOUTS/BOOK_CHAPTER_PREFIX/BOOK_THOUGHT_PREFIX 与
  *          CARD_FIELDS/CardField（卡片十字段的权威顺序）；依赖 ./parsers 的 ParsedHighlight 类型
- * [OUTPUT]: 对外提供 highlightLines/chapterHeadingLine（划线的行形态）、
+ * [OUTPUT]: 对外提供 highlightLines/thoughtLines/legacyThoughtLine/chapterHeadingLine（划线的行形态）、
  *           ExcerptCardOptions 与 excerptCardContent（摘卡的完整正文）
  * [POS]: books 模块的文本工厂，「写进笔记的字长什么样」的唯一出处，
  *        与 projects/templates 在各自模块里担同一职：其他文件一律不拼字符串。
@@ -12,7 +12,12 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { BOOK_CHAPTER_PREFIX, BOOK_THOUGHT_PREFIX, CARD_FIELDS } from '../../core/constants';
+import {
+    BOOK_CALLOUTS,
+    BOOK_CHAPTER_PREFIX,
+    BOOK_THOUGHT_PREFIX,
+    CARD_FIELDS,
+} from '../../core/constants';
 import type { CardField } from '../../core/constants';
 import type { ParsedHighlight } from './parsers';
 
@@ -21,19 +26,43 @@ import type { ParsedHighlight } from './parsers';
 // ============================================================
 
 /**
- * 一条划线渲染成的行：顶层列表行是划线本身，想法各缩进一层挂在它名下。
- * 没有划线只有想法（Kindle 的独立笔记）时，想法自己顶层成行。
- * 这个形态同时被合并去重按同一规则读取——写与读一旦分叉，同一条划线每次导入都是「新的」。
+ * 一条划线渲染成的行：一块引用标注装划线本身，想法各成一块备注标注嵌在它里面。
+ * 没有划线只有想法（Kindle 的独立笔记）时，想法自己顶层成块。
+ * 每块之后留一个空行——那一行是「这条到此为止」的唯一分界，读的时候也靠它。
+ *
+ * v0.14.0 由缩进列表改成标注块，理由写在 BOOK_CALLOUTS 头上：两种字的价值完全不同，
+ * 排成同一串 bullet 就分不出谁在说话。旧笔记里的列表形态仍然读得懂（见 mergeHighlights），
+ * 只是不再产出——写与读一旦分叉，同一条划线每次导入都会被当成「新的」。
  */
 export function highlightLines(highlight: ParsedHighlight): string[] {
-    if (!highlight.text) {
-        return highlight.thoughts.map((thought) => `- ${BOOK_THOUGHT_PREFIX}${thought}`);
+    const lines: string[] = [];
+
+    if (highlight.text) {
+        lines.push(BOOK_CALLOUTS.highlight, `> ${highlight.text}`);
+
+        // 想法嵌一层：它是对着这一句写的，平列会让它变成一条与上下文无关的独白
+        for (const thought of highlight.thoughts) {
+            lines.push(`> ${BOOK_CALLOUTS.thought}`, `> > ${thought}`);
+        }
+    } else {
+        for (const thought of highlight.thoughts) {
+            lines.push(BOOK_CALLOUTS.thought, `> ${thought}`);
+        }
     }
 
-    return [
-        `- ${highlight.text}`,
-        ...highlight.thoughts.map((thought) => `\t- ${BOOK_THOUGHT_PREFIX}${thought}`),
-    ];
+    lines.push('');
+
+    return lines;
+}
+
+/** 一条想法嵌进某条划线块里的样子。补挂到既有划线名下时用它 */
+export function thoughtLines(thought: string): string[] {
+    return [`> ${BOOK_CALLOUTS.thought}`, `> > ${thought}`];
+}
+
+/** 旧形态（v0.14.0 之前）的想法行。只在往旧笔记里补挂时用，新笔记一律走 thoughtLines */
+export function legacyThoughtLine(thought: string): string {
+    return `\t- ${BOOK_THOUGHT_PREFIX}${thought}`;
 }
 
 /** 章节在「全部划线」小节里的样子：三级标题，比小节自身低一级 */

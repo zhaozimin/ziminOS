@@ -22,6 +22,11 @@
     "UID": "number",
     "rating": "number",
     "author": "multitext",
+    "translator": "multitext",
+    "publisher": "text",
+    "published": "text",
+    "pages": "number",
+    "cover": "text",
     "up": "multitext",
     "get": "multitext",
     "gift": "checkbox"

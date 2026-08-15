@@ -1,277 +1,71 @@
 /**
- * [INPUT]: 依赖 obsidian 的 PluginSettingTab 基类、Setting 构建器与 setIcon；依赖 ./core/constants 的
- *          灵感默认值/插入位置、./core/types 的 ZiminosContext/DEFAULT_SETTINGS
+ * [INPUT]: 依赖 obsidian 的 PluginSettingTab 基类、Setting 构建器、setIcon 与 Platform；
+ *          依赖 ./settingsModel 的 TABS/TEXTS/TEXT_FIELDS/BOOK_TAG_PREFIX_FIELD 与它们的类型、
+ *          ./core/commands 的 GROUP_COLORS、./core/constants 的灵感默认值/插入位置与 BOOK_TAG_COUNTS、
+ *          ./core/markdownStyle 的 FORMAT_RULES、./core/types 的 ZiminosContext/DEFAULT_SETTINGS
  * [OUTPUT]: 对外提供 ZiminosSettingTab 与它的注入契约 SettingActions，由 main.ts 在装配末尾挂载
  * [POS]: 插件唯一的图形界面，也是「人主导」这条红线的具象化——开荒只在用户按下按钮时发生，
  *        两个自动行为、以及状态栏那个常驻按钮，随时都可以关掉。
+ *        本文件只回答「它怎么画出来」；「这一页有什么」住在 ./settingsModel。
+ *        两者 v0.14.0 分家，判据是变更理由不同：加一个设置项、改一句文案动的是那边的表，
+ *        改滚动行为、改标签栏样式动的是这边的类。分家之前它逼近一千行，
+ *        而单文件 ≤800 行这条约束的用处正在于此——它先于人察觉到一个文件在同时干两件事。
  *        它只读写 ctx.settings 并调 ctx.saveSettings，不持有任何领域状态：
  *        每次 display 都从设置对象重新渲染，因此外部改动天然可见。
- *        V3 起页面按系统模块切成八张标签页，切法不是新发明的分类，就是 modules/ 下的目录本身——
+ *        V3 起页面按系统模块切成标签页（v0.14.0 起七张），切法不是新发明的分类，就是 modules/ 下的目录本身——
  *        一页只回答一个系统的配置问题，目录名也各自归还给它服务的那个模块，
  *        于是「一页看完就不必再往下翻」，而不是二十来个设置项排成一条长路。
  *        外观开关与作者名片并在「开荒」页里而不各占一页（一个控件撑一整页是把分页做成摆设）：
  *        开关排在初始化之后，名片是页尾落款；名片与首页导航尾部画的是同一张，实现只有一份。
+ *        读书笔记那三项并进「项目」页，客户那三项并进「人脉」页（v0.14.0）——
+ *        前者因为一本书就是一个项目，后者因为两页加起来只有四个字段；页内切段不切页。
  *        侧边栏那一页不认识任何一条具体命令：清单现读 ctx.commands 的花名册，
  *        因此加一条命令、改一个图标，这个文件一个字都不用改。
- *        开荒动作、两处显隐同步与作者名片都由 main 注入而非自己 import：
- *        设置页因此既不认识参与开荒的模块名单，也不认识状态栏按钮、边栏图标与名片的实现
+ *        开荒动作、微信读书扫码、两处显隐同步与作者名片都由 main 注入而非自己 import：
+ *        设置页因此既不认识参与开荒的模块名单，也不认识登录窗口、状态栏按钮、边栏图标与名片的实现
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { PluginSettingTab, Setting, setIcon } from 'obsidian';
-import { COMMAND_ICONS, GROUP_COLORS } from './core/commands';
+import { Platform, PluginSettingTab, Setting, setIcon } from 'obsidian';
+import { GROUP_COLORS } from './core/commands';
 import type { CommandSpec } from './core/commands';
-import { INSPIRATION_DEFAULTS, INSPIRATION_INSERT_POSITIONS } from './core/constants';
+import { BOOK_TAG_PREFIX_FIELD, TABS, TEXTS, TEXT_FIELDS } from './settingsModel';
+import type {
+    BooleanSettingKey,
+    SettingsTab,
+    TabId,
+    TextField,
+} from './settingsModel';
+import {
+    BOOK_TAG_COUNTS,
+    INSPIRATION_DEFAULTS,
+    INSPIRATION_INSERT_POSITIONS,
+} from './core/constants';
 import type { InspirationInsertPosition } from './core/constants';
 import { FORMAT_RULES } from './core/markdownStyle';
 import { DEFAULT_SETTINGS } from './core/types';
 import type { ZiminosContext } from './core/types';
 
-// ============================================================
-// 八张标签页：一页一个系统模块
-// ============================================================
-
-/**
- * 页标识。取值一律与 modules/ 下的目录同名（clients 例外，它是 contacts 模块里 client.ts 那一支，
- * 单列成页的理由与 COMMAND_GROUPS 里单列成组的理由是同一条：客户与人脉在业务上本就是两个物种）。
- * 同名不是巧合而是纪律——设置页的分页若与代码的模块边界对不上，
- * 学员问「客户的设置在哪」时，答案就会取决于当初谁把它排在了哪一段。
- *
- * appearance、about 与 books 三个模块刻意没有自己的页：前两个是 v0.9.2 拍板的
- * ——一个只有一个开关、一个只有一张名片，一个控件撑一整页是把分页做成了摆设，
- * 而它们都天然属于「开荒」（外观是开荒交付物的一部分，名片是这套交付物的落款）。
- * books 是 v0.12.0 按同一条判据落的，且理由更硬：它一个可配置项都没有——
- * 书住项目目录（一本书就是一个项目，不另立目录设置），划线的形态是写入与去重
- * 共同的约定而不是口味，三条命令自己会出现在「边栏」那一页的清单里。
- * 一张永远空着的标签页比没有这张页更让人怀疑自己漏了什么。
- * 于是八张页一行排得下，标签栏永远不换行。
- */
-type TabId =
-    | 'setup'
-    | 'projects'
-    | 'inspiration'
-    | 'review'
-    | 'contacts'
-    | 'clients'
-    | 'format'
-    | 'ribbon';
-
-/** 一张标签页的全部身份：标签栏上的那枚按钮，与它翻开之后的那句页头 */
-interface SettingsTab {
-    readonly id: TabId;
-    /** 标签上的短名。十张一律两个字——长短不齐的标签会让人以为它们不是一类东西 */
-    readonly label: string;
-    /**
-     * 这个模块的视觉身份，取自 COMMAND_ICONS——与左侧边栏、命令面板同一套笔画图形。
-     * 标签与页头共用同一枚，用户因此知道自己翻开的正是刚点的那张。
-     * 曾经是 emoji：十枚彩色符号排成一行，与这套系统其余图标全不同源，像贴纸不像界面。
-     */
-    readonly icon: string;
-    /** 页头上的全名，带版本号 */
-    readonly module: string;
-    /** 交付状态，即页头那句「这一页管的是什么、跑没跑起来」 */
-    readonly status: string;
-}
-
-/**
- * 八张页，顺序即学员的使用顺序，也正好是 main.ts 的装配顺序与命令的注册顺序：
- * 先开荒，再是每天在用的三套（项目、灵感、复盘），然后是关系与生意（人脉、客户），
- * 最后两张管的不是笔记而是屏幕上的呈现（排版、边栏）。
- *
- * 外观开关与作者名片住在「开荒」页里而不各占一页：一个控件撑一整页是把分页做成摆设，
- * 且它们本就是开荒交付物的一部分与落款（见 TabId 的注释）。
- *
- * 这张表同时喂两处：标签栏上那枚两个字的按钮，与每页页头那句「这一页是谁、跑没跑起来」。
- * 一处事实两处呈现，因此不存在「标签上写着排版、页头却是另一句」这种事。
- *
- * 曾经还有第三处——开荒页上一份逐行列出全部模块的清单。它被摘掉了，
- * 理由是标签栏本身就是那份清单：八张页一直摆在屏幕最上方，点一下即到，
- * 再在首页把同样八行重列一遍，是把「索引」误当成了「介绍」。
- * status 那句话没有跟着一起消失，它搬进了各页页头——在那儿它回答的是「我现在在哪、这页管什么」，
- * 而不是「这套系统都有些什么」。
- */
-const TABS: readonly SettingsTab[] = [
-    {
-        id: 'setup',
-        label: '开荒',
-        icon: COMMAND_ICONS.vault,
-        module: '开荒 v1',
-        status: '运行中 · 七个文件夹、模板与导航，再点一次只补齐缺失',
-    },
-    {
-        id: 'projects',
-        label: '项目',
-        icon: COMMAND_ICONS.project,
-        module: '项目管理 v1',
-        status: '运行中 · 建项目、卡片登记、四态流转',
-    },
-    {
-        id: 'inspiration',
-        label: '灵感',
-        icon: COMMAND_ICONS.inspiration,
-        module: '灵感收集 v1',
-        status: '运行中 · Dataview 未完成任务视图已就绪',
-    },
-    {
-        id: 'review',
-        label: '复盘',
-        icon: COMMAND_ICONS.daily,
-        module: '复盘 v1',
-        status: '运行中 · 五级周期笔记、主题链与项目数据共五个视图',
-    },
-    {
-        id: 'contacts',
-        label: '人脉',
-        icon: COMMAND_ICONS.contact,
-        module: '人脉管理 v1',
-        status: '运行中 · 新建人脉、记人情，档案与 MOC 共八个视图',
-    },
-    {
-        id: 'clients',
-        label: '客户',
-        icon: COMMAND_ICONS.clients,
-        module: '客户与付费 v1',
-        status: '按需启用 · 命令面板运行「初始化客户模块」，长出 MOC 与八个视图',
-    },
-    {
-        id: 'format',
-        label: '排版',
-        icon: COMMAND_ICONS.format,
-        module: '排版 v1',
-        status: '运行中 · 九条标准 Markdown 写法，改完走开就替你整理',
-    },
-    {
-        id: 'ribbon',
-        label: '边栏',
-        icon: COMMAND_ICONS.dock,
-        module: '左侧边栏 v1',
-        status: '运行中 · 二十六条命令配 Pikaicons 图标，默认摆出七条',
-    },
-];
-
-// ============================================================
-// 界面文案（全中文，集中在此，避免同一句话散落在多处）
-// ============================================================
-
-const TEXTS = {
-    initName: '初始化笔记库',
-    initButton: '初始化',
-    initPending: '尚未初始化。点右边的按钮，为这个库铺好七个文件夹、模板与导航，并长出人脉与复盘两套系统。',
-    initReadyPrefix: '已就绪 ✓ 首次开荒于 ',
-    initReadySuffix: '。再点一次只补齐缺失的文件，不会覆盖你写过的任何笔记。',
-
-    autoCardName: '新建笔记自动登记为卡片',
-    autoCardDesc: '在项目或领域目录里新建空笔记时，自动补齐标准字段，并链回它所属的 MOC。关掉后可用命令「初始化当前卡片」手动登记。',
-    autoUpdatedName: '自动维护 updated 时间',
-    autoUpdatedDesc: '改完带 YAML 的笔记、停手两秒后，自动记下这次修改时间。没有 YAML 的笔记一个字都不动。',
-
-    inspirationPositionName: '插入位置',
-    inspirationPositionDesc: '决定新灵感写在标题区或整篇正文的头尾。置顶会自动避开 YAML、页面标题和 Dataview 筛选区。',
-    inspirationFormatName: '单条格式',
-    inspirationFormatDesc: '必须保留 {{content}}；还可使用 {{date}}、{{time}}、{{datetime}}。',
-
-    ribbonIntro:
-        '勾上的命令会变成最左边那一列图标，点一下就执行，不用再打开命令面板。' +
-        '图标是 Pikaicons，跟着主题的颜色与描边粗细走。' +
-        '取消勾选后，它在「设置 → 外观 → 功能区」和手机端的边栏菜单里要重启 Obsidian 才消失；' +
-        '反过来，你在那两处藏掉的图标，这里勾上也不会出现——那是 Obsidian 自己的开关，得回那儿打开。',
-    ribbonCountPrefix: '已摆出 ',
-    ribbonCountSeparator: ' / ',
-    ribbonCountSuffix: ' 条',
-
-    autoFormatName: '改完走开自动整理',
-    autoFormatDesc: '离开一篇刚改过的笔记时，按下面勾选的规则整理它一次；插件自己往笔记里写过东西之后同样会整理。它刻意不动你正开着的那一篇——中文输入法在合成中途被外部改写会吞字，而两秒的停顿在斟酌一句话时太常见。想当场整理，用命令「整理当前笔记格式」。',
-
-    formatRulesHeading: '九条规则',
-    formatRulesIntro: '关掉哪一条，整理时就不再执行它。命令与自动整理走的是同一份勾选。',
-
-    appearanceSwitchName: '状态栏外观开关',
-    appearanceSwitchDesc: '在右下角状态栏放一个 🎨 按钮，点开就能逐个开关 CSS 片段，不必再进设置翻外观页。关掉只是收起按钮，命令面板里的「打开外观开关」照常可用。',
-
-    advancedHeading: '高级设置（一般不用改）',
-    advancedSuffixPrefix: '课程默认值 ',
-    advancedSuffixTail: '，改前三思。',
-} as const;
-
-// ============================================================
-// 文本字段：谁住在哪一页，谁该被收进折叠区
-// ============================================================
-
-/** 走开关控件的设置项，全部是布尔字段 */
-type BooleanSettingKey = 'autoCardInit' | 'autoUpdated' | 'autoFormat' | 'showAppearanceSwitch';
-
-/** 可由文本框直接编辑的设置项，全部是字符串字段 */
-type TextSettingKey =
-    | 'projectFolder'
-    | 'areaFolder'
-    | 'archiveFolder'
-    | 'inspirationFolder'
-    | 'inspirationFileName'
-    | 'inspirationHeading'
-    | 'diaryFolder'
-    | 'contactFolder'
-    | 'clientSources'
-    | 'clientProducts'
-    | 'clientFolder'
-    | 'dateTimeFormat';
-
-/** 一个文本框的全部信息。用数据描述而非十二段雷同代码，增删字段只改这张表 */
-interface TextFieldSpec {
-    readonly key: TextSettingKey;
-    /**
-     * 它住在哪一页。这个字段回答的其实是「这是谁的设置」——
-     * 目录名归属它服务的那个模块，而不是笼统地归属「高级」。
-     */
-    readonly tab: TabId;
-    readonly name: string;
-    /** 说明的前半句；高级字段的后半句由默认值自动补出，保证提示与 DEFAULT_SETTINGS 永不失同步 */
-    readonly hint: string;
-    /**
-     * 是否收进本页末尾那个「高级设置（一般不用改）」折叠区。
-     *
-     * 判据不是「难不难懂」，是「改了会不会让学员的库与课程讲义对不上」：
-     * 目录名与时间格式是课程内容的一部分，所以既要留出口，又不能摆在明面上诱导人去动它；
-     * 而客户渠道与产品清单本来就是学员自己的业务数据——产品名只能由他自己写，
-     * 把它锁进「一般不用改」里才是真的误导。
-     */
-    readonly advanced: boolean;
-}
-
-/** 十二个文本字段。同一页内的先后即它们在页面上的先后 */
-const TEXT_FIELDS: readonly TextFieldSpec[] = [
-    { key: 'projectFolder', tab: 'projects', name: '项目目录', hint: '正在推进的项目放在这里。', advanced: true },
-    { key: 'areaFolder', tab: 'projects', name: '领域目录', hint: '长期关注、没有终点的领域放在这里。', advanced: true },
-    { key: 'archiveFolder', tab: 'projects', name: '归档目录', hint: '完成、暂停、放弃的项目会搬到这里；人脉档案搬进来即退出全部名录。', advanced: true },
-
-    { key: 'inspirationFolder', tab: 'inspiration', name: '文件夹', hint: '灵感笔记放在哪个文件夹。相对于笔记库根目录。', advanced: false },
-    { key: 'inspirationFileName', tab: 'inspiration', name: '笔记名称', hint: '灵感写入哪一篇笔记；没写 .md 时会自动补齐。', advanced: false },
-    { key: 'inspirationHeading', tab: 'inspiration', name: '定位标题', hint: '选择标题插入时，用它定位具体区域。可写“灵感集”或完整 Markdown 标题。', advanced: false },
-
-    { key: 'diaryFolder', tab: 'review', name: '复盘目录', hint: '日/周/月/季/年五级复盘的时间轴根目录，五个子目录由它派生。', advanced: true },
-
-    { key: 'contactFolder', tab: 'contacts', name: '人脉目录', hint: '人物档案平铺存放在这里；视图靠 type 认人，挪走也不影响。', advanced: true },
-
-    { key: 'clientSources', tab: 'clients', name: '客户渠道', hint: '「新建客户」的渠道候选，用逗号分隔。走选择而非手打，统计才不会被同义写法打散。', advanced: false },
-    { key: 'clientProducts', tab: 'clients', name: '产品清单', hint: '「增加付费」的产品候选，用逗号分隔。写你自己在卖的东西。', advanced: false },
-    { key: 'clientFolder', tab: 'clients', name: '客户目录', hint: '付费用户档案放在这里，运行「初始化客户模块」后才会用到。', advanced: true },
-
-    { key: 'dateTimeFormat', tab: 'setup', name: '时间格式', hint: 'created 与 updated 字段的写法，moment 语法。', advanced: true },
-];
 
 // ============================================================
 // 注入契约
 // ============================================================
 
 /**
- * 设置页干不了、必须由 main 递进来的四件事。
+ * 设置页干不了、必须由 main 递进来的五件事。
  *
- * 用一个对象而不是四个位置参数：中间两个函数的类型都是 `() => void`，
+ * 用一个对象而不是五个位置参数：中间两个函数的类型都是 `() => void`，
  * 摆成位置参数的话调换顺序照样能通过编译，出的错却是「改了外观开关，边栏跟着动」——
  * 这种错没有任何编译期信号，只能靠人肉眼盯着两行长长的实参对齐。
  */
 export interface SettingActions {
     /** 执行一次开荒。名单住在装配点，设置页因此不认识参与开荒的模块 */
     readonly initialize: () => Promise<void>;
+    /**
+     * 开微信读书的扫码登录窗口。登录逻辑住在 books 模块，设置页因此不 import 它。
+     * 返回是否连上；设置页不看这个值——它连完就整页重建，状态现读设置对象。
+     */
+    readonly connectWeread: () => Promise<boolean>;
     /** 让状态栏那个按钮按当前设置重新决定显隐 */
     readonly syncAppearanceSwitch: () => void;
     /** 让左侧边栏那列图标按当前设置重新决定各自显隐 */
@@ -284,7 +78,7 @@ export interface SettingActions {
 type PanelRenderer = (containerEl: HTMLElement) => void;
 
 /**
- * 复盘、人脉、客户三页除了目录字段没有别的控件。
+ * 复盘与人脉两页除了字段没有别的控件。
  * 写成显式的空实现而不是让它们从 panels 表里缺席，是为了让 Record 的穷尽检查继续成立——
  * 加一张页却忘了写渲染，编译期就过不去，而不是运行时得到一张空白页。
  */
@@ -303,7 +97,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
     private readonly ctx: ZiminosContext;
 
     /**
-     * 三件由 main 注入的事。
+     * 五件由 main 注入的事。
      * 设置页只会改设置对象并落盘，它既不知道有哪些模块要参与开荒，
      * 也无从让屏幕上已经画好的按钮与图标自己变——谁画的谁负责收，
      * 这里只负责在改完之后叫一声。
@@ -321,10 +115,10 @@ export class ZiminosSettingTab extends PluginSettingTab {
     private activeTab: SettingsTab = TABS[0];
 
     /**
-     * 「已摆出 N / 26 条」那行字。
+     * 「已摆出 N / 29 条」那行字。
      *
      * 这是全页唯一一处持有 DOM 引用的地方，理由很具体：勾选要即时更新这个数，
-     * 而重建整页会把滚动条弹回顶部——二十六行排下来，用户勾第十八行时页面一跳，
+     * 而重建整页会把滚动条弹回顶部——二十九行排下来，用户勾第十八行时页面一跳，
      * 他就得重新找回刚才那一行。持有的是一个渲染出来的节点，不是第二份状态：
      * 数字仍然现算自设置对象，每次 display 也会把它换成新节点。
      */
@@ -347,7 +141,6 @@ export class ZiminosSettingTab extends PluginSettingTab {
         inspiration: (el) => this.renderInspirationPanel(el),
         review: FIELDS_ONLY,
         contacts: FIELDS_ONLY,
-        clients: FIELDS_ONLY,
         format: (el) => this.renderFormatPanel(el),
         ribbon: (el) => this.renderRibbonPanel(el),
     };
@@ -409,7 +202,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
 
         this.activeTab = tab;
         this.display();
-        // 换页等于换一屏内容，滚动条必须归零：从二十六行的边栏页切到只有几项的灵感页，
+        // 换页等于换一屏内容，滚动条必须归零：从二十九行的边栏页切到只有几项的灵感页，
         // 不归零的话用户迎面是一片空白，会以为切坏了。containerEl 就是设置弹窗的滚动容器
         this.containerEl.scrollTop = 0;
     }
@@ -417,7 +210,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
     /**
      * 一页的固定骨架：页头 → 明面上的文本字段 → 本页自有控件 → 高级折叠区。
      *
-     * 四段的先后是一条跨八页的承诺，两头各占一句：页头永远先说清这一页是谁、跑没跑起来；
+     * 四段的先后是一条跨七页的承诺，两头各占一句：页头永远先说清这一页是谁、跑没跑起来；
      * 折叠区永远在最后，于是任何一页往下翻到底，危险的东西都在同一个位置、同一个标题下，
      * 不需要每页重新找一遍。中间两段的顺序是「先说东西放哪儿，再说怎么用它」——
      * 灵感页把落点三问排在插入位置与格式之前，正是这条顺序，不必自己再画一次字段。
@@ -484,13 +277,25 @@ export class ZiminosSettingTab extends PluginSettingTab {
             });
     }
 
-    /** 画出本页某一档（明面/高级）的全部文本字段。没有就一个都不画，也不留空标题 */
+    /**
+     * 画出本页某一档（明面/高级）的全部文本字段。没有就一个都不画，也不留空标题。
+     * 带段名的字段在段名一变时先落一道小标题——人脉页靠它把「人脉」与「客户」分开，
+     * 而绝大多数页一个段名都没有，于是一道标题也不会多出来。
+     */
     private renderTextFields(containerEl: HTMLElement, tab: TabId, advanced: boolean): void {
         const fields = TEXT_FIELDS.filter(
             (field) => field.tab === tab && field.advanced === advanced,
         );
+        let currentSection = '';
 
         for (const field of fields) {
+            const section = field.section ?? '';
+
+            if (section && section !== currentSection) {
+                new Setting(containerEl).setName(section).setHeading();
+            }
+
+            currentSection = section;
             this.renderTextField(containerEl, field);
         }
     }
@@ -515,7 +320,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
      * 这里刻意不做清洗与校验：留空或写错的值由各功能模块在使用时回落到默认值，
      * 校验集中在读取侧，设置页只负责如实记录用户敲进去的字。
      */
-    private renderTextField(containerEl: HTMLElement, field: TextFieldSpec): void {
+    private renderTextField(containerEl: HTMLElement, field: TextField): void {
         const fallback: string = DEFAULT_SETTINGS[field.key];
         // 明面上的字段只说它是什么；高级字段还要多说一句默认值，那是「改前三思」的依据
         const desc = field.advanced
@@ -577,13 +382,95 @@ export class ZiminosSettingTab extends PluginSettingTab {
     }
 
     // ============================================================
-    // 四、项目页：两个自动行为
+    // 四、项目页：两个自动行为，加读书笔记那一段
     // ============================================================
 
     /** 插件仅有的两个常驻监听都住在 modules/projects，所以它们的开关也该在这一页 */
     private renderProjectsPanel(containerEl: HTMLElement): void {
         this.renderToggle(containerEl, 'autoCardInit', TEXTS.autoCardName, TEXTS.autoCardDesc);
         this.renderToggle(containerEl, 'autoUpdated', TEXTS.autoUpdatedName, TEXTS.autoUpdatedDesc);
+        this.renderBooksSection(containerEl);
+    }
+
+    /**
+     * 读书笔记的三项设置，同住项目页——一本书就是一个项目，不另开一页。
+     *
+     * 三项按「书建出来长什么样 → 划线从哪儿来」排：前两项决定标签怎么写，
+     * 第三项是全插件唯一一处凭据的开关。书目字段（作者、ISBN、出版社）一项都不在这里，
+     * 因为它们没有口味可言——豆瓣怎么写就怎么落，让人去配等于让人去改事实。
+     */
+    private renderBooksSection(containerEl: HTMLElement): void {
+        new Setting(containerEl).setName(TEXTS.booksHeading).setDesc(TEXTS.booksIntro).setHeading();
+
+        this.renderTextField(containerEl, BOOK_TAG_PREFIX_FIELD);
+
+        new Setting(containerEl)
+            .setName(TEXTS.bookTagCountName)
+            .setDesc(TEXTS.bookTagCountDesc)
+            .addDropdown((dropdown) => {
+                for (const count of BOOK_TAG_COUNTS) {
+                    dropdown.addOption(String(count), count === 0 ? '不写标签' : `前 ${count} 个`);
+                }
+
+                dropdown
+                    .setValue(String(this.normalizeBookTagCount(this.ctx.settings.bookTagCount)))
+                    .onChange(async (value) => {
+                        this.ctx.settings.bookTagCount = this.normalizeBookTagCount(Number(value));
+
+                        await this.ctx.saveSettings();
+                    });
+            });
+
+        this.renderWereadRow(containerEl);
+    }
+
+    /** 防御手改 data.json 写进来的怪数：不在候选里就回落默认，与灵感插入位置同一姿态 */
+    private normalizeBookTagCount(value: number): number {
+        return BOOK_TAG_COUNTS.includes(value) ? value : DEFAULT_SETTINGS.bookTagCount;
+    }
+
+    /**
+     * 微信读书的连接状态，加一个按钮。
+     *
+     * 它是设置而不只是命令，理由是「人主导」：这是全插件唯一一份存在 data.json 里的凭据，
+     * 那就必须有一处能看见它在不在、并且能当场撤掉。命令面板里那条「连接微信读书」
+     * 只能连不能断——一条只往一个方向走的命令，不构成开关。
+     * 断开只清掉本机存的那串 Cookie，不去动微信读书那边的任何东西：
+     * 插件从来不代替用户管理他在别人家的账号。
+     */
+    private renderWereadRow(containerEl: HTMLElement): void {
+        const connected = !!this.ctx.settings.wereadCookie.trim();
+
+        new Setting(containerEl)
+            .setName(TEXTS.wereadName)
+            .setDesc(
+                Platform.isDesktopApp
+                    ? connected
+                        ? TEXTS.wereadConnected
+                        : TEXTS.wereadDisconnected
+                    : TEXTS.wereadMobile,
+            )
+            .addButton((button) => {
+                button.setButtonText(connected ? '断开' : '扫码连接').setDisabled(!Platform.isDesktopApp);
+
+                if (!connected) button.setCta();
+
+                button.onClick(async () => {
+                    button.setDisabled(true);
+
+                    try {
+                        if (connected) {
+                            this.ctx.settings.wereadCookie = '';
+                            await this.ctx.saveSettings();
+                        } else {
+                            await this.actions.connectWeread();
+                        }
+                    } finally {
+                        // 重建整页即刷新状态；旧按钮随 containerEl 一起丢弃，无需解禁
+                        this.display();
+                    }
+                });
+            });
     }
 
     // ============================================================
@@ -670,7 +557,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
     /**
      * 一条规则一行。
      *
-     * 它与边栏那二十六行是同一种控件——勾选决定一个 id 在不在清单里，而不是翻一个布尔字段。
+     * 它与边栏那二十九行是同一种控件——勾选决定一个 id 在不在清单里，而不是翻一个布尔字段。
      * 存清单而不是九个布尔字段，是为了让「加一条规则」不必动设置契约：
      * 老库升级时那条新规则不在清单里，于是默认不开，这与「不替用户改他没选过的东西」同源。
      */
@@ -724,11 +611,11 @@ export class ZiminosSettingTab extends PluginSettingTab {
     }
 
     // ============================================================
-    // 八、边栏页：二十六行
+    // 八、边栏页：二十九行
     // ============================================================
 
     /**
-     * 边栏页：一句说明 + 按分组排下来的二十六行。
+     * 边栏页：一句说明 + 按分组排下来的二十九行。
      *
      * 清单现读花名册而不是自己维护一份，因此它与命令面板里能搜到的命令永远是同一批；
      * 分组标题按「相邻两行的 group 不同」切出来，与外观开关面板用的是同一套画法——
@@ -759,7 +646,7 @@ export class ZiminosSettingTab extends PluginSettingTab {
     }
 
     /**
-     * 「已摆出 7 / 26 条」。给的是一个量级感：勾多了那条边栏会变成谁也不看的图标柱。
+     * 「已摆出 7 / 29 条」。给的是一个量级感：勾多了那条边栏会变成谁也不看的图标柱。
      * 总数现算自花名册，不写死——这一页不认识任何一条具体命令，也就不该认识它们有几条。
      */
     private describeRibbonCount(): string {

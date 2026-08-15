@@ -75,12 +75,37 @@ export function appleBooksAvailable(): boolean {
  * 走 macOS 自带的 sqlite3 命令行而不是打包一个 sqlite 库：Obsidian 插件带原生模块
  * 要为每个平台各编一份，而 wasm 版又要多塞几百 KB 进 main.js——
  * 而这件事只在 macOS 上发生，那台机器上一定有 /usr/bin/sqlite3。
- * 库文件只读不写，且 Obsidian 与图书 App 可能同时开着，因此以 file: URI 加
- * `?immutable=1` 打开——不加的话 sqlite 会尝试建 -wal 文件，对别人正在用的库动手。
+ *
+ * **打开方式试两次，顺序不能反**，这是 2026-08-14 真机实测改出来的：
+ *
+ * 先 `mode=ro`（只读，但认 -wal）。苹果图书是 WAL 模式，而且**把大量新数据留在 -wal 里
+ * 迟迟不回写主库**——实测那台机器上主库里 0 本书、0 条标注，-wal 里 1 本书、4 条标注。
+ * 此前这里写的是 `immutable=1`，那个参数会让 sqlite **完全忽略 -wal**，
+ * 于是插件读到一份陈旧快照，如实汇报「这台机器上没有苹果图书的划线」——
+ * 一句听上去像事实的假话，而学员手里正开着那本划得满满的书。
+ * 「不去碰别人正开着的库」这个初衷是对的，只是选错了参数：`mode=ro` 同样一个字节都不写。
+ *
+ * 再退回 `immutable=1`。只读连接读 WAL 需要 -shm 那个共享内存文件；
+ * 库已经彻底 checkpoint 过、-shm 不在时，`mode=ro` 会开不了，那时用不着管 -wal，
+ * 陈旧快照与真相恰好是同一份。两条路合起来才覆盖全部状态。
  */
 async function query(dbPath: string, sql: string): Promise<Record<string, unknown>[]> {
+    try {
+        return await runSqlite(dbPath, sql, 'mode=ro');
+    } catch {
+        // -shm 不在导致开不了：那意味着没有待回写的 -wal，陈旧快照就是全部事实
+        return await runSqlite(dbPath, sql, 'immutable=1');
+    }
+}
+
+/** 按给定的打开参数跑一次 sqlite3 */
+async function runSqlite(
+    dbPath: string,
+    sql: string,
+    openMode: string,
+): Promise<Record<string, unknown>[]> {
     return new Promise((resolve, reject) => {
-        const child = spawn('sqlite3', [`file:${dbPath}?immutable=1`, sql, '-json'], {
+        const child = spawn('sqlite3', [`file:${dbPath}?${openMode}`, sql, '-json'], {
             timeout: 20000,
         });
 

@@ -28,7 +28,7 @@ import { nowStampAndUid } from '../../core/time';
 import type { ZiminosContext, ZiminosSettings } from '../../core/types';
 import { mocBasenameOf, mocPathOf } from './moc';
 import { mocContent, mocFrontmatter } from './templates';
-import type { ContainerSection, ProjectRelation } from './templates';
+import type { Bibliography, ContainerSection, ProjectRelation } from './templates';
 
 /**
  * 「从库里选一个人」这项能力，由 main 在装配时注入。
@@ -120,7 +120,7 @@ export interface ContainerKind {
      * 它天然只属于你自己，问一句「这是谁委托的」是在问一个不成立的问题。
      */
     readonly asksOwnership: boolean;
-    /** MOC 正文的小节骨架。只有书籍带（书籍信息与全部划线两个落点），项目与领域不带 */
+    /** MOC 正文的小节骨架。只有书籍带（全部划线一个落点），项目与领域不带 */
     readonly sections?: readonly ContainerSection[];
     /** base 视图的显示名。缺省即「项目文件」，书籍传「读书卡片」 */
     readonly baseViewName?: string;
@@ -148,8 +148,10 @@ export const AREA_KIND: ContainerKind = {
  *
  * 一本书就是一个项目——读完是它的终点，所以有 status: active，
  * 住项目目录（不新增设置字段），读完用既有的「完成项目」归档。
- * 不问归属：书没有委托人。它比另两类多两样东西——正文的两个小节落点
- * （书籍信息给豆瓣插件或手抄，全部划线给导入命令），以及 base 视图的书面名字。
+ * 不问归属：书没有委托人。它比另两类多两样东西——正文的「全部划线」落点，
+ * 以及 base 视图的书面名字。曾经还有一个「书籍信息」小节，v0.14.0 撤了：
+ * 那一节是一张给人读的登记表，而那些值机器读得更多（按出版年排、按页数挑），
+ * 于是整体搬进 YAML——摆在正文里它们只是五行谁也不会读第二遍的字。
  * 问答不走本流程：建书的三问（书名/作者/为什么读）由 books 模块自己问，
  * 答案装进 preset 递进来，因此这里一句提示文案都不必分叉。
  */
@@ -160,7 +162,7 @@ export const BOOK_KIND: ContainerKind = {
     folderKey: 'projectFolder',
     folderFallback: FOLDERS.projects,
     asksOwnership: false,
-    sections: [{ heading: BOOK_HEADINGS.info }, { heading: BOOK_HEADINGS.highlights }],
+    sections: [{ heading: BOOK_HEADINGS.highlights }],
     baseViewName: '读书卡片',
 };
 
@@ -178,13 +180,21 @@ export interface CreateContainerPreset {
     author?: string;
     /** 别名（书籍的带副标题全名），只有书籍预设带 */
     aliases?: readonly string[];
+    /** 标签（书籍的豆瓣分类词），只有书籍预设带 */
+    tags?: readonly string[];
+    /**
+     * 覆盖 UID。缺省即照惯例取 14 位时间戳。
+     *
+     * 只有书籍走这条：书自带 ISBN 这个全世界通用的号，给它再发一个只有本库认得的时间戳，
+     * 等于给同一个东西造两个主键。换不出数字（豆瓣没给 ISBN、或者那本根本是电子书）时
+     * 预设不带这一项，于是自动落回时间戳——本流程因此不需要知道 ISBN 是什么。
+     */
+    uid?: number;
     /** 出处链接（书籍的豆瓣条目地址），只有书籍预设带 */
     source?: string;
-    /**
-     * 覆盖 kind 自带的小节骨架。
-     * 书籍走这条把已经取回来的书目信息直接落进「书籍信息」小节——
-     * 那些字段建书那一刻就在手上了，留一个空标题等学员自己抄是把一步退回三步。
-     */
+    /** 书目字段（译者、出版社、出版年、页数、封面），只有书籍预设带 */
+    bibliography?: Bibliography;
+    /** 覆盖 kind 自带的小节骨架。目前无人使用，留着是因为容器规格本就允许各类自带骨架 */
     sections?: readonly ContainerSection[];
 }
 
@@ -333,13 +343,16 @@ export async function createContainer(
         const identity = {
             description,
             created,
-            uid,
+            // 书籍预设带着 ISBN 进来时用它当 UID；其余一切情况仍是这一刻的 14 位时间戳
+            uid: preset?.uid ?? uid,
             type: kind.type,
             status: kind.status,
             // 作者只可能来自书籍预设；交互路径从不问它，undefined 时那一行整行不写
             author: preset?.author,
             aliases: preset?.aliases,
+            tags: preset?.tags,
             source: preset?.source,
+            bibliography: preset?.bibliography,
             relation,
         };
 

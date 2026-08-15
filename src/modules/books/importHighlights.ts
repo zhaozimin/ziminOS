@@ -1,9 +1,9 @@
 /**
  * [INPUT]: 依赖 obsidian 的 ButtonComponent/Modal/Notice/TFile 与 App 类型；
  *          依赖 core/commands 的 BOOK_COMMANDS、core/constants 的 BOOK_CHAPTER_PREFIX/
- *          BOOK_HEADINGS/BOOK_THOUGHT_PREFIX、core/modals 的 ChoiceModal/TextAreaModal、
+ *          BOOK_HEADINGS/BOOK_THOUGHT_PREFIX/BOOK_CALLOUTS、core/modals 的 ChoiceModal/TextAreaModal、
  *          core/types 的 ZiminosContext；依赖同目录 identity 的三个判定函数、
- *          parsers 的 parseHighlightExport 与 templates 的 highlightLines/chapterHeadingLine
+ *          parsers 的 parseHighlightExport 与 templates 的行形态四函数
  * [OUTPUT]: 对外提供 registerImportHighlightsCommand（命令 import-book-highlights）
  *           与 mergeHighlights（合并去重的纯函数，导出以供检验）
  * [POS]: books 模块的导入编排：选书 → 粘贴 → 解析 →（多本书时选一本）→ 确认 → 合并写入。
@@ -20,13 +20,23 @@
 import { ButtonComponent, Modal, Notice } from 'obsidian';
 import type { App, TFile } from 'obsidian';
 import { BOOK_COMMANDS } from '../../core/commands';
-import { BOOK_CHAPTER_PREFIX, BOOK_HEADINGS, BOOK_THOUGHT_PREFIX } from '../../core/constants';
+import {
+    BOOK_CALLOUTS,
+    BOOK_CHAPTER_PREFIX,
+    BOOK_HEADINGS,
+    BOOK_THOUGHT_PREFIX,
+} from '../../core/constants';
 import { ChoiceModal, TextAreaModal } from '../../core/modals';
 import type { ZiminosContext } from '../../core/types';
 import { allBookMocs, bookNameOf, isArchivedBook, isBookMoc } from './identity';
 import { parseHighlightExport } from './parsers';
 import type { ParsedBook, ParsedHighlight } from './parsers';
-import { chapterHeadingLine, highlightLines } from './templates';
+import {
+    chapterHeadingLine,
+    highlightLines,
+    legacyThoughtLine,
+    thoughtLines,
+} from './templates';
 
 // ============================================================
 // 文案
@@ -267,6 +277,14 @@ interface ExistingHighlight {
     /** 原始行号；-1 表示「本批次刚加的，还没有真实行号」 */
     line: number;
     readonly thoughts: Set<string>;
+    /**
+     * 它是不是 v0.14.0 之前那种缩进列表形态。
+     *
+     * 补挂想法必须按**那条划线自己的形态**落笔：往旧笔记的列表行下面塞一块标注，
+     * 会得到一条既不属于列表也不属于引用的孤儿行。老库不迁移是刻意的——
+     * 「只增不删不改」这条承诺对已经写下的笔记同样成立。
+     */
+    readonly legacy: boolean;
 }
 
 /** 一次合并的结果与账目 */
@@ -284,6 +302,25 @@ export interface MergeOutcome {
 const SECTION_BOUNDARY = /^#{1,2}\s/;
 
 /** 顶层划线行 */
+/** 一条标注块的头行判定：`> [!quote]`，或嵌了 depth 层 `> ` 之后的 `> [!note]` */
+function isCalloutHead(line: string, callout: string, depth = 0): boolean {
+    return line.trim().startsWith('> '.repeat(depth) + callout);
+}
+
+/** 剥掉 depth 层引用标记，交出正文 */
+function stripQuote(line: string, depth: number): string {
+    let body = line.trim();
+
+    for (let level = 0; level < depth; level += 1) {
+        body = body.replace(/^>\s?/, '');
+    }
+
+    return body.trim();
+}
+
+/** 独立想法条目的键前缀，与 keyOfHighlight 共用 */
+const THOUGHT_MARKER = BOOK_THOUGHT_PREFIX.trim();
+
 const TOP_BULLET = /^- /;
 
 /** 缩进一层的想法行 */
@@ -297,10 +334,31 @@ const NESTED_BULLET = /^[ \t]+- /;
  * 小节里若出现围栏（学员挪过 base 块），插入点一律停在围栏之前。
  * 全部插入点按原始行号计算、从后往前落刀，因此既有行一个都不动。
  */
+/**
+ * 把一条划线压平成单行。
+ *
+ * 划线可以跨段：微信读书的 `markText` 里真的带着换行（划过一整段又续到下一段时）。
+ * 原样写进去的结果是**它自己撑破了自己那一行**——`- 第一段` 之后那个换行让第二段
+ * 变成一条与列表无关的裸行，Markdown 上不再属于这一条，去重时也读不回来：
+ * 下次同步算出的键含两段，文件里那条只有第一段，于是每同步一次就重复一次，且没有上限。
+ *
+ * 真机实测抓到过（2026-08-14，《思维》4 条划线里有 2 条跨段）：第二次同步新增 2 条。
+ * 压平放在入口而不是写入处，是为了让**写入与去重看到的是同一份文本**——
+ * 这正是本模块「去重键与写入格式必须同源」那条纪律的延伸；分开做就会再次分叉。
+ */
+function flatten(highlight: ParsedHighlight): ParsedHighlight {
+    return {
+        chapter: highlight.chapter.replace(/\s+/g, ' ').trim(),
+        text: highlight.text.replace(/\s+/g, ' ').trim(),
+        thoughts: highlight.thoughts.map((thought) => thought.replace(/\s+/g, ' ').trim()),
+    };
+}
+
 export function mergeHighlights(
     content: string,
-    highlights: readonly ParsedHighlight[],
+    incoming: readonly ParsedHighlight[],
 ): MergeOutcome {
+    const highlights = incoming.map(flatten);
     let lines = content.split('\n');
     let headingIndex = lines.findIndex((line) => line.trim() === BOOK_HEADINGS.highlights);
 
@@ -337,8 +395,35 @@ export function mergeHighlights(
             continue;
         }
 
+        // ── 新形态：标注块。`> [!quote]` 起一条划线，正文在紧接着的那一行 ──
+        if (isCalloutHead(raw, BOOK_CALLOUTS.highlight)) {
+            const body = lines[cursor + 1] ?? '';
+
+            owner = { line: cursor + 1, thoughts: new Set<string>(), legacy: false };
+            existingHighlights.set(keyOfLineBody(stripQuote(body, 1)), owner);
+            cursor += 1;
+            continue;
+        }
+
+        // 嵌一层的备注块是上面那条划线的想法；顶层的是一条没有划线的独立笔记
+        if (isCalloutHead(raw, BOOK_CALLOUTS.thought, 1)) {
+            owner?.thoughts.add(normalizedKey(stripQuote(lines[cursor + 1] ?? '', 2)));
+            cursor += 1;
+            continue;
+        }
+
+        if (isCalloutHead(raw, BOOK_CALLOUTS.thought)) {
+            const body = normalizedKey(stripQuote(lines[cursor + 1] ?? '', 1));
+
+            owner = { line: cursor + 1, thoughts: new Set([body]), legacy: false };
+            existingHighlights.set(body ? THOUGHT_MARKER + body : '', owner);
+            cursor += 1;
+            continue;
+        }
+
+        // ── 旧形态：缩进列表（v0.14.0 之前建的书）。只读不写，读得懂才不会重复导入 ──
         if (TOP_BULLET.test(raw)) {
-            owner = { line: cursor, thoughts: new Set<string>() };
+            owner = { line: cursor, thoughts: new Set<string>(), legacy: true };
             existingHighlights.set(keyOfLineBody(raw.slice(2).trim()), owner);
             continue;
         }
@@ -444,10 +529,22 @@ export function mergeHighlights(
 
                 if (fresh.length) {
                     let at = existing.line + 1;
+                    const rendered: string[] = [];
 
-                    while (at < sectionEnd && NESTED_BULLET.test(lines[at])) at += 1;
+                    // 补挂要按**那条划线自己的形态**落笔：旧笔记里的划线是列表行，
+                    // 往它下面塞一块标注会得到一条既不属于列表也不属于引用的孤儿
+                    if (existing.legacy) {
+                        while (at < sectionEnd && NESTED_BULLET.test(lines[at])) at += 1;
 
-                    pushThought(at, fresh.map((thought) => `\t- ${BOOK_THOUGHT_PREFIX}${thought}`));
+                        for (const thought of fresh) rendered.push(legacyThoughtLine(thought));
+                    } else {
+                        // 走到块尾：同一块引用里的行都以 `>` 打头，空行即分界
+                        while (at < sectionEnd && lines[at].startsWith('>')) at += 1;
+
+                        for (const thought of fresh) rendered.push(...thoughtLines(thought));
+                    }
+
+                    pushThought(at, rendered);
 
                     for (const thought of fresh) existing.thoughts.add(normalizedKey(thought));
 
@@ -464,6 +561,7 @@ export function mergeHighlights(
         existingHighlights.set(key, {
             line: -1,
             thoughts: new Set(highlight.thoughts.map(normalizedKey)),
+            legacy: false,
         });
 
         const rendered = highlightLines(highlight);

@@ -1,7 +1,8 @@
 /**
  * [INPUT]: 依赖 obsidian 的 Notice/TFile；依赖 core/commands 的 BOOK_COMMANDS、
- *          core/constants 的 BOOK_HEADINGS、core/modals 的 TextInputModal/ChoiceModal、
+ *          core/modals 的 TextInputModal/ChoiceModal、
  *          core/types 的 ZiminosContext；依赖同目录 douban 的搜索与详情、
+ *          isbn 的 isbnUid、tags 的 bookTags、
  *          sources 的 collectHighlightsFor、importHighlights 的 mergeHighlights、
  *          createBook 的 BookContainerCreator 洞
  * [OUTPUT]: 对外提供 registerReadBookCommand（命令 read-book：一步建书并把划线灌进去）
@@ -10,7 +11,8 @@
  *        那三步里有两步是机器该干的活儿：书目字段（出版社、ISBN、页数、评分）机器查得到，
  *        划线在哪台设备上机器也查得到；只有「是不是这一本」必须人来指认。
  *        因此这条命令只问两件事——书名叫什么、候选里哪一本——其余全自动：
- *        抓详情 → 建《书名》文件夹与 MOC（YAML 与书籍信息小节都已填好）→
+ *        抓详情 → 建《书名》文件夹与 MOC（YAML 与书籍信息小节都已填好，
+ *        UID 直接取这本书的 ISBN、标签直接取豆瓣的分类词）→
  *        遍历本机可用的划线来源 → 按书名认出这本书 → 划线直接落进「全部划线」小节。
  *        中间不产生任何需要学员再搬一次的中转文件，这正是「一步」的全部含义
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -19,13 +21,14 @@
 import { Notice } from 'obsidian';
 import type { TFile } from 'obsidian';
 import { BOOK_COMMANDS } from '../../core/commands';
-import { BOOK_HEADINGS } from '../../core/constants';
 import { ChoiceModal, TextInputModal } from '../../core/modals';
 import type { ZiminosContext } from '../../core/types';
 import type { BookContainerCreator } from './createBook';
 import { doubanFetcher, fetchBookDetail, searchBooks } from './douban';
 import type { DoubanBook, DoubanCandidate } from './douban';
 import { mergeHighlights } from './importHighlights';
+import { isbnUid } from './isbn';
+import { bookTags } from './tags';
 import { availableSourceLabels, collectHighlightsFor } from './sources';
 import { loginWeread } from './sourceWeread';
 import { allBookMocs, bookNameOf, isBookMoc } from './identity';
@@ -123,16 +126,29 @@ async function readBook(ctx: ZiminosContext, create: BookContainerCreator): Prom
         return;
     }
 
+    // ISBN 换不出数字（豆瓣没登记书号）时整项不带，容器流程自动落回时间戳 UID；
+    // 标签数量设成 0 时同理——两处都不该由这里去判断「那就写个什么吧」
+    const uid = isbnUid(detail.isbn);
+    const tags = bookTags(detail.tags, ctx.settings.bookTagPrefix, ctx.settings.bookTagCount);
+
     const moc = await create({
         name: `《${detail.title}》`,
         description: detail.summary.slice(0, 120),
         ...(detail.authors.length ? { author: detail.authors[0] } : {}),
         ...(fullTitleOf(detail) ? { aliases: [fullTitleOf(detail)] } : {}),
+        ...(uid === null ? {} : { uid }),
+        ...(tags.length ? { tags } : {}),
         source: detail.url,
-        sections: [
-            { heading: BOOK_HEADINGS.info, body: bookInfoBody(detail) },
-            { heading: BOOK_HEADINGS.highlights },
-        ],
+        // 书目全部进 YAML，正文只留「全部划线」一个落点。
+        // ISBN 已经是 UID、豆瓣链接已经是 source，因此这里不再重复它们；
+        // 豆瓣评分也不写——`rating` 是学员自己打的分，两个评分挤一个字段是在制造误读
+        bibliography: {
+            translators: detail.translators,
+            publisher: detail.publisher,
+            publishDate: detail.publishDate,
+            pages: detail.pages,
+            cover: detail.cover,
+        },
     });
 
     // 建档失败（重名、名称非法、用户取消）已由容器流程给出中文 Notice，这里不再补刀
@@ -142,7 +158,9 @@ async function readBook(ctx: ZiminosContext, create: BookContainerCreator): Prom
     // 4. 自动找划线：不问他在哪个 App 里读的，机器自己查
     // ============================================================
 
-    await pullHighlights(ctx, moc, detail.title, detail.authors[0] ?? '');
+    // 两个名字都递过去：主书名是文件名，带副标题的全名才是设备与云端那头写的那个。
+    // 只递主书名的话，《思维 : 关于决策、问题解决与预测的新科学》这类书永远匹配不上
+    await pullHighlights(ctx, moc, [detail.title, fullTitleOf(detail)], detail.authors[0] ?? '');
 }
 
 /**
@@ -154,7 +172,7 @@ async function readBook(ctx: ZiminosContext, create: BookContainerCreator): Prom
 export async function pullHighlights(
     ctx: ZiminosContext,
     moc: TFile,
-    title: string,
+    names: readonly string[],
     author: string,
 ): Promise<void> {
     const labels = availableSourceLabels(ctx);
@@ -165,32 +183,48 @@ export async function pullHighlights(
         return;
     }
 
+    const title = names[0] ?? '';
     const pulling = new Notice(MESSAGES.pulling, 0);
-    const hits = await collectHighlightsFor(ctx, title, author);
+    const hits = await collectHighlightsFor(ctx, names, author);
 
     pulling.hide();
 
-    if (!hits.length) {
-        new Notice(`${MESSAGES.noHighlights}（已查过：${labels.join('、')}）`, 8000);
-
-        return;
-    }
+    // 来源自己交代的「这次少了什么」，一律带到学员眼前
+    const notes = hits.map((hit) => hit.note ?? '').filter(Boolean);
 
     // 多个来源的划线一次性合并：mergeHighlights 按归一文本去重，
     // 同一句话在手机和 Kindle 上各划过一次也只会写进去一条
     const all = hits.flatMap((hit) => [...hit.highlights]);
 
+    // 一条都没有时不写盘、也不说「取回来了」。有交代就说交代，
+    // 没交代才是真的「这本书没划过线」——两者绝不能说成同一句话
+    if (!all.length) {
+        new Notice(
+            notes.length ? notes.join('\n') : `${MESSAGES.noHighlights}（已查过：${labels.join('、')}）`,
+            12000,
+        );
+
+        return;
+    }
+
     ctx.guard.mark(moc.path);
     await ctx.app.vault.process(moc, (content) => mergeHighlights(content, all).content);
 
     const outcome = mergeHighlights(await ctx.app.vault.read(moc), all);
-    const from = hits.map((hit) => `${hit.label} ${hit.highlights.length} 条`).join('、');
+    // 只报真的交了东西的来源：一个只带着一句交代、零条划线的来源
+    // 出现在「已从 微信读书 0 条 取回划线」里，读起来像在邀功
+    const from = hits
+        .filter((hit) => hit.highlights.length)
+        .map((hit) => `${hit.label} ${hit.highlights.length} 条`)
+        .join('、');
+
+    const tail = notes.length ? `\n${notes.join('\n')}` : '';
 
     new Notice(
-        outcome.skipped && !outcome.added
+        (outcome.skipped && !outcome.added
             ? `划线已是最新（${from}）。`
-            : `已从 ${from} 取回划线，写进《${title}》。`,
-        6000,
+            : `已从 ${from} 取回划线，写进《${title}》。`) + tail,
+        notes.length ? 12000 : 6000,
     );
 }
 
@@ -203,32 +237,6 @@ function fullTitleOf(book: DoubanBook): string {
     return book.subtitle ? `${book.title}：${book.subtitle}` : '';
 }
 
-/**
- * 「书籍信息」小节的正文。
- *
- * 只写机器查得到、且学员会想看的那几项；封面单独一行图片——
- * 它是这一页唯一的视觉锚点，翻到这本书时一眼认得出。
- * 空字段整行不写：一行「ISBN：」比没有这一行更让人以为是自己漏填了。
- */
-function bookInfoBody(book: DoubanBook): string {
-    const rows: string[] = [];
-    const add = (label: string, value: string): void => {
-        if (value) rows.push(`- ${label}：${value}`);
-    };
-
-    add('作者', book.authors.join('、'));
-    add('译者', book.translators.join('、'));
-    add('出版社', book.publisher);
-    add('出版年', book.publishDate);
-    add('页数', book.pages);
-    add('ISBN', book.isbn);
-    add('豆瓣评分', book.rating);
-    rows.push(`- 豆瓣：${book.url}`);
-
-    if (book.cover) rows.push('', `![封面|140](${book.cover})`);
-
-    return rows.join('\n');
-}
 
 /** 把任意异常转成一句可读的中文尾巴 */
 function describe(error: unknown): string {
@@ -259,10 +267,20 @@ async function syncCurrentBook(ctx: ZiminosContext): Promise<void> {
 
     if (!target) return;
 
-    const name = stripBraces(bookNameOf(target));
+    // 别名里装的正是带副标题的全名（建书时写进去的），它往往才是微读与设备那头的书名。
+    // 「同步」与「读一本书」必须递同一批名字，否则同一本书在两条命令下匹配结果会不一样
+    const names = [stripBraces(bookNameOf(target)), ...aliasesOf(ctx, target)];
     const author = firstAuthorOf(ctx, target);
 
-    await pullHighlights(ctx, target, name, author);
+    await pullHighlights(ctx, target, names, author);
+}
+
+/** 这本书的别名。缺席、写成标量、写成列表三种形态都认 */
+function aliasesOf(ctx: ZiminosContext, moc: TFile): readonly string[] {
+    const raw = ctx.app.metadataCache.getFileCache(moc)?.frontmatter?.aliases;
+    const list = Array.isArray(raw) ? raw : [raw];
+
+    return list.map((value) => String(value ?? '').trim()).filter(Boolean);
 }
 
 /** 从全库的书里选一本 */

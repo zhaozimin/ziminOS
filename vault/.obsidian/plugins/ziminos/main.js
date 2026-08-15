@@ -277,11 +277,19 @@ var PAYMENT_FIELDS = {
 var CLIENT_PAYMENT_HEADING = "## \u4ED8\u8D39\u4E0E\u4EA4\u4ED8";
 var PROJECT_PAYMENT_HEADING = "## \u6536\u6B3E";
 var BOOK_HEADINGS = {
-  info: "## \u4E66\u7C4D\u4FE1\u606F",
   highlights: "## \u5168\u90E8\u5212\u7EBF"
 };
 var BOOK_CHAPTER_PREFIX = "### ";
 var BOOK_THOUGHT_PREFIX = "\u{1F4AD} ";
+var BOOK_CALLOUTS = {
+  highlight: "> [!quote]",
+  thought: "> [!note]"
+};
+var BOOK_TAG_COUNTS = [0, 3, 5, 8];
+var BOOK_TAG_DEFAULTS = {
+  prefix: "\u4E66\u7C4D",
+  count: 5
+};
 var SNIPPET_FOLDER_NAME = "snippets";
 var SNIPPET_EXTENSION = ".css";
 var APPEARANCE_FILE_NAME = "appearance.json";
@@ -1314,6 +1322,8 @@ var DEFAULT_SETTINGS = {
   ribbonCommands: DEFAULT_RIBBON_COMMANDS,
   autoFormat: true,
   formatRules: DEFAULT_FORMAT_RULES,
+  bookTagPrefix: BOOK_TAG_DEFAULTS.prefix,
+  bookTagCount: BOOK_TAG_DEFAULTS.count,
   wereadCookie: "",
   initializedAt: ""
 };
@@ -1364,6 +1374,53 @@ var CHANNEL_REGIONS = [
       { name: "\u5C0F\u7EA2\u4E66", label: "\u5149\u5934obsidian\u6559\u7A0B", url: "https://xhslink.cn/m/3NnLHIc6lQA", path: XIAOHONGSHU_PATH, color: "#FF2442", wordmark: true }
     ]
   }
+];
+var CREDITS = [
+  {
+    name: "obsidian-weread-plugin",
+    url: "https://github.com/zhaohongxuan/obsidian-weread-plugin",
+    what: "\u5FAE\u4FE1\u8BFB\u4E66\u7684\u626B\u7801\u767B\u5F55\u4E0E\u4E09\u4E2A\u53D6\u6570\u63A5\u53E3\u3002\u300C\u5F00\u4E00\u4E2A\u771F\u6D4F\u89C8\u5668\u7A97\u53E3\u8BA9\u7528\u6237\u81EA\u5DF1\u626B\uFF0C\u6210\u529F\u540E\u53D6\u8D70 Cookie\u300D\u8FD9\u6761\u8DEF\u662F\u5B83\u8D70\u901A\u7684\u2014\u2014\u5426\u5219\u53EA\u80FD\u8BA9\u5B66\u5458\u53BB\u5F00\u53D1\u8005\u5DE5\u5177\u91CC\u624B\u6284\u4E00\u957F\u4E32 Cookie\u3002"
+  },
+  {
+    name: "obsidian-kindle-plugin",
+    url: "https://github.com/hadynz/obsidian-kindle-plugin",
+    what: "Kindle \u7684 My Clippings.txt \u8BE5\u53BB\u54EA\u513F\u627E\u3001\u90A3\u4EFD\u7EAF\u6587\u672C\u7684\u5206\u9694\u4E0E\u5143\u4FE1\u606F\u8BE5\u600E\u4E48\u5207\u3002"
+  },
+  {
+    name: "obsidian-apple-books-highlights-plugin",
+    url: "https://github.com/bandantonio/obsidian-apple-books-highlights-plugin",
+    what: "\u82F9\u679C\u56FE\u4E66\u7684\u5212\u7EBF\u539F\u6765\u5C31\u8EBA\u5728\u672C\u673A\u4E24\u4E2A SQLite \u91CC\uFF0C\u8FDE\u5E93\u8DEF\u5F84\u4E0E\u90A3\u4E24\u5F20\u8868\u7684\u5B57\u6BB5\u540D\u90FD\u662F\u4ECE\u5B83\u90A3\u513F\u8BA4\u5F97\u7684\u3002"
+  },
+  {
+    name: "obsidian-douban",
+    url: "https://github.com/Wanxp/obsidian-douban",
+    what: "\u8C46\u74E3\u7684 JSON \u63A5\u53E3\u5BF9\u975E\u6D4F\u89C8\u5668\u4E00\u5F8B\u62D2\u7EDD\u3001\u800C HTML \u9875\u9762\u7167\u5E38\u8FD4\u56DE\uFF0C\u4EE5\u53CA\u88AB\u53CD\u722C\u62E6\u4E0B\u65F6\u9875\u9762\u957F\u4EC0\u4E48\u6837\u2014\u2014\u7701\u4E86\u6211\u4EEC\u4E00\u6574\u8F6E\u8BD5\u9519\u3002"
+  },
+  {
+    name: "QuickAdd",
+    url: "https://github.com/chhoumann/quickadd",
+    what: "ziminOS \u7684\u5EFA\u9879\u76EE\u3001\u5361\u7247\u767B\u8BB0\u4E0E\u56DB\u6001\u6D41\u8F6C\uFF0C\u672C\u6765\u662F\u8DD1\u5728\u5B83\u4E0A\u9762\u7684\u4E09\u4EFD\u811A\u672C\u3002\u8FD9\u5957\u7CFB\u7EDF\u662F\u4ECE\u90A3\u4E09\u4EFD\u811A\u672C\u957F\u51FA\u6765\u7684\u3002"
+  },
+  {
+    name: "Obsidian Linter",
+    url: "https://github.com/platers/obsidian-linter",
+    what: "\u300C\u6539\u5B8C\u8D70\u5F00\u5C31\u66FF\u4F60\u6574\u7406\u300D\u8FD9\u4EF6\u4E8B\u672C\u6765\u8BE5\u88C5\u5B83\u3002\u6392\u7248\u6A21\u5757\u90A3\u4E5D\u6761\u89C4\u5219\u662F\u7167\u7740\u5B83\u7684\u884C\u4E3A\u91CD\u5199\u7684\uFF0C\u4E3A\u7684\u662F\u8BA9\u5B66\u5458\u5C11\u88C5\u4E00\u4E2A\u63D2\u4EF6\u3002"
+  }
+];
+var BUNDLED = [
+  { name: "Dataview", url: "https://github.com/blacksmithgu/obsidian-dataview", what: "MIT" },
+  { name: "Minimal", url: "https://github.com/kepano/obsidian-minimal", what: "MIT" },
+  {
+    name: "Style Settings",
+    url: "https://github.com/community-archive/obsidian-style-settings",
+    what: "GPL-3.0"
+  },
+  { name: "Pikaicons", url: "https://pikaicons.com", what: "MIT" },
+  { name: "Simple Icons", url: "https://simpleicons.org", what: "CC0" },
+  { name: "\u971E\u9E5C\u6587\u6977 GB \u5C4F\u5E55\u7248", url: "https://github.com/lxgw/LxgwWenKai-Screen", what: "OFL" },
+  { name: "\u601D\u6E90\u5B8B\u4F53 CN", url: "https://github.com/adobe-fonts/source-han-serif", what: "OFL" },
+  { name: "\u6731\u96C0\u4EFF\u5B8B", url: "https://github.com/TrionesType/zhuque", what: "OFL" },
+  { name: "\u971E\u9E5C\u65B0\u6670\u9ED1\uFF0B", url: "https://github.com/lxgw/LxgwNeoXiHei", what: "IPA" }
 ];
 function renderEduLogo(el) {
   const svg = el.createSvg("svg", {
@@ -1433,6 +1490,39 @@ function renderAboutPanel(el) {
     const pills = section.createDiv({ cls: "ziminos-about-pills" });
     for (const channel of region.channels) renderChannel(pills, channel);
   }
+  renderCredits(panel);
+}
+function renderCredits(panel) {
+  const block = panel.createDiv({ cls: "ziminos-about-credits" });
+  block.createDiv({ cls: "ziminos-about-credits-title", text: "\u81F4\u8C22" });
+  block.createDiv({
+    cls: "ziminos-about-credits-intro",
+    text: "\u8FD9\u4E9B\u9879\u76EE\u5728\u524D\u9762\uFF0CziminOS \u624D\u8D70\u5F97\u5230\u8FD9\u91CC\u3002\u4E00\u884C\u4EE3\u7801\u90FD\u6CA1\u6709\u6284\uFF0C\u4F46\u6BCF\u4E00\u6761\u90FD\u6539\u53D8\u4E86\u5B83\u7684\u67D0\u4E2A\u51B3\u5B9A\u3002"
+  });
+  for (const credit of CREDITS) {
+    const item = block.createDiv({ cls: "ziminos-about-credit" });
+    item.createEl("a", {
+      cls: "ziminos-about-credit-name",
+      text: credit.name,
+      href: credit.url,
+      attr: { rel: "noopener" }
+    });
+    item.createDiv({ cls: "ziminos-about-credit-what", text: credit.what });
+  }
+  const bundled = block.createDiv({ cls: "ziminos-about-bundled" });
+  bundled.createSpan({ text: "\u968F\u5E93\u4EA4\u4ED8\uFF1A" });
+  BUNDLED.forEach((entry, index) => {
+    if (index) bundled.appendText("\u3001");
+    bundled.createEl("a", {
+      cls: "ziminos-about-bundled-link",
+      text: entry.name,
+      href: entry.url,
+      attr: { rel: "noopener", title: `${entry.name}\uFF08${entry.what}\uFF09` }
+    });
+  });
+  bundled.appendText(
+    "\u3002Dataview\u3001Minimal\u3001Style Settings \u4E0E\u56DB\u6B3E\u5B57\u4F53\u7684\u8BB8\u53EF\u8BC1\u5168\u6587\u968F\u6587\u4EF6\u4EA4\u4ED8\uFF1BPikaicons \u7684\u8BB8\u53EF\u58F0\u660E\u5199\u5728 main.js \u5F00\u5934\uFF1BSimple Icons \u662F CC0\u3002"
+  );
 }
 var aboutViews = [
   {
@@ -2045,13 +2135,25 @@ function isArchivedBook(ctx, file) {
 
 // src/modules/books/templates.ts
 function highlightLines(highlight) {
-  if (!highlight.text) {
-    return highlight.thoughts.map((thought) => `- ${BOOK_THOUGHT_PREFIX}${thought}`);
+  const lines = [];
+  if (highlight.text) {
+    lines.push(BOOK_CALLOUTS.highlight, `> ${highlight.text}`);
+    for (const thought of highlight.thoughts) {
+      lines.push(`> ${BOOK_CALLOUTS.thought}`, `> > ${thought}`);
+    }
+  } else {
+    for (const thought of highlight.thoughts) {
+      lines.push(BOOK_CALLOUTS.thought, `> ${thought}`);
+    }
   }
-  return [
-    `- ${highlight.text}`,
-    ...highlight.thoughts.map((thought) => `	- ${BOOK_THOUGHT_PREFIX}${thought}`)
-  ];
+  lines.push("");
+  return lines;
+}
+function thoughtLines(thought) {
+  return [`> ${BOOK_CALLOUTS.thought}`, `> > ${thought}`];
+}
+function legacyThoughtLine(thought) {
+  return `	- ${BOOK_THOUGHT_PREFIX}${thought}`;
 }
 function chapterHeadingLine(chapter) {
   return `${BOOK_CHAPTER_PREFIX}${chapter}`;
@@ -2706,10 +2808,29 @@ function normalizedTitle(name) {
   return stripBraces(name.trim()).replace(/\s+/g, "");
 }
 var SECTION_BOUNDARY = /^#{1,2}\s/;
+function isCalloutHead(line, callout, depth = 0) {
+  return line.trim().startsWith("> ".repeat(depth) + callout);
+}
+function stripQuote(line, depth) {
+  let body = line.trim();
+  for (let level = 0; level < depth; level += 1) {
+    body = body.replace(/^>\s?/, "");
+  }
+  return body.trim();
+}
+var THOUGHT_MARKER = BOOK_THOUGHT_PREFIX.trim();
 var TOP_BULLET = /^- /;
 var NESTED_BULLET = /^[ \t]+- /;
-function mergeHighlights(content, highlights) {
-  var _a;
+function flatten(highlight) {
+  return {
+    chapter: highlight.chapter.replace(/\s+/g, " ").trim(),
+    text: highlight.text.replace(/\s+/g, " ").trim(),
+    thoughts: highlight.thoughts.map((thought) => thought.replace(/\s+/g, " ").trim())
+  };
+}
+function mergeHighlights(content, incoming) {
+  var _a, _b, _c, _d;
+  const highlights = incoming.map(flatten);
   let lines = content.split("\n");
   let headingIndex = lines.findIndex((line) => line.trim() === BOOK_HEADINGS.highlights);
   if (headingIndex < 0) {
@@ -2736,8 +2857,27 @@ ${BOOK_HEADINGS.highlights}
       owner = null;
       continue;
     }
+    if (isCalloutHead(raw, BOOK_CALLOUTS.highlight)) {
+      const body = (_a = lines[cursor + 1]) != null ? _a : "";
+      owner = { line: cursor + 1, thoughts: /* @__PURE__ */ new Set(), legacy: false };
+      existingHighlights.set(keyOfLineBody(stripQuote(body, 1)), owner);
+      cursor += 1;
+      continue;
+    }
+    if (isCalloutHead(raw, BOOK_CALLOUTS.thought, 1)) {
+      owner == null ? void 0 : owner.thoughts.add(normalizedKey(stripQuote((_b = lines[cursor + 1]) != null ? _b : "", 2)));
+      cursor += 1;
+      continue;
+    }
+    if (isCalloutHead(raw, BOOK_CALLOUTS.thought)) {
+      const body = normalizedKey(stripQuote((_c = lines[cursor + 1]) != null ? _c : "", 1));
+      owner = { line: cursor + 1, thoughts: /* @__PURE__ */ new Set([body]), legacy: false };
+      existingHighlights.set(body ? THOUGHT_MARKER + body : "", owner);
+      cursor += 1;
+      continue;
+    }
     if (TOP_BULLET.test(raw)) {
-      owner = { line: cursor, thoughts: /* @__PURE__ */ new Set() };
+      owner = { line: cursor, thoughts: /* @__PURE__ */ new Set(), legacy: true };
       existingHighlights.set(keyOfLineBody(raw.slice(2).trim()), owner);
       continue;
     }
@@ -2798,8 +2938,15 @@ ${BOOK_HEADINGS.highlights}
         );
         if (fresh.length) {
           let at = existing.line + 1;
-          while (at < sectionEnd && NESTED_BULLET.test(lines[at])) at += 1;
-          pushThought(at, fresh.map((thought) => `	- ${BOOK_THOUGHT_PREFIX}${thought}`));
+          const rendered2 = [];
+          if (existing.legacy) {
+            while (at < sectionEnd && NESTED_BULLET.test(lines[at])) at += 1;
+            for (const thought of fresh) rendered2.push(legacyThoughtLine(thought));
+          } else {
+            while (at < sectionEnd && lines[at].startsWith(">")) at += 1;
+            for (const thought of fresh) rendered2.push(...thoughtLines(thought));
+          }
+          pushThought(at, rendered2);
           for (const thought of fresh) existing.thoughts.add(normalizedKey(thought));
           attachedThoughts += fresh.length;
         }
@@ -2808,7 +2955,8 @@ ${BOOK_HEADINGS.highlights}
     }
     existingHighlights.set(key, {
       line: -1,
-      thoughts: new Set(highlight.thoughts.map(normalizedKey))
+      thoughts: new Set(highlight.thoughts.map(normalizedKey)),
+      legacy: false
     });
     const rendered = highlightLines(highlight);
     const chapter = highlight.chapter.trim();
@@ -2823,7 +2971,7 @@ ${BOOK_HEADINGS.highlights}
       pushInsert(chapterTail(headingLine), rendered);
       continue;
     }
-    const block = (_a = freshChapters.get(chapterKey)) != null ? _a : ["", chapterHeadingLine(chapter)];
+    const block = (_d = freshChapters.get(chapterKey)) != null ? _d : ["", chapterHeadingLine(chapter)];
     block.push(...rendered);
     freshChapters.set(chapterKey, block);
   }
@@ -3062,8 +3210,20 @@ function parseBookDetail(html, id, candidateTitle = "") {
     rating: attr(html, /property="v:average">\s*([0-9.]+)/),
     cover: attr(html, /<meta property="og:image" content="([^"]*)"/),
     url: detailUrlOf(id),
-    summary: attr(html, /<meta property="og:description" content="([^"]*)"/)
+    summary: attr(html, /<meta property="og:description" content="([^"]*)"/),
+    tags: parseCategories(html)
   };
+}
+function parseCategories(html) {
+  var _a, _b, _c, _d;
+  const raw = (_b = (_a = /criteria\s*=\s*'([^']*)'/.exec(html)) == null ? void 0 : _a[1]) != null ? _b : "";
+  if (!raw) return [];
+  const categories = [];
+  for (const entry of raw.split("|")) {
+    const word = (_d = (_c = /^7:(.+)$/.exec(entry.trim())) == null ? void 0 : _c[1]) == null ? void 0 : _d.trim();
+    if (word) categories.push(word);
+  }
+  return categories;
 }
 function infoBlockOf(html) {
   const start = html.indexOf('id="info"');
@@ -3101,9 +3261,56 @@ function text(value) {
   return String(value).trim();
 }
 
+// src/modules/books/isbn.ts
+function isbnUid(raw) {
+  const compact = raw.replace(/[^0-9Xx]/g, "").toUpperCase();
+  if (/^\d{13}$/.test(compact)) return Number(compact);
+  if (/^\d{9}[\dX]$/.test(compact)) return Number(toIsbn13(compact));
+  return null;
+}
+function toIsbn13(isbn10) {
+  const body = `978${isbn10.slice(0, 9)}`;
+  let sum2 = 0;
+  for (let index = 0; index < body.length; index += 1) {
+    sum2 += Number(body[index]) * (index % 2 === 0 ? 1 : 3);
+  }
+  return `${body}${(10 - sum2 % 10) % 10}`;
+}
+
+// src/modules/books/tags.ts
+var TAG_SAFE = /[^\p{L}\p{N}_-]+/gu;
+function bookTags(categories, prefix, count) {
+  const limit = normalizeCount(count);
+  if (limit <= 0) return [];
+  const root = normalizePrefix(prefix);
+  const tags = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const category of categories) {
+    const leaf = sanitize(category);
+    if (!leaf || seen.has(leaf)) continue;
+    seen.add(leaf);
+    tags.push(`${root}/${leaf}`);
+    if (tags.length >= limit) break;
+  }
+  return tags;
+}
+function normalizeCount(count) {
+  return BOOK_TAG_COUNTS.includes(count) ? count : BOOK_TAG_DEFAULTS.count;
+}
+function normalizePrefix(prefix) {
+  const segments = prefix.split("/").map((segment) => sanitize(segment)).filter(Boolean);
+  return segments.length ? segments.join("/") : BOOK_TAG_DEFAULTS.prefix;
+}
+function sanitize(value) {
+  return value.trim().replace(TAG_SAFE, "-").replace(/-{2,}/g, "-").replace(/^-+|-+$/g, "");
+}
+
 // src/modules/books/sourceWeread.ts
 var import_obsidian11 = require("obsidian");
 var BASE = "https://weread.qq.com";
+var GATEWAY = "https://i.weread.qq.com/api/agent/gateway";
+var API_KEY_PATH = "/api/skills/apikeyGet";
+var SKILL_VERSION = "1.0.3";
 var REQUIRED_COOKIES = ["wr_vid", "wr_skey"];
 function wereadAvailable(ctx) {
   return import_obsidian11.Platform.isDesktopApp && !!ctx.settings.wereadCookie.trim();
@@ -3164,7 +3371,7 @@ function resolveBrowserWindow() {
   }
 }
 async function api(ctx, path) {
-  var _a;
+  var _a, _b;
   const response = await (0, import_obsidian11.requestUrl)({
     url: `${BASE}${path}`,
     method: "GET",
@@ -3175,9 +3382,51 @@ async function api(ctx, path) {
     },
     throw: false
   });
-  if (response.status === 401) throw new Error("\u5FAE\u4FE1\u8BFB\u4E66\u7684\u767B\u5F55\u5DF2\u8FC7\u671F\uFF0C\u91CD\u65B0\u8FD0\u884C\u300C\u8FDE\u63A5\u5FAE\u4FE1\u8BFB\u4E66\u300D\u3002");
+  if (response.status === 401) throw new Error(EXPIRED);
   if (response.status >= 400) throw new Error(`\u5FAE\u4FE1\u8BFB\u4E66\u63A5\u53E3\u8FD4\u56DE ${response.status}`);
-  return (_a = response.json) != null ? _a : {};
+  const payload = (_a = response.json) != null ? _a : {};
+  const errCode = Number((_b = payload.errCode) != null ? _b : 0);
+  if (errCode) {
+    throw new Error(
+      errCode === -2012 || errCode === -2010 ? EXPIRED : `\u5FAE\u4FE1\u8BFB\u4E66\u62D2\u7EDD\u4E86\u8FD9\u6B21\u8BF7\u6C42\uFF1A${text2(payload.errMsg) || errCode}`
+    );
+  }
+  return payload;
+}
+var EXPIRED = "\u5FAE\u4FE1\u8BFB\u4E66\u7684\u767B\u5F55\u5DF2\u8FC7\u671F\uFF0C\u91CD\u65B0\u8FD0\u884C\u300C\u8FDE\u63A5\u5FAE\u4FE1\u8BFB\u4E66\u300D\u3002";
+var cachedKey = "";
+async function apiKey(ctx) {
+  if (cachedKey) return cachedKey;
+  try {
+    const payload = await api(ctx, API_KEY_PATH);
+    cachedKey = text2(payload.apikey);
+  } catch (e) {
+    cachedKey = "";
+  }
+  return cachedKey;
+}
+async function gateway(ctx, apiName, key, params) {
+  var _a, _b;
+  const response = await (0, import_obsidian11.requestUrl)({
+    url: GATEWAY,
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ api_name: apiName, skill_version: SKILL_VERSION, ...params }),
+    throw: false
+  });
+  if (response.status === 401) {
+    cachedKey = "";
+    throw new Error(EXPIRED);
+  }
+  if (response.status >= 400) throw new Error(`\u5FAE\u4FE1\u8BFB\u4E66\u7F51\u5173\u8FD4\u56DE ${response.status}`);
+  const payload = (_a = response.json) != null ? _a : {};
+  if (Number((_b = payload.errcode) != null ? _b : 0)) {
+    throw new Error(`\u5FAE\u4FE1\u8BFB\u4E66\u62D2\u7EDD\u4E86\u8FD9\u6B21\u8BF7\u6C42\uFF1A${text2(payload.errmsg) || payload.errcode}`);
+  }
+  return payload;
 }
 async function listWereadBooks(ctx) {
   const payload = await api(ctx, "/api/user/notebook");
@@ -3188,13 +3437,21 @@ async function listWereadBooks(ctx) {
     if (!book) continue;
     const id = text2(book.bookId);
     const title = text2(book.title);
-    if (id && title) books.push({ id, title, author: text2(book.author) });
+    if (id && title) {
+      books.push({
+        id,
+        title,
+        author: text2(book.author)
+      });
+    }
   }
   return books;
 }
-async function readWereadBookHighlights(ctx, bookId) {
-  var _a, _b, _c;
-  const marks = await api(ctx, `/web/book/bookmarklist?bookId=${encodeURIComponent(bookId)}`);
+async function readWereadBookHighlights(ctx, book) {
+  var _a;
+  const key = await apiKey(ctx);
+  if (!key) return await cookieOnly(ctx, book.id);
+  const marks = await gateway(ctx, "/book/bookmarklist", key, { bookId: book.id });
   const chapterNames = chapterMapOf(marks);
   const highlights = [];
   for (const raw of asArray(marks.updated)) {
@@ -3208,33 +3465,53 @@ async function readWereadBookHighlights(ctx, bookId) {
     });
   }
   try {
-    const reviews = await api(
-      ctx,
-      `/web/review/list?bookId=${encodeURIComponent(bookId)}&listType=11&mine=1&syncKey=0`
-    );
-    for (const raw of asArray(reviews.reviews)) {
-      const wrapper = raw;
-      const review = (_b = wrapper.review) != null ? _b : wrapper;
-      const written = text2(review.content);
-      if (!written) continue;
-      const quoted = text2(review.abstract);
-      const hostIndex = quoted ? highlights.findIndex(
-        (item) => item.text.replace(/\s+/g, "") === quoted.replace(/\s+/g, "")
-      ) : -1;
-      if (hostIndex >= 0) {
-        const host = highlights[hostIndex];
-        highlights[hostIndex] = { ...host, thoughts: [...host.thoughts, written] };
-      } else {
-        highlights.push({
-          chapter: (_c = chapterNames.get(text2(review.chapterUid))) != null ? _c : "",
-          text: quoted,
-          thoughts: [written]
-        });
-      }
-    }
-  } catch (e) {
+    const reviews = await gateway(ctx, "/review/list/mine", key, {
+      bookid: book.id,
+      synckey: 0
+    });
+    mergeReviews(highlights, reviews, chapterNames);
+  } catch (error) {
+    if (!highlights.length) throw error;
   }
-  return highlights;
+  return { highlights, note: "" };
+}
+async function cookieOnly(ctx, bookId) {
+  const highlights = [];
+  const reviews = await api(
+    ctx,
+    `/api/review/list?bookId=${encodeURIComponent(bookId)}&listType=11&mine=1&syncKey=0`
+  );
+  mergeReviews(highlights, reviews, /* @__PURE__ */ new Map());
+  return {
+    highlights,
+    note: "\u6CA1\u80FD\u62FF\u5230\u5FAE\u4FE1\u8BFB\u4E66\u7684\u53D6\u6570\u6388\u6743\uFF0C\u8FD9\u6B21\u53EA\u53D6\u56DE\u4E86\u5199\u8FC7\u60F3\u6CD5\u7684\u90A3\u4E9B\uFF1B\u7EAF\u5212\u7EBF\u53D6\u4E0D\u5230\u3002\u91CD\u65B0\u8FD0\u884C\u4E00\u6B21\u300C\u8FDE\u63A5\u5FAE\u4FE1\u8BFB\u4E66\u300D\u901A\u5E38\u5C31\u80FD\u6062\u590D\u3002"
+  };
+}
+function mergeReviews(highlights, payload, chapterNames) {
+  var _a;
+  for (const raw of asArray(payload.reviews)) {
+    const wrapper = raw;
+    const review = (_a = wrapper.review) != null ? _a : wrapper;
+    const written = text2(review.content);
+    if (!written) continue;
+    const quoted = text2(review.abstract);
+    const hostIndex = quoted ? highlights.findIndex(
+      (item) => item.text.replace(/\s+/g, "") === quoted.replace(/\s+/g, "")
+    ) : -1;
+    if (hostIndex >= 0) {
+      const host = highlights[hostIndex];
+      highlights[hostIndex] = { ...host, thoughts: [...host.thoughts, written] };
+    } else {
+      highlights.push({
+        // 想法自带 chapterName，优先用它：一本书可能一条纯划线都没有
+        // （只有「划一段再写句话」的想法），那时章节表是空的，
+        // 靠 chapterUid 去查只会查到空字符串，整章信息白白丢掉
+        chapter: text2(review.chapterName) || chapterNames.get(text2(review.chapterUid)) || "",
+        text: quoted,
+        thoughts: [written]
+      });
+    }
+  }
 }
 function chapterMapOf(payload) {
   const names = /* @__PURE__ */ new Map();
@@ -3273,8 +3550,15 @@ function appleBooksAvailable() {
   return !!firstSqliteIn(LIBRARY_DIR) && !!firstSqliteIn(ANNOTATION_DIR);
 }
 async function query(dbPath, sql) {
+  try {
+    return await runSqlite(dbPath, sql, "mode=ro");
+  } catch (e) {
+    return await runSqlite(dbPath, sql, "immutable=1");
+  }
+}
+async function runSqlite(dbPath, sql, openMode) {
   return new Promise((resolve, reject) => {
-    const child = (0, import_child_process.spawn)("sqlite3", [`file:${dbPath}?immutable=1`, sql, "-json"], {
+    const child = (0, import_child_process.spawn)("sqlite3", [`file:${dbPath}?${openMode}`, sql, "-json"], {
       timeout: 2e4
     });
     let out = "";
@@ -3422,16 +3706,16 @@ function availableSourceLabels(ctx) {
   if (kindleAvailable()) labels.push("Kindle");
   return labels;
 }
-async function collectHighlightsFor(ctx, title, author = "") {
+async function collectHighlightsFor(ctx, names, author = "") {
   const hits = [];
   try {
     if (wereadAvailable(ctx)) {
       const books = (await listWereadBooks(ctx)).map((book) => ({ ...book, label: "\u5FAE\u4FE1\u8BFB\u4E66" }));
-      const matched = matchBook(books, title, author);
+      const matched = matchBook(books, names, author);
       if (matched) {
-        const highlights = await readWereadBookHighlights(ctx, matched.id);
-        if (highlights.length) {
-          hits.push({ label: "\u5FAE\u4FE1\u8BFB\u4E66", title: matched.title, highlights });
+        const { highlights, note } = await readWereadBookHighlights(ctx, matched);
+        if (highlights.length || note) {
+          hits.push({ label: "\u5FAE\u4FE1\u8BFB\u4E66", title: matched.title, highlights, note });
         }
       }
     }
@@ -3440,7 +3724,7 @@ async function collectHighlightsFor(ctx, title, author = "") {
   try {
     if (appleBooksAvailable()) {
       const books = (await listAppleBooks()).map((book) => ({ ...book, label: "\u82F9\u679C\u56FE\u4E66" }));
-      const matched = matchBook(books, title, author);
+      const matched = matchBook(books, names, author);
       if (matched) {
         const highlights = await readAppleBookHighlights(matched.id);
         if (highlights.length) {
@@ -3458,7 +3742,7 @@ async function collectHighlightsFor(ctx, title, author = "") {
         title: book.title,
         author: book.author
       }));
-      const matched = matchBook(books, title, author);
+      const matched = matchBook(books, names, author);
       if (matched) {
         const highlights = readKindleBookHighlights(matched.title);
         if (highlights.length) {
@@ -3470,23 +3754,33 @@ async function collectHighlightsFor(ctx, title, author = "") {
   }
   return hits;
 }
-function matchBook(books, title, author) {
-  var _a;
-  const exact = books.find((book) => book.title === title);
-  if (exact) return exact;
-  const key = normalize(title);
-  const normalized = books.find((book) => normalize(book.title) === key);
-  if (normalized) return normalized;
-  if (key.length < 4) return null;
+function matchBook(books, names, author) {
+  const candidates = names.map((name) => name.trim()).filter(Boolean);
+  for (const name of candidates) {
+    const exact = books.find((book) => book.title === name);
+    if (exact) return exact;
+  }
+  for (const name of candidates) {
+    const key = normalize(name);
+    if (!key) continue;
+    const normalized = books.find((book) => normalize(book.title) === key);
+    if (normalized) return normalized;
+  }
   const authorKey = normalize(author);
-  return (_a = books.find((book) => {
-    const candidate = normalize(book.title);
-    const overlaps = candidate.length >= 4 && (candidate.includes(key) || key.includes(candidate));
-    if (!overlaps) return false;
-    if (!authorKey) return true;
-    const bookAuthor = normalize(book.author);
-    return !bookAuthor || bookAuthor.includes(authorKey) || authorKey.includes(bookAuthor);
-  })) != null ? _a : null;
+  for (const name of candidates) {
+    const key = normalize(name);
+    if (key.length < 4) continue;
+    const loose = books.find((book) => {
+      const candidate = normalize(book.title);
+      const overlaps = candidate.length >= 4 && (candidate.includes(key) || key.includes(candidate));
+      if (!overlaps) return false;
+      if (!authorKey) return true;
+      const bookAuthor = normalize(book.author);
+      return !bookAuthor || bookAuthor.includes(authorKey) || authorKey.includes(bookAuthor);
+    });
+    if (loose) return loose;
+  }
+  return null;
 }
 function normalize(value) {
   return value.replace(/^《|》$/g, "").replace(/[\s：:，,。.、·・\-—_()（）[\]【】"'"'?？!！]/g, "").toLowerCase();
@@ -3549,61 +3843,66 @@ async function readBook(ctx, create) {
     new import_obsidian14.Notice(MESSAGES4.detailFailed + describe2(error), 8e3);
     return;
   }
+  const uid = isbnUid(detail.isbn);
+  const tags = bookTags(detail.tags, ctx.settings.bookTagPrefix, ctx.settings.bookTagCount);
   const moc = await create({
     name: `\u300A${detail.title}\u300B`,
     description: detail.summary.slice(0, 120),
     ...detail.authors.length ? { author: detail.authors[0] } : {},
     ...fullTitleOf(detail) ? { aliases: [fullTitleOf(detail)] } : {},
+    ...uid === null ? {} : { uid },
+    ...tags.length ? { tags } : {},
     source: detail.url,
-    sections: [
-      { heading: BOOK_HEADINGS.info, body: bookInfoBody(detail) },
-      { heading: BOOK_HEADINGS.highlights }
-    ]
+    // 书目全部进 YAML，正文只留「全部划线」一个落点。
+    // ISBN 已经是 UID、豆瓣链接已经是 source，因此这里不再重复它们；
+    // 豆瓣评分也不写——`rating` 是学员自己打的分，两个评分挤一个字段是在制造误读
+    bibliography: {
+      translators: detail.translators,
+      publisher: detail.publisher,
+      publishDate: detail.publishDate,
+      pages: detail.pages,
+      cover: detail.cover
+    }
   });
   if (!moc) return;
-  await pullHighlights(ctx, moc, detail.title, (_a = detail.authors[0]) != null ? _a : "");
+  await pullHighlights(ctx, moc, [detail.title, fullTitleOf(detail)], (_a = detail.authors[0]) != null ? _a : "");
 }
-async function pullHighlights(ctx, moc, title, author) {
+async function pullHighlights(ctx, moc, names, author) {
+  var _a;
   const labels = availableSourceLabels(ctx);
   if (!labels.length) {
     new import_obsidian14.Notice(MESSAGES4.noSource, 1e4);
     return;
   }
+  const title = (_a = names[0]) != null ? _a : "";
   const pulling = new import_obsidian14.Notice(MESSAGES4.pulling, 0);
-  const hits = await collectHighlightsFor(ctx, title, author);
+  const hits = await collectHighlightsFor(ctx, names, author);
   pulling.hide();
-  if (!hits.length) {
-    new import_obsidian14.Notice(`${MESSAGES4.noHighlights}\uFF08\u5DF2\u67E5\u8FC7\uFF1A${labels.join("\u3001")}\uFF09`, 8e3);
+  const notes = hits.map((hit) => {
+    var _a2;
+    return (_a2 = hit.note) != null ? _a2 : "";
+  }).filter(Boolean);
+  const all = hits.flatMap((hit) => [...hit.highlights]);
+  if (!all.length) {
+    new import_obsidian14.Notice(
+      notes.length ? notes.join("\n") : `${MESSAGES4.noHighlights}\uFF08\u5DF2\u67E5\u8FC7\uFF1A${labels.join("\u3001")}\uFF09`,
+      12e3
+    );
     return;
   }
-  const all = hits.flatMap((hit) => [...hit.highlights]);
   ctx.guard.mark(moc.path);
   await ctx.app.vault.process(moc, (content) => mergeHighlights(content, all).content);
   const outcome = mergeHighlights(await ctx.app.vault.read(moc), all);
-  const from = hits.map((hit) => `${hit.label} ${hit.highlights.length} \u6761`).join("\u3001");
+  const from = hits.filter((hit) => hit.highlights.length).map((hit) => `${hit.label} ${hit.highlights.length} \u6761`).join("\u3001");
+  const tail = notes.length ? `
+${notes.join("\n")}` : "";
   new import_obsidian14.Notice(
-    outcome.skipped && !outcome.added ? `\u5212\u7EBF\u5DF2\u662F\u6700\u65B0\uFF08${from}\uFF09\u3002` : `\u5DF2\u4ECE ${from} \u53D6\u56DE\u5212\u7EBF\uFF0C\u5199\u8FDB\u300A${title}\u300B\u3002`,
-    6e3
+    (outcome.skipped && !outcome.added ? `\u5212\u7EBF\u5DF2\u662F\u6700\u65B0\uFF08${from}\uFF09\u3002` : `\u5DF2\u4ECE ${from} \u53D6\u56DE\u5212\u7EBF\uFF0C\u5199\u8FDB\u300A${title}\u300B\u3002`) + tail,
+    notes.length ? 12e3 : 6e3
   );
 }
 function fullTitleOf(book) {
   return book.subtitle ? `${book.title}\uFF1A${book.subtitle}` : "";
-}
-function bookInfoBody(book) {
-  const rows = [];
-  const add = (label, value) => {
-    if (value) rows.push(`- ${label}\uFF1A${value}`);
-  };
-  add("\u4F5C\u8005", book.authors.join("\u3001"));
-  add("\u8BD1\u8005", book.translators.join("\u3001"));
-  add("\u51FA\u7248\u793E", book.publisher);
-  add("\u51FA\u7248\u5E74", book.publishDate);
-  add("\u9875\u6570", book.pages);
-  add("ISBN", book.isbn);
-  add("\u8C46\u74E3\u8BC4\u5206", book.rating);
-  rows.push(`- \u8C46\u74E3\uFF1A${book.url}`);
-  if (book.cover) rows.push("", `![\u5C01\u9762|140](${book.cover})`);
-  return rows.join("\n");
 }
 function describe2(error) {
   return error instanceof Error ? error.message : String(error);
@@ -3617,9 +3916,15 @@ async function syncCurrentBook(ctx) {
   const active = ctx.app.workspace.getActiveFile();
   const target = active && isBookMoc(ctx, active) ? active : await pickBook(ctx);
   if (!target) return;
-  const name = stripBraces2(bookNameOf(target));
+  const names = [stripBraces2(bookNameOf(target)), ...aliasesOf(ctx, target)];
   const author = firstAuthorOf(ctx, target);
-  await pullHighlights(ctx, target, name, author);
+  await pullHighlights(ctx, target, names, author);
+}
+function aliasesOf(ctx, moc) {
+  var _a, _b;
+  const raw = (_b = (_a = ctx.app.metadataCache.getFileCache(moc)) == null ? void 0 : _a.frontmatter) == null ? void 0 : _b.aliases;
+  const list = Array.isArray(raw) ? raw : [raw];
+  return list.map((value) => String(value != null ? value : "").trim()).filter(Boolean);
 }
 async function pickBook(ctx) {
   const books = allBookMocs(ctx);
@@ -5937,7 +6242,19 @@ function toYamlString2(value) {
   return JSON.stringify(String(value));
 }
 function mocFrontmatter(options) {
-  const { description, created, uid, type, status, author, aliases, source, relation } = options;
+  const {
+    description,
+    created,
+    uid,
+    type,
+    status,
+    author,
+    aliases,
+    tags,
+    source,
+    bibliography,
+    relation
+  } = options;
   return [
     "---",
     // 别名是列表类型（types.json 登记为 aliases），有值就逐条写成列表项
@@ -5945,7 +6262,8 @@ function mocFrontmatter(options) {
     `description: ${toYamlString2(description)}`,
     `created: ${created}`,
     "updated:",
-    "tags:",
+    // 书籍带着豆瓣的分类词进来，其余容器仍留一个空键等主人自己填
+    ...(tags == null ? void 0 : tags.length) ? ["tags:", ...tags.map((tag) => `  - ${toYamlString2(tag)}`)] : ["tags:"],
     `UID: ${uid}`,
     `type: ${type}`,
     // 领域没有状态，那一行整行不写；空的 status 键会让它出现在「正在进行中」那张表里
@@ -5955,10 +6273,22 @@ function mocFrontmatter(options) {
     ...author ? ["author:", `  - ${toYamlString2(author)}`] : [],
     // 出处：书籍写豆瓣条目地址。它是 text 类型，直接写裸链接，Obsidian 会渲染成可点的
     ...source ? [`source: ${source}`] : [],
+    ...bibliographyLines(bibliography),
     // 只在有值时才写这一行：空的 client 键会让这个项目被当成一笔没有客户的委托
     ...relation ? [`${relation.field}: "[[${relation.target}]]"`] : [],
     "---"
   ].join("\n");
+}
+function bibliographyLines(bibliography) {
+  if (!bibliography) return [];
+  const { translators, publisher, publishDate, pages, cover } = bibliography;
+  return [
+    ...(translators == null ? void 0 : translators.length) ? ["translator:", ...translators.map((name) => `  - ${toYamlString2(name)}`)] : [],
+    ...publisher ? [`publisher: ${toYamlString2(publisher)}`] : [],
+    ...publishDate ? [`published: ${toYamlString2(publishDate)}`] : [],
+    ...pages ? [`pages: ${pages}`] : [],
+    ...cover ? [`cover: ${cover}`] : []
+  ];
 }
 function mocBaseBlock(mocBasename, projectFolderPath, viewName = "\u9879\u76EE\u6587\u4EF6") {
   return [
@@ -6091,11 +6421,11 @@ var BOOK_KIND = {
   folderKey: "projectFolder",
   folderFallback: FOLDERS.projects,
   asksOwnership: false,
-  sections: [{ heading: BOOK_HEADINGS.info }, { heading: BOOK_HEADINGS.highlights }],
+  sections: [{ heading: BOOK_HEADINGS.highlights }],
   baseViewName: "\u8BFB\u4E66\u5361\u7247"
 };
 async function createContainer(ctx, kind, preset, pickPerson2) {
-  var _a;
+  var _a, _b;
   const { app } = ctx;
   try {
     const settings = ctx.settings;
@@ -6160,13 +6490,16 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
     const identity = {
       description,
       created,
-      uid,
+      // 书籍预设带着 ISBN 进来时用它当 UID；其余一切情况仍是这一刻的 14 位时间戳
+      uid: (_a = preset == null ? void 0 : preset.uid) != null ? _a : uid,
       type: kind.type,
       status: kind.status,
       // 作者只可能来自书籍预设；交互路径从不问它，undefined 时那一行整行不写
       author: preset == null ? void 0 : preset.author,
       aliases: preset == null ? void 0 : preset.aliases,
+      tags: preset == null ? void 0 : preset.tags,
       source: preset == null ? void 0 : preset.source,
+      bibliography: preset == null ? void 0 : preset.bibliography,
       relation
     };
     const mocMarkdown = mocContent({
@@ -6174,7 +6507,7 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
       mocBasename,
       projectFolderPath: containerFolderPath,
       // 预设带了小节就用预设的（书目信息已填好），否则用这一类容器的空骨架
-      sections: (_a = preset == null ? void 0 : preset.sections) != null ? _a : kind.sections,
+      sections: (_b = preset == null ? void 0 : preset.sections) != null ? _b : kind.sections,
       baseViewName: kind.baseViewName
     });
     const frontmatter = mocFrontmatter(identity);
@@ -7486,7 +7819,7 @@ var RibbonDock = class {
    * Obsidian 的 leftRibbon 自己存着一份 items，手机端底栏的边栏菜单与
    * 桌面「设置 → 外观 → 功能区」的管理弹窗都是遍历这份 items 画出来的，
    * 两处的过滤条件都只有 item.hidden，与 DOM 无关（边栏右键菜单会多看一眼 buttonEl 在不在，
-   * 但那对我们没用——被藏起来的按钮 buttonEl 还在）。一次建齐的话，那两处永远列着全部二十六条，
+   * 但那对我们没用——被藏起来的按钮 buttonEl 还在）。一次建齐的话，那两处永远列着全部二十九条，
    * 包括「初始化笔记库」这种一辈子只该按一次的——那正是这个功能想消灭的杂乱。
    *
    * 其二，**藏起来走 class 不走 inline display**，理由见 HIDDEN_CLASS。
@@ -7616,12 +7949,14 @@ function schemaNoteContent(created, uid) {
     "",
     "| \u5C5E\u6027 | \u88C5\u4EC0\u4E48 | \u6837\u4F8B |",
     "|---|---|---|",
-    `| \`${FIELDS.uid}\` | \u673A\u5668\u4E3B\u952E\uFF0C14 \u4F4D\u65F6\u95F4\u6233\uFF0C\u6539\u540D\u4E5F\u4E0D\u53D8 | ${uid} |`,
+    `| \`${FIELDS.uid}\` | \u673A\u5668\u4E3B\u952E\uFF0C14 \u4F4D\u65F6\u95F4\u6233\uFF0C\u6539\u540D\u4E5F\u4E0D\u53D8\uFF1B\u8BFB\u4E66\u7B14\u8BB0\u662F\u90A3\u672C\u4E66\u7684 ISBN | ${uid} |`,
     `| \`${FIELDS.rating}\` | \u6211\u7ED9\u5B83\u6253\u51E0\u5206 | 1 \u5230 5 |`,
     "",
     `> [!note] \`${FIELDS.uid}\` \u4E3A\u4EC0\u4E48\u662F 14 \u4F4D\u800C\u4E0D\u662F 17 \u4F4D`,
     "> \u6570\u5B57\u7C7B\u578B\u6709\u4E2A\u786C\u4E0A\u9650\uFF1A\u8D85\u8FC7 16 \u4F4D\u5C31\u4F1A\u88AB\u6084\u6084\u56DB\u820D\u4E94\u5165\uFF0C\u503C\u53D8\u4E86\u8FD8\u4E0D\u62A5\u9519\u3002",
     "> 14 \u4F4D\uFF08\u5E74\u6708\u65E5\u65F6\u5206\u79D2\uFF09\u521A\u597D\u7A33\u7A33\u5728\u5B89\u5168\u7EBF\u5185\uFF0C\u6240\u4EE5\u4E3B\u952E\u53D6 14 \u4F4D\u3002",
+    "> \u8BFB\u4E66\u7B14\u8BB0\u662F\u552F\u4E00\u7684\u4F8B\u5916\uFF1A\u4E66\u81EA\u5E26 ISBN \u8FD9\u4E2A\u5168\u4E16\u754C\u901A\u7528\u7684\u53F7\uFF0813 \u4F4D\uFF0C\u540C\u6837\u5728\u5B89\u5168\u7EBF\u5185\uFF09\uFF0C",
+    "> \u518D\u53D1\u4E00\u4E2A\u53EA\u6709\u8FD9\u4E2A\u5E93\u8BA4\u5F97\u7684\u65F6\u95F4\u6233\uFF0C\u7B49\u4E8E\u7ED9\u540C\u4E00\u672C\u4E66\u9020\u4E24\u4E2A\u4E3B\u952E\u3002\u8C46\u74E3\u6CA1\u767B\u8BB0\u4E66\u53F7\u65F6\u624D\u9000\u56DE\u65F6\u95F4\u6233\u3002",
     "",
     "## \u{1F4CB} \u5217\u8868\uFF1A\u53EF\u4EE5\u6709\u597D\u51E0\u4E2A",
     "",
@@ -7711,6 +8046,8 @@ async function createFileIfMissing(ctx, path, content) {
 
 // src/settings.ts
 var import_obsidian31 = require("obsidian");
+
+// src/settingsModel.ts
 var TABS = [
   {
     id: "setup",
@@ -7724,7 +8061,7 @@ var TABS = [
     label: "\u9879\u76EE",
     icon: COMMAND_ICONS.project,
     module: "\u9879\u76EE\u7BA1\u7406 v1",
-    status: "\u8FD0\u884C\u4E2D \xB7 \u5EFA\u9879\u76EE\u3001\u5361\u7247\u767B\u8BB0\u3001\u56DB\u6001\u6D41\u8F6C"
+    status: "\u8FD0\u884C\u4E2D \xB7 \u5EFA\u9879\u76EE\u3001\u5361\u7247\u767B\u8BB0\u3001\u56DB\u6001\u6D41\u8F6C\uFF1B\u8BFB\u4E66\u7B14\u8BB0\u4E5F\u4F4F\u5728\u8FD9\u91CC\uFF08\u4E00\u672C\u4E66\u5C31\u662F\u4E00\u4E2A\u9879\u76EE\uFF09"
   },
   {
     id: "inspiration",
@@ -7744,15 +8081,8 @@ var TABS = [
     id: "contacts",
     label: "\u4EBA\u8109",
     icon: COMMAND_ICONS.contact,
-    module: "\u4EBA\u8109\u7BA1\u7406 v1",
-    status: "\u8FD0\u884C\u4E2D \xB7 \u65B0\u5EFA\u4EBA\u8109\u3001\u8BB0\u4EBA\u60C5\uFF0C\u6863\u6848\u4E0E MOC \u5171\u516B\u4E2A\u89C6\u56FE"
-  },
-  {
-    id: "clients",
-    label: "\u5BA2\u6237",
-    icon: COMMAND_ICONS.clients,
-    module: "\u5BA2\u6237\u4E0E\u4ED8\u8D39 v1",
-    status: "\u6309\u9700\u542F\u7528 \xB7 \u547D\u4EE4\u9762\u677F\u8FD0\u884C\u300C\u521D\u59CB\u5316\u5BA2\u6237\u6A21\u5757\u300D\uFF0C\u957F\u51FA MOC \u4E0E\u516B\u4E2A\u89C6\u56FE"
+    module: "\u4EBA\u8109\u4E0E\u5BA2\u6237 v1",
+    status: "\u8FD0\u884C\u4E2D \xB7 \u65B0\u5EFA\u4EBA\u8109\u3001\u8BB0\u4EBA\u60C5\uFF0C\u6863\u6848\u4E0E MOC \u5171\u516B\u4E2A\u89C6\u56FE\uFF1B\u5BA2\u6237\u6309\u9700\u542F\u7528\uFF0C\u8FD0\u884C\u300C\u521D\u59CB\u5316\u5BA2\u6237\u6A21\u5757\u300D\u540E\u957F\u51FA MOC \u4E0E\u53E6\u5916\u516B\u4E2A\u89C6\u56FE"
   },
   {
     id: "format",
@@ -7766,7 +8096,7 @@ var TABS = [
     label: "\u8FB9\u680F",
     icon: COMMAND_ICONS.dock,
     module: "\u5DE6\u4FA7\u8FB9\u680F v1",
-    status: "\u8FD0\u884C\u4E2D \xB7 \u4E8C\u5341\u516D\u6761\u547D\u4EE4\u914D Pikaicons \u56FE\u6807\uFF0C\u9ED8\u8BA4\u6446\u51FA\u4E03\u6761"
+    status: "\u8FD0\u884C\u4E2D \xB7 \u4E8C\u5341\u4E5D\u6761\u547D\u4EE4\u914D Pikaicons \u56FE\u6807\uFF0C\u9ED8\u8BA4\u6446\u51FA\u4E03\u6761"
   }
 ];
 var TEXTS3 = {
@@ -7779,6 +8109,14 @@ var TEXTS3 = {
   autoCardDesc: "\u5728\u9879\u76EE\u6216\u9886\u57DF\u76EE\u5F55\u91CC\u65B0\u5EFA\u7A7A\u7B14\u8BB0\u65F6\uFF0C\u81EA\u52A8\u8865\u9F50\u6807\u51C6\u5B57\u6BB5\uFF0C\u5E76\u94FE\u56DE\u5B83\u6240\u5C5E\u7684 MOC\u3002\u5173\u6389\u540E\u53EF\u7528\u547D\u4EE4\u300C\u521D\u59CB\u5316\u5F53\u524D\u5361\u7247\u300D\u624B\u52A8\u767B\u8BB0\u3002",
   autoUpdatedName: "\u81EA\u52A8\u7EF4\u62A4 updated \u65F6\u95F4",
   autoUpdatedDesc: "\u6539\u5B8C\u5E26 YAML \u7684\u7B14\u8BB0\u3001\u505C\u624B\u4E24\u79D2\u540E\uFF0C\u81EA\u52A8\u8BB0\u4E0B\u8FD9\u6B21\u4FEE\u6539\u65F6\u95F4\u3002\u6CA1\u6709 YAML \u7684\u7B14\u8BB0\u4E00\u4E2A\u5B57\u90FD\u4E0D\u52A8\u3002",
+  booksHeading: "\u8BFB\u4E66\u7B14\u8BB0",
+  booksIntro: "\u4E00\u672C\u4E66\u5C31\u662F\u4E00\u4E2A\u9879\u76EE\uFF1A\u5B83\u843D\u5728\u9879\u76EE\u76EE\u5F55\u91CC\uFF0C\u8BFB\u5B8C\u7528\u300C\u5B8C\u6210\u9879\u76EE\u300D\u5F52\u6863\uFF0C\u6240\u4EE5\u5B83\u7684\u8BBE\u7F6E\u4E5F\u4F4F\u5728\u8FD9\u4E00\u9875\u3002\u4E66\u76EE\u5B57\u6BB5\uFF08\u4F5C\u8005\u3001\u51FA\u7248\u793E\u3001ISBN\u3001\u8BC4\u5206\uFF09\u6CA1\u6709\u5F00\u5173\u2014\u2014\u8C46\u74E3\u600E\u4E48\u5199\u5C31\u600E\u4E48\u843D\uFF0C\u90A3\u662F\u4E8B\u5B9E\u4E0D\u662F\u53E3\u5473\u3002UID \u76F4\u63A5\u5199\u8FD9\u672C\u4E66\u7684 ISBN\uFF1B\u8C46\u74E3\u6CA1\u767B\u8BB0\u4E66\u53F7\u65F6\u624D\u9000\u56DE\u65F6\u95F4\u6233\u3002",
+  bookTagCountName: "\u6807\u7B7E\u6761\u6570",
+  bookTagCountDesc: "\u8C46\u74E3\u7684\u5206\u7C7B\u6309\u6295\u7968\u6570\u4ECE\u9AD8\u5230\u4F4E\u6392\uFF0C\u53D6\u524D\u51E0\u4E2A\u3002\u5F80\u540E\u5F88\u5FEB\u6ED1\u5411\u4E2A\u4EBA\u5316\u7684\u788E\u8BED\uFF0C\u6240\u4EE5\u8FD9\u4E2A\u6570\u95EE\u7684\u4E0D\u662F\u300C\u591F\u4E0D\u591F\u300D\uFF0C\u662F\u300C\u4ECE\u54EA\u513F\u5F00\u59CB\u53D8\u6210\u566A\u97F3\u300D\u3002",
+  wereadName: "\u5FAE\u4FE1\u8BFB\u4E66",
+  wereadConnected: "\u5DF2\u8FDE\u63A5\u3002\u300C\u8BFB\u4E00\u672C\u4E66\u300D\u4E0E\u300C\u540C\u6B65\u8FD9\u672C\u4E66\u7684\u5212\u7EBF\u300D\u4F1A\u81EA\u52A8\u628A\u4F60\u5728\u5FAE\u8BFB\u4E0A\u7684\u5212\u7EBF\u4E0E\u60F3\u6CD5\u53D6\u56DE\u6765\u3002\u65AD\u5F00\u53EA\u6E05\u6389\u672C\u673A\u5B58\u7684\u8FD9\u4EFD\u767B\u5F55\u51ED\u636E\uFF0C\u4E0D\u52A8\u4F60\u5728\u5FAE\u4FE1\u8BFB\u4E66\u90A3\u8FB9\u7684\u4EFB\u4F55\u4E1C\u897F\u3002",
+  wereadDisconnected: "\u672A\u8FDE\u63A5\u3002\u8FDE\u4E0A\u4E4B\u540E\uFF0C\u8BFB\u4E66\u547D\u4EE4\u4F1A\u591A\u4E00\u5904\u5212\u7EBF\u6765\u6E90\uFF08\u53E6\u4E24\u5904\u662F\u672C\u673A\u7684\u82F9\u679C\u56FE\u4E66\u4E0E Kindle\uFF0C\u4E0D\u9700\u8981\u8FDE\u63A5\uFF09\u3002\u8FDE\u63A5\u8D70\u626B\u7801\uFF0C\u63D2\u4EF6\u5168\u7A0B\u4E0D\u78B0\u4F60\u7684\u8D26\u53F7\u548C\u5BC6\u7801\u3002",
+  wereadMobile: "\u626B\u7801\u767B\u5F55\u53EA\u5728\u7535\u8111\u7248\u53EF\u7528\u3002\u624B\u673A\u4E0A\u4ECD\u53EF\u7528\u300C\u5BFC\u5165\u8BFB\u4E66\u5212\u7EBF\u300D\u628A\u5212\u7EBF\u7C98\u8D34\u8FDB\u6765\u3002",
   inspirationPositionName: "\u63D2\u5165\u4F4D\u7F6E",
   inspirationPositionDesc: "\u51B3\u5B9A\u65B0\u7075\u611F\u5199\u5728\u6807\u9898\u533A\u6216\u6574\u7BC7\u6B63\u6587\u7684\u5934\u5C3E\u3002\u7F6E\u9876\u4F1A\u81EA\u52A8\u907F\u5F00 YAML\u3001\u9875\u9762\u6807\u9898\u548C Dataview \u7B5B\u9009\u533A\u3002",
   inspirationFormatName: "\u5355\u6761\u683C\u5F0F",
@@ -7798,19 +8136,27 @@ var TEXTS3 = {
   advancedSuffixTail: "\uFF0C\u6539\u524D\u4E09\u601D\u3002"
 };
 var TEXT_FIELDS = [
-  { key: "projectFolder", tab: "projects", name: "\u9879\u76EE\u76EE\u5F55", hint: "\u6B63\u5728\u63A8\u8FDB\u7684\u9879\u76EE\u653E\u5728\u8FD9\u91CC\u3002", advanced: true },
+  { key: "projectFolder", tab: "projects", name: "\u9879\u76EE\u76EE\u5F55", hint: "\u6B63\u5728\u63A8\u8FDB\u7684\u9879\u76EE\u653E\u5728\u8FD9\u91CC\uFF1B\u8BFB\u4E66\u7B14\u8BB0\u4E5F\u843D\u5728\u8FD9\u91CC\u3002", advanced: true },
   { key: "areaFolder", tab: "projects", name: "\u9886\u57DF\u76EE\u5F55", hint: "\u957F\u671F\u5173\u6CE8\u3001\u6CA1\u6709\u7EC8\u70B9\u7684\u9886\u57DF\u653E\u5728\u8FD9\u91CC\u3002", advanced: true },
   { key: "archiveFolder", tab: "projects", name: "\u5F52\u6863\u76EE\u5F55", hint: "\u5B8C\u6210\u3001\u6682\u505C\u3001\u653E\u5F03\u7684\u9879\u76EE\u4F1A\u642C\u5230\u8FD9\u91CC\uFF1B\u4EBA\u8109\u6863\u6848\u642C\u8FDB\u6765\u5373\u9000\u51FA\u5168\u90E8\u540D\u5F55\u3002", advanced: true },
   { key: "inspirationFolder", tab: "inspiration", name: "\u6587\u4EF6\u5939", hint: "\u7075\u611F\u7B14\u8BB0\u653E\u5728\u54EA\u4E2A\u6587\u4EF6\u5939\u3002\u76F8\u5BF9\u4E8E\u7B14\u8BB0\u5E93\u6839\u76EE\u5F55\u3002", advanced: false },
   { key: "inspirationFileName", tab: "inspiration", name: "\u7B14\u8BB0\u540D\u79F0", hint: "\u7075\u611F\u5199\u5165\u54EA\u4E00\u7BC7\u7B14\u8BB0\uFF1B\u6CA1\u5199 .md \u65F6\u4F1A\u81EA\u52A8\u8865\u9F50\u3002", advanced: false },
   { key: "inspirationHeading", tab: "inspiration", name: "\u5B9A\u4F4D\u6807\u9898", hint: "\u9009\u62E9\u6807\u9898\u63D2\u5165\u65F6\uFF0C\u7528\u5B83\u5B9A\u4F4D\u5177\u4F53\u533A\u57DF\u3002\u53EF\u5199\u201C\u7075\u611F\u96C6\u201D\u6216\u5B8C\u6574 Markdown \u6807\u9898\u3002", advanced: false },
   { key: "diaryFolder", tab: "review", name: "\u590D\u76D8\u76EE\u5F55", hint: "\u65E5/\u5468/\u6708/\u5B63/\u5E74\u4E94\u7EA7\u590D\u76D8\u7684\u65F6\u95F4\u8F74\u6839\u76EE\u5F55\uFF0C\u4E94\u4E2A\u5B50\u76EE\u5F55\u7531\u5B83\u6D3E\u751F\u3002", advanced: true },
-  { key: "contactFolder", tab: "contacts", name: "\u4EBA\u8109\u76EE\u5F55", hint: "\u4EBA\u7269\u6863\u6848\u5E73\u94FA\u5B58\u653E\u5728\u8FD9\u91CC\uFF1B\u89C6\u56FE\u9760 type \u8BA4\u4EBA\uFF0C\u632A\u8D70\u4E5F\u4E0D\u5F71\u54CD\u3002", advanced: true },
-  { key: "clientSources", tab: "clients", name: "\u5BA2\u6237\u6E20\u9053", hint: "\u300C\u65B0\u5EFA\u5BA2\u6237\u300D\u7684\u6E20\u9053\u5019\u9009\uFF0C\u7528\u9017\u53F7\u5206\u9694\u3002\u8D70\u9009\u62E9\u800C\u975E\u624B\u6253\uFF0C\u7EDF\u8BA1\u624D\u4E0D\u4F1A\u88AB\u540C\u4E49\u5199\u6CD5\u6253\u6563\u3002", advanced: false },
-  { key: "clientProducts", tab: "clients", name: "\u4EA7\u54C1\u6E05\u5355", hint: "\u300C\u589E\u52A0\u4ED8\u8D39\u300D\u7684\u4EA7\u54C1\u5019\u9009\uFF0C\u7528\u9017\u53F7\u5206\u9694\u3002\u5199\u4F60\u81EA\u5DF1\u5728\u5356\u7684\u4E1C\u897F\u3002", advanced: false },
-  { key: "clientFolder", tab: "clients", name: "\u5BA2\u6237\u76EE\u5F55", hint: "\u4ED8\u8D39\u7528\u6237\u6863\u6848\u653E\u5728\u8FD9\u91CC\uFF0C\u8FD0\u884C\u300C\u521D\u59CB\u5316\u5BA2\u6237\u6A21\u5757\u300D\u540E\u624D\u4F1A\u7528\u5230\u3002", advanced: true },
+  { key: "clientSources", tab: "contacts", section: "\u5BA2\u6237", name: "\u5BA2\u6237\u6E20\u9053", hint: "\u300C\u65B0\u5EFA\u5BA2\u6237\u300D\u7684\u6E20\u9053\u5019\u9009\uFF0C\u7528\u9017\u53F7\u5206\u9694\u3002\u8D70\u9009\u62E9\u800C\u975E\u624B\u6253\uFF0C\u7EDF\u8BA1\u624D\u4E0D\u4F1A\u88AB\u540C\u4E49\u5199\u6CD5\u6253\u6563\u3002", advanced: false },
+  { key: "clientProducts", tab: "contacts", section: "\u5BA2\u6237", name: "\u4EA7\u54C1\u6E05\u5355", hint: "\u300C\u589E\u52A0\u4ED8\u8D39\u300D\u7684\u4EA7\u54C1\u5019\u9009\uFF0C\u7528\u9017\u53F7\u5206\u9694\u3002\u5199\u4F60\u81EA\u5DF1\u5728\u5356\u7684\u4E1C\u897F\u3002", advanced: false },
+  { key: "contactFolder", tab: "contacts", section: "\u4EBA\u8109", name: "\u4EBA\u8109\u76EE\u5F55", hint: "\u4EBA\u7269\u6863\u6848\u5E73\u94FA\u5B58\u653E\u5728\u8FD9\u91CC\uFF1B\u89C6\u56FE\u9760 type \u8BA4\u4EBA\uFF0C\u632A\u8D70\u4E5F\u4E0D\u5F71\u54CD\u3002", advanced: true },
+  { key: "clientFolder", tab: "contacts", section: "\u5BA2\u6237", name: "\u5BA2\u6237\u76EE\u5F55", hint: "\u4ED8\u8D39\u7528\u6237\u6863\u6848\u653E\u5728\u8FD9\u91CC\uFF0C\u8FD0\u884C\u300C\u521D\u59CB\u5316\u5BA2\u6237\u6A21\u5757\u300D\u540E\u624D\u4F1A\u7528\u5230\u3002", advanced: true },
   { key: "dateTimeFormat", tab: "setup", name: "\u65F6\u95F4\u683C\u5F0F", hint: "created \u4E0E updated \u5B57\u6BB5\u7684\u5199\u6CD5\uFF0Cmoment \u8BED\u6CD5\u3002", advanced: true }
 ];
+var BOOK_TAG_PREFIX_FIELD = {
+  key: "bookTagPrefix",
+  name: "\u6807\u7B7E\u524D\u7F00",
+  hint: "\u8C46\u74E3\u7684\u300C\u65B9\u6CD5\u8BBA\u300D\u4F1A\u5199\u6210 #\u4E66\u7C4D/\u65B9\u6CD5\u8BBA\u3002\u524D\u7F00\u8BA9\u6574\u4E2A\u4E66\u67B6\u7684\u5206\u7C7B\u6210\u7247\uFF0C\u4E0D\u4E0E\u7075\u611F\u3001\u5361\u7247\u91CC\u7684\u540C\u540D\u6807\u7B7E\u6DF7\u5728\u4E00\u8D77\u3002",
+  advanced: false
+};
+
+// src/settings.ts
 var FIELDS_ONLY = () => {
 };
 var ZiminosSettingTab = class extends import_obsidian31.PluginSettingTab {
@@ -7826,10 +8172,10 @@ var ZiminosSettingTab = class extends import_obsidian31.PluginSettingTab {
      */
     this.activeTab = TABS[0];
     /**
-     * 「已摆出 N / 26 条」那行字。
+     * 「已摆出 N / 29 条」那行字。
      *
      * 这是全页唯一一处持有 DOM 引用的地方，理由很具体：勾选要即时更新这个数，
-     * 而重建整页会把滚动条弹回顶部——二十六行排下来，用户勾第十八行时页面一跳，
+     * 而重建整页会把滚动条弹回顶部——二十九行排下来，用户勾第十八行时页面一跳，
      * 他就得重新找回刚才那一行。持有的是一个渲染出来的节点，不是第二份状态：
      * 数字仍然现算自设置对象，每次 display 也会把它换成新节点。
      */
@@ -7851,7 +8197,6 @@ var ZiminosSettingTab = class extends import_obsidian31.PluginSettingTab {
       inspiration: (el) => this.renderInspirationPanel(el),
       review: FIELDS_ONLY,
       contacts: FIELDS_ONLY,
-      clients: FIELDS_ONLY,
       format: (el) => this.renderFormatPanel(el),
       ribbon: (el) => this.renderRibbonPanel(el)
     };
@@ -7902,7 +8247,7 @@ var ZiminosSettingTab = class extends import_obsidian31.PluginSettingTab {
   /**
    * 一页的固定骨架：页头 → 明面上的文本字段 → 本页自有控件 → 高级折叠区。
    *
-   * 四段的先后是一条跨八页的承诺，两头各占一句：页头永远先说清这一页是谁、跑没跑起来；
+   * 四段的先后是一条跨七页的承诺，两头各占一句：页头永远先说清这一页是谁、跑没跑起来；
    * 折叠区永远在最后，于是任何一页往下翻到底，危险的东西都在同一个位置、同一个标题下，
    * 不需要每页重新找一遍。中间两段的顺序是「先说东西放哪儿，再说怎么用它」——
    * 灵感页把落点三问排在插入位置与格式之前，正是这条顺序，不必自己再画一次字段。
@@ -7949,12 +8294,23 @@ var ZiminosSettingTab = class extends import_obsidian31.PluginSettingTab {
       });
     });
   }
-  /** 画出本页某一档（明面/高级）的全部文本字段。没有就一个都不画，也不留空标题 */
+  /**
+   * 画出本页某一档（明面/高级）的全部文本字段。没有就一个都不画，也不留空标题。
+   * 带段名的字段在段名一变时先落一道小标题——人脉页靠它把「人脉」与「客户」分开，
+   * 而绝大多数页一个段名都没有，于是一道标题也不会多出来。
+   */
   renderTextFields(containerEl, tab, advanced) {
+    var _a;
     const fields = TEXT_FIELDS.filter(
       (field2) => field2.tab === tab && field2.advanced === advanced
     );
+    let currentSection = "";
     for (const field2 of fields) {
+      const section = (_a = field2.section) != null ? _a : "";
+      if (section && section !== currentSection) {
+        new import_obsidian31.Setting(containerEl).setName(section).setHeading();
+      }
+      currentSection = section;
       this.renderTextField(containerEl, field2);
     }
   }
@@ -8011,12 +8367,69 @@ var ZiminosSettingTab = class extends import_obsidian31.PluginSettingTab {
     return TEXTS3.initReadyPrefix + initializedAt + TEXTS3.initReadySuffix;
   }
   // ============================================================
-  // 四、项目页：两个自动行为
+  // 四、项目页：两个自动行为，加读书笔记那一段
   // ============================================================
   /** 插件仅有的两个常驻监听都住在 modules/projects，所以它们的开关也该在这一页 */
   renderProjectsPanel(containerEl) {
     this.renderToggle(containerEl, "autoCardInit", TEXTS3.autoCardName, TEXTS3.autoCardDesc);
     this.renderToggle(containerEl, "autoUpdated", TEXTS3.autoUpdatedName, TEXTS3.autoUpdatedDesc);
+    this.renderBooksSection(containerEl);
+  }
+  /**
+   * 读书笔记的三项设置，同住项目页——一本书就是一个项目，不另开一页。
+   *
+   * 三项按「书建出来长什么样 → 划线从哪儿来」排：前两项决定标签怎么写，
+   * 第三项是全插件唯一一处凭据的开关。书目字段（作者、ISBN、出版社）一项都不在这里，
+   * 因为它们没有口味可言——豆瓣怎么写就怎么落，让人去配等于让人去改事实。
+   */
+  renderBooksSection(containerEl) {
+    new import_obsidian31.Setting(containerEl).setName(TEXTS3.booksHeading).setDesc(TEXTS3.booksIntro).setHeading();
+    this.renderTextField(containerEl, BOOK_TAG_PREFIX_FIELD);
+    new import_obsidian31.Setting(containerEl).setName(TEXTS3.bookTagCountName).setDesc(TEXTS3.bookTagCountDesc).addDropdown((dropdown) => {
+      for (const count of BOOK_TAG_COUNTS) {
+        dropdown.addOption(String(count), count === 0 ? "\u4E0D\u5199\u6807\u7B7E" : `\u524D ${count} \u4E2A`);
+      }
+      dropdown.setValue(String(this.normalizeBookTagCount(this.ctx.settings.bookTagCount))).onChange(async (value) => {
+        this.ctx.settings.bookTagCount = this.normalizeBookTagCount(Number(value));
+        await this.ctx.saveSettings();
+      });
+    });
+    this.renderWereadRow(containerEl);
+  }
+  /** 防御手改 data.json 写进来的怪数：不在候选里就回落默认，与灵感插入位置同一姿态 */
+  normalizeBookTagCount(value) {
+    return BOOK_TAG_COUNTS.includes(value) ? value : DEFAULT_SETTINGS.bookTagCount;
+  }
+  /**
+   * 微信读书的连接状态，加一个按钮。
+   *
+   * 它是设置而不只是命令，理由是「人主导」：这是全插件唯一一份存在 data.json 里的凭据，
+   * 那就必须有一处能看见它在不在、并且能当场撤掉。命令面板里那条「连接微信读书」
+   * 只能连不能断——一条只往一个方向走的命令，不构成开关。
+   * 断开只清掉本机存的那串 Cookie，不去动微信读书那边的任何东西：
+   * 插件从来不代替用户管理他在别人家的账号。
+   */
+  renderWereadRow(containerEl) {
+    const connected = !!this.ctx.settings.wereadCookie.trim();
+    new import_obsidian31.Setting(containerEl).setName(TEXTS3.wereadName).setDesc(
+      import_obsidian31.Platform.isDesktopApp ? connected ? TEXTS3.wereadConnected : TEXTS3.wereadDisconnected : TEXTS3.wereadMobile
+    ).addButton((button) => {
+      button.setButtonText(connected ? "\u65AD\u5F00" : "\u626B\u7801\u8FDE\u63A5").setDisabled(!import_obsidian31.Platform.isDesktopApp);
+      if (!connected) button.setCta();
+      button.onClick(async () => {
+        button.setDisabled(true);
+        try {
+          if (connected) {
+            this.ctx.settings.wereadCookie = "";
+            await this.ctx.saveSettings();
+          } else {
+            await this.actions.connectWeread();
+          }
+        } finally {
+          this.display();
+        }
+      });
+    });
   }
   // ============================================================
   // 五、灵感页：落点、位置与格式
@@ -8072,7 +8485,7 @@ var ZiminosSettingTab = class extends import_obsidian31.PluginSettingTab {
   /**
    * 一条规则一行。
    *
-   * 它与边栏那二十六行是同一种控件——勾选决定一个 id 在不在清单里，而不是翻一个布尔字段。
+   * 它与边栏那二十九行是同一种控件——勾选决定一个 id 在不在清单里，而不是翻一个布尔字段。
    * 存清单而不是九个布尔字段，是为了让「加一条规则」不必动设置契约：
    * 老库升级时那条新规则不在清单里，于是默认不开，这与「不替用户改他没选过的东西」同源。
    */
@@ -8111,10 +8524,10 @@ var ZiminosSettingTab = class extends import_obsidian31.PluginSettingTab {
     );
   }
   // ============================================================
-  // 八、边栏页：二十六行
+  // 八、边栏页：二十九行
   // ============================================================
   /**
-   * 边栏页：一句说明 + 按分组排下来的二十六行。
+   * 边栏页：一句说明 + 按分组排下来的二十九行。
    *
    * 清单现读花名册而不是自己维护一份，因此它与命令面板里能搜到的命令永远是同一批；
    * 分组标题按「相邻两行的 group 不同」切出来，与外观开关面板用的是同一套画法——
@@ -8137,7 +8550,7 @@ var ZiminosSettingTab = class extends import_obsidian31.PluginSettingTab {
     if (this.ribbonCountEl) this.ribbonCountEl.setText(this.describeRibbonCount());
   }
   /**
-   * 「已摆出 7 / 26 条」。给的是一个量级感：勾多了那条边栏会变成谁也不看的图标柱。
+   * 「已摆出 7 / 29 条」。给的是一个量级感：勾多了那条边栏会变成谁也不看的图标柱。
    * 总数现算自花名册，不写死——这一页不认识任何一条具体命令，也就不该认识它们有几条。
    */
   describeRibbonCount() {
@@ -8244,6 +8657,9 @@ var ZiminosPlugin = class extends import_obsidian32.Plugin {
     this.addSettingTab(
       new ZiminosSettingTab(ctx, {
         initialize: () => initializeVault(ctx, collectSeeds()),
+        // 设置页里那颗「扫码连接」按钮，与命令面板那条「连接微信读书」是同一段登录流程；
+        // 设置页不 import books 模块，因此这项能力也走注入
+        connectWeread: () => loginWeread(ctx),
         syncAppearanceSwitch,
         syncRibbon,
         // 设置页的「关于作者」区与导航页尾的视图块画同一张名片，实现只有 about 一份

@@ -1,7 +1,7 @@
 /*
  * ziminOS 视图样式
  *
- * 服务插件自渲染的那二十二个视图、外观开关浮层，以及设置页的八张标签页与开荒页尾的落款，
+ * 服务插件自渲染的那二十二个视图、外观开关浮层，以及设置页的七张标签页与开荒页尾的落款，
  * 全部选择器都带 ziminos- 前缀，不碰用户笔记正文。
  * 除文末那一条藏边栏图标的规则外，不覆盖主题的任何既有规则——那一条的理由写在它自己头上。
  * 颜色一律取 Obsidian 的语义变量，因此跟随主题与 Style Settings 的配色走，
@@ -244,7 +244,7 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
     display: none !important;
 }
 
-/* ── 左侧边栏：设置页里那二十三行的分组标签、图标与行距 ── */
+/* ── 左侧边栏：设置页里那二十九行的分组标签、图标与行距 ── */
 
 /*
  * 分组标签。它不是 Obsidian 的 setting heading，因为它比页头矮一级——
@@ -259,7 +259,7 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
 }
 
 /*
- * 二十三行挨着排，用 Obsidian 默认的行距会把这一区拉出两屏。
+ * 二十九行挨着排，用 Obsidian 默认的行距会把这一区拉出两屏。
  * 只收紧上下内边距，不动左右，行与页面其他设置项仍然对齐。
  */
 .setting-item.ziminos-ribbon-row {
@@ -439,10 +439,79 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
     margin: -6px 0;
 }
 
+/*
+ * 致谢：名片的最后一段，留给别人。
+ *
+ * 整块压到弱化色与小一号字，与上方作者自己的入口拉开层级——
+ * 这一段是署名不是入口，它该被读到，不该被点着走。
+ * 上方一条细线，与设置页落款那条同一画法：分节，不分页。
+ */
+.ziminos-about-credits {
+    margin-top: 4px;
+    padding-top: 14px;
+    border-top: 1px solid var(--background-modifier-border);
+    font-size: var(--font-smaller, 0.875em);
+    line-height: 1.6;
+}
+
+.ziminos-about-credits-title {
+    margin-bottom: 6px;
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    font-weight: var(--font-semibold);
+    letter-spacing: 0.04em;
+}
+
+.ziminos-about-credits-intro {
+    margin-bottom: 10px;
+    color: var(--text-faint);
+}
+
+/* 一条致谢：项目名一行，学到了什么另起一行缩进——名字要认得出，句子要读得下去 */
+.ziminos-about-credit {
+    margin-bottom: 8px;
+}
+
+.ziminos-about-credit-name {
+    color: var(--text-normal);
+    font-weight: var(--font-semibold);
+    text-decoration: none;
+}
+
+.ziminos-about-credit-name:hover {
+    color: var(--text-accent);
+    text-decoration: underline;
+}
+
+.ziminos-about-credit-what {
+    padding-left: 10px;
+    color: var(--text-muted);
+}
+
+/*
+ * 随库交付的署名：一段连排的文字而不是又一列条目。
+ * 它回答的是「这里面有谁的东西」，不是「我们学到了什么」，
+ * 排成清单会让它看起来和上面一样重要，而它只是许可要求的一行字。
+ */
+.ziminos-about-bundled {
+    margin-top: 12px;
+    color: var(--text-faint);
+}
+
+.ziminos-about-bundled-link {
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.ziminos-about-bundled-link:hover {
+    color: var(--text-accent);
+    text-decoration: underline;
+}
+
 /* ── 设置页：顶上那排标签，一页一个系统模块 ── */
 
 /*
- * 标签栏吸顶。边栏那一页有二十三行，翻到第十八行时标签栏早已滚出视野，
+ * 标签栏吸顶。边栏那一页有二十九行，翻到第十八行时标签栏早已滚出视野，
  * 想换一页就得先滚回顶部——吸顶让「换页」随时可做，这是分页值不值的关键一环。
  *
  * 背景必须是实心的，否则下面的行会从字缝里透上来；取 --background-primary，

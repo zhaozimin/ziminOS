@@ -3,12 +3,14 @@
  * [OUTPUT]: 对外提供 DoubanCandidate/DoubanBook 契约、纯解析函数 parseSearchResults/parseBookDetail，
  *           以及带网络的 searchBooks/fetchBookDetail 与它们共用的 PageFetcher/doubanFetcher
  * [POS]: 书籍信息的来源。学员建一本书时只该做一件事——报出书名、从候选里指认哪一本，
- *        其余（作者、译者、出版社、出版年、ISBN、页数、评分、封面、豆瓣链接）一律自动填。
+ *        其余（作者、译者、出版社、出版年、ISBN、页数、评分、封面、豆瓣链接、分类词）一律自动填。
  *        让人手打这些字段是把书目数据库的活儿摊派给读者，而那些字段恰恰是最容易打错、
  *        打错了又最难发现的（ISBN 错一位仍然是合法的一串数字）。
  *        取数分两步走，因为豆瓣的两条通道待遇不同：JSON 搜索接口（/j/search 与
  *        rexxar/api）对非浏览器来源一律 403，而**搜索页与详情页的 HTML 照常返回 200**，
  *        且搜索页把结果原样铺在 `window.__DATA__` 的明文 JSON 里——于是走 HTML 这条路。
+ *        分类词是 v0.14.0 添的第十三个字段，取自页首那行广告投放参数而非 DOM——
+ *        详情页那个「常用标签」小节已经不在页面上了，理由与取法写在 parseCategories 头上。
  *        解析与取数分家：parse* 是纯函数，喂它一段存档 HTML 就能离线验证，
  *        网络那一层薄到只剩「拼 URL、带浏览器请求头、把 body 交出去」
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -44,6 +46,12 @@ export interface DoubanBook {
     readonly cover: string;
     readonly url: string;
     readonly summary: string;
+    /**
+     * 豆瓣成员给这本书打的分类词，已按投票数从高到低排好。
+     * 它是「这本书在知识地图上的位置」的唯一来源——本文件只负责如实解析并保序，
+     * 该留几条、怎么变成合法的 Obsidian 标签是 tags.ts 的活儿。
+     */
+    readonly tags: readonly string[];
 }
 
 /** 取一个网页的 HTML。抽成参数是为了让解析可以离线验证，网络只在装配时接进来 */
@@ -284,7 +292,40 @@ export function parseBookDetail(html: string, id: string, candidateTitle = ''): 
         cover: attr(html, /<meta property="og:image" content="([^"]*)"/),
         url: detailUrlOf(id),
         summary: attr(html, /<meta property="og:description" content="([^"]*)"/),
+        tags: parseCategories(html),
     };
+}
+
+/**
+ * 取这本书的豆瓣分类词，按投票数从高到低。
+ *
+ * 取数点选得刁钻，是因为正经那一处已经不在了：详情页当年那个「豆瓣成员常用的标签」小节
+ * （`id="db-tags-section"`）在四本实测样本里一个都没有，DOM 里根本没有这块内容。
+ * 但同一份数据仍然完整地留在页首那行广告投放参数上：
+ *
+ *     criteria = '7:写作|7:方法论|7:笔记|7:读书笔记|…|3:/subject/35503571/'
+ *
+ * 豆瓣拿它去定向投广告，所以它必须是**这本书最能代表读者群的那几个词**，
+ * 也就必须与常用标签同源、同序。`7:` 是标签，`3:` 是这本书自己的条目地址，只收前者。
+ *
+ * 它比 DOM 更稳的地方在于：页面版式改版频繁，而这行参数是发给广告系统的接口。
+ * 它不稳的地方也说清楚——豆瓣哪天换掉投放方案，这里就取不到东西，
+ * 那时的表现是「这本书没有标签」，而不是报错或者标错，因此没有兜底的必要。
+ */
+function parseCategories(html: string): readonly string[] {
+    const raw = /criteria\s*=\s*'([^']*)'/.exec(html)?.[1] ?? '';
+
+    if (!raw) return [];
+
+    const categories: string[] = [];
+
+    for (const entry of raw.split('|')) {
+        const word = /^7:(.+)$/.exec(entry.trim())?.[1]?.trim();
+
+        if (word) categories.push(word);
+    }
+
+    return categories;
 }
 
 /** 信息区的原始 HTML；取不到就退回全文，让逐键匹配自己去碰运气而不是直接失败 */

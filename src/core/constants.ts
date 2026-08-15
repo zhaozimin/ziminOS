@@ -9,10 +9,10 @@
  *           五级复盘周期表 PERIODS 及其类型 PeriodKey/PeriodDefinition，
  *           人脉三轴 CONTACT_TIERS/TIER_LIMITS/CONTACT_DIRECTIONS、人情账本格式 LEDGER、
  *           付费流水字段 PAYMENT_FIELDS，读书笔记契约 BOOK_HEADINGS/BOOK_CHAPTER_PREFIX/
- *           BOOK_THOUGHT_PREFIX，外观开关契约 SNIPPET_FOLDER_NAME/SNIPPET_EXTENSION/
+ *           BOOK_THOUGHT_PREFIX 与标签契约 BOOK_TAG_COUNTS/BOOK_TAG_DEFAULTS，外观开关契约 SNIPPET_FOLDER_NAME/SNIPPET_EXTENSION/
  *           APPEARANCE_FILE_NAME/ENABLED_SNIPPETS_KEY，
  *           以及视图代码块契约 VIEW_BLOCK_LANG/VIEW_REFRESH_DEBOUNCE_MS。
- *           二十六条命令的身份（id/名字/图标/分组）不在这里，在 ./commands——
+ *           二十九条命令的身份（id/名字/图标/分组）不在这里，在 ./commands——
  *           本文件回答「系统里有哪些东西」，那里回答「用户能让系统做哪些事」
  * [POS]: 全仓库唯一的常量源。规格要求「禁魔法字符串」，任何目录名、字段名、状态名、时间格式
  *        都必须从这里取而不得就地硬编码；因为它零依赖，所有模块都可单向依赖它而不产生环
@@ -526,7 +526,6 @@ export const PROJECT_PAYMENT_HEADING = '## 收款';
  * 两边一旦不一致，划线会落到文件末尾，而这种不一致没有任何报错。
  */
 export const BOOK_HEADINGS = {
-    info: '## 书籍信息',
     highlights: '## 全部划线',
 } as const;
 
@@ -537,8 +536,45 @@ export const BOOK_HEADINGS = {
  */
 export const BOOK_CHAPTER_PREFIX = '### ';
 
-/** 想法行的前缀。想法是学员亲手打的字，是整份导出里最贵的部分，用图形标记与划线区分 */
+/**
+ * 想法行的前缀。**只用于读旧笔记**（v0.14.0 之前那种缩进列表形态）。
+ * 新写入一律走标注块，见 BOOK_CALLOUTS。
+ */
 export const BOOK_THOUGHT_PREFIX = '💭 ';
+
+/**
+ * 划线与想法各自的标注块类型（v0.14.0 起的写入形态）。
+ *
+ * 换掉缩进列表的理由只有一条，是学员看着自己的笔记说的：
+ * 「并不能清晰地显示划线和我写的内容」。原先两者都是 bullet，只差一层缩进与一个表情——
+ * 三五条排下来，书的声音和人的声音糊成同一串灰字，而**这两种字的价值完全不同**：
+ * 划线是书的，想法才是他的。标注块给它们各自的边框与颜色，一眼分得出谁在说话。
+ *
+ * 取 quote / note 这两个内建类型而不自造名字：Obsidian 与 Minimal 都为它们备了配色与图标，
+ * 自造的类型在没装对应片段的库里会退化成灰框，而这套系统承诺换主题不必改笔记。
+ * 想法嵌在划线块里（前面多一层 `> `），因为想法是**对着某一句写的**——
+ * 平列会让它变成一条与上下文无关的独白。
+ */
+export const BOOK_CALLOUTS = {
+    highlight: '> [!quote]',
+    thought: '> [!note]',
+} as const;
+
+/**
+ * 一本书写几个标签的候选值。0 即不写——有人只要书目不要分类，那是正当选择。
+ *
+ * 它住在常量里而不是设置页里，理由与 INSPIRATION_INSERT_POSITIONS 同一条：
+ * 这份清单同时是**设置页的下拉选项**与**读取侧的合法性判据**，
+ * 两处各写一份的话，手改 data.json 写进来的怪数会在一边被拍平、在另一边照单全收，
+ * 于是下拉框显示「前 5 个」而笔记里落进四十条——这种分叉不报错。
+ */
+export const BOOK_TAG_COUNTS: readonly number[] = [0, 3, 5, 8];
+
+/** 全新库的读书标签默认值；老库升级时由 DEFAULT_SETTINGS 自动补齐，也是读取侧的回落值 */
+export const BOOK_TAG_DEFAULTS = {
+    prefix: '书籍',
+    count: 5,
+} as const;
 
 // ============================================================
 // 外观：CSS 片段开关

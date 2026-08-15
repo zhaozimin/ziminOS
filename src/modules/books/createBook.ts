@@ -18,7 +18,7 @@ import type { TFile } from 'obsidian';
 import { BOOK_COMMANDS } from '../../core/commands';
 import { TextInputModal } from '../../core/modals';
 import type { ZiminosContext } from '../../core/types';
-import type { ContainerSection } from '../projects/templates';
+import type { Bibliography, ContainerSection } from '../projects/templates';
 
 /** 建书容器要交出去的全部答案。字段与 createContainer 的预设契约结构兼容 */
 export interface BookContainerPreset {
@@ -30,9 +30,18 @@ export interface BookContainerPreset {
     author?: string;
     /** 带副标题的全名，落成别名。只有走豆瓣那条路才有 */
     aliases?: readonly string[];
+    /** 已经拼成 `书籍/xxx` 的标签，落成 tags。只有走豆瓣那条路才有 */
+    tags?: readonly string[];
+    /**
+     * 这本书的 ISBN，落成 UID。只有走豆瓣、且那本书确实登记了书号时才有。
+     * 缺席即回落到时间戳 UID——手动建的书没有豆瓣可查，那是它应得的待遇，不是降级。
+     */
+    uid?: number;
     /** 豆瓣条目地址，落成 source */
     source?: string;
-    /** 已填好正文的小节骨架（书籍信息里那几行）。只有走豆瓣那条路才有 */
+    /** 书目字段（译者、出版社、出版年、页数、封面），落成 YAML。只有走豆瓣那条路才有 */
+    bibliography?: Bibliography;
+    /** 覆盖小节骨架。目前无人使用，形状与容器预设保持一致 */
     sections?: readonly ContainerSection[];
 }
 

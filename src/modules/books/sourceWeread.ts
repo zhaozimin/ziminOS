@@ -9,8 +9,20 @@
  *        登录只做一次且不碰账号密码——开一个真正的浏览器窗口让学员用微信扫码，
  *        成功后从那个窗口的会话里取走 Cookie。这是 Obsidian 生态里这类插件的通行做法，
  *        也是唯一不必让学员去开发者工具里手抄一长串 Cookie 的做法。
- *        取数三个接口各司其职：书架（哪些书有笔记）、划线、想法；章节名单独取一次，
- *        因为划线接口只给 chapterUid 不给章节名，而章节是「全部划线」小节的骨架
+ *        取数走**两套通道**，这是 2026-08-14 真机实测定下来的：
+ *        书架仍走 Cookie（`/api/user/notebook`），而划线与想法走取数网关
+ *        （`i.weread.qq.com/api/agent/gateway`，认 Bearer 令牌，令牌用登录态换）。
+ *        非如此不可——老的 `weread.qq.com/web/*` 两条路都已作废：
+ *        `/web/review/list` 回 200 + `{"errCode":-2012,"errMsg":"登录超时"}`，
+ *        `/web/book/bookmarklist` 更彻底，无论带不带 Cookie、书号真假一律回 200 + `{}`，
+ *        连错误码都不给。后者尤其危险：一具空壳的回答与「这本书确实没划过线」完全一样。
+ *        由此定下本文件最要紧的一条纪律：**判成败不能只看 HTTP 状态码**，
+ *        微信读书失败时照样回 200 并把错误写在正文里（网关用 errcode、老接口用 errCode，
+ *        两套都要认），只看状态码就会把一次失败当成「这本书一条划线都没有」讲给学员听。
+ *        令牌刻意不落盘：它随时能拿登录态再换，存下来只会多一份会过期、要维护、
+ *        断开时要记得一并清掉的凭据——全插件的持久凭据仍然只有 Cookie 一份。
+ *        章节名有两个来源：划线接口自带的章节表，以及想法条目自带的 chapterName；
+ *        后者不是冗余——一本书可能一条纯划线都没有，那时章节表是空的
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -29,7 +41,29 @@ export interface WereadBook {
     readonly author: string;
 }
 
+/** 一次取数的结果：拿到的划线，以及「这次少了什么、为什么」的一句实话 */
+export interface WereadHighlights {
+    readonly highlights: readonly ParsedHighlight[];
+    /** 与微读自己的账对不上时的交代；对得上就是空串 */
+    readonly note: string;
+}
+
 const BASE = 'https://weread.qq.com';
+
+/**
+ * 微信读书的取数网关（v0.14.0 起走这条）。
+ *
+ * 旧的 `weread.qq.com/web/*` 那两条路已经死了（实测见 api 的注释），而这条是活的：
+ * 它是微读为「技能/智能体」开的正门，认 Bearer 令牌而不认 Cookie，
+ * 令牌用登录态自己换得到，因此对学员仍然是零操作——扫一次码，别的都不必管。
+ */
+const GATEWAY = 'https://i.weread.qq.com/api/agent/gateway';
+
+/** 拿登录态换取数令牌的地方。它与网关不同源：换令牌在 weread.qq.com，取数在 i.weread.qq.com */
+const API_KEY_PATH = '/api/skills/apikeyGet';
+
+/** 网关要求随每次调用报一次技能版本 */
+const SKILL_VERSION = '1.0.3';
 
 /** 登录成功的判据：这两个 Cookie 同时在，就是登录态 */
 const REQUIRED_COOKIES = ['wr_vid', 'wr_skey'];
@@ -162,7 +196,18 @@ interface WereadWindow {
 // 取数
 // ============================================================
 
-/** 带着登录态请求一个接口，返回解析后的 JSON */
+/**
+ * 带着登录态请求一个接口，返回解析后的 JSON。
+ *
+ * 判成败**不能只看 HTTP 状态码**。微信读书失败时照样回 200，把错误写在正文里：
+ *
+ *     {"errCode":-2012,"errMsg":"登录超时","errLog":"CAPk0B6"}
+ *
+ * 只看状态码的话，这个响应会被当成一份「一条划线都没有」的正常结果，
+ * 于是学员看到的是「没在设备里找到这本书的划线」——一句关于他的书的假话。
+ * 这正是那条红线要求的反面：网络来源失手就如实说，绝不装作没有数据。
+ * 真机实测抓到过这一幕（2026-08-14），代价是那本书看起来像是从没划过线。
+ */
 async function api(ctx: ZiminosContext, path: string): Promise<Record<string, unknown>> {
     const response = await requestUrl({
         url: `${BASE}${path}`,
@@ -177,10 +222,92 @@ async function api(ctx: ZiminosContext, path: string): Promise<Record<string, un
         throw: false,
     });
 
-    if (response.status === 401) throw new Error('微信读书的登录已过期，重新运行「连接微信读书」。');
+    if (response.status === 401) throw new Error(EXPIRED);
     if (response.status >= 400) throw new Error(`微信读书接口返回 ${response.status}`);
 
-    return (response.json ?? {}) as Record<string, unknown>;
+    const payload = (response.json ?? {}) as Record<string, unknown>;
+    const errCode = Number(payload.errCode ?? 0);
+
+    if (errCode) {
+        // -2012 与 -2010 都是登录态失效，说人话；其余原样转出微读自己的措辞
+        throw new Error(
+            errCode === -2012 || errCode === -2010
+                ? EXPIRED
+                : `微信读书拒绝了这次请求：${text(payload.errMsg) || errCode}`,
+        );
+    }
+
+    return payload;
+}
+
+const EXPIRED = '微信读书的登录已过期，重新运行「连接微信读书」。';
+
+// ============================================================
+// 取数网关：令牌换取与调用
+// ============================================================
+
+/**
+ * 本次会话的取数令牌，只活在内存里。
+ *
+ * **刻意不落盘**：它随时可以拿登录态再换一个，存下来只会让 data.json 里多一份
+ * 会过期、要维护、要在断开时记得一并清掉的凭据。全插件的持久凭据仍然只有 Cookie 一份，
+ * 「断开」因此仍然只需要清那一个字段。插件重载即重新换取，代价是一次 GET。
+ */
+let cachedKey = '';
+
+/** 用登录态换一枚取数令牌。换不到返回空串——调用方据此降级，而不是抛错中断 */
+async function apiKey(ctx: ZiminosContext): Promise<string> {
+    if (cachedKey) return cachedKey;
+
+    try {
+        const payload = await api(ctx, API_KEY_PATH);
+
+        cachedKey = text(payload.apikey);
+    } catch {
+        cachedKey = '';
+    }
+
+    return cachedKey;
+}
+
+/**
+ * 走网关调一个接口。
+ *
+ * 与 Cookie 那条路的判成败方式相同、错误字段不同：网关用 `errcode`/`errmsg`，
+ * 老接口用 `errCode`/`errMsg`，两套都要认——认错一套就等于不认。
+ */
+async function gateway(
+    ctx: ZiminosContext,
+    apiName: string,
+    key: string,
+    params: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+    const response = await requestUrl({
+        url: GATEWAY,
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${key}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ api_name: apiName, skill_version: SKILL_VERSION, ...params }),
+        throw: false,
+    });
+
+    if (response.status === 401) {
+        // 令牌失效：丢掉缓存，下次调用会拿登录态重换一枚
+        cachedKey = '';
+        throw new Error(EXPIRED);
+    }
+
+    if (response.status >= 400) throw new Error(`微信读书网关返回 ${response.status}`);
+
+    const payload = (response.json ?? {}) as Record<string, unknown>;
+
+    if (Number(payload.errcode ?? 0)) {
+        throw new Error(`微信读书拒绝了这次请求：${text(payload.errmsg) || payload.errcode}`);
+    }
+
+    return payload;
 }
 
 /** 书架上全部有笔记的书 */
@@ -197,7 +324,13 @@ export async function listWereadBooks(ctx: ZiminosContext): Promise<readonly Wer
         const id = text(book.bookId);
         const title = text(book.title);
 
-        if (id && title) books.push({ id, title, author: text(book.author) });
+        if (id && title) {
+            books.push({
+                id,
+                title,
+                author: text(book.author),
+            });
+        }
     }
 
     return books;
@@ -212,9 +345,15 @@ export async function listWereadBooks(ctx: ZiminosContext): Promise<readonly Wer
  */
 export async function readWereadBookHighlights(
     ctx: ZiminosContext,
-    bookId: string,
-): Promise<readonly ParsedHighlight[]> {
-    const marks = await api(ctx, `/web/book/bookmarklist?bookId=${encodeURIComponent(bookId)}`);
+    book: WereadBook,
+): Promise<WereadHighlights> {
+    const key = await apiKey(ctx);
+
+    // 换不到令牌就退到只取想法那条老路。它是真的降级而不是等价路线，
+    // 因此必须留一句话交代——沉默地少交一半，与「这本书没划过线」在学员眼里一模一样
+    if (!key) return await cookieOnly(ctx, book.id);
+
+    const marks = await gateway(ctx, '/book/bookmarklist', key, { bookId: book.id });
     const chapterNames = chapterMapOf(marks);
     const highlights: ParsedHighlight[] = [];
 
@@ -233,44 +372,92 @@ export async function readWereadBookHighlights(
 
     // 想法单独一趟：接口不同、失败也不该让划线跟着丢
     try {
-        const reviews = await api(
-            ctx,
-            `/web/review/list?bookId=${encodeURIComponent(bookId)}&listType=11&mine=1&syncKey=0`,
-        );
+        const reviews = await gateway(ctx, '/review/list/mine', key, {
+            bookid: book.id,
+            synckey: 0,
+        });
 
-        for (const raw of asArray(reviews.reviews)) {
-            const wrapper = raw as Record<string, unknown>;
-            const review = (wrapper.review ?? wrapper) as Record<string, unknown>;
-            const written = text(review.content);
-
-            if (!written) continue;
-
-            const quoted = text(review.abstract);
-            const hostIndex = quoted
-                ? highlights.findIndex(
-                      (item) => item.text.replace(/\s+/g, '') === quoted.replace(/\s+/g, ''),
-                  )
-                : -1;
-
-            // thoughts 是只读数组（契约如此），因此重建那一条而不是原地追加
-            if (hostIndex >= 0) {
-                const host = highlights[hostIndex];
-
-                highlights[hostIndex] = { ...host, thoughts: [...host.thoughts, written] };
-            } else {
-                highlights.push({
-                    chapter: chapterNames.get(text(review.chapterUid)) ?? '',
-                    text: quoted,
-                    thoughts: [written],
-                });
-            }
-        }
-    } catch {
-        // 想法拿不到就只交划线：少一半好过一条都没有
+        mergeReviews(highlights, reviews, chapterNames);
+    } catch (error) {
+        // 想法拿不到就只交划线：少一半好过一条都没有。
+        // 但若划线也一条没有，这次失败就是全部真相，必须抛出去——
+        // 否则学员得到的是「这本书没有划线」，而事实是「微读没让我们看」
+        if (!highlights.length) throw error;
     }
 
-    return highlights;
+    return { highlights, note: '' };
 }
+
+/**
+ * 降级路线：只用登录态，只取得到带想法的那些。
+ *
+ * 走到这里意味着令牌换不到（微读改了换发方式、或这个账号没开通）。
+ * 纯划线在这条路上取不回来——`/web/book/bookmarklist` 已是一具空壳，
+ * 无论带不带 Cookie、书号真假一律回 200 + `{}`，连错误码都不给。
+ * 因此这里**必须留下那句 note**：静默地少交一半，与「这本书没划过线」
+ * 在学员眼里长得一模一样，而前者是我们的问题，后者不是。
+ */
+async function cookieOnly(ctx: ZiminosContext, bookId: string): Promise<WereadHighlights> {
+    const highlights: ParsedHighlight[] = [];
+    const reviews = await api(
+        ctx,
+        `/api/review/list?bookId=${encodeURIComponent(bookId)}&listType=11&mine=1&syncKey=0`,
+    );
+
+    mergeReviews(highlights, reviews, new Map());
+
+    return {
+        highlights,
+        note:
+            '没能拿到微信读书的取数授权，这次只取回了写过想法的那些；' +
+            '纯划线取不到。重新运行一次「连接微信读书」通常就能恢复。',
+    };
+}
+
+/**
+ * 把想法并进划线清单。
+ *
+ * 想法**并**回被评论的那条而不是「谁先谁算数」——同一句话隔半年重读会有第二个想法，
+ * 丢掉后来那条，学员第二次读的收获在这一步就没了。
+ * 挂不回去（原文对不上、或那条划线本身没同步过来）就作为独立条目留下。
+ */
+function mergeReviews(
+    highlights: ParsedHighlight[],
+    payload: Record<string, unknown>,
+    chapterNames: Map<string, string>,
+): void {
+    for (const raw of asArray(payload.reviews)) {
+        const wrapper = raw as Record<string, unknown>;
+        const review = (wrapper.review ?? wrapper) as Record<string, unknown>;
+        const written = text(review.content);
+
+        if (!written) continue;
+
+        const quoted = text(review.abstract);
+        const hostIndex = quoted
+            ? highlights.findIndex(
+                  (item) => item.text.replace(/\s+/g, '') === quoted.replace(/\s+/g, ''),
+              )
+            : -1;
+
+        // thoughts 是只读数组（契约如此），因此重建那一条而不是原地追加
+        if (hostIndex >= 0) {
+            const host = highlights[hostIndex];
+
+            highlights[hostIndex] = { ...host, thoughts: [...host.thoughts, written] };
+        } else {
+            highlights.push({
+                // 想法自带 chapterName，优先用它：一本书可能一条纯划线都没有
+                // （只有「划一段再写句话」的想法），那时章节表是空的，
+                // 靠 chapterUid 去查只会查到空字符串，整章信息白白丢掉
+                chapter: text(review.chapterName) || chapterNames.get(text(review.chapterUid)) || '',
+                text: quoted,
+                thoughts: [written],
+            });
+        }
+    }
+}
+
 
 /** 划线接口自带的章节表：chapterUid → 章节名 */
 function chapterMapOf(payload: Record<string, unknown>): Map<string, string> {

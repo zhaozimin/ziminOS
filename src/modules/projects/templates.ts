@@ -9,7 +9,8 @@
  *        MOC 的 frontmatter 与 base 块自 create-project-moc.js 逐字移植，仅把项目名与路径参数化，
  *        任何"顺手优化"都会让存量笔记与新笔记分叉，禁止。
  *        v0.12.0 为书籍容器添的三处可选参数（author 行、小节骨架、base 视图名）全部缺省即旧产出，
- *        项目与领域的正文逐字节不变，授权见规格书-V2 §19
+ *        v0.14.0 又添一处（tags 列表）同样缺省即旧产出——
+ *        项目与领域的正文至今逐字节不变，授权见规格书-V2 §19 与 §21
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -60,7 +61,13 @@ export interface MocFrontmatterOptions {
     readonly description: string;
     /** 创建时间戳，格式由调用方按设置决定 */
     readonly created: string;
-    /** 14 位本地时间 UID，数字类型，落盘不带引号 */
+    /**
+     * 笔记的永久身份，数字类型，落盘不带引号。
+     *
+     * 通常是 14 位本地时间；书籍走的是它的 ISBN——一本书本来就有一个全世界通用的号，
+     * 再发一个只有这个库认得的时间戳，是给同一个东西造第二个主键。
+     * 换号这件事只发生在调用方：本文件不认识 ISBN，只认识「这是一个数字」。
+     */
     readonly uid: number;
     /** 身份：NOTE_TYPES.project 或 NOTE_TYPES.area。它决定导航页把这篇笔记摆进哪张表 */
     readonly type: string;
@@ -85,10 +92,41 @@ export interface MocFrontmatterOptions {
      * 而搜索与双链要认得出全名，别名正是 Obsidian 为这件事准备的字段。
      */
     readonly aliases?: readonly string[];
+    /**
+     * 标签。只有书籍容器带它——书的分类不是个人习惯，是豆瓣几万人投出来的公共坐标，
+     * 机器查得到就不该让人填。项目与领域仍留空：那两类的分类确实只有本人知道。
+     * 落盘写成列表（`tags` 在库级属性表里登记的就是 tags 类型），且**不带井号**——
+     * 井号是正文里的写法，属性里写的是标签本身，写进去会变成标签名的一部分。
+     */
+    readonly tags?: readonly string[];
     /** 出处链接。书籍容器写豆瓣条目地址，字段名沿用全库统一的 source */
     readonly source?: string;
+    /**
+     * 书目字段，只有书籍容器带。
+     *
+     * v0.14.0 从正文的「书籍信息」小节搬进 YAML：那一节是一张给人读的登记表，
+     * 而这些值机器读得更多——按出版年排、按页数挑、按出版社筛，都得是属性才做得到；
+     * 摆在正文里它们只是五行谁也不会去读第二遍的字。
+     * 搬家时刻意丢掉了三样：ISBN 已经是 UID、豆瓣链接已经是 source、
+     * 豆瓣评分不写（`rating` 是**学员自己**打的分，两个评分挤一个字段是在制造误读）。
+     */
+    readonly bibliography?: Bibliography;
     /** 与某个人的关系；自己独做的项目不带这一项，空键是登记表不是索引 */
     readonly relation?: ProjectRelation;
+}
+
+/**
+ * 书目字段。空值整行不写——空的 publisher 键是登记表不是索引，与 author 同一条纪律。
+ *
+ * publishDate 落成文本而不是日期：豆瓣给的是「2018-9-1」也可能是「2021-7」，
+ * 后者根本不是一个完整日期，登记成 date 类型会让属性面板整列解析失败。
+ */
+export interface Bibliography {
+    readonly translators?: readonly string[];
+    readonly publisher?: string;
+    readonly publishDate?: string;
+    readonly pages?: string;
+    readonly cover?: string;
 }
 
 /**
@@ -143,11 +181,26 @@ function toYamlString(value: string): string {
 }
 
 /**
- * 生成 MOC 的 YAML frontmatter（固定十行）。
- * aliases/updated/tags 刻意留空：前者由用户自取，updated 交给自动维护，tags 属于个人分类习惯。
+ * 生成 MOC 的 YAML frontmatter。
+ * aliases 与 updated 刻意留空：前者由用户自取，后者交给自动维护。
+ * tags 从前也在这一列（分类是个人习惯），v0.14.0 起书籍是例外——
+ * 书的分类不是个人习惯，是豆瓣几万人投出来的公共坐标，机器查得到就不该让人填；
+ * 项目与领域仍留空，那两类的分类确实只有本人知道。
  */
 export function mocFrontmatter(options: MocFrontmatterOptions): string {
-    const { description, created, uid, type, status, author, aliases, source, relation } = options;
+    const {
+        description,
+        created,
+        uid,
+        type,
+        status,
+        author,
+        aliases,
+        tags,
+        source,
+        bibliography,
+        relation,
+    } = options;
 
     return [
         '---',
@@ -158,7 +211,8 @@ export function mocFrontmatter(options: MocFrontmatterOptions): string {
         `description: ${toYamlString(description)}`,
         `created: ${created}`,
         'updated:',
-        'tags:',
+        // 书籍带着豆瓣的分类词进来，其余容器仍留一个空键等主人自己填
+        ...(tags?.length ? ['tags:', ...tags.map((tag) => `  - ${toYamlString(tag)}`)] : ['tags:']),
         `UID: ${uid}`,
         `type: ${type}`,
         // 领域没有状态，那一行整行不写；空的 status 键会让它出现在「正在进行中」那张表里
@@ -168,10 +222,32 @@ export function mocFrontmatter(options: MocFrontmatterOptions): string {
         ...(author ? ['author:', `  - ${toYamlString(author)}`] : []),
         // 出处：书籍写豆瓣条目地址。它是 text 类型，直接写裸链接，Obsidian 会渲染成可点的
         ...(source ? [`source: ${source}`] : []),
+        ...bibliographyLines(bibliography),
         // 只在有值时才写这一行：空的 client 键会让这个项目被当成一笔没有客户的委托
         ...(relation ? [`${relation.field}: "[[${relation.target}]]"`] : []),
         '---',
     ].join('\n');
+}
+
+/**
+ * 书目那几行。全部可缺省，缺的整行不写。
+ * translator 写成列表（一本书可以有好几位译者），与 author 同形同因：
+ * 属性类型是全库共享的一张表，同一个字段一处标量一处列表就与其余笔记不同构了。
+ */
+function bibliographyLines(bibliography?: Bibliography): string[] {
+    if (!bibliography) return [];
+
+    const { translators, publisher, publishDate, pages, cover } = bibliography;
+
+    return [
+        ...(translators?.length
+            ? ['translator:', ...translators.map((name) => `  - ${toYamlString(name)}`)]
+            : []),
+        ...(publisher ? [`publisher: ${toYamlString(publisher)}`] : []),
+        ...(publishDate ? [`published: ${toYamlString(publishDate)}`] : []),
+        ...(pages ? [`pages: ${pages}`] : []),
+        ...(cover ? [`cover: ${cover}`] : []),
+    ];
 }
 
 /**
