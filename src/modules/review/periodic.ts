@@ -3,7 +3,7 @@
  *          core/constants 的 PERIODS/FIELDS/FOLDERS，
  *          core/folders 的 ensureFolderPath/normalizeFolderPath，core/time 的 currentPeriodTitle/
  *          periodStartOf/dayText，core/types 的 ZiminosContext；依赖 ./templates 的 periodNoteContent
- * [OUTPUT]: 对外提供 registerPeriodicCommands（五条打开命令，身份取自 PERIOD_COMMANDS）、
+ * [OUTPUT]: 对外提供 registerPeriodicCommands（五条打开命令，可注入「日记打开后」回调）、
  *           openPeriodNote（定位或创建某一级笔记）、
  *           periodFolderOf/diaryFolders（目录解析）、periodOfFile/periodStartOfNote（周期归属判定）
  * [POS]: 复盘模块的入口与坐标系。它替代的是 Templater + 日历插件那一套：
@@ -11,6 +11,8 @@
  *        同输入同结果，无网络、无模板引擎。
  *        「不存在就按模板创建，存在但是空文件就补齐内容」是它的幂等姿态——
  *        学员用别的方式建过一个空日记，命令不会拒绝也不会覆盖，只把该有的骨架填进去。
+ *        「打开今天的日记」所需的缺失主题提示通过回调注入，底层 openPeriodNote 仍保持纯粹；
+ *        记人情等只想静默确保日记存在的流程，不会被弹窗抢走焦点。
  *        它刻意不写 daily-notes.json：核心日记插件会建出不带模板的空文件，
  *        播种那份配置等于给学员造一条通向空白笔记的岔路
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -191,10 +193,17 @@ export async function openPeriodNote(
  * 五条而不是「一条命令再选周期」：每一条都能各自绑快捷键，
  * 而日记是每天要开的高频入口，让它多经过一层选择是把成本加在最高频的动作上。
  */
-export function registerPeriodicCommands(ctx: ZiminosContext): void {
+export function registerPeriodicCommands(
+    ctx: ZiminosContext,
+    onDailyOpened?: (file: TFile) => Promise<void>,
+): void {
     for (const period of Object.values(PERIODS)) {
         ctx.commands.register(PERIOD_COMMANDS[period.key], () => {
-            void openPeriodNote(ctx, period);
+            void (async () => {
+                const file = await openPeriodNote(ctx, period);
+
+                if (file && period.key === 'daily') await onDailyOpened?.(file);
+            })();
         });
     }
 }

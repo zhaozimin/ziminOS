@@ -7056,10 +7056,13 @@ async function openPeriodNote(ctx, period, options) {
     return null;
   }
 }
-function registerPeriodicCommands(ctx) {
+function registerPeriodicCommands(ctx, onDailyOpened) {
   for (const period of Object.values(PERIODS)) {
     ctx.commands.register(PERIOD_COMMANDS[period.key], () => {
-      void openPeriodNote(ctx, period);
+      void (async () => {
+        const file = await openPeriodNote(ctx, period);
+        if (file && period.key === "daily") await (onDailyOpened == null ? void 0 : onDailyOpened(file));
+      })();
     });
   }
 }
@@ -7364,35 +7367,52 @@ function registerThemeCommand(ctx) {
     void writeTheme(ctx);
   });
 }
+async function promptThemeIfMissing(ctx, file) {
+  try {
+    const current = themeOf(ctx, file);
+    if (current) return;
+    await promptAndWriteTheme(ctx, file, PERIODS.daily, current);
+  } catch (error) {
+    reportFailure(error);
+  }
+}
 async function writeTheme(ctx) {
-  var _a, _b, _c;
   try {
     const target = await resolveTarget(ctx);
     if (!target) return;
     const { file, period } = target;
-    const current = String(
-      (_c = (_b = (_a = ctx.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter) == null ? void 0 : _b[FIELDS.theme]) != null ? _c : ""
-    ).trim();
-    const answer = await new TextInputModal(ctx.app, {
-      title: promptOf(period),
-      placeholder: "\u4E00\u53E5\u8BDD\uFF0C\u5199\u7ED3\u8BBA\u4E0D\u5199\u8FC7\u7A0B",
-      initial: current
-    }).openAndGetValue();
-    if (answer === null) return;
-    const theme = answer.trim();
-    if (!theme) {
-      new import_obsidian27.Notice(MESSAGES9.unchanged);
-      return;
-    }
-    ctx.guard.mark(file.path);
-    await ctx.app.fileManager.processFrontMatter(file, (frontmatter) => {
-      frontmatter[FIELDS.theme] = theme;
-    });
-    new import_obsidian27.Notice(`${MESSAGES9.donePrefix}${period.label}\u4E3B\u9898\uFF1A${theme}`);
+    await promptAndWriteTheme(ctx, file, period, themeOf(ctx, file));
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian27.Notice(MESSAGES9.failedPrefix + message);
+    reportFailure(error);
   }
+}
+async function promptAndWriteTheme(ctx, file, period, current) {
+  const answer = await new TextInputModal(ctx.app, {
+    title: promptOf(period),
+    placeholder: "\u4E00\u53E5\u8BDD\uFF0C\u5199\u7ED3\u8BBA\u4E0D\u5199\u8FC7\u7A0B",
+    initial: current
+  }).openAndGetValue();
+  if (answer === null) return;
+  const theme = answer.trim();
+  if (!theme) {
+    new import_obsidian27.Notice(MESSAGES9.unchanged);
+    return;
+  }
+  ctx.guard.mark(file.path);
+  await ctx.app.fileManager.processFrontMatter(file, (frontmatter) => {
+    frontmatter[FIELDS.theme] = theme;
+  });
+  new import_obsidian27.Notice(`${MESSAGES9.donePrefix}${period.label}\u4E3B\u9898\uFF1A${theme}`);
+}
+function themeOf(ctx, file) {
+  var _a, _b, _c;
+  return String(
+    (_c = (_b = (_a = ctx.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter) == null ? void 0 : _b[FIELDS.theme]) != null ? _c : ""
+  ).trim();
+}
+function reportFailure(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  new import_obsidian27.Notice(MESSAGES9.failedPrefix + message);
 }
 async function resolveTarget(ctx) {
   const active = ctx.app.workspace.getActiveFile();
@@ -8635,7 +8655,7 @@ var ZiminosPlugin = class extends import_obsidian32.Plugin {
     registerImportHighlightsCommand(ctx);
     registerExcerptCardCommand(ctx);
     registerInspirationCaptureCommand(ctx);
-    registerPeriodicCommands(ctx);
+    registerPeriodicCommands(ctx, (file) => promptThemeIfMissing(ctx, file));
     registerThemeCommand(ctx);
     registerCreateContactCommand(ctx);
     registerRecordFavorCommand(ctx, () => openPeriodNote(ctx, PERIODS.daily, { reveal: false }));

@@ -7,6 +7,7 @@
  *          其中读书笔记那三条命令还要 modules/projects/createContainer 的 createContainer/BOOK_KIND
  *          来填「建一个书籍容器」那个洞，设置页那颗「扫码连接」还要 modules/books/sourceWeread
  *          的 loginWeread 来填「开微信读书的登录窗口」那个洞；
+ *          复盘的打开命令还要 theme 的 promptThemeIfMissing 来填「日记已打开」那个洞；
  *          再加 modules/format 的 registerFormatter、modules/appearance 的 registerAppearanceSwitch、
  *          modules/ribbon 的 registerRibbon 与 modules/about 的 aboutViews/renderAboutPanel
  * [OUTPUT]: 默认导出 ZiminosPlugin，即 Obsidian 加载 main.js 时实例化的插件入口类
@@ -66,7 +67,7 @@ import { registerUpdatedMaintainer } from './modules/projects/updatedMaintainer'
 import { openPeriodNote, registerPeriodicCommands } from './modules/review/periodic';
 import { reviewProjectViews } from './modules/review/projectViews';
 import { reviewSeed } from './modules/review/seed';
-import { registerThemeCommand } from './modules/review/theme';
+import { promptThemeIfMissing, registerThemeCommand } from './modules/review/theme';
 import { reviewThemeViews } from './modules/review/views';
 import { registerRibbon } from './modules/ribbon/dock';
 import { applySeed, initializeVault } from './modules/setup/init';
@@ -146,7 +147,9 @@ export default class ZiminosPlugin extends Plugin {
 
         registerInspirationCaptureCommand(ctx);
 
-        registerPeriodicCommands(ctx);
+        // 打开命令只管「打开」，主题模块只管「有没有主题」；
+        // 这里把两者接上，于是首次打开会问，已有主题再打开就安静
+        registerPeriodicCommands(ctx, (file) => promptThemeIfMissing(ctx, file));
         registerThemeCommand(ctx);
 
         registerCreateContactCommand(ctx);
