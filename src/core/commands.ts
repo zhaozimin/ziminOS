@@ -1,9 +1,9 @@
 /**
  * [INPUT]: 依赖 obsidian 的 Plugin 类型；依赖 ./constants 的 PeriodKey 与 TransitionAction 两个类型
  * [OUTPUT]: 对外提供命令身份契约 CommandSpec、分组名 COMMAND_GROUPS、图标名 COMMAND_ICONS，
- *           二十九条命令的规格 INIT_VAULT_COMMAND/PROJECT_COMMANDS/TRANSITION_COMMANDS（含类型
+ *           三十条命令的规格 INIT_VAULT_COMMAND/PROJECT_COMMANDS/TRANSITION_COMMANDS（含类型
  *           TransitionCommand）/BOOK_COMMANDS/INSPIRATION_COMMAND/PERIOD_COMMANDS/THEME_COMMAND/
- *           CONTACT_COMMANDS/CLIENT_COMMANDS/APPEARANCE_COMMAND/FORMAT_COMMAND，
+ *           OPEN_CALENDAR_COMMAND/CONTACT_COMMANDS/CLIENT_COMMANDS/APPEARANCE_COMMAND/FORMAT_COMMAND，
  *           左侧边栏默认摆件 DEFAULT_RIBBON_COMMANDS
  *           与它的读取侧兜底 normalizeRibbonCommands，
  *           以及注册台 CommandRegistry 与它交出的 RegisteredCommand
@@ -42,7 +42,7 @@ export interface CommandSpec {
      * `插件id + ":" + 标题` 当作一个边栏项的身份，也就是说这个**中文名**才是
      * 用户拖出来的顺序与「在 Obsidian 里藏掉它」这两件事被记进 workspace.json 的键。
      * 改名等于换一个新按钮，用户在边栏上的排布会静默丢失。
-     * 由此还得出一条不变式：二十九个 name 必须互不相同——撞名会让两条命令共用同一个边栏项。
+     * 由此还得出一条不变式：三十个 name 必须互不相同——撞名会让两条命令共用同一个边栏项。
      */
     readonly name: string;
     /** 图标名，取值必须来自 COMMAND_ICONS */
@@ -100,7 +100,7 @@ export const GROUP_COLORS: Readonly<Record<CommandGroup, string>> = {
 };
 
 /**
- * 二十九个图标名。
+ * 三十个图标名。
  *
  * 一律带 `ziminos-` 前缀：图标名是 Obsidian 全局共享的命名空间，
  * 不加前缀就可能盖掉 lucide 里的同名图标，或者被后装的插件盖掉。
@@ -124,6 +124,7 @@ export const COMMAND_ICONS = {
     highlights: 'ziminos-highlights',
     excerpt: 'ziminos-excerpt',
     inspiration: 'ziminos-inspiration',
+    calendar: 'ziminos-calendar',
     daily: 'ziminos-daily',
     weekly: 'ziminos-weekly',
     monthly: 'ziminos-monthly',
@@ -141,13 +142,13 @@ export const COMMAND_ICONS = {
     /**
      * 不属于任何命令的一枚：设置页「边栏」标签页的图标。
      * 边栏这个模块管的是屏幕上那一列，没有哪条命令天然长它的样子，
-     * 图形与其余二十九个同住 icons.ts，同一套画法
+     * 图形与其余三十个同住 icons.ts，同一套画法
      */
     dock: 'ziminos-dock',
 } as const;
 
 // ============================================================
-// 二十九条命令：顺序即它们在左侧边栏里的先后
+// 三十条命令：顺序即它们在左侧边栏里的先后
 // ============================================================
 
 /**
@@ -296,6 +297,14 @@ export const INSPIRATION_COMMAND: CommandSpec = {
     group: COMMAND_GROUPS.inspiration,
 };
 
+/** 中国日历视图的找回入口；视图默认常驻右侧栏，这条命令在用户关闭后负责重新打开 */
+export const OPEN_CALENDAR_COMMAND: CommandSpec = {
+    id: 'open-calendar',
+    name: '打开中国日历',
+    icon: COMMAND_ICONS.calendar,
+    group: COMMAND_GROUPS.review,
+};
+
 /**
  * 五级复盘各自的「打开本级笔记」命令，键与 constants 的 PERIODS 同源。
  *
@@ -413,7 +422,7 @@ export const FORMAT_COMMAND: CommandSpec = {
 /**
  * 全新库默认摆进左侧边栏的七条命令。
  *
- * 二十九条全摆上去等于把选择的负担丢回给学员——那条边栏会长成一根谁也不看的图标柱。
+ * 三十条全摆上去等于把选择的负担丢回给学员——那条边栏会长成一根谁也不看的图标柱。
  * 这七条的判据是「一天里可能按不止一次」：记灵感、开日记、写主题是每天的动作，
  * 新建项目与新建人脉是每周的动作，记人情发生在关系推进的当下，外观开关是刚上手时天天在调的。
  * 其余十九条要么一辈子只按一次（初始化笔记库、初始化客户模块），
@@ -448,7 +457,7 @@ export const DEFAULT_RIBBON_COMMANDS: readonly string[] = [
  * 包括下面的高级设置。收敛一次，两个消费方（边栏与设置页）都不必各自判空。
  *
  * 不是数组就退回默认清单（等同于「这个键没写过」），是数组则只留下字符串项。
- * 空数组是合法的：用户把二十九条全取消了，那就一个图标都不摆。
+ * 空数组是合法的：用户把三十条全取消了，那就一个图标都不摆。
  */
 export function normalizeRibbonCommands(value: unknown): readonly string[] {
     if (!Array.isArray(value)) return DEFAULT_RIBBON_COMMANDS;

@@ -106,7 +106,7 @@ git clone --depth 1 "https://github.com/zhaozimin/ziminOS.git" "$install_staging
 
 最后四份是笔记库的开箱设置，别当成可有可无的杂项：`app.json` 定下附件落在 `./附件`、粘链接用 wiki 语法并自动跟着改名；`templates.json` 把模板目录指向 `90-system/Template`，缺了它学员打开核心「模板」插件后得自己去翻路径；`community-plugins.json` 决定三个系统插件是否启用；`appearance.json` 决定主题与十个默认启用的片段。
 
-任一缺失就停止并说明仓库不完整。ziminOS（含左侧边栏命令坞、二十九枚命令图标与一枚设置页边栏图标，图标 SVG 已编进 `main.js`）、Dataview、Minimal 与 Style Settings 的运行产物已全部在 `vault/` 中，四款正文字体已全部锁定在 `fonts/` 中；不要运行 `npm install` / `npm run build`，不要安装 Node.js，也不要去 Obsidian 商店或网络另行下载主题/插件、图标包或字体。禁止额外安装 QuickAdd、Linter 等非系统组件。
+任一缺失就停止并说明仓库不完整。ziminOS（含左侧边栏命令坞、三十枚命令图标与一枚设置页边栏图标，图标 SVG 已编进 `main.js`）、Dataview、Minimal 与 Style Settings 的运行产物已全部在 `vault/` 中，四款正文字体已全部锁定在 `fonts/` 中；不要运行 `npm install` / `npm run build`，不要安装 Node.js，也不要去 Obsidian 商店或网络另行下载主题/插件、图标包或字体。禁止额外安装 QuickAdd、Linter 等非系统组件。
 
 ## 三、原地搭建当前工作区
 
@@ -171,6 +171,7 @@ done
 然后按下列所有权规则处理用户配置：
 
 0. **ziminOS 自己的 `plugins/ziminos/data.json`：存在就一个字节都不许碰，施工源也不提供它。** 这条排在最前面，因为它最容易被当成「我们自己的文件」而顺手覆盖——它不是。它装着用户在设置页做过的每一个决定：左侧边栏摆了哪几条命令、右下角外观开关显不显示、七个目录改没改过名、灵感落点与时间格式。覆盖它等于把学员用了半年的工作台一键推平，而且没有任何报错。插件启动时以默认值打底合并这份存档，所以新版本新增的设置项对老库自动生效，根本不需要在安装侧动它。
+0a. **ziminOS 的 `plugins/ziminos/holiday-cache.json`：存在就保留，不归安装器替换或清理。** 这是日历已通过严格校验的最后好数据，施工源不提供它；升级后新版插件会按 schema 自行读取，读不懂才退回内置快照，安装侧不代替业务层判断。
 1. Dataview `data.json`：施工源不提供默认设置文件；目标存在时原样保留，不得创建或覆盖。DataviewJS 因此保持插件上游默认关闭，用户已有选择仍归用户所有。
 1b. `types.json`（属性类型登记表）：目标不存在时才从施工源复制；已存在则解析现有 JSON，只补进缺失的属性键，绝不改写用户已经调过的类型。它决定属性面板给每个属性什么控件（文本/日期时间/日期/数字/列表/勾选框），缺了它学员会看到所有属性都是文本，只能一个个手动改。
 2. Style Settings `data.json`：目标不存在时才从施工源复制；已存在则一个字节都不得改。
@@ -238,7 +239,7 @@ README.md
 
 确认：
 
-- `$vault_root/.obsidian/plugins/ziminos/main.js` 存在，且 `grep -c 'ziminos-vault' main.js` 大于 0 —— 二十九枚命令图标与一枚设置页边栏图标都编进产物，grep 不到就说明拿到的是旧版 `main.js`，装上去左边那列会是空的。
+- `$vault_root/.obsidian/plugins/ziminos/main.js` 存在，且 `grep -c 'ziminos-vault' main.js` 大于 0 —— 三十枚命令图标与一枚设置页边栏图标都编进产物，grep 不到就说明拿到的是旧版 `main.js`，装上去左边那列会是空的。
 - `$vault_root/.obsidian/plugins/ziminos/manifest.json` 存在，`version` 与施工源一致；`styles.css` 存在。
 - `$vault_root/.obsidian/plugins/dataview/main.js` 存在，版本为 0.5.68。
 - `$vault_root/.obsidian/plugins/obsidian-style-settings/main.js` 存在，`data.json` 是合法 JSON 对象。
@@ -295,7 +296,7 @@ esac
 - 不在当前工作区克隆 GitHub 仓库。
 - 不让用户打开仓库或仓库内的 `vault/`。
 - 不删除或覆盖用户笔记。
-- 只交付仓库已锁定的 ziminOS、Dataview、Minimal、Style Settings、ziminOS CSS 与 `fonts/` 里的四款字体；不临时下载或安装任何额外软件、插件、主题、图标包或字体。二十九枚命令图标与一枚设置页边栏图标的 SVG 已经编进 `main.js`，不需要也不允许另外下载。
+- 只交付仓库已锁定的 ziminOS、Dataview、Minimal、Style Settings、ziminOS CSS 与 `fonts/` 里的四款字体；不临时下载或安装任何额外软件、插件、主题、图标包或字体。三十枚命令图标与一枚设置页边栏图标的 SVG 已经编进 `main.js`，不需要也不允许另外下载。
 - 字体只装进当前用户的字体目录，绝不碰系统级目录、绝不提权要密码；目标位置已有同名文件绝不覆盖。升级时用户已自选的 `textFontFamily` 绝不改动。
 - 全新安装可播种默认配色与默认启用的片段；升级绝不覆盖 **ziminOS 自己的 `data.json`**（侧边栏摆放与全部设置都在里面）、用户 Dataview / Style Settings `data.json`、非空自选主题、额外插件、自带片段，也绝不替用户重新打开他关掉的片段。
 - 判断不了当前目录是否安全时停止，不要猜。

@@ -2,9 +2,9 @@
  * [INPUT]: 依赖 obsidian 的 Notice/TFile 与 App 类型；依赖 core/commands 的 PERIOD_COMMANDS，
  *          core/constants 的 PERIODS/FIELDS/FOLDERS，
  *          core/folders 的 ensureFolderPath/normalizeFolderPath，core/time 的 currentPeriodTitle/
- *          periodStartOf/dayText，core/types 的 ZiminosContext；依赖 ./templates 的 periodNoteContent
+ *          periodStartOf/dayText/titleOfDay，core/types 的 ZiminosContext；依赖 ./templates 的 periodNoteContent
  * [OUTPUT]: 对外提供 registerPeriodicCommands（五条打开命令，可注入「日记打开后」回调）、
- *           openPeriodNote（定位或创建某一级笔记）、
+ *           openPeriodNote（定位或创建当前或指定日期所属的某一级笔记）、
  *           periodFolderOf/diaryFolders（目录解析）、periodOfFile/periodStartOfNote（周期归属判定）
  * [POS]: 复盘模块的入口与坐标系。它替代的是 Templater + 日历插件那一套：
  *        五级笔记的文件名、目录、导航链接、周期锚点全部由日期算术确定性地推出，
@@ -24,7 +24,7 @@ import { PERIOD_COMMANDS } from '../../core/commands';
 import { FIELDS, FOLDERS, PERIODS } from '../../core/constants';
 import type { PeriodDefinition, PeriodKey } from '../../core/constants';
 import { ensureFolderPath, normalizeFolderPath } from '../../core/folders';
-import { currentPeriodTitle, dayText, periodStartOf, shiftDay } from '../../core/time';
+import { currentPeriodTitle, dayText, periodStartOf, shiftDay, titleOfDay } from '../../core/time';
 import type { ZiminosContext } from '../../core/types';
 import { periodNoteContent } from './templates';
 
@@ -144,13 +144,27 @@ export function resolveScope(
  * 文件不存在 → 建；文件在但是空的 → 把骨架填进去（别的工具建的空壳也能用起来）；
  * 文件在且有内容 → 一个字不动，直接打开。
  */
+export interface OpenPeriodNoteOptions {
+    /** false 时只保证文件存在，不抢走当前编辑视野 */
+    readonly reveal?: boolean;
+    /** 任意 YYYY-MM-DD 锚点；缺省即今天。日历五级点击经它复用同一套创建内核 */
+    readonly day?: string;
+}
+
 export async function openPeriodNote(
     ctx: ZiminosContext,
     period: PeriodDefinition,
-    options?: { readonly reveal?: boolean },
+    options?: OpenPeriodNoteOptions,
 ): Promise<TFile | null> {
     try {
-        const title = currentPeriodTitle(period);
+        const title = options?.day ? titleOfDay(options.day, period) : currentPeriodTitle(period);
+
+        if (!title) {
+            new Notice(`无法从日期 ${options?.day ?? ''} 定位${period.label}`);
+
+            return null;
+        }
+
         const folder = periodFolderOf(ctx, period);
         const path = `${folder}/${title}.md`;
         const existing = ctx.app.vault.getAbstractFileByPath(path);

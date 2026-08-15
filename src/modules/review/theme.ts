@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 obsidian 的 Notice 与 TFile；依赖 core/commands 的 THEME_COMMAND，core/constants 的 FIELDS/PERIODS，
  *          core/modals 的 TextInputModal，core/frontmatter 的 Frontmatter 类型，
- *          core/types 的 ZiminosContext；依赖 ./periodic 的 periodOfFile 与 openPeriodNote
+ *          core/time 的 today，core/types 的 ZiminosContext；依赖 ./periodic 的 periodOfFile 与 openPeriodNote
  * [OUTPUT]: 对外提供 registerThemeCommand（注册「写复盘主题」命令）与
  *           promptThemeIfMissing（只在日记尚无主题时询问一次）
  * [POS]: 主题链的唯一录入口。整条链——日→周→月→季→年——只需要人写这一句，
@@ -23,6 +23,7 @@ import { FIELDS, PERIODS } from '../../core/constants';
 import type { PeriodDefinition } from '../../core/constants';
 import type { Frontmatter } from '../../core/frontmatter';
 import { TextInputModal } from '../../core/modals';
+import { today } from '../../core/time';
 import type { ZiminosContext } from '../../core/types';
 import { openPeriodNote, periodOfFile } from './periodic';
 
@@ -83,7 +84,7 @@ async function promptAndWriteTheme(
     current: string,
 ): Promise<void> {
     const answer = await new TextInputModal(ctx.app, {
-        title: promptOf(period),
+        title: promptOf(period, file),
         placeholder: '一句话，写结论不写过程',
         initial: current,
     }).openAndGetValue();
@@ -138,10 +139,12 @@ async function resolveTarget(
 }
 
 /** 每一级问的问题不同：日看做了什么，周看推进了哪项目标，越往上越问主线 */
-function promptOf(period: PeriodDefinition): string {
+function promptOf(period: PeriodDefinition, file: TFile): string {
     switch (period.key) {
         case 'daily':
-            return '今天主要做了什么？（周复盘看的就是它）';
+            return file.basename === today()
+                ? '今天主要做了什么？（周复盘看的就是它）'
+                : `${file.basename} 主要做了什么？（周复盘看的就是它）`;
         case 'weekly':
             return '本周主题：这周主要推进了哪项人生管理目标？';
         case 'monthly':

@@ -1,7 +1,8 @@
 /*
  * ziminOS 视图样式
  *
- * 服务插件自渲染的那二十二个视图、外观开关浮层，以及设置页的七张标签页与开荒页尾的落款，
+ * 服务插件自渲染的二十二个笔记内视图、中国日历 ItemView、外观开关浮层，
+ * 以及设置页的七张标签页与开荒页尾的落款，
  * 全部选择器都带 ziminos- 前缀，不碰用户笔记正文。
  * 除文末那一条藏边栏图标的规则外，不覆盖主题的任何既有规则——那一条的理由写在它自己头上。
  * 颜色一律取 Obsidian 的语义变量，因此跟随主题与 Style Settings 的配色走，
@@ -40,6 +41,330 @@
     --table-min-width: 100%;
     --table-max-width: 100%;
     --table-margin: 0;
+}
+
+/* ============================================================
+ * 中国日历 · ItemView
+ * ============================================================ */
+
+.workspace-leaf-content[data-type="ziminos-calendar"] .view-content {
+    padding: 0;
+}
+
+.ziminos-calendar {
+    overflow: auto;
+}
+
+.ziminos-calendar-shell {
+    min-width: 286px;
+    padding: 14px 12px 12px;
+    color: var(--text-normal);
+}
+
+.ziminos-calendar button {
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+    font: inherit;
+}
+
+.ziminos-calendar-stepper,
+.ziminos-calendar-today,
+.ziminos-calendar-view-toggle,
+.ziminos-calendar-period,
+.ziminos-calendar-week,
+.ziminos-calendar-day {
+    cursor: pointer;
+}
+
+.ziminos-calendar-header {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 14px;
+}
+
+.ziminos-calendar-header-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
+}
+
+.ziminos-calendar-coordinate {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: 24px minmax(62px, 1fr) 24px;
+    align-items: center;
+    justify-content: center;
+}
+
+.ziminos-calendar-stepper {
+    display: inline-flex;
+    width: 24px;
+    height: 26px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-faint);
+    font-size: 20px;
+    line-height: 1;
+    opacity: 0.48;
+    transition: color 120ms ease, background-color 120ms ease, opacity 120ms ease;
+}
+
+.ziminos-calendar-coordinate:hover .ziminos-calendar-stepper,
+.ziminos-calendar-coordinate:focus-within .ziminos-calendar-stepper {
+    color: var(--text-muted);
+    opacity: 1;
+}
+
+.ziminos-calendar-stepper:hover {
+    background: var(--background-modifier-hover);
+    color: var(--interactive-accent);
+}
+
+.ziminos-calendar-coordinate > .ziminos-calendar-coordinate-label {
+    overflow: hidden;
+    min-width: 0;
+    min-height: 26px;
+    padding: 2px 4px;
+    border-radius: var(--radius-s);
+    background: transparent;
+    color: var(--text-normal);
+    font-size: 15px;
+    font-weight: 650;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ziminos-calendar-coordinate > .ziminos-calendar-coordinate-label:hover {
+    background: var(--background-modifier-hover);
+    color: var(--interactive-accent);
+}
+
+.ziminos-calendar-header-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+.ziminos-calendar-today,
+.ziminos-calendar-view-toggle {
+    display: inline-flex;
+    width: 25px;
+    height: 25px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-normal);
+    font-size: 12px;
+}
+
+.ziminos-calendar-today {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.ziminos-calendar-today:hover {
+    background: var(--interactive-accent-hover);
+}
+
+.ziminos-calendar-today.is-current {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 24%, transparent);
+}
+
+.ziminos-calendar-view-toggle:hover {
+    background: var(--background-modifier-hover);
+    color: var(--interactive-accent);
+}
+
+.ziminos-calendar-grid {
+    display: grid;
+    grid-template-columns: 27px repeat(7, minmax(30px, 1fr));
+    gap: 2px 1px;
+}
+
+.ziminos-calendar-weekday {
+    padding: 2px 0 7px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 650;
+    text-align: center;
+}
+
+.ziminos-calendar-week {
+    min-height: 45px;
+    padding: 5px 0 0;
+    border-radius: var(--radius-s);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.ziminos-calendar-week:hover {
+    background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+    color: var(--interactive-accent);
+}
+
+.ziminos-calendar-day {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    min-height: 45px;
+    flex-direction: column;
+    gap: 2px;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 4px 1px 3px;
+    border-radius: var(--radius-s);
+    background: transparent;
+    color: var(--text-normal);
+    text-align: center;
+}
+
+.ziminos-calendar-day:hover {
+    background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+}
+
+.ziminos-calendar-day.is-other-month {
+    opacity: 0.24;
+}
+
+.ziminos-calendar-day.is-today {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.ziminos-calendar-day.is-today:hover {
+    background: var(--interactive-accent-hover);
+}
+
+.ziminos-calendar-day.is-special-day:not(.is-today) .ziminos-calendar-lunar {
+    color: var(--interactive-accent);
+}
+
+.ziminos-calendar-day-top {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+}
+
+.ziminos-calendar-solar {
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1.1;
+}
+
+.ziminos-calendar-badge {
+    display: inline-flex;
+    width: 13px;
+    height: 13px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    color: white;
+    font-size: 8px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.ziminos-calendar-badge.is-rest {
+    background: #C15449;
+}
+
+.ziminos-calendar-badge.is-work {
+    background: #4C8DD6;
+}
+
+.ziminos-calendar-lunar {
+    overflow: hidden;
+    width: 100%;
+    min-width: 0;
+    color: var(--text-muted);
+    font-size: 9px;
+    line-height: 1.15;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ziminos-calendar-day.is-today .ziminos-calendar-lunar {
+    color: var(--text-on-accent);
+}
+
+.ziminos-calendar-year-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 5px;
+}
+
+.ziminos-calendar-quarter {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+}
+
+.ziminos-calendar-quarter > .ziminos-calendar-period {
+    width: 100%;
+    color: var(--interactive-accent);
+}
+
+.ziminos-calendar-quarter-months {
+    display: contents;
+}
+
+.ziminos-calendar-period {
+    min-width: 0;
+    min-height: 38px;
+    padding: 6px 3px;
+    border-radius: var(--radius-s);
+    background: transparent;
+    color: var(--text-normal);
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.ziminos-calendar-period:hover,
+.ziminos-calendar-period.is-selected {
+    background: color-mix(in srgb, var(--interactive-accent) 13%, transparent);
+    color: var(--interactive-accent);
+}
+
+.ziminos-calendar-status {
+    margin-top: 10px;
+    color: var(--text-faint);
+    font-size: 9px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+@media (max-width: 360px) {
+    .ziminos-calendar-shell {
+        min-width: 270px;
+        padding: 8px;
+    }
+
+    .ziminos-calendar-grid {
+        grid-template-columns: 24px repeat(7, minmax(28px, 1fr));
+    }
+
+    .ziminos-calendar-day,
+    .ziminos-calendar-week {
+        min-height: 43px;
+    }
 }
 
 /*

@@ -13,7 +13,7 @@ import builtins from 'builtin-modules';
 /*
  * 产物顶部说明：提醒读者这是构建产物，源码在 src/。
  *
- * 第二段是 Pikaicons 的许可声明，不能省：那二十一个图标的 path 数据被编译进了这个文件，
+ * 第二段是编译进产物的 MIT 组件许可声明，不能省：图标路径、农历算法与内置节假日快照都进了这个文件，
  * 而 MIT 要求「副本或实质性部分」都带上版权与许可声明。写在 banner 而不是只留在
  * icons.ts 的注释里，是因为注释能不能活到产物里取决于打包器的心情（改一次 minify 就没了），
  * 而 banner 是我们自己保证的。
@@ -24,6 +24,8 @@ const banner = `/*
 
 图标来自 Pikaicons（https://pikaicons.com），MIT License，Copyright (c) 2022 Mau Joost。
 其中若干图形由 ziminOS 照同一套画法补画，同样以 MIT 授权分发。
+农历换算来自 lunar-typescript（https://github.com/6tail/lunar-typescript），MIT License，Copyright (c) 2020 6tail。
+内置节假日快照沿用 holiday-cn（https://github.com/NateScarlet/holiday-cn）数据格式，MIT License，Copyright (c) 2019 NateScarlet。
 详见 docs/第三方组件.md。
 */
 `;
