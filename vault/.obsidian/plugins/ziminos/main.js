@@ -34,7 +34,7 @@ __export(main_exports, {
   default: () => ZiminosPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian34 = require("obsidian");
+var import_obsidian41 = require("obsidian");
 
 // src/core/codeblock.ts
 var import_obsidian3 = require("obsidian");
@@ -296,6 +296,21 @@ var SNIPPET_FOLDER_NAME = "snippets";
 var SNIPPET_EXTENSION = ".css";
 var APPEARANCE_FILE_NAME = "appearance.json";
 var ENABLED_SNIPPETS_KEY = "enabledCssSnippets";
+var FOLDER_COUNT_TARGETS = ["notes", "folders", "all"];
+var FOLDER_COUNT_DEFAULTS = {
+  target: "notes",
+  recursive: true
+};
+var RECENT_FILES_FILE = "recent-files.json";
+var CURSOR_STATE_FILE = "cursor-positions.json";
+var RECENT_FILES_KEEP = 50;
+var RECENT_FILES_LIMITS = [10, 20, 30, 50];
+var RECENT_FILES_SORTS = ["opened", "modified"];
+var RECENT_FILES_DEFAULTS = {
+  limit: 30,
+  sort: "opened"
+};
+var CURSOR_MEMORY_LIMIT = 200;
 var VIEW_BLOCK_LANG = "ziminos";
 var VIEW_REFRESH_DEBOUNCE_MS = 200;
 
@@ -759,7 +774,9 @@ var COMMAND_GROUPS = {
   contacts: "\u4EBA\u8109",
   clients: "\u5BA2\u6237",
   appearance: "\u5916\u89C2",
-  format: "\u6392\u7248"
+  format: "\u6392\u7248",
+  explorer: "\u6587\u4EF6",
+  legacy: "\u65E7\u7248"
 };
 var GROUP_COLORS = {
   [COMMAND_GROUPS.setup]: "#A8763E",
@@ -778,8 +795,13 @@ var GROUP_COLORS = {
   // 客户＝生意与钱，绿
   [COMMAND_GROUPS.appearance]: "#E07B39",
   // 外观＝调色盘，橙
-  [COMMAND_GROUPS.format]: "#3BAFBF"
+  [COMMAND_GROUPS.format]: "#3BAFBF",
   // 排版＝整洁，青
+  [COMMAND_GROUPS.explorer]: "#5A6ACF",
+  // 文件＝找路，罗盘针的靛蓝
+  // 旧版这三条做的是 Obsidian 自己的事，不属于 ziminOS 的任何一摊。
+  // 中性灰是这句话的视觉说法：在那一列彩色图标里，它们一眼就看得出是外来的
+  [COMMAND_GROUPS.legacy]: "#7A8290"
 };
 var COMMAND_ICONS = {
   vault: "ziminos-vault",
@@ -813,11 +835,23 @@ var COMMAND_ICONS = {
   appearance: "ziminos-appearance",
   format: "ziminos-format",
   /**
-   * 不属于任何命令的一枚：设置页「边栏」标签页的图标。
-   * 边栏这个模块管的是屏幕上那一列，没有哪条命令天然长它的样子，
-   * 图形与其余三十个同住 icons.ts，同一套画法
+   * 不属于任何命令的两枚：设置页「边栏」与「文件」两张标签页的图标。
+   * 这两个模块管的都是屏幕上的一块地方而不是一件可执行的事，
+   * 没有哪条命令天然长它们的样子，图形与其余三十个同住 icons.ts，同一套画法。
+   *
+   * 两枚都画那块地方本身而不画它的功能：边栏是「一块带左栏的面板」，
+   * 文件浏览器是「一个文件夹」。文件夹上刻意不加数字或角标——
+   * 标签页的身份是「文件浏览器的设置在这儿」，而计数只是它眼下唯一那件事，
+   * 把当期功能画进图标里，下一件功能进来时这枚图标就开始撒谎。
    */
-  dock: "ziminos-dock"
+  recent: "ziminos-recent",
+  filePath: "ziminos-file-path",
+  vaultSwitch: "ziminos-vault-switch",
+  help: "ziminos-help",
+  appSettings: "ziminos-app-settings",
+  dock: "ziminos-dock",
+  explorer: "ziminos-explorer",
+  editing: "ziminos-editing"
 };
 var INIT_VAULT_COMMAND = {
   id: "init-vault",
@@ -1030,6 +1064,38 @@ var FORMAT_COMMAND = {
   icon: COMMAND_ICONS.format,
   group: COMMAND_GROUPS.format
 };
+var RECENT_FILES_COMMAND = {
+  id: "open-recent-files",
+  name: "\u6253\u5F00\u6700\u8FD1\u6587\u4EF6",
+  icon: COMMAND_ICONS.recent,
+  group: COMMAND_GROUPS.explorer
+};
+var COPY_PATH_COMMAND = {
+  id: "copy-file-path",
+  name: "\u590D\u5236\u5F53\u524D\u7B14\u8BB0\u8DEF\u5F84",
+  icon: COMMAND_ICONS.filePath,
+  group: COMMAND_GROUPS.explorer
+};
+var LEGACY_COMMANDS = {
+  vault: {
+    id: "open-vault-chooser",
+    name: "\u5207\u6362\u7B14\u8BB0\u5E93",
+    icon: COMMAND_ICONS.vaultSwitch,
+    group: COMMAND_GROUPS.legacy
+  },
+  help: {
+    id: "open-obsidian-help",
+    name: "\u6253\u5F00\u5E2E\u52A9",
+    icon: COMMAND_ICONS.help,
+    group: COMMAND_GROUPS.legacy
+  },
+  settings: {
+    id: "open-obsidian-settings",
+    name: "\u6253\u5F00\u8BBE\u7F6E",
+    icon: COMMAND_ICONS.appSettings,
+    group: COMMAND_GROUPS.legacy
+  }
+};
 var DEFAULT_RIBBON_COMMANDS = [
   PROJECT_COMMANDS.create.id,
   INSPIRATION_COMMAND.id,
@@ -1037,7 +1103,13 @@ var DEFAULT_RIBBON_COMMANDS = [
   THEME_COMMAND.id,
   CONTACT_COMMANDS.create.id,
   CONTACT_COMMANDS.favor.id,
-  APPEARANCE_COMMAND.id
+  APPEARANCE_COMMAND.id,
+  // 旧版那三个默认就摆出来：它们存在的全部理由就是「回到 ribbon 上」，
+  // 一个需要先去设置页勾选才回来的按钮，等于没有回来。
+  // 顺序归用户——摆出来之后拖到哪儿由 Obsidian 自己记
+  LEGACY_COMMANDS.vault.id,
+  LEGACY_COMMANDS.help.id,
+  LEGACY_COMMANDS.settings.id
 ];
 function normalizeRibbonCommands(value) {
   if (!Array.isArray(value)) return DEFAULT_RIBBON_COMMANDS;
@@ -1055,14 +1127,14 @@ var CommandRegistry = class {
    * 用户在错误的笔记上执行时该得到一句「为什么不行」，而不是眼看着命令凭空消失。
    * 这条纪律同样适用于侧边栏——一个会自己隐身的图标比一句提示更让人困惑。
    */
-  register(spec, run) {
+  register(spec, run2) {
     this.plugin.addCommand({
       id: spec.id,
       name: spec.name,
       icon: spec.icon,
-      callback: run
+      callback: run2
     });
-    this.entries.push({ spec, run });
+    this.entries.push({ spec, run: run2 });
   }
   /** 花名册，顺序即注册顺序。交出只读视图，谁都别想往里塞一条没注册过的命令 */
   list() {
@@ -1334,6 +1406,14 @@ var DEFAULT_SETTINGS = {
   bookTagPrefix: BOOK_TAG_DEFAULTS.prefix,
   bookTagCount: BOOK_TAG_DEFAULTS.count,
   wereadCookie: "",
+  showFolderCount: true,
+  folderCountTarget: FOLDER_COUNT_DEFAULTS.target,
+  folderCountRecursive: FOLDER_COUNT_DEFAULTS.recursive,
+  showFilePath: true,
+  recentFilesLimit: RECENT_FILES_DEFAULTS.limit,
+  recentFilesSort: RECENT_FILES_DEFAULTS.sort,
+  pasteLinkEnabled: true,
+  rememberCursor: true,
   initializedAt: ""
 };
 
@@ -3976,11 +4056,710 @@ function registerConnectWereadCommand(ctx) {
   });
 }
 
-// src/modules/format/formatter.ts
+// src/modules/editing/cursorMemory.ts
 var import_obsidian15 = require("obsidian");
+var PERSIST_DEBOUNCE_MS = 1e3;
+function registerCursorMemory(ctx) {
+  new CursorMemory(ctx);
+}
+var CursorMemory = class {
+  constructor(ctx) {
+    /**
+     * 路径 → 上次的位置。Map 的插入序被当作最近使用序用：
+     * 每次记一篇都先删再插，于是最旧的那一条永远在最前面，超额时从前面丢。
+     */
+    this.marks = /* @__PURE__ */ new Map();
+    /**
+     * 当前正盯着的那一篇。
+     *
+     * 必须自己记一份而不是临时去问「现在活动的是谁」——要记的位置属于**刚离开**的那一篇，
+     * 而 file-open 触发时活动视图已经换成新的了。
+     */
+    this.tracked = null;
+    this.timer = null;
+    this.ctx = ctx;
+    this.statePath = `${ctx.app.vault.configDir}/plugins/${ctx.plugin.manifest.id}/${CURSOR_STATE_FILE}`;
+    const { app, plugin } = ctx;
+    app.workspace.onLayoutReady(() => {
+      void this.load().then(() => this.adopt(true));
+    });
+    plugin.registerEvent(
+      app.workspace.on("file-open", () => {
+        this.remember();
+        this.adopt(true);
+      })
+    );
+    plugin.registerEvent(
+      app.vault.on("rename", (file, oldPath) => {
+        var _a;
+        const mark = this.marks.get(oldPath);
+        this.marks.delete(oldPath);
+        if (mark && file instanceof import_obsidian15.TFile) this.marks.set(file.path, mark);
+        if (((_a = this.tracked) == null ? void 0 : _a.path) === oldPath && file instanceof import_obsidian15.TFile) {
+          this.tracked = { path: file.path, view: this.tracked.view };
+        }
+        this.schedulePersist();
+      })
+    );
+    plugin.registerEvent(
+      app.vault.on("delete", (file) => {
+        if (!this.marks.delete(file.path)) return;
+        this.schedulePersist();
+      })
+    );
+    plugin.registerEvent(
+      app.workspace.on("quit", () => {
+        this.remember();
+        void this.persist();
+      })
+    );
+    plugin.register(() => {
+      this.remember();
+      if (this.timer !== null) window.clearTimeout(this.timer);
+      this.timer = null;
+      void this.persist();
+    });
+  }
+  // ============================================================
+  // 认领与恢复
+  // ============================================================
+  /** 把当前活动的 Markdown 视图认成「正盯着的那一篇」，需要时顺手恢复它的位置 */
+  adopt(restore) {
+    var _a;
+    const view = this.ctx.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
+    const file = (_a = view == null ? void 0 : view.file) != null ? _a : null;
+    if (!view || !file) {
+      this.tracked = null;
+      return;
+    }
+    this.tracked = { path: file.path, view };
+    if (restore) this.restore(view, file.path);
+  }
+  /**
+   * 把光标与滚动条放回上次的位置。
+   *
+   * 只在光标还停在文首（0 行 0 列）时才动手，这是本文件第二要紧的一条判断：
+   * 从一条带锚点的双链跳进来时，Obsidian 已经把光标放在那个标题或块上了——
+   * 那是用户刚刚点的那一下，比「上次离开时在哪」优先。
+   * 行列都要按当前文档夹一次：笔记可能在别处被改短过，越界的行号会让 setCursor 失准。
+   */
+  restore(view, path) {
+    if (!this.ctx.settings.rememberCursor) return;
+    const mark = this.marks.get(path);
+    if (!mark) return;
+    const { editor } = view;
+    const current = editor.getCursor();
+    if (current.line !== 0 || current.ch !== 0) return;
+    const line = Math.min(mark.line, editor.lastLine());
+    const ch = Math.min(mark.ch, editor.getLine(line).length);
+    editor.setCursor({ line, ch });
+    window.requestAnimationFrame(() => {
+      var _a;
+      if (((_a = this.tracked) == null ? void 0 : _a.view) === view) editor.scrollTo(null, mark.top);
+    });
+  }
+  /** 记下「正盯着那一篇」此刻的位置。视图已经换过文件或已关闭时什么都不做 */
+  remember() {
+    var _a;
+    const tracked = this.tracked;
+    if (!tracked || !this.ctx.settings.rememberCursor) return;
+    if (((_a = tracked.view.file) == null ? void 0 : _a.path) !== tracked.path) return;
+    const { editor } = tracked.view;
+    const { line, ch } = editor.getCursor();
+    const { top } = editor.getScrollInfo();
+    this.put(tracked.path, { line, ch, top });
+  }
+  /** 写进记忆并维持上限。先删再插是为了把这一条挪到最近端，于是淘汰的总是最久没碰过的 */
+  put(path, mark) {
+    this.marks.delete(path);
+    this.marks.set(path, mark);
+    while (this.marks.size > CURSOR_MEMORY_LIMIT) {
+      const oldest = this.marks.keys().next();
+      if (oldest.done) break;
+      this.marks.delete(oldest.value);
+    }
+    this.schedulePersist();
+  }
+  // ============================================================
+  // 落盘与读盘
+  // ============================================================
+  schedulePersist() {
+    if (this.timer !== null) window.clearTimeout(this.timer);
+    this.timer = window.setTimeout(() => {
+      this.timer = null;
+      void this.persist();
+    }, PERSIST_DEBOUNCE_MS);
+  }
+  /**
+   * 写状态文件。写不进去就安静收场——它只是「下次能不能回到原处」这件小事，
+   * 为它弹一个红字提示，代价比它本身还大。
+   */
+  async persist() {
+    const marks = {};
+    for (const [path, mark] of this.marks) marks[path] = mark;
+    const payload = { version: 1, marks };
+    try {
+      await this.ctx.app.vault.adapter.write(
+        this.statePath,
+        `${JSON.stringify(payload, null, 2)}
+`
+      );
+    } catch (e) {
+    }
+  }
+  /** 读状态文件。文件不存在是全新库的常态；读到坏数据一律当没有，不猜也不修 */
+  async load() {
+    const { adapter } = this.ctx.app.vault;
+    try {
+      if (!await adapter.exists(this.statePath)) return;
+      const raw = JSON.parse(await adapter.read(this.statePath));
+      for (const [path, mark] of readMarks(raw)) this.marks.set(path, mark);
+    } catch (e) {
+    }
+  }
+};
+function readMarks(raw) {
+  if (typeof raw !== "object" || raw === null) return [];
+  const marks = raw.marks;
+  if (typeof marks !== "object" || marks === null) return [];
+  const out = [];
+  for (const [path, value] of Object.entries(marks)) {
+    if (typeof value !== "object" || value === null) continue;
+    const { line, ch, top } = value;
+    if (!isCount(line) || !isCount(ch) || !isCount(top)) continue;
+    out.push([path, { line, ch, top }]);
+  }
+  return out.slice(-CURSOR_MEMORY_LIMIT);
+}
+function isCount(value) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+
+// src/modules/editing/pasteLink.ts
+var URL_PATTERN = /^(?:https?|obsidian|file|ftp|ftps|mailto|tel):\S+$/i;
+var NEEDS_ANGLE = /[\s()]/;
+function registerPasteLink(ctx) {
+  ctx.plugin.registerEvent(
+    ctx.app.workspace.on("editor-paste", (evt, editor) => {
+      if (!ctx.settings.pasteLinkEnabled) return;
+      if (evt.defaultPrevented) return;
+      const link = buildLink(editor.getSelection(), readUrl(evt.clipboardData));
+      if (!link) return;
+      evt.preventDefault();
+      editor.replaceSelection(link);
+    })
+  );
+}
+function readUrl(data) {
+  var _a, _b;
+  const text3 = (_b = (_a = data == null ? void 0 : data.getData("text/plain")) == null ? void 0 : _a.trim()) != null ? _b : "";
+  return URL_PATTERN.test(text3) ? text3 : null;
+}
+function buildLink(selection, url) {
+  if (!url) return null;
+  if (!selection.trim()) return null;
+  if (/[\r\n]/.test(selection)) return null;
+  return `[${escapeLabel(selection)}](${NEEDS_ANGLE.test(url) ? `<${url}>` : url})`;
+}
+function escapeLabel(selection) {
+  return selection.replace(/([[\]])/g, "\\$1");
+}
+
+// src/modules/explorer/badge.ts
+var import_obsidian17 = require("obsidian");
+
+// src/modules/explorer/count.ts
+var import_obsidian16 = require("obsidian");
+function tallyFolders(root, recursive) {
+  const tallies = /* @__PURE__ */ new Map();
+  walk(root, recursive, tallies);
+  return tallies;
+}
+function walk(folder, recursive, tallies) {
+  let notes = 0;
+  let folders = 0;
+  let others = 0;
+  for (const child of folder.children) {
+    if (child instanceof import_obsidian16.TFolder) {
+      folders += 1;
+      const inner = walk(child, recursive, tallies);
+      if (!recursive) continue;
+      notes += inner.notes;
+      folders += inner.folders;
+      others += inner.others;
+      continue;
+    }
+    if (child instanceof import_obsidian16.TFile && child.extension === "md") notes += 1;
+    else others += 1;
+  }
+  const tally = { notes, folders, others };
+  tallies.set(folder.path, tally);
+  return tally;
+}
+var PICKERS = {
+  notes: (tally) => tally.notes,
+  folders: (tally) => tally.folders,
+  all: (tally) => tally.notes + tally.folders + tally.others
+};
+function pickCount(tally, target) {
+  return PICKERS[target](tally);
+}
+
+// src/modules/explorer/badge.ts
+var FILE_EXPLORER_VIEW_TYPE = "file-explorer";
+var FOLDER_TITLE_SELECTOR = ".nav-folder-title";
+var PATH_ATTR = "data-path";
+var ROOT_PATH = "/";
+var BADGE_CLASS = "ziminos-folder-count";
+var TEXTS2 = {
+  notes: " \u7BC7\u7B14\u8BB0",
+  folders: " \u4E2A\u6587\u4EF6\u5939",
+  others: " \u4E2A\u9644\u4EF6",
+  separator: " \xB7 ",
+  deepSuffix: "\uFF08\u542B\u5B50\u6587\u4EF6\u5939\uFF09"
+};
+var REPAINT_DEBOUNCE_MS = 80;
+function registerFolderCount(ctx) {
+  const badges = new FolderCountBadges(ctx);
+  return () => badges.sync();
+}
+var FolderCountBadges = class {
+  constructor(ctx) {
+    /**
+     * 观察文件浏览器 DOM 的那一个观察者。
+     *
+     * 只用一个而不是「一个叶子一个」：MutationObserver 允许对多个目标 observe，
+     * 全部回调进同一个入口，而 disconnect 一次全部撤掉。
+     * 于是「现在有几块文件浏览器」这件事不需要任何记账——每次重挂都是先全撤再全挂。
+     * null 即当前没有在观察（开关关着，或者文件浏览器不在场）。
+     */
+    this.observer = null;
+    /** 防抖句柄。null 即当前没有排着的重画 */
+    this.timer = null;
+    this.ctx = ctx;
+    const { app, plugin } = ctx;
+    app.workspace.onLayoutReady(() => this.sync());
+    plugin.registerEvent(app.workspace.on("layout-change", () => this.sync()));
+    plugin.registerEvent(app.vault.on("create", () => this.schedule()));
+    plugin.registerEvent(app.vault.on("delete", () => this.schedule()));
+    plugin.registerEvent(app.vault.on("rename", () => this.schedule()));
+    plugin.register(() => this.dispose());
+  }
+  /**
+   * 按当前设置重画一次，必要时重挂观察者。设置页与两个工作区事件走的都是这一个入口。
+   *
+   * 开关关掉时连观察者一起撤掉，而不是留着它空转：一个关掉之后还在监听 DOM 的功能，
+   * 与没关掉的区别只有用户看不见的那部分。
+   */
+  sync() {
+    var _a;
+    if (!this.ctx.settings.showFolderCount) {
+      (_a = this.observer) == null ? void 0 : _a.disconnect();
+      this.observer = null;
+      this.clear();
+      return;
+    }
+    this.attach();
+    this.repaint();
+  }
+  /** 把观察者挂到当前在场的每一块文件浏览器上。先全撤再全挂，因此重复调用无害 */
+  attach() {
+    var _a, _b;
+    const containers = this.containers();
+    (_a = this.observer) == null ? void 0 : _a.disconnect();
+    if (containers.length === 0) return;
+    const observer = (_b = this.observer) != null ? _b : new MutationObserver((records) => this.onMutations(records));
+    this.observer = observer;
+    for (const container of containers) {
+      observer.observe(container, { childList: true, subtree: true });
+    }
+  }
+  /**
+   * DOM 变了。
+   *
+   * 先问一句「这变化是不是我自己刚才引起的」——判据与 SelfWriteGuard 同形，
+   * 只是这里连时间窗口都不需要：我们的痕迹全都带着 BADGE_CLASS，认得出来。
+   * 不问的话，写一个数字就是一次子节点变更，一次变更排一次重画，重画又写数字，
+   * 这个环靠「值没变就不写」也能收敛，但收敛不等于不该成环。
+   */
+  onMutations(records) {
+    if (records.every(isOurs)) return;
+    this.schedule();
+  }
+  /** 排一次重画。同一串事件里排多少次都只画一次 */
+  schedule() {
+    if (this.timer !== null) window.clearTimeout(this.timer);
+    this.timer = window.setTimeout(() => {
+      this.timer = null;
+      this.repaint();
+    }, REPAINT_DEBOUNCE_MS);
+  }
+  /**
+   * 重画全部在场的文件夹。
+   *
+   * 一次重画只数一遍全库，屏幕上展开了多少行都共用这一张表；
+   * 已经对的那些数字一个字都不重写，见 paint——那是这个功能不自激的第二道保证。
+   */
+  repaint() {
+    if (!this.ctx.settings.showFolderCount) return;
+    const containers = this.containers();
+    if (containers.length === 0) return;
+    const recursive = this.ctx.settings.folderCountRecursive;
+    const target = this.target();
+    const tallies = tallyFolders(this.ctx.app.vault.getRoot(), recursive);
+    for (const container of containers) {
+      for (const titleEl of Array.from(container.querySelectorAll(FOLDER_TITLE_SELECTOR))) {
+        if (titleEl instanceof HTMLElement) this.paint(titleEl, tallies, target, recursive);
+      }
+    }
+  }
+  /**
+   * 给一行文件夹标题挂上（或摘掉）它的数字。
+   *
+   * 三种情况都摘掉而不是显示 0：根那一行、路径认不出来的那一行、以及数出来是 0 的那一行。
+   * 一个 0 不解释任何事——空文件夹自己就写着「空」，而那个 0 只是让每一行都长出一个灰点。
+   */
+  paint(titleEl, tallies, target, recursive) {
+    var _a, _b;
+    const path = titleEl.getAttribute(PATH_ATTR);
+    const tally = path === null || path === ROOT_PATH ? void 0 : tallies.get(path);
+    const count = tally ? pickCount(tally, target) : 0;
+    if (!tally || count === 0) {
+      (_a = badgeOf(titleEl)) == null ? void 0 : _a.remove();
+      return;
+    }
+    const badge = (_b = badgeOf(titleEl)) != null ? _b : titleEl.createSpan({ cls: BADGE_CLASS });
+    const text3 = String(count);
+    if (badge.textContent !== text3) badge.setText(text3);
+    (0, import_obsidian17.setTooltip)(badge, describe3(tally, recursive));
+  }
+  /** 撤掉全部痕迹。开关关掉与插件卸载共用它，因此「关掉」与「卸载」的结果一字不差 */
+  clear() {
+    for (const container of this.containers()) {
+      for (const badge of Array.from(container.querySelectorAll(`.${BADGE_CLASS}`))) {
+        badge.remove();
+      }
+    }
+  }
+  dispose() {
+    var _a;
+    if (this.timer !== null) window.clearTimeout(this.timer);
+    this.timer = null;
+    (_a = this.observer) == null ? void 0 : _a.disconnect();
+    this.observer = null;
+    this.clear();
+  }
+  /**
+   * 当前在场的文件浏览器容器。
+   *
+   * 走的是公开的 getLeavesOfType 与 View.containerEl，不碰文件浏览器视图的内部字段——
+   * 社区里那些「文件数」插件读的是 view.fileItems，那不在 obsidian.d.ts 里。
+   * 一块都找不到时返回空数组，调用方一律据此静默收工。
+   */
+  containers() {
+    return this.ctx.app.workspace.getLeavesOfType(FILE_EXPLORER_VIEW_TYPE).map((leaf) => leaf.view.containerEl);
+  }
+  /** 防御手改 data.json 写进来的未知口径：不在候选里就回落默认，与灵感插入位置同一姿态 */
+  target() {
+    const candidate = this.ctx.settings.folderCountTarget;
+    return FOLDER_COUNT_TARGETS.includes(candidate) ? candidate : FOLDER_COUNT_DEFAULTS.target;
+  }
+};
+function isOurs(record) {
+  const { target } = record;
+  if (target instanceof HTMLElement && target.classList.contains(BADGE_CLASS)) return true;
+  return allBadges(record.addedNodes) && allBadges(record.removedNodes);
+}
+function allBadges(nodes) {
+  return Array.from(nodes).every(
+    (node) => node instanceof HTMLElement && node.classList.contains(BADGE_CLASS)
+  );
+}
+function badgeOf(titleEl) {
+  const badge = titleEl.querySelector(`:scope > .${BADGE_CLASS}`);
+  return badge instanceof HTMLElement ? badge : null;
+}
+function describe3(tally, recursive) {
+  const parts = [`${tally.notes}${TEXTS2.notes}`, `${tally.folders}${TEXTS2.folders}`];
+  if (tally.others > 0) parts.push(`${tally.others}${TEXTS2.others}`);
+  return parts.join(TEXTS2.separator) + (recursive ? TEXTS2.deepSuffix : "");
+}
+
+// src/modules/explorer/filePath.ts
+var import_obsidian18 = require("obsidian");
+var TEXTS3 = {
+  tooltip: "\u5F53\u524D\u7B14\u8BB0\u8DEF\u5F84\uFF1A\u70B9\u4E00\u4E0B\u590D\u5236",
+  /** 没有打开任何笔记时状态栏留空而不是写「无」——一句「无」比空白更占注意力 */
+  empty: "",
+  copied: "\u5DF2\u590D\u5236\u8DEF\u5F84\uFF1A",
+  noFile: "\u5F53\u524D\u6CA1\u6709\u6253\u5F00\u4EFB\u4F55\u7B14\u8BB0\uFF0C\u6CA1\u6709\u8DEF\u5F84\u53EF\u590D\u5236\u3002",
+  failed: "\u590D\u5236\u5931\u8D25\uFF1A"
+};
+function registerFilePath(ctx) {
+  const bar = new FilePathBar(ctx);
+  return () => bar.sync();
+}
+var FilePathBar = class {
+  constructor(ctx) {
+    this.ctx = ctx;
+    this.statusEl = ctx.plugin.addStatusBarItem();
+    this.statusEl.addClass("ziminos-file-path");
+    this.statusEl.addClass("mod-clickable");
+    (0, import_obsidian18.setTooltip)(this.statusEl, TEXTS3.tooltip, { placement: "top" });
+    this.statusEl.addEventListener("click", () => void this.copy());
+    const { app, plugin } = ctx;
+    plugin.registerEvent(app.workspace.on("file-open", () => this.sync()));
+    plugin.registerEvent(app.workspace.on("active-leaf-change", () => this.sync()));
+    ctx.commands.register(COPY_PATH_COMMAND, () => void this.copy());
+    this.sync();
+  }
+  /** 按当前设置决定显隐，并把文字换成此刻这一篇的路径。设置页与两个事件走同一个入口 */
+  sync() {
+    var _a;
+    this.statusEl.toggle(this.ctx.settings.showFilePath);
+    this.statusEl.setText((_a = this.path()) != null ? _a : TEXTS3.empty);
+  }
+  /**
+   * 此刻这一篇的路径。
+   *
+   * 取的是 workspace.getActiveFile() 而不是活动视图里的文件：焦点落在侧栏（比如刚点了
+   * 最近文件那张清单）时活动视图不是 Markdown 视图，但用户心里「当前这一篇」并没有变。
+   */
+  path() {
+    var _a, _b;
+    return (_b = (_a = this.ctx.app.workspace.getActiveFile()) == null ? void 0 : _a.path) != null ? _b : null;
+  }
+  /** 复制路径。状态栏那一块与命令走的是这同一段，因此两条路的结果与提示语一字不差 */
+  async copy() {
+    const path = this.path();
+    if (!path) {
+      new import_obsidian18.Notice(TEXTS3.noFile);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(path);
+      new import_obsidian18.Notice(TEXTS3.copied + path);
+    } catch (error) {
+      new import_obsidian18.Notice(TEXTS3.failed + (error instanceof Error ? error.message : String(error)));
+    }
+  }
+};
+
+// src/modules/explorer/recentFiles.ts
+var import_obsidian19 = require("obsidian");
+var RECENT_FILES_VIEW_TYPE = "ziminos-recent-files";
+var TEXTS4 = {
+  title: "\u6700\u8FD1\u6587\u4EF6",
+  /** 视图可能在热重载时早于自有图标注册，标签页用 Obsidian 内建图标最稳（与日历同因） */
+  icon: "history",
+  empty: "\u8FD8\u6CA1\u6709\u8BB0\u5F55\u3002\u6253\u5F00\u4EFB\u610F\u4E00\u7BC7\u7B14\u8BB0\uFF0C\u5B83\u5C31\u4F1A\u51FA\u73B0\u5728\u8FD9\u91CC\u3002",
+  rootLabel: "\u5E93\u6839\u76EE\u5F55"
+};
+var PERSIST_DEBOUNCE_MS2 = 1e3;
+function registerRecentFiles(ctx) {
+  const store = new RecentFilesStore(ctx);
+  ctx.plugin.registerView(
+    RECENT_FILES_VIEW_TYPE,
+    (leaf) => new RecentFilesView(leaf, ctx, store)
+  );
+  ctx.commands.register(RECENT_FILES_COMMAND, () => {
+    void revealRecentFiles(ctx.app).catch(() => void 0);
+  });
+  return () => store.notify();
+}
+async function revealRecentFiles(app) {
+  await app.workspace.ensureSideLeaf(RECENT_FILES_VIEW_TYPE, "right", {
+    active: true,
+    reveal: true,
+    split: false
+  });
+}
+var RecentFilesStore = class {
+  constructor(ctx) {
+    /** 最近的排在最前。只存路径与时刻，文件本体每次渲染时现查——名字与修改时间都会变 */
+    this.entries = [];
+    this.listeners = /* @__PURE__ */ new Set();
+    this.timer = null;
+    this.ctx = ctx;
+    this.statePath = `${ctx.app.vault.configDir}/plugins/${ctx.plugin.manifest.id}/${RECENT_FILES_FILE}`;
+    const { app, plugin } = ctx;
+    app.workspace.onLayoutReady(() => {
+      void this.load().then(() => this.notify());
+    });
+    plugin.registerEvent(
+      app.workspace.on("file-open", (file) => {
+        if (file) this.push(file.path);
+      })
+    );
+    plugin.registerEvent(
+      app.vault.on("rename", (file, oldPath) => {
+        let touched = false;
+        this.entries = this.entries.map((entry) => {
+          if (entry.path !== oldPath) return entry;
+          touched = true;
+          return { path: file.path, at: entry.at };
+        });
+        if (touched) this.commit();
+      })
+    );
+    plugin.registerEvent(
+      app.vault.on("delete", (file) => {
+        const before = this.entries.length;
+        this.entries = this.entries.filter((entry) => entry.path !== file.path);
+        if (this.entries.length !== before) this.commit();
+      })
+    );
+    plugin.register(() => {
+      if (this.timer !== null) window.clearTimeout(this.timer);
+      this.timer = null;
+      this.listeners.clear();
+      void this.persist();
+    });
+  }
+  /** 视图开着时订阅一次，关掉时退订。返回退订函数，与日历的 HolidayService 同形 */
+  subscribe(listener) {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+  notify() {
+    for (const listener of this.listeners) listener();
+  }
+  /**
+   * 按当前设置取出该显示的那几条。
+   *
+   * 「最近修改」不是另一份清单，是同一份清单的另一种排法——清单的成员永远是
+   * 「你打开过的」，因为一个你从没打开过的文件出现在「最近」里只会让人愣一下。
+   * 路径查不到文件的一律跳过（在别处被删或被移走了），不显示一条点不开的记录。
+   */
+  list(sort, limit) {
+    const files = [];
+    for (const entry of this.entries) {
+      const file = this.ctx.app.vault.getAbstractFileByPath(entry.path);
+      if (file instanceof import_obsidian19.TFile) files.push(file);
+    }
+    if (sort === "modified") files.sort((a, b) => b.stat.mtime - a.stat.mtime);
+    return files.slice(0, limit);
+  }
+  /** 记一次打开。已经在清单里的挪到最前，不留两条 */
+  push(path) {
+    this.entries = [
+      { path, at: Date.now() },
+      ...this.entries.filter((entry) => entry.path !== path)
+    ].slice(0, RECENT_FILES_KEEP);
+    this.commit();
+  }
+  commit() {
+    this.notify();
+    this.schedulePersist();
+  }
+  schedulePersist() {
+    if (this.timer !== null) window.clearTimeout(this.timer);
+    this.timer = window.setTimeout(() => {
+      this.timer = null;
+      void this.persist();
+    }, PERSIST_DEBOUNCE_MS2);
+  }
+  async persist() {
+    const payload = { version: 1, entries: this.entries };
+    try {
+      await this.ctx.app.vault.adapter.write(
+        this.statePath,
+        `${JSON.stringify(payload, null, 2)}
+`
+      );
+    } catch (e) {
+    }
+  }
+  async load() {
+    const { adapter } = this.ctx.app.vault;
+    try {
+      if (!await adapter.exists(this.statePath)) return;
+      this.entries = readEntries(JSON.parse(await adapter.read(this.statePath)));
+    } catch (e) {
+    }
+  }
+};
+var RecentFilesView = class extends import_obsidian19.ItemView {
+  constructor(leaf, ctx, store) {
+    super(leaf);
+    this.unsubscribe = null;
+    this.ctx = ctx;
+    this.store = store;
+  }
+  getViewType() {
+    return RECENT_FILES_VIEW_TYPE;
+  }
+  getDisplayText() {
+    return TEXTS4.title;
+  }
+  getIcon() {
+    return TEXTS4.icon;
+  }
+  async onOpen() {
+    this.contentEl.addClass("ziminos-recent");
+    this.unsubscribe = this.store.subscribe(() => this.render());
+    this.render();
+  }
+  async onClose() {
+    var _a;
+    (_a = this.unsubscribe) == null ? void 0 : _a.call(this);
+    this.unsubscribe = null;
+    this.contentEl.empty();
+  }
+  /** 每次重画都整片重建：清单最长五十行，重建比逐行比对便宜，也不可能留下错位的行 */
+  render() {
+    this.contentEl.empty();
+    const { recentFilesSort, recentFilesLimit } = this.ctx.settings;
+    const files = this.store.list(recentFilesSort, recentFilesLimit);
+    if (files.length === 0) {
+      this.contentEl.createDiv({ cls: "ziminos-recent-empty", text: TEXTS4.empty });
+      return;
+    }
+    const list = this.contentEl.createDiv({ cls: "ziminos-recent-list" });
+    for (const file of files) this.renderRow(list, file);
+  }
+  /**
+   * 一行：文件名一行，它在哪个文件夹另起一行。
+   *
+   * 两行而不是一行「目录/文件名」，是因为侧栏窄：挤成一行时最先被省略号吃掉的
+   * 恰好是文件名的尾巴，而那正是用来认它的那几个字。
+   * 点一下用 openLinkText 打开——它认路径也认别名，与库里所有双链走同一条解析。
+   */
+  renderRow(list, file) {
+    var _a, _b;
+    const row = list.createDiv({ cls: "ziminos-recent-row" });
+    const folder = (_b = (_a = file.parent) == null ? void 0 : _a.path) != null ? _b : "";
+    row.createDiv({ cls: "ziminos-recent-name", text: file.basename });
+    row.createDiv({
+      cls: "ziminos-recent-folder",
+      text: !folder || folder === "/" ? TEXTS4.rootLabel : folder
+    });
+    (0, import_obsidian19.setTooltip)(row, file.path, { placement: "top" });
+    row.addEventListener("click", () => {
+      void this.ctx.app.workspace.openLinkText(file.path, "", false);
+    });
+  }
+};
+function readEntries(raw) {
+  if (typeof raw !== "object" || raw === null) return [];
+  const entries = raw.entries;
+  if (!Array.isArray(entries)) return [];
+  const out = [];
+  for (const item of entries) {
+    if (typeof item !== "object" || item === null) continue;
+    const { path, at } = item;
+    if (typeof path !== "string" || !path) continue;
+    if (typeof at !== "number" || !Number.isFinite(at)) continue;
+    out.push({ path, at });
+  }
+  return out.slice(0, RECENT_FILES_KEEP);
+}
+
+// src/modules/format/formatter.ts
+var import_obsidian20 = require("obsidian");
 var FORMAT_DEBOUNCE_MS = 2e3;
 var RE_ENTRY_MS = 1e3;
-var TEXTS2 = {
+var TEXTS5 = {
   formatted: "\u5DF2\u6309\u6807\u51C6\u5199\u6CD5\u6574\u7406\u8FD9\u4E00\u7BC7 \u2713",
   unchanged: "\u8FD9\u4E00\u7BC7\u5DF2\u7ECF\u662F\u6807\u51C6\u5199\u6CD5\uFF0C\u6CA1\u6709\u53EF\u6539\u7684",
   noFile: "\u5148\u6253\u5F00\u4E00\u7BC7\u7B14\u8BB0\uFF0C\u518D\u8FD0\u884C\u6574\u7406",
@@ -4004,7 +4783,7 @@ function registerFormatter(ctx) {
   const formatPath = async (path) => {
     if (!ctx.settings.autoFormat) return;
     const file = ctx.app.vault.getAbstractFileByPath(path);
-    if (!(file instanceof import_obsidian15.TFile) || file.extension !== "md") return;
+    if (!(file instanceof import_obsidian20.TFile) || file.extension !== "md") return;
     await formatFile(file);
   };
   const cancel = (path) => {
@@ -4040,7 +4819,7 @@ function registerFormatter(ctx) {
           dirtyWhileOpen.delete(file.path);
           return;
         }
-        if (!(file instanceof import_obsidian15.TFile) || file.extension !== "md") return;
+        if (!(file instanceof import_obsidian20.TFile) || file.extension !== "md") return;
         if (shouldSkip(file.path)) return;
         if (file.path === openPath) {
           dirtyWhileOpen.add(file.path);
@@ -4065,27 +4844,55 @@ function registerFormatter(ctx) {
   ctx.commands.register(FORMAT_COMMAND, () => {
     const file = ctx.app.workspace.getActiveFile();
     if (!file || file.extension !== "md") {
-      new import_obsidian15.Notice(TEXTS2.noFile);
+      new import_obsidian20.Notice(TEXTS5.noFile);
       return;
     }
     if (ctx.settings.formatRules.length === 0) {
-      new import_obsidian15.Notice(TEXTS2.noRules);
+      new import_obsidian20.Notice(TEXTS5.noRules);
       return;
     }
     void formatFile(file).then((changed) => {
       dirtyWhileOpen.delete(file.path);
-      new import_obsidian15.Notice(changed ? TEXTS2.formatted : TEXTS2.unchanged);
+      new import_obsidian20.Notice(changed ? TEXTS5.formatted : TEXTS5.unchanged);
     }).catch(() => {
-      new import_obsidian15.Notice(TEXTS2.failed);
+      new import_obsidian20.Notice(TEXTS5.failed);
     });
   });
 }
 
+// src/modules/legacy/vaultDock.ts
+var import_obsidian21 = require("obsidian");
+var UNAVAILABLE_SUFFIX = "\uFF1A\u8FD9\u4E2A Obsidian \u7248\u672C\u6CA1\u6709\u7ED9\u51FA\u8FD9\u4E2A\u5165\u53E3\u3002\u5B83\u4E0D\u5C5E\u4E8E\u5B98\u65B9\u516C\u5F00 API\uFF0CziminOS \u63A2\u4E0D\u5230\u5C31\u4E0D\u786C\u6765\u3002\u4F60\u4ECD\u7136\u53EF\u4EE5\u7528 Obsidian \u81EA\u5DF1\u7684\u6309\u94AE\u505A\u540C\u4E00\u4EF6\u4E8B\u3002";
+function registerLegacyDock(ctx) {
+  const { app } = ctx;
+  ctx.commands.register(LEGACY_COMMANDS.vault, () => {
+    run(LEGACY_COMMANDS.vault.name, bind(app, app.openVaultChooser));
+  });
+  ctx.commands.register(LEGACY_COMMANDS.help, () => {
+    run(LEGACY_COMMANDS.help.name, bind(app, app.openHelp));
+  });
+  ctx.commands.register(LEGACY_COMMANDS.settings, () => {
+    var _a;
+    run(LEGACY_COMMANDS.settings.name, bind(app.setting, (_a = app.setting) == null ? void 0 : _a.open));
+  });
+}
+function bind(host, fn) {
+  if (!host || typeof fn !== "function") return void 0;
+  return () => fn.call(host);
+}
+function run(label, opener) {
+  if (!opener) {
+    new import_obsidian21.Notice(label + UNAVAILABLE_SUFFIX);
+    return;
+  }
+  opener();
+}
+
 // src/modules/calendar/view.ts
-var import_obsidian17 = require("obsidian");
+var import_obsidian23 = require("obsidian");
 
 // src/modules/calendar/holidays.ts
-var import_obsidian16 = require("obsidian");
+var import_obsidian22 = require("obsidian");
 
 // src/modules/calendar/holidaySnapshot.ts
 var NOTICE_2026 = "https://www.gov.cn/zhengce/zhengceku/202511/content_7047091.htm";
@@ -4265,7 +5072,7 @@ var HolidayService = class {
   async fetchDataset(year) {
     for (const source of SOURCES) {
       try {
-        const response = await (0, import_obsidian16.requestUrl)({ url: source(year), throw: false });
+        const response = await (0, import_obsidian22.requestUrl)({ url: source(year), throw: false });
         if (response.status !== 200) continue;
         const parsed = parseHolidayDataset(response.json, year);
         if (parsed) return parsed;
@@ -15704,7 +16511,7 @@ async function revealCalendar(app, active) {
     split: false
   });
 }
-var ZiminosCalendarView = class extends import_obsidian17.ItemView {
+var ZiminosCalendarView = class extends import_obsidian23.ItemView {
   constructor(leaf, holidays, openPeriod) {
     super(leaf);
     this.mode = "month";
@@ -15957,7 +16764,7 @@ var ZiminosCalendarView = class extends import_obsidian17.ItemView {
 };
 
 // src/modules/contacts/identity.ts
-var import_obsidian18 = require("obsidian");
+var import_obsidian24 = require("obsidian");
 function archiveFolderOf(ctx) {
   return normalizeFolderPath(ctx.settings.archiveFolder, FOLDERS.archives);
 }
@@ -15988,7 +16795,7 @@ async function pickPerson(ctx, title) {
     ...liveNotesOfType(ctx, NOTE_TYPES.client)
   ];
   if (!candidates.length) {
-    new import_obsidian18.Notice("\u8FD8\u6CA1\u6709\u4EFB\u4F55\u4EBA\u8109\u6216\u5BA2\u6237\u6863\u6848\u3002\u5148\u8FD0\u884C\u300C\u65B0\u5EFA\u4EBA\u8109\u300D\u5EFA\u4E00\u4E2A\uFF0C\u518D\u6765\u5173\u8054\u3002");
+    new import_obsidian24.Notice("\u8FD8\u6CA1\u6709\u4EFB\u4F55\u4EBA\u8109\u6216\u5BA2\u6237\u6863\u6848\u3002\u5148\u8FD0\u884C\u300C\u65B0\u5EFA\u4EBA\u8109\u300D\u5EFA\u4E00\u4E2A\uFF0C\u518D\u6765\u5173\u8054\u3002");
     return null;
   }
   return new ChoiceModal(ctx.app, {
@@ -16585,7 +17392,7 @@ var clientViews = [
 ];
 
 // src/modules/contacts/client.ts
-var import_obsidian19 = require("obsidian");
+var import_obsidian25 = require("obsidian");
 
 // src/core/markdown.ts
 var VIEW_FENCE = "```" + VIEW_BLOCK_LANG;
@@ -17054,7 +17861,7 @@ async function setupClients(ctx, applySeed2) {
   try {
     const folder = normalizeFolderPath(ctx.settings.clientFolder, CLIENT_FOLDER);
     await applySeed2(clientSeed(ctx));
-    new import_obsidian19.Notice(MESSAGES5.setupDone);
+    new import_obsidian25.Notice(MESSAGES5.setupDone);
     await ctx.app.workspace.openLinkText(`${folder}/${basenameOf(CLIENT_MOC)}.md`, "", false);
   } catch (error) {
     notifyFailure(error);
@@ -17068,11 +17875,11 @@ async function createClient(ctx) {
     }).openAndGetValue();
     const name = (answer != null ? answer : "").trim();
     if (!name) {
-      new import_obsidian19.Notice(MESSAGES5.cancelled);
+      new import_obsidian25.Notice(MESSAGES5.cancelled);
       return;
     }
     if (ILLEGAL_NAME.test(name)) {
-      new import_obsidian19.Notice(MESSAGES5.illegalName);
+      new import_obsidian25.Notice(MESSAGES5.illegalName);
       return;
     }
     const source = await new ChoiceModal(ctx.app, {
@@ -17081,21 +17888,21 @@ async function createClient(ctx) {
       labelOf: (item) => item
     }).openAndGetChoice();
     if (!source) {
-      new import_obsidian19.Notice(MESSAGES5.cancelled);
+      new import_obsidian25.Notice(MESSAGES5.cancelled);
       return;
     }
     const contact = await new TextInputModal(ctx.app, {
       title: MESSAGES5.contactPrompt
     }).openAndGetValue();
     if (contact === null) {
-      new import_obsidian19.Notice(MESSAGES5.cancelled);
+      new import_obsidian25.Notice(MESSAGES5.cancelled);
       return;
     }
     const folder = normalizeFolderPath(ctx.settings.clientFolder, CLIENT_FOLDER);
     const path = `${folder}/${name}.md`;
     const existing = ctx.app.vault.getAbstractFileByPath(path);
-    if (existing instanceof import_obsidian19.TFile) {
-      new import_obsidian19.Notice(MESSAGES5.existsPrefix + name);
+    if (existing instanceof import_obsidian25.TFile) {
+      new import_obsidian25.Notice(MESSAGES5.existsPrefix + name);
       await ctx.app.workspace.getLeaf(false).openFile(existing);
       return;
     }
@@ -17110,7 +17917,7 @@ async function createClient(ctx) {
     await ensureFolderPath(ctx.app, folder);
     ctx.guard.mark(path);
     const file = await ctx.app.vault.create(path, content);
-    new import_obsidian19.Notice(MESSAGES5.createdPrefix + name);
+    new import_obsidian25.Notice(MESSAGES5.createdPrefix + name);
     await ctx.app.workspace.getLeaf(false).openFile(file);
   } catch (error) {
     notifyFailure(error);
@@ -17120,7 +17927,7 @@ async function addPayment(ctx) {
   try {
     const clients = liveNotesOfType(ctx, NOTE_TYPES.client);
     if (!clients.length) {
-      new import_obsidian19.Notice(MESSAGES5.noClients);
+      new import_obsidian25.Notice(MESSAGES5.noClients);
       return;
     }
     const client = await new ChoiceModal(ctx.app, {
@@ -17132,7 +17939,7 @@ async function addPayment(ctx) {
       }
     }).openAndGetChoice();
     if (!client) {
-      new import_obsidian19.Notice(MESSAGES5.cancelled);
+      new import_obsidian25.Notice(MESSAGES5.cancelled);
       return;
     }
     const product = await new ChoiceModal(ctx.app, {
@@ -17141,7 +17948,7 @@ async function addPayment(ctx) {
       labelOf: (item) => item
     }).openAndGetChoice();
     if (!product) {
-      new import_obsidian19.Notice(MESSAGES5.cancelled);
+      new import_obsidian25.Notice(MESSAGES5.cancelled);
       return;
     }
     const amount = await askAmount(ctx);
@@ -17152,7 +17959,7 @@ async function addPayment(ctx) {
       client,
       (content) => insertIntoSection(content, CLIENT_PAYMENT_HEADING, line)
     );
-    new import_obsidian19.Notice(`${MESSAGES5.paidPrefix}${client.basename} \xB7 ${product} \xB7 ${amount}`);
+    new import_obsidian25.Notice(`${MESSAGES5.paidPrefix}${client.basename} \xB7 ${product} \xB7 ${amount}`);
   } catch (error) {
     notifyFailure(error);
   }
@@ -17161,7 +17968,7 @@ async function recordReceipt(ctx) {
   try {
     const projects = clientProjects2(ctx);
     if (!projects.length) {
-      new import_obsidian19.Notice(MESSAGES5.noProjects);
+      new import_obsidian25.Notice(MESSAGES5.noProjects);
       return;
     }
     const project = await new ChoiceModal(ctx.app, {
@@ -17170,7 +17977,7 @@ async function recordReceipt(ctx) {
       labelOf: (file) => file.basename
     }).openAndGetChoice();
     if (!project) {
-      new import_obsidian19.Notice(MESSAGES5.cancelled);
+      new import_obsidian25.Notice(MESSAGES5.cancelled);
       return;
     }
     const amount = await askAmount(ctx);
@@ -17181,7 +17988,7 @@ async function recordReceipt(ctx) {
       project,
       (content) => insertIntoSection(content, PROJECT_PAYMENT_HEADING, line)
     );
-    new import_obsidian19.Notice(`${MESSAGES5.receiptPrefix}${project.basename} \xB7 ${amount}`);
+    new import_obsidian25.Notice(`${MESSAGES5.receiptPrefix}${project.basename} \xB7 ${amount}`);
   } catch (error) {
     notifyFailure(error);
   }
@@ -17204,12 +18011,12 @@ async function askAmount(ctx) {
     placeholder: "\u4F8B\u5982\uFF1A365"
   }).openAndGetValue();
   if (answer === null) {
-    new import_obsidian19.Notice(MESSAGES5.cancelled);
+    new import_obsidian25.Notice(MESSAGES5.cancelled);
     return null;
   }
   const amount = Number(answer.trim());
   if (!Number.isFinite(amount) || amount <= 0) {
-    new import_obsidian19.Notice(MESSAGES5.amountInvalid);
+    new import_obsidian25.Notice(MESSAGES5.amountInvalid);
     return null;
   }
   return amount;
@@ -17219,11 +18026,11 @@ function optionsOf(raw) {
 }
 function notifyFailure(error) {
   const message = error instanceof Error ? error.message : String(error);
-  new import_obsidian19.Notice(MESSAGES5.failedPrefix + message);
+  new import_obsidian25.Notice(MESSAGES5.failedPrefix + message);
 }
 
 // src/modules/contacts/createContact.ts
-var import_obsidian20 = require("obsidian");
+var import_obsidian26 = require("obsidian");
 var ILLEGAL_NAME2 = /[\\/:*?"<>|#^[\]]/;
 var MESSAGES6 = {
   namePrompt: "\u8FD9\u4E2A\u4EBA\u53EB\u4EC0\u4E48\uFF1F\uFF08\u771F\u540D\uFF0C\u6863\u6848\u5C31\u7528\u5B83\u547D\u540D\uFF09",
@@ -17260,11 +18067,11 @@ async function createContact(ctx) {
     }).openAndGetValue();
     const name = (answer != null ? answer : "").trim();
     if (!name) {
-      new import_obsidian20.Notice(MESSAGES6.cancelled);
+      new import_obsidian26.Notice(MESSAGES6.cancelled);
       return;
     }
     if (ILLEGAL_NAME2.test(name)) {
-      new import_obsidian20.Notice(MESSAGES6.illegalName);
+      new import_obsidian26.Notice(MESSAGES6.illegalName);
       return;
     }
     const tier = await new ChoiceModal(ctx.app, {
@@ -17276,7 +18083,7 @@ async function createContact(ctx) {
       }
     }).openAndGetChoice();
     if (!tier) {
-      new import_obsidian20.Notice(MESSAGES6.cancelled);
+      new import_obsidian26.Notice(MESSAGES6.cancelled);
       return;
     }
     const direction = await new ChoiceModal(ctx.app, {
@@ -17288,14 +18095,14 @@ async function createContact(ctx) {
       }
     }).openAndGetChoice();
     if (!direction) {
-      new import_obsidian20.Notice(MESSAGES6.cancelled);
+      new import_obsidian26.Notice(MESSAGES6.cancelled);
       return;
     }
     const folder = normalizeFolderPath(ctx.settings.contactFolder, CONTACT_FOLDER);
     const path = `${folder}/${name}.md`;
     const existing = ctx.app.vault.getAbstractFileByPath(path);
-    if (existing instanceof import_obsidian20.TFile) {
-      new import_obsidian20.Notice(MESSAGES6.existsPrefix + name);
+    if (existing instanceof import_obsidian26.TFile) {
+      new import_obsidian26.Notice(MESSAGES6.existsPrefix + name);
       await ctx.app.workspace.getLeaf(false).openFile(existing);
       return;
     }
@@ -17311,11 +18118,11 @@ async function createContact(ctx) {
     await ensureFolderPath(ctx.app, folder);
     ctx.guard.mark(path);
     const file = await ctx.app.vault.create(path, content);
-    new import_obsidian20.Notice(MESSAGES6.donePrefix + name);
+    new import_obsidian26.Notice(MESSAGES6.donePrefix + name);
     await ctx.app.workspace.getLeaf(false).openFile(file);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian20.Notice(MESSAGES6.failedPrefix + message);
+    new import_obsidian26.Notice(MESSAGES6.failedPrefix + message);
   }
 }
 
@@ -17531,7 +18338,7 @@ var personViews = [
 ];
 
 // src/modules/contacts/recordFavor.ts
-var import_obsidian21 = require("obsidian");
+var import_obsidian27 = require("obsidian");
 var MESSAGES7 = {
   noContacts: "\u8FD8\u6CA1\u6709\u4EFB\u4F55\u6863\u6848\u3002\u5148\u8FD0\u884C\u300C\u65B0\u5EFA\u4EBA\u8109\u300D\u5EFA\u4E00\u4E2A\uFF0C\u518D\u6765\u8BB0\u8D26\u3002",
   personPrompt: "\u8FD9\u7B14\u4EBA\u60C5\uFF0C\u662F\u8DDF\u8C01\uFF1F",
@@ -17565,7 +18372,7 @@ async function recordFavor(ctx, openDaily) {
       ...liveNotesOfType(ctx, NOTE_TYPES.client)
     ];
     if (!candidates.length) {
-      new import_obsidian21.Notice(MESSAGES7.noContacts);
+      new import_obsidian27.Notice(MESSAGES7.noContacts);
       return;
     }
     const person = await new ChoiceModal(ctx.app, {
@@ -17577,7 +18384,7 @@ async function recordFavor(ctx, openDaily) {
       }
     }).openAndGetChoice();
     if (!person) {
-      new import_obsidian21.Notice(MESSAGES7.cancelled);
+      new import_obsidian27.Notice(MESSAGES7.cancelled);
       return;
     }
     const kind = await new ChoiceModal(ctx.app, {
@@ -17589,7 +18396,7 @@ async function recordFavor(ctx, openDaily) {
       }
     }).openAndGetChoice();
     if (!kind) {
-      new import_obsidian21.Notice(MESSAGES7.cancelled);
+      new import_obsidian27.Notice(MESSAGES7.cancelled);
       return;
     }
     const answer = await new TextInputModal(ctx.app, {
@@ -17598,7 +18405,7 @@ async function recordFavor(ctx, openDaily) {
     }).openAndGetValue();
     const item = cleanItem(answer != null ? answer : "");
     if (!item) {
-      new import_obsidian21.Notice(MESSAGES7.cancelled);
+      new import_obsidian27.Notice(MESSAGES7.cancelled);
       return;
     }
     const status = await new ChoiceModal(ctx.app, {
@@ -17610,12 +18417,12 @@ async function recordFavor(ctx, openDaily) {
       }
     }).openAndGetChoice();
     if (!status) {
-      new import_obsidian21.Notice(MESSAGES7.cancelled);
+      new import_obsidian27.Notice(MESSAGES7.cancelled);
       return;
     }
     const diary = await openDaily();
     if (!diary) {
-      new import_obsidian21.Notice(MESSAGES7.noDiary);
+      new import_obsidian27.Notice(MESSAGES7.noDiary);
       return;
     }
     const line = ledgerLine(person.basename, kind, item, status);
@@ -17624,10 +18431,10 @@ async function recordFavor(ctx, openDaily) {
       diary,
       (content) => insertIntoSection(content, DIARY_LOG_HEADING, line)
     );
-    new import_obsidian21.Notice(MESSAGES7.donePrefix + line);
+    new import_obsidian27.Notice(MESSAGES7.donePrefix + line);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian21.Notice(MESSAGES7.failedPrefix + message);
+    new import_obsidian27.Notice(MESSAGES7.failedPrefix + message);
   }
 }
 function cleanItem(raw) {
@@ -17653,7 +18460,7 @@ function contactsSeed(ctx) {
 }
 
 // src/modules/inspiration/capture.ts
-var import_obsidian22 = require("obsidian");
+var import_obsidian28 = require("obsidian");
 
 // src/modules/inspiration/templates.ts
 var TEMPLATE_TOKENS = {
@@ -17873,14 +18680,14 @@ async function captureInspiration(ctx) {
     }).openAndGetValue();
     const inspiration = normalizeInspiration(input);
     if (!inspiration) {
-      new import_obsidian22.Notice("\u672A\u8F93\u5165\u5185\u5BB9\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
+      new import_obsidian28.Notice("\u672A\u8F93\u5165\u5185\u5BB9\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
       return;
     }
     const target = resolveInspirationTarget(ctx);
     const timeParts = nowLocalDateTimeParts(ctx.settings.dateTimeFormat);
     const entry = renderInspirationEntry(target.format, inspiration, timeParts);
     let targetEntry = ctx.app.vault.getAbstractFileByPath(target.path);
-    if (targetEntry instanceof import_obsidian22.TFolder) {
+    if (targetEntry instanceof import_obsidian28.TFolder) {
       throw new Error(`\u76EE\u6807\u8DEF\u5F84\u662F\u6587\u4EF6\u5939\uFF0C\u65E0\u6CD5\u5199\u5165\uFF1A${target.path}`);
     }
     if (!targetEntry) {
@@ -17891,7 +18698,7 @@ async function captureInspiration(ctx) {
         buildInitialInspirationContent(entry, target.heading, target.path)
       );
     } else {
-      if (!(targetEntry instanceof import_obsidian22.TFile) || targetEntry.extension.toLowerCase() !== "md") {
+      if (!(targetEntry instanceof import_obsidian28.TFile) || targetEntry.extension.toLowerCase() !== "md") {
         throw new Error(`\u76EE\u6807\u8DEF\u5F84\u4E0D\u662F Markdown \u6587\u4EF6\uFF1A${target.path}`);
       }
       await ctx.app.vault.process(targetEntry, (content) => {
@@ -17906,16 +18713,16 @@ async function captureInspiration(ctx) {
         return updatedContent;
       });
     }
-    new import_obsidian22.Notice(`\u5DF2\u8BB0\u5F55\u7075\u611F\uFF1A${inspiration}`);
+    new import_obsidian28.Notice(`\u5DF2\u8BB0\u5F55\u7075\u611F\uFF1A${inspiration}`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian22.Notice(`\u8BB0\u5F55\u7075\u611F\u5931\u8D25\uFF1A${message}`);
+    new import_obsidian28.Notice(`\u8BB0\u5F55\u7075\u611F\u5931\u8D25\uFF1A${message}`);
   }
 }
 function resolveInspirationTarget(ctx) {
   const folder = normalizeFolderPath(ctx.settings.inspirationFolder, INSPIRATION_DEFAULTS.folder);
   const fileName = normalizeInspirationFileName(ctx.settings.inspirationFileName);
-  const path = (0, import_obsidian22.normalizePath)(folder ? `${folder}/${fileName}` : fileName);
+  const path = (0, import_obsidian28.normalizePath)(folder ? `${folder}/${fileName}` : fileName);
   if (folder.split("/").some((part) => part === "." || part === "..")) {
     throw new Error("\u7075\u611F\u6587\u4EF6\u5939\u4E0D\u80FD\u5305\u542B . \u6216 .. \u8DEF\u5F84\u6BB5\u3002");
   }
@@ -17941,7 +18748,7 @@ function normalizeInsertPosition(value) {
 }
 
 // src/modules/projects/cardInit.ts
-var import_obsidian24 = require("obsidian");
+var import_obsidian30 = require("obsidian");
 
 // src/core/frontmatter.ts
 function hasValue(value) {
@@ -17984,15 +18791,15 @@ function reorderFrontmatter(frontmatter, cardValues) {
 }
 
 // src/modules/projects/moc.ts
-var import_obsidian23 = require("obsidian");
+var import_obsidian29 = require("obsidian");
 function mocBasenameOf(containerName) {
   return `${MOC_PREFIX}${containerName}`;
 }
 function mocPathOf(folderPath, containerName) {
-  return (0, import_obsidian23.normalizePath)(`${folderPath}/${mocBasenameOf(containerName)}.md`);
+  return (0, import_obsidian29.normalizePath)(`${folderPath}/${mocBasenameOf(containerName)}.md`);
 }
 function legacyMocPathOf(folderPath, containerName) {
-  return (0, import_obsidian23.normalizePath)(`${folderPath}/${containerName}.md`);
+  return (0, import_obsidian29.normalizePath)(`${folderPath}/${containerName}.md`);
 }
 function resolveMocPath(app, folderPath, containerName) {
   const current = mocPathOf(folderPath, containerName);
@@ -18017,7 +18824,7 @@ function resolveRoots(settings) {
   );
 }
 function getCardContext(app, filePath, roots) {
-  const normalizedFilePath = (0, import_obsidian24.normalizePath)(filePath);
+  const normalizedFilePath = (0, import_obsidian30.normalizePath)(filePath);
   for (const root of roots) {
     const prefix = `${root.path}/`;
     if (!normalizedFilePath.startsWith(prefix)) continue;
@@ -18080,7 +18887,7 @@ async function initCard(ctx, file, opts) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian24.Notice(`\u5361\u7247\u7B14\u8BB0\u521D\u59CB\u5316\u5931\u8D25\uFF1A${message}`);
+    new import_obsidian30.Notice(`\u5361\u7247\u7B14\u8BB0\u521D\u59CB\u5316\u5931\u8D25\uFF1A${message}`);
     throw error;
   }
 }
@@ -18097,7 +18904,7 @@ function registerCardAutoInit(ctx) {
     ctx.plugin.registerEvent(
       ctx.app.vault.on("create", (file) => {
         if (!ctx.settings.autoCardInit) return;
-        if (!(file instanceof import_obsidian24.TFile) || file.extension !== "md") return;
+        if (!(file instanceof import_obsidian30.TFile) || file.extension !== "md") return;
         if (ctx.guard.isRecent(file.path)) return;
         if (!getCardContext(ctx.app, file.path, resolveRoots(ctx.settings))) return;
         if (file.stat.size !== 0) return;
@@ -18109,7 +18916,7 @@ function registerCardAutoInit(ctx) {
 }
 
 // src/modules/projects/createContainer.ts
-var import_obsidian25 = require("obsidian");
+var import_obsidian31 = require("obsidian");
 
 // src/modules/projects/templates.ts
 var MOC_FIELDS = [
@@ -18325,12 +19132,12 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
       title: `\u8BF7\u8F93\u5165\u65B0\u5EFA${kind.label}\u7684\u540D\u79F0`
     }).openAndGetValue();
     if (nameInput === null || !nameInput.trim()) {
-      new import_obsidian25.Notice(`\u672A\u8F93\u5165${kind.label}\u540D\u79F0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
+      new import_obsidian31.Notice(`\u672A\u8F93\u5165${kind.label}\u540D\u79F0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
       return null;
     }
     const containerName = nameInput.trim();
     if (/[\\/]/.test(containerName)) {
-      new import_obsidian25.Notice(`${kind.label}\u540D\u79F0\u4E0D\u80FD\u5305\u542B\u659C\u6760\u6216\u53CD\u659C\u6760\u3002`);
+      new import_obsidian31.Notice(`${kind.label}\u540D\u79F0\u4E0D\u80FD\u5305\u542B\u659C\u6760\u6216\u53CD\u659C\u6760\u3002`);
       return null;
     }
     let relation;
@@ -18341,14 +19148,14 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
         labelOf: (item) => item.label
       }).openAndGetChoice();
       if (!ownership) {
-        new import_obsidian25.Notice(`\u672A\u9009\u62E9${kind.label}\u5F52\u5C5E\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
+        new import_obsidian31.Notice(`\u672A\u9009\u62E9${kind.label}\u5F52\u5C5E\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
         return null;
       }
       if (ownership.link && pickPerson2) {
         const { field: field2, ask, required } = ownership.link;
         const person = await pickPerson2(ask);
         if (required && !person) {
-          new import_obsidian25.Notice("\u672A\u9009\u62E9\u5BA2\u6237\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
+          new import_obsidian31.Notice("\u672A\u9009\u62E9\u5BA2\u6237\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
           return null;
         }
         if (person) {
@@ -18363,18 +19170,18 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
       title: `\u8BF7\u8F93\u5165${kind.label}\u6982\u8FF0`
     }).openAndGetValue();
     if (descriptionInput === null) {
-      new import_obsidian25.Notice(`\u5DF2\u53D6\u6D88\u8F93\u5165${kind.label}\u6982\u8FF0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
+      new import_obsidian31.Notice(`\u5DF2\u53D6\u6D88\u8F93\u5165${kind.label}\u6982\u8FF0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
       return null;
     }
     const description = descriptionInput.trim();
-    const containerFolderPath = (0, import_obsidian25.normalizePath)(`${baseFolder}/${containerName}`);
+    const containerFolderPath = (0, import_obsidian31.normalizePath)(`${baseFolder}/${containerName}`);
     const mocBasename = mocBasenameOf(containerName);
     const mocFilePath = mocPathOf(containerFolderPath, containerName);
     await ensureFolderPath(app, baseFolder);
     await ensureFolderPath(app, containerFolderPath);
     const existingMocFile = app.vault.getAbstractFileByPath(mocFilePath);
     if (existingMocFile) {
-      new import_obsidian25.Notice(`${kind.label} MOC \u7B14\u8BB0\u5DF2\u7ECF\u5B58\u5728\uFF0C\u672A\u6267\u884C\u8986\u76D6\uFF1A${mocFilePath}`);
+      new import_obsidian31.Notice(`${kind.label} MOC \u7B14\u8BB0\u5DF2\u7ECF\u5B58\u5728\uFF0C\u672A\u6267\u884C\u8986\u76D6\uFF1A${mocFilePath}`);
       return null;
     }
     const { stamp: created, uid } = nowStampAndUid(settings.dateTimeFormat);
@@ -18411,7 +19218,7 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
         mode: "source"
       }
     });
-    if (leaf.view instanceof import_obsidian25.MarkdownView) {
+    if (leaf.view instanceof import_obsidian31.MarkdownView) {
       const editor = leaf.view.editor;
       const secondBlankLine = frontmatter.split("\n").length + 1;
       const cursorPosition = {
@@ -18430,11 +19237,11 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
         );
       }
     }
-    new import_obsidian25.Notice(`${kind.label}\u5DF2\u521B\u5EFA\uFF1A${containerName}`);
+    new import_obsidian31.Notice(`${kind.label}\u5DF2\u521B\u5EFA\uFF1A${containerName}`);
     return mocFile;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian25.Notice(`\u521B\u5EFA${kind.label}\u5931\u8D25\uFF1A${message}`);
+    new import_obsidian31.Notice(`\u521B\u5EFA${kind.label}\u5931\u8D25\uFF1A${message}`);
     return null;
   }
 }
@@ -18490,7 +19297,7 @@ async function createFirstProject(ctx) {
 }
 
 // src/modules/projects/transitions.ts
-var import_obsidian26 = require("obsidian");
+var import_obsidian32 = require("obsidian");
 var MOVABLE_TYPES = CONTAINER_TYPES;
 var CONFIRM_MODAL_CLASS = "qa-project-transition-confirm";
 function registerTransitionCommands(ctx) {
@@ -18504,7 +19311,7 @@ async function runProjectTransition(ctx, action) {
   try {
     const transition = TRANSITIONS[action];
     if (!transition) {
-      new import_obsidian26.Notice(`\u672A\u77E5\u7684\u9879\u76EE\u6D41\u8F6C\u52A8\u4F5C\uFF1A${action}`);
+      new import_obsidian32.Notice(`\u672A\u77E5\u7684\u9879\u76EE\u6D41\u8F6C\u52A8\u4F5C\uFF1A${action}`);
       return;
     }
     const plan = resolveTransitionPlan(ctx, transition);
@@ -18514,15 +19321,15 @@ async function runProjectTransition(ctx, action) {
     const basePathChanged = await applyTransition(ctx, plan);
     await reopenMovedMoc(ctx, plan.targetMocPath);
     if (!basePathChanged) {
-      new import_obsidian26.Notice(
+      new import_obsidian32.Notice(
         "\u9879\u76EE\u6D41\u8F6C\u6210\u529F\uFF0C\u4F46 MOC\uFF08\u9879\u76EE\u5BFC\u822A\u7B14\u8BB0\uFF09\u4E2D\u6CA1\u6709\u627E\u5230\u9700\u8981\u66F4\u65B0\u7684 file.folder\uFF08\u6587\u4EF6\u5939\uFF09\u7B5B\u9009\u6761\u4EF6\u3002"
       );
     }
-    new import_obsidian26.Notice(
+    new import_obsidian32.Notice(
       `\u9879\u76EE\u5DF2${transition.label}\uFF1A${plan.projectName} \u2192 ${formatStatusForDisplay(transition.status)}`
     );
   } catch (error) {
-    new import_obsidian26.Notice(`\u9879\u76EE\u72B6\u6001\u6D41\u8F6C\u5931\u8D25\uFF1A${getErrorMessage(error)}`);
+    new import_obsidian32.Notice(`\u9879\u76EE\u72B6\u6001\u6D41\u8F6C\u5931\u8D25\uFF1A${getErrorMessage(error)}`);
   }
 }
 function resolveTransitionPlan(ctx, transition) {
@@ -18531,46 +19338,46 @@ function resolveTransitionPlan(ctx, transition) {
   const activeFolder = normalizeFolderPath(settings.projectFolder, DEFAULT_SETTINGS.projectFolder);
   const archiveFolder = normalizeFolderPath(settings.archiveFolder, DEFAULT_SETTINGS.archiveFolder);
   if (activeFolder === archiveFolder) {
-    new import_obsidian26.Notice("\u9879\u76EE\u76EE\u5F55\u548C\u5F52\u6863\u76EE\u5F55\u4E0D\u80FD\u8BBE\u7F6E\u4E3A\u540C\u4E00\u8DEF\u5F84\u3002");
+    new import_obsidian32.Notice("\u9879\u76EE\u76EE\u5F55\u548C\u5F52\u6863\u76EE\u5F55\u4E0D\u80FD\u8BBE\u7F6E\u4E3A\u540C\u4E00\u8DEF\u5F84\u3002");
     return null;
   }
   const sourceRoot = transition.source === "active" ? activeFolder : archiveFolder;
   const targetRoot = transition.target === "active" ? activeFolder : archiveFolder;
   const mocFile = app.workspace.getActiveFile();
-  if (!(mocFile instanceof import_obsidian26.TFile) || mocFile.extension !== "md") {
-    new import_obsidian26.Notice("\u8BF7\u5148\u6253\u5F00\u9700\u8981\u8FDB\u884C\u72B6\u6001\u6D41\u8F6C\u7684\u9879\u76EE MOC\u3002");
+  if (!(mocFile instanceof import_obsidian32.TFile) || mocFile.extension !== "md") {
+    new import_obsidian32.Notice("\u8BF7\u5148\u6253\u5F00\u9700\u8981\u8FDB\u884C\u72B6\u6001\u6D41\u8F6C\u7684\u9879\u76EE MOC\u3002");
     return null;
   }
   const projectFolder = mocFile.parent;
-  if (!(projectFolder instanceof import_obsidian26.TFolder)) {
-    new import_obsidian26.Notice("\u65E0\u6CD5\u8BC6\u522B\u5F53\u524D\u9879\u76EE\u6587\u4EF6\u5939\u3002");
+  if (!(projectFolder instanceof import_obsidian32.TFolder)) {
+    new import_obsidian32.Notice("\u65E0\u6CD5\u8BC6\u522B\u5F53\u524D\u9879\u76EE\u6587\u4EF6\u5939\u3002");
     return null;
   }
   const projectName = projectFolder.name;
-  const sourceProjectPath = (0, import_obsidian26.normalizePath)(`${sourceRoot}/${projectName}`);
+  const sourceProjectPath = (0, import_obsidian32.normalizePath)(`${sourceRoot}/${projectName}`);
   const expectedMocPath = resolveMocPath(app, sourceProjectPath, projectName);
-  if ((0, import_obsidian26.normalizePath)(mocFile.path) !== expectedMocPath) {
-    new import_obsidian26.Notice(`\u5F53\u524D\u547D\u4EE4\u53EA\u80FD\u5728\u4EE5\u4E0B\u9879\u76EE MOC \u4E2D\u6267\u884C\uFF1A${expectedMocPath}`);
+  if ((0, import_obsidian32.normalizePath)(mocFile.path) !== expectedMocPath) {
+    new import_obsidian32.Notice(`\u5F53\u524D\u547D\u4EE4\u53EA\u80FD\u5728\u4EE5\u4E0B\u9879\u76EE MOC \u4E2D\u6267\u884C\uFF1A${expectedMocPath}`);
     return null;
   }
   const frontmatter = (_a = app.metadataCache.getFileCache(mocFile)) == null ? void 0 : _a.frontmatter;
   const type = normalizeText(frontmatter == null ? void 0 : frontmatter.type);
   const currentStatus = normalizeText(frontmatter == null ? void 0 : frontmatter.status);
   if (!MOVABLE_TYPES.includes(type)) {
-    new import_obsidian26.Notice("\u5F53\u524D\u7B14\u8BB0\u4E0D\u662F\u9879\u76EE\u6216\u8BFB\u4E66\u7B14\u8BB0 MOC\uFF1A\u7F3A\u5C11 type: project\uFF08\u9879\u76EE\uFF09\u6216 type: book\uFF08\u4E66\uFF09\u3002");
+    new import_obsidian32.Notice("\u5F53\u524D\u7B14\u8BB0\u4E0D\u662F\u9879\u76EE\u6216\u8BFB\u4E66\u7B14\u8BB0 MOC\uFF1A\u7F3A\u5C11 type: project\uFF08\u9879\u76EE\uFF09\u6216 type: book\uFF08\u4E66\uFF09\u3002");
     return null;
   }
   if (!transition.allowedStatuses.includes(currentStatus)) {
-    new import_obsidian26.Notice(
+    new import_obsidian32.Notice(
       `\u9879\u76EE\u5F53\u524D\u72B6\u6001\u4E3A\u201C${formatStatusForDisplay(currentStatus)}\u201D\uFF0C\u4E0D\u80FD\u6267\u884C\u201C${transition.label}\u201D\u64CD\u4F5C\u3002`
     );
     return null;
   }
-  const targetProjectPath = (0, import_obsidian26.normalizePath)(`${targetRoot}/${projectName}`);
-  const targetMocPath = (0, import_obsidian26.normalizePath)(`${targetProjectPath}/${mocFile.name}`);
+  const targetProjectPath = (0, import_obsidian32.normalizePath)(`${targetRoot}/${projectName}`);
+  const targetMocPath = (0, import_obsidian32.normalizePath)(`${targetProjectPath}/${mocFile.name}`);
   const existingTarget = app.vault.getAbstractFileByPath(targetProjectPath);
   if (existingTarget) {
-    new import_obsidian26.Notice(`\u76EE\u6807\u4F4D\u7F6E\u5DF2\u7ECF\u5B58\u5728\u540C\u540D\u9879\u76EE\uFF0C\u64CD\u4F5C\u5DF2\u505C\u6B62\uFF1A${targetProjectPath}`);
+    new import_obsidian32.Notice(`\u76EE\u6807\u4F4D\u7F6E\u5DF2\u7ECF\u5B58\u5728\u540C\u540D\u9879\u76EE\uFF0C\u64CD\u4F5C\u5DF2\u505C\u6B62\uFF1A${targetProjectPath}`);
     return null;
   }
   return {
@@ -18599,7 +19406,7 @@ async function applyTransition(ctx, plan) {
     await app.fileManager.renameFile(plan.projectFolder, plan.targetProjectPath);
     progress.moved = true;
     const movedMoc = app.vault.getAbstractFileByPath(plan.targetMocPath);
-    if (!(movedMoc instanceof import_obsidian26.TFile)) {
+    if (!(movedMoc instanceof import_obsidian32.TFile)) {
       throw new Error(`\u79FB\u52A8\u540E\u6CA1\u6709\u627E\u5230\u9879\u76EE MOC\uFF1A${plan.targetMocPath}`);
     }
     guard.mark(movedMoc.path);
@@ -18638,16 +19445,16 @@ function markFolderTree(ctx, folder, targetPath) {
   const sourcePath = folder.path;
   guard.mark(sourcePath);
   guard.mark(targetPath);
-  import_obsidian26.Vault.recurseChildren(folder, (child) => {
-    if (!(child instanceof import_obsidian26.TFile)) return;
+  import_obsidian32.Vault.recurseChildren(folder, (child) => {
+    if (!(child instanceof import_obsidian32.TFile)) return;
     const relativePath = child.path.slice(sourcePath.length + 1);
     guard.mark(child.path);
-    guard.mark((0, import_obsidian26.normalizePath)(`${targetPath}/${relativePath}`));
+    guard.mark((0, import_obsidian32.normalizePath)(`${targetPath}/${relativePath}`));
   });
 }
 async function reopenMovedMoc(ctx, targetMocPath) {
   const movedMoc = ctx.app.vault.getAbstractFileByPath(targetMocPath);
-  if (!(movedMoc instanceof import_obsidian26.TFile)) return;
+  if (!(movedMoc instanceof import_obsidian32.TFile)) return;
   try {
     await ctx.app.workspace.getLeaf(false).openFile(movedMoc, { active: true });
   } catch (e) {
@@ -18671,7 +19478,7 @@ async function rollbackTransition(ctx, plan, progress) {
   const { app, guard } = ctx;
   try {
     const currentFolder = (_a = app.vault.getAbstractFileByPath(plan.targetProjectPath)) != null ? _a : plan.projectFolder;
-    if (!(currentFolder instanceof import_obsidian26.TFolder)) {
+    if (!(currentFolder instanceof import_obsidian32.TFolder)) {
       throw new Error(`\u56DE\u6EDA\u65F6\u6CA1\u6709\u627E\u5230\u9879\u76EE\u76EE\u5F55\uFF1A${plan.targetProjectPath}`);
     }
     if (app.vault.getAbstractFileByPath(plan.sourceProjectPath)) {
@@ -18680,7 +19487,7 @@ async function rollbackTransition(ctx, plan, progress) {
     markFolderTree(ctx, currentFolder, plan.sourceProjectPath);
     await app.fileManager.renameFile(currentFolder, plan.sourceProjectPath);
     const restoredMoc = app.vault.getAbstractFileByPath(plan.expectedMocPath);
-    if (!(restoredMoc instanceof import_obsidian26.TFile)) {
+    if (!(restoredMoc instanceof import_obsidian32.TFile)) {
       throw new Error(`\u56DE\u6EDA\u540E\u6CA1\u6709\u627E\u5230\u9879\u76EE MOC\uFF1A${plan.expectedMocPath}`);
     }
     if (progress.statusChanged) {
@@ -18709,7 +19516,7 @@ async function showProjectTransitionConfirm(app, plan) {
     new ProjectTransitionConfirmModal(app, plan, resolve).open();
   });
 }
-var ProjectTransitionConfirmModal = class extends import_obsidian26.Modal {
+var ProjectTransitionConfirmModal = class extends import_obsidian32.Modal {
   constructor(app, plan, resolver) {
     super(app);
     /** 按钮结算与关闭结算都会走到 settle，用它保证只生效一次 */
@@ -18760,8 +19567,8 @@ var ProjectTransitionConfirmModal = class extends import_obsidian26.Modal {
     buttonBar.style.justifyContent = "flex-end";
     buttonBar.style.gap = "8px";
     buttonBar.style.marginTop = "18px";
-    new import_obsidian26.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.settle(false));
-    const confirmButton = new import_obsidian26.ButtonComponent(buttonBar).setButtonText(`\u786E\u8BA4${transition.label}`).setCta().onClick(() => this.settle(true));
+    new import_obsidian32.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.settle(false));
+    const confirmButton = new import_obsidian32.ButtonComponent(buttonBar).setButtonText(`\u786E\u8BA4${transition.label}`).setCta().onClick(() => this.settle(true));
     confirmButton.buttonEl.focus();
   }
   onClose() {
@@ -18812,7 +19619,7 @@ function getErrorMessage(error) {
 }
 
 // src/modules/projects/updatedMaintainer.ts
-var import_obsidian27 = require("obsidian");
+var import_obsidian33 = require("obsidian");
 var UPDATED_DEBOUNCE_MS = 2e3;
 var SYSTEM_PREFIX = `${FOLDERS.system}/`;
 function registerUpdatedMaintainer(ctx) {
@@ -18822,7 +19629,7 @@ function registerUpdatedMaintainer(ctx) {
     if (!ctx.settings.autoUpdated) return;
     if (path.startsWith(SYSTEM_PREFIX)) return;
     const file = ctx.app.vault.getAbstractFileByPath(path);
-    if (!(file instanceof import_obsidian27.TFile)) return;
+    if (!(file instanceof import_obsidian33.TFile)) return;
     if (!((_a = ctx.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter)) return;
     ctx.guard.mark(path);
     await ctx.app.fileManager.processFrontMatter(file, (frontmatter) => {
@@ -18859,7 +19666,7 @@ function registerUpdatedMaintainer(ctx) {
           cancelUpdate(file.path);
           return;
         }
-        if (!(file instanceof import_obsidian27.TFile) || file.extension !== "md") return;
+        if (!(file instanceof import_obsidian33.TFile) || file.extension !== "md") return;
         if (file.path.startsWith(SYSTEM_PREFIX)) {
           cancelUpdate(file.path);
           return;
@@ -18876,7 +19683,7 @@ function registerUpdatedMaintainer(ctx) {
 }
 
 // src/modules/review/periodic.ts
-var import_obsidian28 = require("obsidian");
+var import_obsidian34 = require("obsidian");
 function periodFolderOf(ctx, period) {
   const root = normalizeFolderPath(ctx.settings.diaryFolder, FOLDERS.diary);
   const leaf = period.folder.slice(FOLDERS.diary.length + 1);
@@ -18924,14 +19731,14 @@ async function openPeriodNote(ctx, period, options) {
   try {
     const title = (options == null ? void 0 : options.day) ? titleOfDay(options.day, period) : currentPeriodTitle(period);
     if (!title) {
-      new import_obsidian28.Notice(`\u65E0\u6CD5\u4ECE\u65E5\u671F ${(_a = options == null ? void 0 : options.day) != null ? _a : ""} \u5B9A\u4F4D${period.label}`);
+      new import_obsidian34.Notice(`\u65E0\u6CD5\u4ECE\u65E5\u671F ${(_a = options == null ? void 0 : options.day) != null ? _a : ""} \u5B9A\u4F4D${period.label}`);
       return null;
     }
     const folder = periodFolderOf(ctx, period);
     const path = `${folder}/${title}.md`;
     const existing = ctx.app.vault.getAbstractFileByPath(path);
-    if (existing && !(existing instanceof import_obsidian28.TFile)) {
-      new import_obsidian28.Notice(`\u540C\u540D\u7684\u4E0D\u662F\u7B14\u8BB0\u800C\u662F\u6587\u4EF6\u5939\uFF1A${path}`);
+    if (existing && !(existing instanceof import_obsidian34.TFile)) {
+      new import_obsidian34.Notice(`\u540C\u540D\u7684\u4E0D\u662F\u7B14\u8BB0\u800C\u662F\u6587\u4EF6\u5939\uFF1A${path}`);
       return null;
     }
     const content = periodNoteContent(period, title, ctx.settings.dateTimeFormat);
@@ -18948,7 +19755,7 @@ async function openPeriodNote(ctx, period, options) {
     return file;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian28.Notice(`\u6253\u5F00${period.label}\u5931\u8D25\uFF1A${message}`);
+    new import_obsidian34.Notice(`\u6253\u5F00${period.label}\u5931\u8D25\uFF1A${message}`);
     return null;
   }
 }
@@ -19252,7 +20059,7 @@ function reviewSeed(ctx) {
 }
 
 // src/modules/review/theme.ts
-var import_obsidian29 = require("obsidian");
+var import_obsidian35 = require("obsidian");
 var MESSAGES9 = {
   unchanged: "\u4E3B\u9898\u6CA1\u6709\u53D8\u5316\uFF08\u7559\u7A7A\u4E0D\u4F1A\u6E05\u6389\u5DF2\u7ECF\u5199\u597D\u7684\u4E3B\u9898\uFF09",
   donePrefix: "\u5DF2\u5199\u5165",
@@ -19291,14 +20098,14 @@ async function promptAndWriteTheme(ctx, file, period, current) {
   if (answer === null) return;
   const theme = answer.trim();
   if (!theme) {
-    new import_obsidian29.Notice(MESSAGES9.unchanged);
+    new import_obsidian35.Notice(MESSAGES9.unchanged);
     return;
   }
   ctx.guard.mark(file.path);
   await ctx.app.fileManager.processFrontMatter(file, (frontmatter) => {
     frontmatter[FIELDS.theme] = theme;
   });
-  new import_obsidian29.Notice(`${MESSAGES9.donePrefix}${period.label}\u4E3B\u9898\uFF1A${theme}`);
+  new import_obsidian35.Notice(`${MESSAGES9.donePrefix}${period.label}\u4E3B\u9898\uFF1A${theme}`);
 }
 function themeOf(ctx, file) {
   var _a, _b, _c;
@@ -19308,7 +20115,7 @@ function themeOf(ctx, file) {
 }
 function reportFailure(error) {
   const message = error instanceof Error ? error.message : String(error);
-  new import_obsidian29.Notice(MESSAGES9.failedPrefix + message);
+  new import_obsidian35.Notice(MESSAGES9.failedPrefix + message);
 }
 async function resolveTarget(ctx) {
   const active = ctx.app.workspace.getActiveFile();
@@ -19498,10 +20305,10 @@ function themeCell(view, note, missing) {
 var reviewThemeViews = [dailyOutput, themeChain];
 
 // src/modules/ribbon/dock.ts
-var import_obsidian31 = require("obsidian");
+var import_obsidian37 = require("obsidian");
 
 // src/modules/ribbon/icons.ts
-var import_obsidian30 = require("obsidian");
+var import_obsidian36 = require("obsidian");
 var GRID = 24;
 var BOX = 100;
 var STROKE = "var(--icon-stroke, 2)";
@@ -19697,14 +20504,82 @@ var ARTWORK = {
    * 而扫帚在 18px 下与「清空/删除」是同一个手势，那正好是它绝不会做的事。
    */
   [COMMAND_ICONS.format]: ["M4 3V21", "M8 7H20", "M8 12H16", "M8 17H19"],
+  // ---------- 文件 ----------
+  /**
+   * 打开最近文件：一只钟。免费集里没有，补画。
+   *
+   * 画钟而不是画一叠纸或一条清单：这条命令回答的不是「有哪些文件」，
+   * 是「刚才那一篇」——问的是时间，不是数量。钟面复用半径 9 的公共圆，
+   * 于是它与完成/暂停/放弃/重新开始那一组叠在一起时轮廓严丝合缝。
+   */
+  [COMMAND_ICONS.recent]: [CIRCLE, "M12 7.5V12L15.5 14"],
+  /**
+   * 复制当前笔记路径：两枚接续的尖角。补画。
+   *
+   * 它画的是路径分隔符本身（`»`），而不是一页纸或一个复制图标：
+   * 纸在这一套里已经是「卡片」，复制图标在 18px 下与「两个错开的方框」同形，
+   * 而两枚朝右的尖角只有一个意思——一层套一层的那条路。
+   */
+  [COMMAND_ICONS.filePath]: ["M6 7L11 12L6 17", "M13 7L18 12L13 17"],
+  // ---------- 旧版 ----------
+  /**
+   * 切换笔记库：一扇门，外面一根向右的箭头。补画。
+   *
+   * 切库这件事的实质是**离开当前这一个**，门加箭头是它唯一不会被误读的画法。
+   * 刻意不画「两个错开的方框」：那在 18px 下与复制、与多选完全同形。
+   * 也刻意不复用 ziminos-vault 那三层骨架——那一枚已经是「开荒」的脸。
+   */
+  [COMMAND_ICONS.vaultSwitch]: [
+    "M11 3H6C4.89543 3 4 3.89543 4 5V19C4 20.1046 4.89543 21 6 21H11",
+    "M13 12H21M21 12L18 9M21 12L18 15"
+  ],
+  /** 打开帮助：圈里一个问号。圆仍是那个公共圆（Pikaicons 原图的画法） */
+  [COMMAND_ICONS.help]: [
+    "M9.6 9.3C9.6 8.03 10.67 7 12 7C13.33 7 14.4 8.03 14.4 9.3C14.4 10.4 13.6 10.9 12.9 11.4C12.4 11.75 12 12.2 12 13V13.5",
+    "M12 17H12.01",
+    CIRCLE
+  ],
+  /**
+   * 打开设置：两根竖滑杆，各带一个旋钮。补画。
+   *
+   * 不用齿轮，是因为齿轮在 2 宽描边、24 格里必须画十来个齿才认得出，缩到 18px 就糊成一个圆；
+   * 也不用三根横线加旋钮——那与「整理格式」那枚（竖基准线 + 三行）在一列图标里太像。
+   * 竖着放、两根、旋钮一高一低，是「这里有东西可调」最省笔画的说法。
+   */
+  [COMMAND_ICONS.appSettings]: [
+    "M8 3V21",
+    "M16 3V21",
+    "M10.2 8.5C10.2 9.71 9.21 10.7 8 10.7C6.79 10.7 5.8 9.71 5.8 8.5C5.8 7.29 6.79 6.3 8 6.3C9.21 6.3 10.2 7.29 10.2 8.5Z",
+    "M18.2 15.5C18.2 16.71 17.21 17.7 16 17.7C14.79 17.7 13.8 16.71 13.8 15.5C13.8 14.29 14.79 13.3 16 13.3C17.21 13.3 18.2 14.29 18.2 15.5Z"
+  ],
   // ---------- 设置页 ----------
   /** 边栏标签页：一块带左栏的面板，左栏里两粒图标位。它就是屏幕最左边那一列（补画） */
-  [COMMAND_ICONS.dock]: [PANEL, "M9 3V21", "M6 7H6.01M6 10.5H6.01"]
+  [COMMAND_ICONS.dock]: [PANEL, "M9 3V21", "M6 7H6.01M6 10.5H6.01"],
+  /**
+   * 文件标签页：一个文件夹。它就是文件浏览器里那一行行的东西本身（补画）。
+   *
+   * 与边栏那块面板同理，画的是**那块地方**而不是这一版给它加的功能：
+   * 文件夹上不挂数字、不挂角标——计数只是这个模块眼下唯一那件事，
+   * 把当期功能画进图标，下一件功能进来时这枚图标就开始撒谎。
+   * 圆角一律取 2（而非 PANEL 的 4）：文件夹在 24 格里比方框窄，
+   * 沿用 4 会把那道斜边的转折吃掉，读起来就不是文件夹了。
+   */
+  [COMMAND_ICONS.explorer]: [
+    "M5 4.9H8.2C8.9 4.9 9.5 5.2 9.9 5.7L10.9 7.1C11.3 7.7 11.9 8 12.6 8H19C20.1 8 21 8.9 21 10V18C21 19.1 20.1 20 19 20H5C3.9 20 3 19.1 3 18V6.9C3 5.8 3.9 4.9 5 4.9Z"
+  ],
+  /**
+   * 编辑标签页：一个文字光标（I 形）。补画。
+   *
+   * 与另两张设置页标签同一条判据——画那块地方本身，不画这一版给它的功能：
+   * 边栏是一块带左栏的面板，文件浏览器是一个文件夹，而「编辑」这一页管的是
+   * 你打字时的那些顺手事，它那块地方就是光标待的地方。
+   */
+  [COMMAND_ICONS.editing]: ["M9 4H15", "M12 4V20", "M9 20H15"]
 };
 function registerZiminosIcons(plugin) {
   for (const [name, paths] of Object.entries(ARTWORK)) {
-    (0, import_obsidian30.addIcon)(name, wrap(paths));
-    plugin.register(() => (0, import_obsidian30.removeIcon)(name));
+    (0, import_obsidian36.addIcon)(name, wrap(paths));
+    plugin.register(() => (0, import_obsidian36.removeIcon)(name));
   }
 }
 function wrap(paths) {
@@ -19757,7 +20632,7 @@ var RibbonDock = class {
       if (!enabled.has(id)) {
         if (existing && !existing.hasClass(HIDDEN_CLASS)) {
           existing.addClass(HIDDEN_CLASS);
-          if (import_obsidian31.Platform.isPhone) new import_obsidian31.Notice(MOBILE_PENDING);
+          if (import_obsidian37.Platform.isPhone) new import_obsidian37.Notice(MOBILE_PENDING);
         }
         continue;
       }
@@ -19776,7 +20651,7 @@ var RibbonDock = class {
 };
 
 // src/modules/setup/init.ts
-var import_obsidian32 = require("obsidian");
+var import_obsidian38 = require("obsidian");
 
 // src/modules/setup/schemaNote.ts
 var SAMPLE_TYPE = "\u793A\u4F8B";
@@ -19916,7 +20791,7 @@ async function initializeVault(ctx, seeds) {
   try {
     const isFirstRun = ctx.settings.initializedAt === "";
     if (isFirstRun && hasUserNotes(ctx)) {
-      new import_obsidian32.Notice(MESSAGES10.notEmpty);
+      new import_obsidian38.Notice(MESSAGES10.notEmpty);
       return;
     }
     for (const folder of INIT_FOLDERS) {
@@ -19936,12 +20811,12 @@ async function initializeVault(ctx, seeds) {
       ctx.settings.initializedAt = nowStamp(ctx.settings.dateTimeFormat);
     }
     await ctx.saveSettings();
-    new import_obsidian32.Notice(MESSAGES10.done);
+    new import_obsidian38.Notice(MESSAGES10.done);
     const landing = ctx.app.vault.getAbstractFileByPath(README_FILE) ? README_FILE : NAV_FILE;
     await ctx.app.workspace.openLinkText(landing, "", false);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    new import_obsidian32.Notice(MESSAGES10.failedPrefix + message);
+    new import_obsidian38.Notice(MESSAGES10.failedPrefix + message);
   }
 }
 async function applySeed(ctx, seed) {
@@ -19963,7 +20838,7 @@ async function createFileIfMissing(ctx, path, content) {
 }
 
 // src/settings.ts
-var import_obsidian33 = require("obsidian");
+var import_obsidian40 = require("obsidian");
 
 // src/settingsModel.ts
 var TABS = [
@@ -20010,14 +20885,28 @@ var TABS = [
     status: "\u8FD0\u884C\u4E2D \xB7 \u4E5D\u6761\u6807\u51C6 Markdown \u5199\u6CD5\uFF0C\u6539\u5B8C\u8D70\u5F00\u5C31\u66FF\u4F60\u6574\u7406"
   },
   {
+    id: "editing",
+    label: "\u7F16\u8F91",
+    icon: COMMAND_ICONS.editing,
+    module: "\u7F16\u8F91 v1",
+    status: "\u8FD0\u884C\u4E2D \xB7 \u9009\u4E2D\u6587\u5B57\u7C98\u4E00\u6761\u7F51\u5740\u5C31\u6210\u5916\u94FE\uFF1B\u6BCF\u7BC7\u7B14\u8BB0\u8BB0\u4F4F\u4E0A\u6B21\u7684\u5149\u6807\u4F4D\u7F6E"
+  },
+  {
+    id: "explorer",
+    label: "\u6587\u4EF6",
+    icon: COMMAND_ICONS.explorer,
+    module: "\u6587\u4EF6\u6D4F\u89C8\u5668 v2",
+    status: "\u8FD0\u884C\u4E2D \xB7 \u6587\u4EF6\u5939\u8BA1\u6570\u3001\u6700\u8FD1\u6587\u4EF6\u6E05\u5355\u4E0E\u72B6\u6001\u680F\u5F53\u524D\u8DEF\u5F84"
+  },
+  {
     id: "ribbon",
     label: "\u8FB9\u680F",
     icon: COMMAND_ICONS.dock,
     module: "\u5DE6\u4FA7\u8FB9\u680F v1",
-    status: "\u8FD0\u884C\u4E2D \xB7 \u4E09\u5341\u6761\u547D\u4EE4\u914D Pikaicons \u56FE\u6807\uFF0C\u9ED8\u8BA4\u6446\u51FA\u4E03\u6761"
+    status: "\u8FD0\u884C\u4E2D \xB7 \u4E09\u5341\u4E94\u6761\u547D\u4EE4\u914D Pikaicons \u56FE\u6807\uFF0C\u9ED8\u8BA4\u6446\u51FA\u5341\u6761"
   }
 ];
-var TEXTS3 = {
+var TEXTS6 = {
   initName: "\u521D\u59CB\u5316\u7B14\u8BB0\u5E93",
   initButton: "\u521D\u59CB\u5316",
   initPending: "\u5C1A\u672A\u521D\u59CB\u5316\u3002\u70B9\u53F3\u8FB9\u7684\u6309\u94AE\uFF0C\u4E3A\u8FD9\u4E2A\u5E93\u94FA\u597D\u4E03\u4E2A\u6587\u4EF6\u5939\u3001\u6A21\u677F\u4E0E\u5BFC\u822A\uFF0C\u5E76\u957F\u51FA\u4EBA\u8109\u4E0E\u590D\u76D8\u4E24\u5957\u7CFB\u7EDF\u3002",
@@ -20039,7 +20928,7 @@ var TEXTS3 = {
   inspirationPositionDesc: "\u51B3\u5B9A\u65B0\u7075\u611F\u5199\u5728\u6807\u9898\u533A\u6216\u6574\u7BC7\u6B63\u6587\u7684\u5934\u5C3E\u3002\u7F6E\u9876\u4F1A\u81EA\u52A8\u907F\u5F00 YAML\u3001\u9875\u9762\u6807\u9898\u548C Dataview \u7B5B\u9009\u533A\u3002",
   inspirationFormatName: "\u5355\u6761\u683C\u5F0F",
   inspirationFormatDesc: "\u5FC5\u987B\u4FDD\u7559 {{content}}\uFF1B\u8FD8\u53EF\u4F7F\u7528 {{date}}\u3001{{time}}\u3001{{datetime}}\u3002",
-  ribbonIntro: "\u52FE\u4E0A\u7684\u547D\u4EE4\u4F1A\u53D8\u6210\u6700\u5DE6\u8FB9\u90A3\u4E00\u5217\u56FE\u6807\uFF0C\u70B9\u4E00\u4E0B\u5C31\u6267\u884C\uFF0C\u4E0D\u7528\u518D\u6253\u5F00\u547D\u4EE4\u9762\u677F\u3002\u56FE\u6807\u662F Pikaicons\uFF0C\u8DDF\u7740\u4E3B\u9898\u7684\u989C\u8272\u4E0E\u63CF\u8FB9\u7C97\u7EC6\u8D70\u3002\u53D6\u6D88\u52FE\u9009\u540E\uFF0C\u5B83\u5728\u300C\u8BBE\u7F6E \u2192 \u5916\u89C2 \u2192 \u529F\u80FD\u533A\u300D\u548C\u624B\u673A\u7AEF\u7684\u8FB9\u680F\u83DC\u5355\u91CC\u8981\u91CD\u542F Obsidian \u624D\u6D88\u5931\uFF1B\u53CD\u8FC7\u6765\uFF0C\u4F60\u5728\u90A3\u4E24\u5904\u85CF\u6389\u7684\u56FE\u6807\uFF0C\u8FD9\u91CC\u52FE\u4E0A\u4E5F\u4E0D\u4F1A\u51FA\u73B0\u2014\u2014\u90A3\u662F Obsidian \u81EA\u5DF1\u7684\u5F00\u5173\uFF0C\u5F97\u56DE\u90A3\u513F\u6253\u5F00\u3002",
+  ribbonIntro: "\u52FE\u4E0A\u7684\u547D\u4EE4\u4F1A\u53D8\u6210\u6700\u5DE6\u8FB9\u90A3\u4E00\u5217\u56FE\u6807\uFF0C\u70B9\u4E00\u4E0B\u5C31\u6267\u884C\uFF0C\u4E0D\u7528\u518D\u6253\u5F00\u547D\u4EE4\u9762\u677F\u3002\u56FE\u6807\u662F Pikaicons\uFF0C\u8DDF\u7740\u4E3B\u9898\u7684\u989C\u8272\u4E0E\u63CF\u8FB9\u7C97\u7EC6\u8D70\u3002\u6700\u540E\u90A3\u4E00\u7EC4\u300C\u65E7\u7248\u300D\u662F\u7070\u7684\uFF0C\u56E0\u4E3A\u5B83\u4EEC\u505A\u7684\u662F Obsidian \u81EA\u5DF1\u7684\u4E8B\u2014\u2014\u5207\u6362\u7B14\u8BB0\u5E93\u3001\u5E2E\u52A9\u3001\u8BBE\u7F6E\u8FD9\u4E09\u4E2A\u6309\u94AE\u5728 Obsidian 1.6 \u4E4B\u540E\u88AB\u632A\u8FDB\u4E86\u6587\u4EF6\u6D4F\u89C8\u5668\u5E95\u4E0B\uFF0C\u8FD9\u4E09\u6761\u628A\u5B83\u4EEC\u8BF7\u56DE\u6700\u5DE6\u8FB9\u90A3\u4E00\u5217\uFF1B\u4F4D\u7F6E\u5F52\u4F60\uFF0C\u6446\u51FA\u6765\u4E4B\u540E\u76F4\u63A5\u62D6\u3002\u53D6\u6D88\u52FE\u9009\u540E\uFF0C\u5B83\u5728\u300C\u8BBE\u7F6E \u2192 \u5916\u89C2 \u2192 \u529F\u80FD\u533A\u300D\u548C\u624B\u673A\u7AEF\u7684\u8FB9\u680F\u83DC\u5355\u91CC\u8981\u91CD\u542F Obsidian \u624D\u6D88\u5931\uFF1B\u53CD\u8FC7\u6765\uFF0C\u4F60\u5728\u90A3\u4E24\u5904\u85CF\u6389\u7684\u56FE\u6807\uFF0C\u8FD9\u91CC\u52FE\u4E0A\u4E5F\u4E0D\u4F1A\u51FA\u73B0\u2014\u2014\u90A3\u662F Obsidian \u81EA\u5DF1\u7684\u5F00\u5173\uFF0C\u5F97\u56DE\u90A3\u513F\u6253\u5F00\u3002",
   ribbonCountPrefix: "\u5DF2\u6446\u51FA ",
   ribbonCountSeparator: " / ",
   ribbonCountSuffix: " \u6761",
@@ -20049,9 +20938,36 @@ var TEXTS3 = {
   formatRulesIntro: "\u5173\u6389\u54EA\u4E00\u6761\uFF0C\u6574\u7406\u65F6\u5C31\u4E0D\u518D\u6267\u884C\u5B83\u3002\u547D\u4EE4\u4E0E\u81EA\u52A8\u6574\u7406\u8D70\u7684\u662F\u540C\u4E00\u4EFD\u52FE\u9009\u3002",
   appearanceSwitchName: "\u72B6\u6001\u680F\u5916\u89C2\u5F00\u5173",
   appearanceSwitchDesc: "\u5728\u53F3\u4E0B\u89D2\u72B6\u6001\u680F\u653E\u4E00\u4E2A \u{1F3A8} \u6309\u94AE\uFF0C\u70B9\u5F00\u5C31\u80FD\u9010\u4E2A\u5F00\u5173 CSS \u7247\u6BB5\uFF0C\u4E0D\u5FC5\u518D\u8FDB\u8BBE\u7F6E\u7FFB\u5916\u89C2\u9875\u3002\u5173\u6389\u53EA\u662F\u6536\u8D77\u6309\u94AE\uFF0C\u547D\u4EE4\u9762\u677F\u91CC\u7684\u300C\u6253\u5F00\u5916\u89C2\u5F00\u5173\u300D\u7167\u5E38\u53EF\u7528\u3002",
+  folderCountName: "\u6587\u4EF6\u5939\u53F3\u4FA7\u663E\u793A\u8BA1\u6570",
+  folderCountDesc: "\u5728\u5DE6\u8FB9\u90A3\u68F5\u76EE\u5F55\u6811\u4E0A\uFF0C\u7ED9\u6BCF\u4E2A\u6587\u4EF6\u5939\u53F3\u4FA7\u6807\u4E00\u4E2A\u6570\u5B57\uFF1A\u8FD9\u91CC\u9762\u6512\u4E86\u591A\u5C11\u3002\u628A\u9F20\u6807\u505C\u5728\u6570\u5B57\u4E0A\uFF0C\u7B14\u8BB0\u6570\u4E0E\u5B50\u6587\u4EF6\u5939\u6570\u4F1A\u4E00\u8D77\u62A5\u51FA\u6765\u3002\u7A7A\u6587\u4EF6\u5939\u4E0D\u6807\u6570\u5B57\u2014\u2014\u4E00\u4E2A 0 \u4E0D\u89E3\u91CA\u4EFB\u4F55\u4E8B\u3002\u5173\u6389\u65F6\u6570\u5B57\u5F53\u573A\u6D88\u5931\uFF0C\u4E0D\u7559\u6B8B\u8FF9\u3001\u4E0D\u7528\u91CD\u542F\u3002",
+  folderCountTargetName: "\u6570\u4EC0\u4E48",
+  folderCountTargetDesc: "\u5E38\u9A7B\u5728\u5C4F\u5E55\u4E0A\u7684\u53EA\u6709\u4E00\u4E2A\u6570\uFF0C\u6240\u4EE5\u8981\u5148\u8BF4\u6E05\u5B83\u6570\u7684\u662F\u4EC0\u4E48\u3002ziminOS \u91CC\u7684\u6587\u4EF6\u5939\u662F\u5BB9\u5668\uFF1A01-projects \u91CC\u88C5\u7684\u662F\u9879\u76EE\uFF0C\u4E00\u4E2A\u9879\u76EE\u91CC\u88C5\u7684\u662F\u5361\u7247\u2014\u2014\u6240\u4EE5\u300C\u6709\u591A\u5C11\u7BC7\u7B14\u8BB0\u300D\u548C\u300C\u6211\u6709\u51E0\u4E2A\u9879\u76EE\u300D\u662F\u540C\u4E00\u68F5\u6811\u7684\u4E24\u4E2A\u95EE\u9898\uFF0C\u9009\u4F60\u66F4\u5E38\u95EE\u7684\u90A3\u4E2A\u3002",
+  folderCountRecursiveName: "\u542B\u5B50\u6587\u4EF6\u5939",
+  folderCountRecursiveDesc: "\u5F00\u7740\u65F6\uFF0C\u6570\u5B57\u662F\u8FD9\u4E2A\u6587\u4EF6\u5939\u8FDE\u540C\u5B83\u6240\u6709\u540E\u4EE3\u52A0\u8D77\u6765\u7684\u603B\u6570\uFF1B\u5173\u6389\u53EA\u6570\u76F4\u63A5\u653E\u5728\u8FD9\u4E00\u5C42\u7684\u3002\u9ED8\u8BA4\u5F00\u7740\uFF0C\u56E0\u4E3A 01-projects \u8FD9\u79CD\u53EA\u88C5\u6587\u4EF6\u5939\u7684\u5C42\u5728\u5173\u6389\u65F6\u4F1A\u663E\u793A 0\u2014\u2014\u90A3\u8BA9\u5B83\u4E0E\u4E00\u4E2A\u771F\u6B63\u7684\u7A7A\u6587\u4EF6\u5939\u957F\u5F97\u4E00\u6A21\u4E00\u6837\u3002\u53CD\u8FC7\u6765\uFF0C\u60F3\u8BA9\u6570\u5B57\u56DE\u7B54\u300C\u6211\u6709\u51E0\u4E2A\u9879\u76EE\u300D\u800C\u4E0D\u662F\u300C\u9879\u76EE\u91CC\u4E00\u5171\u591A\u5C11\u5F20\u5361\u7247\u300D\uFF0C\u5173\u6389\u5B83\u624D\u662F\u5BF9\u7684\u3002",
+  filePathName: "\u72B6\u6001\u680F\u663E\u793A\u5F53\u524D\u7B14\u8BB0\u8DEF\u5F84",
+  filePathDesc: "\u5728\u53F3\u4E0B\u89D2\u72B6\u6001\u680F\u663E\u793A\u4F60\u6B64\u523B\u8FD9\u4E00\u7BC7\u5728\u54EA\u4E2A\u6587\u4EF6\u5939\u91CC\uFF0C\u70B9\u4E00\u4E0B\u628A\u5B8C\u6574\u8DEF\u5F84\u590D\u5236\u8D70\u3002\u5173\u6389\u53EA\u662F\u6536\u8D77\u90A3\u4E00\u5757\uFF0C\u547D\u4EE4\u300C\u590D\u5236\u5F53\u524D\u7B14\u8BB0\u8DEF\u5F84\u300D\u7167\u5E38\u53EF\u7528\uFF08\u53EF\u4EE5\u53BB\u8BBE\u7F6E \u2192 \u5FEB\u6377\u952E\u7ED9\u5B83\u7ED1\u4E2A\u952E\uFF09\u3002",
+  recentHeading: "\u6700\u8FD1\u6587\u4EF6",
+  recentIntro: "\u4E00\u5F20\u300C\u6211\u521A\u624D\u5728\u54EA\u51E0\u7BC7\u91CC\u300D\u7684\u6E05\u5355\uFF0C\u4F4F\u5728\u53F3\u4FA7\u680F\u3002\u7528\u547D\u4EE4\u300C\u6253\u5F00\u6700\u8FD1\u6587\u4EF6\u300D\u6216\u5DE6\u4FA7\u8FB9\u680F\u90A3\u53EA\u949F\u628A\u5B83\u8BF7\u51FA\u6765\uFF1B\u5B83\u4E0D\u4F1A\u81EA\u5DF1\u5360\u4F4F\u4FA7\u680F\u2014\u2014\u90A3\u662F\u627E\u4E0D\u56DE\u67D0\u4E00\u7BC7\u65F6\u624D\u60F3\u8D77\u6765\u7684\u5DE5\u5177\uFF0C\u4E0D\u662F\u6BCF\u5929\u90FD\u8981\u770B\u7684\u4E1C\u897F\u3002\u6E05\u5355\u7684\u6210\u5458\u6C38\u8FDC\u662F\u4F60\u6253\u5F00\u8FC7\u7684\u6587\u4EF6\uFF08\u542B\u6A21\u677F\u4E0E\u7CFB\u7EDF\u7B14\u8BB0\uFF0C\u5BFC\u822A\u4E0D\u8BE5\u85CF\u4E1C\u897F\uFF09\u3002",
+  recentLimitName: "\u663E\u793A\u51E0\u6761",
+  recentLimitDesc: "\u6E05\u5355\u6700\u591A\u5217\u51E0\u884C\u3002\u8BB0\u5F55\u672C\u8EAB\u4E00\u76F4\u7559\u7740\u4E94\u5341\u6761\uFF0C\u6240\u4EE5\u4F60\u628A 10 \u6539\u6210 50\uFF0C\u7ACB\u523B\u5C31\u6709 50 \u6761\uFF0C\u4E0D\u5FC5\u4ECE\u6B64\u523B\u91CD\u65B0\u6512\u3002",
+  recentSortName: "\u600E\u4E48\u6392",
+  recentSortDesc: "\u300C\u521A\u624D\u6211\u5728\u54EA\u300D\u548C\u300C\u6211\u6700\u8FD1\u6539\u4E86\u4EC0\u4E48\u300D\u662F\u4E24\u4E2A\u4E0D\u540C\u7684\u95EE\u9898\u2014\u2014\u8BFB\u4E86\u4E00\u5929\u8D44\u6599\u6CA1\u52A8\u7B14\u7684\u4EBA\u95EE\u524D\u8005\uFF0C\u5199\u4E86\u4E00\u5929\u7684\u4EBA\u95EE\u540E\u8005\u3002",
+  pasteLinkName: "\u7C98\u8D34\u5230\u9009\u4E2D\u6587\u5B57\u4E0A\uFF1D\u52A0\u5916\u94FE",
+  pasteLinkDesc: "\u9009\u4E2D\u4E00\u6BB5\u6587\u5B57\uFF0C\u76F4\u63A5 Cmd + V \u7C98\u4E00\u6761\u7F51\u5740\uFF0C\u90A3\u6BB5\u6587\u5B57\u5C31\u53D8\u6210\u6307\u5411\u5B83\u7684\u5916\u94FE\u3002\u56DB\u6761\u90FD\u6EE1\u8DB3\u624D\u4F1A\u52A8\u624B\uFF1A\u9009\u4E86\u5B57\u3001\u526A\u8D34\u677F\u91CC\u53EA\u6709\u4E00\u6761**\u5E26\u534F\u8BAE**\u7684\u7F51\u5740\uFF08www \u5F00\u5934\u7684\u88F8\u57DF\u540D\u4E0D\u7B97\uFF09\u3001\u9009\u4E2D\u7684\u6587\u5B57\u91CC\u6CA1\u6709\u6362\u884C\u3001\u8FD9\u6B21\u7C98\u8D34\u8FD8\u6CA1\u88AB\u522B\u7684\u63D2\u4EF6\u5904\u7406\u8FC7\u3002\u4EFB\u4F55\u4E00\u6761\u4E0D\u6EE1\u8DB3\u5C31\u539F\u6837\u7C98\u8D34\u3002",
+  rememberCursorName: "\u8BB0\u4F4F\u6BCF\u7BC7\u7B14\u8BB0\u7684\u5149\u6807\u4F4D\u7F6E",
+  rememberCursorDesc: "\u79BB\u5F00\u4E00\u7BC7\u7B14\u8BB0\u65F6\u8BB0\u4E0B\u5149\u6807\u5728\u7B2C\u51E0\u884C\u3001\u6EDA\u52A8\u6761\u5728\u54EA\u513F\uFF0C\u4E0B\u6B21\u6253\u5F00\u5C31\u56DE\u5230\u90A3\u91CC\uFF0C\u91CD\u542F Obsidian \u4E5F\u8FD8\u5728\u3002\u5B83\u4E0D\u4E0E\u4F60\u7684\u70B9\u51FB\u62A2\uFF1A\u4ECE\u4E00\u6761\u5E26\u951A\u70B9\u7684\u53CC\u94FE\u8DF3\u8FDB\u6765\u65F6\uFF0CObsidian \u5DF2\u7ECF\u628A\u5149\u6807\u653E\u597D\u4E86\uFF0C\u8FD9\u65F6\u5B83\u4E0D\u63D2\u624B\u3002\u4F4D\u7F6E\u8BB0\u5728\u63D2\u4EF6\u76EE\u5F55\u7684 cursor-positions.json \u91CC\uFF0C\u4E0D\u8FDB\u4F60\u7684\u8BBE\u7F6E\u6587\u4EF6\uFF0C\u4E5F\u4E0D\u5199\u8FDB\u4EFB\u4F55\u4E00\u7BC7\u7B14\u8BB0\u3002",
   advancedHeading: "\u9AD8\u7EA7\u8BBE\u7F6E\uFF08\u4E00\u822C\u4E0D\u7528\u6539\uFF09",
   advancedSuffixPrefix: "\u8BFE\u7A0B\u9ED8\u8BA4\u503C ",
   advancedSuffixTail: "\uFF0C\u6539\u524D\u4E09\u601D\u3002"
+};
+var RECENT_SORT_LABELS = {
+  opened: "\u6309\u6253\u5F00\u65F6\u95F4\uFF08\u6700\u8FD1\u6253\u5F00\u7684\u5728\u6700\u4E0A\u9762\uFF09",
+  modified: "\u6309\u4FEE\u6539\u65F6\u95F4\uFF08\u6700\u8FD1\u6539\u8FC7\u7684\u5728\u6700\u4E0A\u9762\uFF09"
+};
+var FOLDER_COUNT_LABELS = {
+  notes: "\u7B14\u8BB0",
+  folders: "\u6587\u4EF6\u5939",
+  all: "\u5168\u90E8\u6761\u76EE\uFF08\u542B\u9644\u4EF6\uFF09"
 };
 var TEXT_FIELDS = [
   { key: "projectFolder", tab: "projects", name: "\u9879\u76EE\u76EE\u5F55", hint: "\u6B63\u5728\u63A8\u8FDB\u7684\u9879\u76EE\u653E\u5728\u8FD9\u91CC\uFF1B\u8BFB\u4E66\u7B14\u8BB0\u4E5F\u843D\u5728\u8FD9\u91CC\u3002", advanced: true },
@@ -20074,37 +20990,25 @@ var BOOK_TAG_PREFIX_FIELD = {
   advanced: false
 };
 
-// src/settings.ts
+// src/settingsPanels.ts
+var import_obsidian39 = require("obsidian");
 var FIELDS_ONLY = () => {
 };
-var ZiminosSettingTab = class extends import_obsidian33.PluginSettingTab {
-  constructor(ctx, actions) {
-    super(ctx.app, ctx.plugin);
+var SettingsPanels = class {
+  constructor(host) {
     /**
-     * 当前停在哪一页。
+     * 「已摆出 N / 35 条」那行字。
      *
-     * 这是页面状态而非领域状态，因此刻意不进 data.json——设置对象里存的都是
-     * 「这个库是什么样」，而不是「上次那个人翻到了第几页」。
-     * 它随本条插件实例存活，也就是关掉设置弹窗再打开仍停在原页、重启 Obsidian 归位，
-     * 与 Obsidian 自己记住你上次停在哪个插件设置页是同一档待遇。
-     */
-    this.activeTab = TABS[0];
-    /**
-     * 「已摆出 N / 30 条」那行字。
-     *
-     * 这是全页唯一一处持有 DOM 引用的地方，理由很具体：勾选要即时更新这个数，
-     * 而重建整页会把滚动条弹回顶部——三十行排下来，用户勾第十八行时页面一跳，
+     * 这是全文件唯一一处持有 DOM 引用的地方，理由很具体：勾选要即时更新这个数，
+     * 而重建整页会把滚动条弹回顶部——三十五行排下来，用户勾第二十行时页面一跳，
      * 他就得重新找回刚才那一行。持有的是一个渲染出来的节点，不是第二份状态：
-     * 数字仍然现算自设置对象，每次 display 也会把它换成新节点。
+     * 数字仍然现算自设置对象，每次重画也会把它换成新节点。
      */
     this.ribbonCountEl = null;
-    /**
-     * 每页自己的控件。
-     *
-     * 用 Record<TabId, …> 而不是可选查表：加一张标签页却忘了写它的渲染，
-     * 在这里是一个编译错误，而不是一张点进去空空如也的页。
-     */
-    this.panels = {
+    this.host = host;
+    this.ctx = host.ctx;
+    this.actions = host.actions;
+    this.render = {
       // 开荒页自有控件两件：初始化按钮，加外观开关的显隐——外观包是开荒交付物的一部分，
       // 它唯一的开关跟着交付物走，不另占一页
       setup: (el) => {
@@ -20116,10 +21020,391 @@ var ZiminosSettingTab = class extends import_obsidian33.PluginSettingTab {
       review: FIELDS_ONLY,
       contacts: FIELDS_ONLY,
       format: (el) => this.renderFormatPanel(el),
+      editing: (el) => this.renderEditingPanel(el),
+      explorer: (el) => this.renderExplorerPanel(el),
       ribbon: (el) => this.renderRibbonPanel(el)
     };
+  }
+  // ============================================================
+  // 一、开荒页：一个按钮
+  // ============================================================
+  /**
+   * 开荒按钮：一句状态说明 + 一个按钮。
+   * 按钮点下后先禁用再执行，防止连点开出两次流程；完成后重建整个面板，
+   * 状态说明随之从「尚未初始化」翻面成「已就绪」——停留的页不变，重建的是内容。
+   */
+  renderInitButton(containerEl) {
+    new import_obsidian39.Setting(containerEl).setName(TEXTS6.initName).setDesc(this.describeInitState()).addButton((button) => {
+      button.setButtonText(TEXTS6.initButton).setCta().onClick(async () => {
+        button.setDisabled(true);
+        try {
+          await this.actions.initialize();
+        } finally {
+          this.host.rebuild();
+        }
+      });
+    });
+  }
+  /** 用 initializedAt 是否为空来决定说什么：这是「首次开荒」与「幂等补齐」的唯一判据 */
+  describeInitState() {
+    const { initializedAt } = this.ctx.settings;
+    if (!initializedAt) return TEXTS6.initPending;
+    return TEXTS6.initReadyPrefix + initializedAt + TEXTS6.initReadySuffix;
+  }
+  // ============================================================
+  // 二、项目页：两个自动行为，加读书笔记那一段
+  // ============================================================
+  /** 插件仅有的两个常驻监听都住在 modules/projects，所以它们的开关也该在这一页 */
+  renderProjectsPanel(containerEl) {
+    this.host.renderToggle(containerEl, "autoCardInit", TEXTS6.autoCardName, TEXTS6.autoCardDesc);
+    this.host.renderToggle(containerEl, "autoUpdated", TEXTS6.autoUpdatedName, TEXTS6.autoUpdatedDesc);
+    this.renderBooksSection(containerEl);
+  }
+  /**
+   * 读书笔记的三项设置，同住项目页——一本书就是一个项目，不另开一页。
+   *
+   * 三项按「书建出来长什么样 → 划线从哪儿来」排：前两项决定标签怎么写，
+   * 第三项是全插件唯一一处凭据的开关。书目字段（作者、ISBN、出版社）一项都不在这里，
+   * 因为它们没有口味可言——豆瓣怎么写就怎么落，让人去配等于让人去改事实。
+   */
+  renderBooksSection(containerEl) {
+    new import_obsidian39.Setting(containerEl).setName(TEXTS6.booksHeading).setDesc(TEXTS6.booksIntro).setHeading();
+    this.host.renderTextField(containerEl, BOOK_TAG_PREFIX_FIELD);
+    new import_obsidian39.Setting(containerEl).setName(TEXTS6.bookTagCountName).setDesc(TEXTS6.bookTagCountDesc).addDropdown((dropdown) => {
+      for (const count of BOOK_TAG_COUNTS) {
+        dropdown.addOption(String(count), count === 0 ? "\u4E0D\u5199\u6807\u7B7E" : `\u524D ${count} \u4E2A`);
+      }
+      dropdown.setValue(String(this.normalizeBookTagCount(this.ctx.settings.bookTagCount))).onChange(async (value) => {
+        this.ctx.settings.bookTagCount = this.normalizeBookTagCount(Number(value));
+        await this.ctx.saveSettings();
+      });
+    });
+    this.renderWereadRow(containerEl);
+  }
+  /** 防御手改 data.json 写进来的怪数：不在候选里就回落默认，与灵感插入位置同一姿态 */
+  normalizeBookTagCount(value) {
+    return BOOK_TAG_COUNTS.includes(value) ? value : DEFAULT_SETTINGS.bookTagCount;
+  }
+  /**
+   * 微信读书的连接状态，加一个按钮。
+   *
+   * 它是设置而不只是命令，理由是「人主导」：这是全插件唯一一份存在 data.json 里的凭据，
+   * 那就必须有一处能看见它在不在、并且能当场撤掉。命令面板里那条「连接微信读书」
+   * 只能连不能断——一条只往一个方向走的命令，不构成开关。
+   * 断开只清掉本机存的那串 Cookie，不去动微信读书那边的任何东西：
+   * 插件从来不代替用户管理他在别人家的账号。
+   */
+  renderWereadRow(containerEl) {
+    const connected = !!this.ctx.settings.wereadCookie.trim();
+    new import_obsidian39.Setting(containerEl).setName(TEXTS6.wereadName).setDesc(
+      import_obsidian39.Platform.isDesktopApp ? connected ? TEXTS6.wereadConnected : TEXTS6.wereadDisconnected : TEXTS6.wereadMobile
+    ).addButton((button) => {
+      button.setButtonText(connected ? "\u65AD\u5F00" : "\u626B\u7801\u8FDE\u63A5").setDisabled(!import_obsidian39.Platform.isDesktopApp);
+      if (!connected) button.setCta();
+      button.onClick(async () => {
+        button.setDisabled(true);
+        try {
+          if (connected) {
+            this.ctx.settings.wereadCookie = "";
+            await this.ctx.saveSettings();
+          } else {
+            await this.actions.connectWeread();
+          }
+        } finally {
+          this.host.rebuild();
+        }
+      });
+    });
+  }
+  // ============================================================
+  // 三、灵感页：落点、位置与格式
+  // ============================================================
+  /**
+   * 灵感页上的每一项都是「记录灵感」命令的下一次运行参数。
+   * 落点那三个文本框已由骨架照字段表画在上方，这里只补两个非文本控件。
+   */
+  renderInspirationPanel(containerEl) {
+    new import_obsidian39.Setting(containerEl).setName(TEXTS6.inspirationPositionName).setDesc(TEXTS6.inspirationPositionDesc).addDropdown((dropdown) => {
+      dropdown.addOption("heading-top", "\u6807\u9898\u4E0B\u65B9\uFF08\u65B0\u5185\u5BB9\u5728\u524D\uFF09").addOption("heading-bottom", "\u6807\u9898\u533A\u672B\u5C3E\uFF08\u65B0\u5185\u5BB9\u5728\u540E\uFF09").addOption("file-top", "\u6B63\u6587\u9876\u90E8").addOption("file-bottom", "\u6B63\u6587\u5E95\u90E8").setValue(this.normalizeInspirationPosition(this.ctx.settings.inspirationInsertPosition)).onChange(async (value) => {
+        const position = this.normalizeInspirationPosition(value);
+        this.ctx.settings.inspirationInsertPosition = position;
+        await this.ctx.saveSettings();
+      });
+    });
+    new import_obsidian39.Setting(containerEl).setName(TEXTS6.inspirationFormatName).setDesc(TEXTS6.inspirationFormatDesc).addTextArea((textArea) => {
+      textArea.setPlaceholder(INSPIRATION_DEFAULTS.format).setValue(this.ctx.settings.inspirationFormat).onChange(async (value) => {
+        this.ctx.settings.inspirationFormat = value;
+        await this.ctx.saveSettings();
+      });
+      textArea.inputEl.rows = 3;
+      textArea.inputEl.style.width = "100%";
+    });
+  }
+  /** 防御手改 data.json 产生的未知枚举值，设置面板与写入模块保持同一回落策略 */
+  normalizeInspirationPosition(value) {
+    const candidate = value;
+    return INSPIRATION_INSERT_POSITIONS.includes(candidate) ? candidate : INSPIRATION_DEFAULTS.insertPosition;
+  }
+  // ============================================================
+  // 四、排版页：一个自动开关，加九条规则
+  // ============================================================
+  /**
+   * 排版页：先决定「要不要替我按」，再决定「按下去做哪几件事」。
+   *
+   * 两者刻意不合成一个开关：自动整理关掉之后，命令仍然照这九条勾选执行——
+   * 规则回答的是「标准写法是什么」，自动回答的是「谁来按」，把它们绑在一起，
+   * 就没法表达「我自己按，但按下去要全套」这个再正常不过的用法。
+   */
+  renderFormatPanel(containerEl) {
+    this.host.renderToggle(
+      containerEl,
+      "autoFormat",
+      TEXTS6.autoFormatName,
+      TEXTS6.autoFormatDesc
+    );
+    new import_obsidian39.Setting(containerEl).setName(TEXTS6.formatRulesHeading).setDesc(TEXTS6.formatRulesIntro).setHeading();
+    for (const rule of FORMAT_RULES) {
+      this.renderRuleRow(containerEl, rule.key, rule.name, rule.desc);
+    }
+  }
+  /**
+   * 一条规则一行。
+   *
+   * 它与边栏那三十行是同一种控件——勾选决定一个 id 在不在清单里，而不是翻一个布尔字段。
+   * 存清单而不是九个布尔字段，是为了让「加一条规则」不必动设置契约：
+   * 老库升级时那条新规则不在清单里，于是默认不开，这与「不替用户改他没选过的东西」同源。
+   */
+  renderRuleRow(containerEl, key, name, desc) {
+    new import_obsidian39.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
+      toggle.setValue(this.ctx.settings.formatRules.includes(key)).onChange(async (value) => {
+        this.ctx.settings.formatRules = this.nextFormatRules(key, value);
+        await this.ctx.saveSettings();
+      });
+    });
+  }
+  /**
+   * 算出勾选之后的新清单。
+   *
+   * 与 nextRibbonCommands 同法同因：照 FORMAT_RULES 重排一遍而不是往旧数组里增删，
+   * 于是顺序永远等于规则表的顺序，data.json 里混进的不认识的 id 也在第一次勾选时被扫掉。
+   * 返回新数组，绝不原地改——它在用户没调过时与 DEFAULT_SETTINGS 共用引用。
+   */
+  nextFormatRules(key, enabled) {
+    const chosen = new Set(this.ctx.settings.formatRules);
+    if (enabled) chosen.add(key);
+    else chosen.delete(key);
+    return FORMAT_RULES.map((rule) => rule.key).filter((candidate) => chosen.has(candidate));
+  }
+  // ============================================================
+  // 五、外观开关：一个开关，随开荒页交付
+  // ============================================================
+  /** 这一页管的是「右下角要不要常驻这个按钮」，不管片段本身开着还是关着 */
+  renderAppearancePanel(containerEl) {
+    this.host.renderToggle(
+      containerEl,
+      "showAppearanceSwitch",
+      TEXTS6.appearanceSwitchName,
+      TEXTS6.appearanceSwitchDesc,
+      this.actions.syncAppearanceSwitch
+    );
+  }
+  // ============================================================
+  // 六、边栏页：三十五行
+  // ============================================================
+  /**
+   * 边栏页：一句说明 + 按分组排下来的三十行。
+   *
+   * 清单现读花名册而不是自己维护一份，因此它与命令面板里能搜到的命令永远是同一批；
+   * 分组标题按「相邻两行的 group 不同」切出来，与外观开关面板用的是同一套画法——
+   * 分组顺序不需要另一张表，它就是命令的注册顺序。
+   */
+  renderRibbonPanel(containerEl) {
+    const summary = new import_obsidian39.Setting(containerEl).setName(this.describeRibbonCount()).setDesc(TEXTS6.ribbonIntro);
+    this.ribbonCountEl = summary.nameEl;
+    let currentGroup = "";
+    for (const command of this.ctx.commands.list()) {
+      if (command.spec.group !== currentGroup) {
+        currentGroup = command.spec.group;
+        containerEl.createDiv({ cls: "ziminos-ribbon-group", text: currentGroup });
+      }
+      this.renderRibbonRow(containerEl, command.spec);
+    }
+  }
+  /** 只改那一个数字，不重建页面——重建会把滚动条弹回顶部 */
+  refreshRibbonCount() {
+    if (this.ribbonCountEl) this.ribbonCountEl.setText(this.describeRibbonCount());
+  }
+  /**
+   * 「已摆出 7 / 30 条」。给的是一个量级感：勾多了那条边栏会变成谁也不看的图标柱。
+   * 总数现算自花名册，不写死——这一页不认识任何一条具体命令，也就不该认识它们有几条。
+   */
+  describeRibbonCount() {
+    const total = this.ctx.commands.list().length;
+    return TEXTS6.ribbonCountPrefix + this.ctx.settings.ribbonCommands.length + TEXTS6.ribbonCountSeparator + total + TEXTS6.ribbonCountSuffix;
+  }
+  /** 一行：图标 + 命令名 + 开关。图标带着它的分组功能色，就是它在边栏上的样子，勾之前先看见 */
+  renderRibbonRow(containerEl, spec) {
+    const { id, icon, name } = spec;
+    const label = createFragment((frag) => {
+      const iconEl = frag.createSpan({ cls: "ziminos-ribbon-icon" });
+      (0, import_obsidian39.setIcon)(iconEl, icon);
+      iconEl.style.color = GROUP_COLORS[spec.group];
+      frag.createSpan({ text: name });
+    });
+    new import_obsidian39.Setting(containerEl).setName(label).setClass("ziminos-ribbon-row").addToggle((toggle) => {
+      toggle.setValue(this.ctx.settings.ribbonCommands.includes(id)).onChange(async (value) => {
+        this.ctx.settings.ribbonCommands = this.nextRibbonCommands(id, value);
+        await this.ctx.saveSettings();
+        this.actions.syncRibbon();
+        this.refreshRibbonCount();
+      });
+    });
+  }
+  /**
+   * 算出勾选之后的新清单。
+   *
+   * 一律照花名册重排一遍而不是往旧数组里增删：其一，边栏顺序因此永远等于命令的注册顺序，
+   * 与用户先勾哪个无关；其二，data.json 里若混进了不认识的 id（换过版本、手改过文件），
+   * 第一次勾选就顺手扫掉，不会留一条永远没人认领的记录。
+   * 返回的是新数组，绝不原地改——ribbonCommands 在用户没调过时与 DEFAULT_SETTINGS 共用引用。
+   */
+  nextRibbonCommands(id, enabled) {
+    const chosen = new Set(this.ctx.settings.ribbonCommands);
+    if (enabled) chosen.add(id);
+    else chosen.delete(id);
+    return this.ctx.commands.list().map((command) => command.spec.id).filter((candidate) => chosen.has(candidate));
+  }
+  // ============================================================
+  // 七、文件页：文件夹计数、最近文件与状态栏路径
+  // ============================================================
+  /**
+   * 文件页：三样东西回答同一个问题——我在哪、有哪些、刚才去过哪儿。
+   *
+   * 顺序是从「一眼扫过去」到「专门去找」：文件夹计数是不请自来的（那棵树上就有），
+   * 最近文件要自己请出来，状态栏那一块又回到不请自来但住在屏幕另一端。
+   * 每一项都得叫一声 syncExplorer：它们改的不是「下一次触发时怎么办」，
+   * 而是**此刻**屏幕上那些东西本身——目录树与侧栏清单都不会自己再读一次设置。
+   * 口径与条数在开关关着时照样可改，理由与排版页那九条规则一样：
+   * 口径回答的是「该显示什么」，开关回答的是「要不要摆出来」，
+   * 绑在一起就没法表达「先把口径调好，回头再打开看」。
+   */
+  renderExplorerPanel(containerEl) {
+    this.host.renderToggle(
+      containerEl,
+      "showFolderCount",
+      TEXTS6.folderCountName,
+      TEXTS6.folderCountDesc,
+      this.actions.syncExplorer
+    );
+    new import_obsidian39.Setting(containerEl).setName(TEXTS6.folderCountTargetName).setDesc(TEXTS6.folderCountTargetDesc).addDropdown((dropdown) => {
+      for (const target of FOLDER_COUNT_TARGETS) {
+        dropdown.addOption(target, FOLDER_COUNT_LABELS[target]);
+      }
+      dropdown.setValue(this.normalizeFolderCountTarget(this.ctx.settings.folderCountTarget)).onChange(async (value) => {
+        this.ctx.settings.folderCountTarget = this.normalizeFolderCountTarget(value);
+        await this.ctx.saveSettings();
+        this.actions.syncExplorer();
+      });
+    });
+    this.host.renderToggle(
+      containerEl,
+      "folderCountRecursive",
+      TEXTS6.folderCountRecursiveName,
+      TEXTS6.folderCountRecursiveDesc,
+      this.actions.syncExplorer
+    );
+    this.renderRecentSection(containerEl);
+    this.host.renderToggle(
+      containerEl,
+      "showFilePath",
+      TEXTS6.filePathName,
+      TEXTS6.filePathDesc,
+      this.actions.syncExplorer
+    );
+  }
+  /** 最近文件那一段：一句说明，加「显示几条」与「怎么排」两个下拉框 */
+  renderRecentSection(containerEl) {
+    new import_obsidian39.Setting(containerEl).setName(TEXTS6.recentHeading).setDesc(TEXTS6.recentIntro).setHeading();
+    new import_obsidian39.Setting(containerEl).setName(TEXTS6.recentLimitName).setDesc(TEXTS6.recentLimitDesc).addDropdown((dropdown) => {
+      for (const limit of RECENT_FILES_LIMITS) {
+        dropdown.addOption(String(limit), `${limit} \u6761`);
+      }
+      dropdown.setValue(String(this.normalizeRecentLimit(this.ctx.settings.recentFilesLimit))).onChange(async (value) => {
+        this.ctx.settings.recentFilesLimit = this.normalizeRecentLimit(Number(value));
+        await this.ctx.saveSettings();
+        this.actions.syncExplorer();
+      });
+    });
+    new import_obsidian39.Setting(containerEl).setName(TEXTS6.recentSortName).setDesc(TEXTS6.recentSortDesc).addDropdown((dropdown) => {
+      for (const sort of RECENT_FILES_SORTS) {
+        dropdown.addOption(sort, RECENT_SORT_LABELS[sort]);
+      }
+      dropdown.setValue(this.normalizeRecentSort(this.ctx.settings.recentFilesSort)).onChange(async (value) => {
+        this.ctx.settings.recentFilesSort = this.normalizeRecentSort(value);
+        await this.ctx.saveSettings();
+        this.actions.syncExplorer();
+      });
+    });
+  }
+  // ============================================================
+  // 八、编辑页：两个开关，各管一件互不相干的事
+  // ============================================================
+  /**
+   * 编辑页：粘贴与光标。
+   *
+   * 两项都不需要叫任何人重画——监听与记忆每次触发都现读设置对象，天然看得见新值。
+   * 这一页因此是九张页里唯一「改完什么都不用同步」的一张，
+   * 那正好说明它管的不是屏幕上的东西，而是行为。
+   */
+  renderEditingPanel(containerEl) {
+    this.host.renderToggle(
+      containerEl,
+      "pasteLinkEnabled",
+      TEXTS6.pasteLinkName,
+      TEXTS6.pasteLinkDesc
+    );
+    this.host.renderToggle(
+      containerEl,
+      "rememberCursor",
+      TEXTS6.rememberCursorName,
+      TEXTS6.rememberCursorDesc
+    );
+  }
+  /** 防御手改 data.json 产生的未知口径，与灵感插入位置同一姿态、同一回落策略 */
+  normalizeFolderCountTarget(value) {
+    const candidate = value;
+    return FOLDER_COUNT_TARGETS.includes(candidate) ? candidate : FOLDER_COUNT_DEFAULTS.target;
+  }
+  /** 同上。不在候选里的条数一律回落默认，而不是照单全收一个写死在别处的怪数 */
+  normalizeRecentLimit(value) {
+    return RECENT_FILES_LIMITS.includes(value) ? value : RECENT_FILES_DEFAULTS.limit;
+  }
+  normalizeRecentSort(value) {
+    const candidate = value;
+    return RECENT_FILES_SORTS.includes(candidate) ? candidate : RECENT_FILES_DEFAULTS.sort;
+  }
+};
+
+// src/settings.ts
+var ZiminosSettingTab = class extends import_obsidian40.PluginSettingTab {
+  constructor(ctx, actions) {
+    super(ctx.app, ctx.plugin);
+    /**
+     * 当前停在哪一页。
+     *
+     * 这是页面状态而非领域状态，因此刻意不进 data.json——设置对象里存的都是
+     * 「这个库是什么样」，而不是「上次那个人翻到了第几页」。
+     * 它随本条插件实例存活，也就是关掉设置弹窗再打开仍停在原页、重启 Obsidian 归位，
+     * 与 Obsidian 自己记住你上次停在哪个插件设置页是同一档待遇。
+     */
+    this.activeTab = TABS[0];
     this.ctx = ctx;
     this.actions = actions;
+    this.panels = new SettingsPanels(this);
+  }
+  /** 面板改完状态要让整页翻面时叫它。语义与 display 完全一致，名字换成面板那边看得懂的 */
+  rebuild() {
+    this.display();
   }
   /** 每次打开设置页都整体重建，保证显示的永远是设置对象的当前值 */
   display() {
@@ -20150,7 +21435,7 @@ var ZiminosSettingTab = class extends import_obsidian33.PluginSettingTab {
         attr: { type: "button", "aria-pressed": String(active) }
       });
       if (active) button.addClass("is-active");
-      (0, import_obsidian33.setIcon)(button.createSpan({ cls: "ziminos-settings-tab-icon" }), tab.icon);
+      (0, import_obsidian40.setIcon)(button.createSpan({ cls: "ziminos-settings-tab-icon" }), tab.icon);
       button.createSpan({ text: tab.label });
       button.addEventListener("click", () => this.switchTo(tab));
     }
@@ -20175,12 +21460,12 @@ var ZiminosSettingTab = class extends import_obsidian33.PluginSettingTab {
    */
   renderPanel(body) {
     const tab = this.activeTab;
-    const header = new import_obsidian33.Setting(body).setDesc(tab.status).setHeading();
+    const header = new import_obsidian40.Setting(body).setDesc(tab.status).setHeading();
     const title = header.nameEl.createSpan({ cls: "ziminos-settings-page-title" });
-    (0, import_obsidian33.setIcon)(title.createSpan({ cls: "ziminos-settings-page-icon" }), tab.icon);
+    (0, import_obsidian40.setIcon)(title.createSpan({ cls: "ziminos-settings-page-icon" }), tab.icon);
     title.createSpan({ text: tab.module });
     this.renderTextFields(body, tab.id, false);
-    this.panels[tab.id](body);
+    this.panels.render[tab.id](body);
     this.renderAdvancedFold(body, tab.id);
     if (tab.id === "setup") this.renderAboutFooter(body);
   }
@@ -20204,7 +21489,7 @@ var ZiminosSettingTab = class extends import_obsidian33.PluginSettingTab {
    * 天然看得见新值；只有已经画在屏幕上的东西（状态栏按钮）才需要有人去推它一把。
    */
   renderToggle(containerEl, key, name, desc, onApplied) {
-    new import_obsidian33.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
+    new import_obsidian40.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
       toggle.setValue(this.ctx.settings[key]).onChange(async (value) => {
         this.ctx.settings[key] = value;
         await this.ctx.saveSettings();
@@ -20226,7 +21511,7 @@ var ZiminosSettingTab = class extends import_obsidian33.PluginSettingTab {
     for (const field2 of fields) {
       const section = (_a = field2.section) != null ? _a : "";
       if (section && section !== currentSection) {
-        new import_obsidian33.Setting(containerEl).setName(section).setHeading();
+        new import_obsidian40.Setting(containerEl).setName(section).setHeading();
       }
       currentSection = section;
       this.renderTextField(containerEl, field2);
@@ -20240,7 +21525,7 @@ var ZiminosSettingTab = class extends import_obsidian33.PluginSettingTab {
     const hasAdvanced = TEXT_FIELDS.some((field2) => field2.tab === tab && field2.advanced);
     if (!hasAdvanced) return;
     const details = containerEl.createEl("details", { cls: "ziminos-advanced" });
-    details.createEl("summary", { text: TEXTS3.advancedHeading });
+    details.createEl("summary", { text: TEXTS6.advancedHeading });
     this.renderTextFields(details, tab, true);
   }
   /**
@@ -20250,267 +21535,18 @@ var ZiminosSettingTab = class extends import_obsidian33.PluginSettingTab {
    */
   renderTextField(containerEl, field2) {
     const fallback = DEFAULT_SETTINGS[field2.key];
-    const desc = field2.advanced ? `${field2.hint}${TEXTS3.advancedSuffixPrefix}${fallback}${TEXTS3.advancedSuffixTail}` : field2.hint;
-    new import_obsidian33.Setting(containerEl).setName(field2.name).setDesc(desc).addText((text3) => {
+    const desc = field2.advanced ? `${field2.hint}${TEXTS6.advancedSuffixPrefix}${fallback}${TEXTS6.advancedSuffixTail}` : field2.hint;
+    new import_obsidian40.Setting(containerEl).setName(field2.name).setDesc(desc).addText((text3) => {
       text3.setPlaceholder(fallback).setValue(this.ctx.settings[field2.key]).onChange(async (value) => {
         this.ctx.settings[field2.key] = value;
         await this.ctx.saveSettings();
       });
     });
   }
-  // ============================================================
-  // 三、开荒页：一个按钮
-  // ============================================================
-  /**
-   * 开荒按钮：一句状态说明 + 一个按钮。
-   * 按钮点下后先禁用再执行，防止连点开出两次流程；完成后重建整个面板，
-   * 状态说明随之从「尚未初始化」翻面成「已就绪」——停留的页不变，重建的是内容。
-   */
-  renderInitButton(containerEl) {
-    new import_obsidian33.Setting(containerEl).setName(TEXTS3.initName).setDesc(this.describeInitState()).addButton((button) => {
-      button.setButtonText(TEXTS3.initButton).setCta().onClick(async () => {
-        button.setDisabled(true);
-        try {
-          await this.actions.initialize();
-        } finally {
-          this.display();
-        }
-      });
-    });
-  }
-  /** 用 initializedAt 是否为空来决定说什么：这是「首次开荒」与「幂等补齐」的唯一判据 */
-  describeInitState() {
-    const { initializedAt } = this.ctx.settings;
-    if (!initializedAt) return TEXTS3.initPending;
-    return TEXTS3.initReadyPrefix + initializedAt + TEXTS3.initReadySuffix;
-  }
-  // ============================================================
-  // 四、项目页：两个自动行为，加读书笔记那一段
-  // ============================================================
-  /** 插件仅有的两个常驻监听都住在 modules/projects，所以它们的开关也该在这一页 */
-  renderProjectsPanel(containerEl) {
-    this.renderToggle(containerEl, "autoCardInit", TEXTS3.autoCardName, TEXTS3.autoCardDesc);
-    this.renderToggle(containerEl, "autoUpdated", TEXTS3.autoUpdatedName, TEXTS3.autoUpdatedDesc);
-    this.renderBooksSection(containerEl);
-  }
-  /**
-   * 读书笔记的三项设置，同住项目页——一本书就是一个项目，不另开一页。
-   *
-   * 三项按「书建出来长什么样 → 划线从哪儿来」排：前两项决定标签怎么写，
-   * 第三项是全插件唯一一处凭据的开关。书目字段（作者、ISBN、出版社）一项都不在这里，
-   * 因为它们没有口味可言——豆瓣怎么写就怎么落，让人去配等于让人去改事实。
-   */
-  renderBooksSection(containerEl) {
-    new import_obsidian33.Setting(containerEl).setName(TEXTS3.booksHeading).setDesc(TEXTS3.booksIntro).setHeading();
-    this.renderTextField(containerEl, BOOK_TAG_PREFIX_FIELD);
-    new import_obsidian33.Setting(containerEl).setName(TEXTS3.bookTagCountName).setDesc(TEXTS3.bookTagCountDesc).addDropdown((dropdown) => {
-      for (const count of BOOK_TAG_COUNTS) {
-        dropdown.addOption(String(count), count === 0 ? "\u4E0D\u5199\u6807\u7B7E" : `\u524D ${count} \u4E2A`);
-      }
-      dropdown.setValue(String(this.normalizeBookTagCount(this.ctx.settings.bookTagCount))).onChange(async (value) => {
-        this.ctx.settings.bookTagCount = this.normalizeBookTagCount(Number(value));
-        await this.ctx.saveSettings();
-      });
-    });
-    this.renderWereadRow(containerEl);
-  }
-  /** 防御手改 data.json 写进来的怪数：不在候选里就回落默认，与灵感插入位置同一姿态 */
-  normalizeBookTagCount(value) {
-    return BOOK_TAG_COUNTS.includes(value) ? value : DEFAULT_SETTINGS.bookTagCount;
-  }
-  /**
-   * 微信读书的连接状态，加一个按钮。
-   *
-   * 它是设置而不只是命令，理由是「人主导」：这是全插件唯一一份存在 data.json 里的凭据，
-   * 那就必须有一处能看见它在不在、并且能当场撤掉。命令面板里那条「连接微信读书」
-   * 只能连不能断——一条只往一个方向走的命令，不构成开关。
-   * 断开只清掉本机存的那串 Cookie，不去动微信读书那边的任何东西：
-   * 插件从来不代替用户管理他在别人家的账号。
-   */
-  renderWereadRow(containerEl) {
-    const connected = !!this.ctx.settings.wereadCookie.trim();
-    new import_obsidian33.Setting(containerEl).setName(TEXTS3.wereadName).setDesc(
-      import_obsidian33.Platform.isDesktopApp ? connected ? TEXTS3.wereadConnected : TEXTS3.wereadDisconnected : TEXTS3.wereadMobile
-    ).addButton((button) => {
-      button.setButtonText(connected ? "\u65AD\u5F00" : "\u626B\u7801\u8FDE\u63A5").setDisabled(!import_obsidian33.Platform.isDesktopApp);
-      if (!connected) button.setCta();
-      button.onClick(async () => {
-        button.setDisabled(true);
-        try {
-          if (connected) {
-            this.ctx.settings.wereadCookie = "";
-            await this.ctx.saveSettings();
-          } else {
-            await this.actions.connectWeread();
-          }
-        } finally {
-          this.display();
-        }
-      });
-    });
-  }
-  // ============================================================
-  // 五、灵感页：落点、位置与格式
-  // ============================================================
-  /**
-   * 灵感页上的每一项都是「记录灵感」命令的下一次运行参数。
-   * 落点那三个文本框已由骨架照字段表画在上方，这里只补两个非文本控件。
-   */
-  renderInspirationPanel(containerEl) {
-    new import_obsidian33.Setting(containerEl).setName(TEXTS3.inspirationPositionName).setDesc(TEXTS3.inspirationPositionDesc).addDropdown((dropdown) => {
-      dropdown.addOption("heading-top", "\u6807\u9898\u4E0B\u65B9\uFF08\u65B0\u5185\u5BB9\u5728\u524D\uFF09").addOption("heading-bottom", "\u6807\u9898\u533A\u672B\u5C3E\uFF08\u65B0\u5185\u5BB9\u5728\u540E\uFF09").addOption("file-top", "\u6B63\u6587\u9876\u90E8").addOption("file-bottom", "\u6B63\u6587\u5E95\u90E8").setValue(this.normalizeInspirationPosition(this.ctx.settings.inspirationInsertPosition)).onChange(async (value) => {
-        const position = this.normalizeInspirationPosition(value);
-        this.ctx.settings.inspirationInsertPosition = position;
-        await this.ctx.saveSettings();
-      });
-    });
-    new import_obsidian33.Setting(containerEl).setName(TEXTS3.inspirationFormatName).setDesc(TEXTS3.inspirationFormatDesc).addTextArea((textArea) => {
-      textArea.setPlaceholder(INSPIRATION_DEFAULTS.format).setValue(this.ctx.settings.inspirationFormat).onChange(async (value) => {
-        this.ctx.settings.inspirationFormat = value;
-        await this.ctx.saveSettings();
-      });
-      textArea.inputEl.rows = 3;
-      textArea.inputEl.style.width = "100%";
-    });
-  }
-  /** 防御手改 data.json 产生的未知枚举值，设置面板与写入模块保持同一回落策略 */
-  normalizeInspirationPosition(value) {
-    const candidate = value;
-    return INSPIRATION_INSERT_POSITIONS.includes(candidate) ? candidate : INSPIRATION_DEFAULTS.insertPosition;
-  }
-  // ============================================================
-  // 六、排版页：一个自动开关，加九条规则
-  // ============================================================
-  /**
-   * 排版页：先决定「要不要替我按」，再决定「按下去做哪几件事」。
-   *
-   * 两者刻意不合成一个开关：自动整理关掉之后，命令仍然照这九条勾选执行——
-   * 规则回答的是「标准写法是什么」，自动回答的是「谁来按」，把它们绑在一起，
-   * 就没法表达「我自己按，但按下去要全套」这个再正常不过的用法。
-   */
-  renderFormatPanel(containerEl) {
-    this.renderToggle(
-      containerEl,
-      "autoFormat",
-      TEXTS3.autoFormatName,
-      TEXTS3.autoFormatDesc
-    );
-    new import_obsidian33.Setting(containerEl).setName(TEXTS3.formatRulesHeading).setDesc(TEXTS3.formatRulesIntro).setHeading();
-    for (const rule of FORMAT_RULES) {
-      this.renderRuleRow(containerEl, rule.key, rule.name, rule.desc);
-    }
-  }
-  /**
-   * 一条规则一行。
-   *
-   * 它与边栏那三十行是同一种控件——勾选决定一个 id 在不在清单里，而不是翻一个布尔字段。
-   * 存清单而不是九个布尔字段，是为了让「加一条规则」不必动设置契约：
-   * 老库升级时那条新规则不在清单里，于是默认不开，这与「不替用户改他没选过的东西」同源。
-   */
-  renderRuleRow(containerEl, key, name, desc) {
-    new import_obsidian33.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
-      toggle.setValue(this.ctx.settings.formatRules.includes(key)).onChange(async (value) => {
-        this.ctx.settings.formatRules = this.nextFormatRules(key, value);
-        await this.ctx.saveSettings();
-      });
-    });
-  }
-  /**
-   * 算出勾选之后的新清单。
-   *
-   * 与 nextRibbonCommands 同法同因：照 FORMAT_RULES 重排一遍而不是往旧数组里增删，
-   * 于是顺序永远等于规则表的顺序，data.json 里混进的不认识的 id 也在第一次勾选时被扫掉。
-   * 返回新数组，绝不原地改——它在用户没调过时与 DEFAULT_SETTINGS 共用引用。
-   */
-  nextFormatRules(key, enabled) {
-    const chosen = new Set(this.ctx.settings.formatRules);
-    if (enabled) chosen.add(key);
-    else chosen.delete(key);
-    return FORMAT_RULES.map((rule) => rule.key).filter((candidate) => chosen.has(candidate));
-  }
-  // ============================================================
-  // 七、外观开关：一个开关，随开荒页交付
-  // ============================================================
-  /** 这一页管的是「右下角要不要常驻这个按钮」，不管片段本身开着还是关着 */
-  renderAppearancePanel(containerEl) {
-    this.renderToggle(
-      containerEl,
-      "showAppearanceSwitch",
-      TEXTS3.appearanceSwitchName,
-      TEXTS3.appearanceSwitchDesc,
-      this.actions.syncAppearanceSwitch
-    );
-  }
-  // ============================================================
-  // 八、边栏页：三十行
-  // ============================================================
-  /**
-   * 边栏页：一句说明 + 按分组排下来的三十行。
-   *
-   * 清单现读花名册而不是自己维护一份，因此它与命令面板里能搜到的命令永远是同一批；
-   * 分组标题按「相邻两行的 group 不同」切出来，与外观开关面板用的是同一套画法——
-   * 分组顺序不需要另一张表，它就是命令的注册顺序。
-   */
-  renderRibbonPanel(containerEl) {
-    const summary = new import_obsidian33.Setting(containerEl).setName(this.describeRibbonCount()).setDesc(TEXTS3.ribbonIntro);
-    this.ribbonCountEl = summary.nameEl;
-    let currentGroup = "";
-    for (const command of this.ctx.commands.list()) {
-      if (command.spec.group !== currentGroup) {
-        currentGroup = command.spec.group;
-        containerEl.createDiv({ cls: "ziminos-ribbon-group", text: currentGroup });
-      }
-      this.renderRibbonRow(containerEl, command.spec);
-    }
-  }
-  /** 只改那一个数字，不重建页面——重建会把滚动条弹回顶部 */
-  refreshRibbonCount() {
-    if (this.ribbonCountEl) this.ribbonCountEl.setText(this.describeRibbonCount());
-  }
-  /**
-   * 「已摆出 7 / 30 条」。给的是一个量级感：勾多了那条边栏会变成谁也不看的图标柱。
-   * 总数现算自花名册，不写死——这一页不认识任何一条具体命令，也就不该认识它们有几条。
-   */
-  describeRibbonCount() {
-    const total = this.ctx.commands.list().length;
-    return TEXTS3.ribbonCountPrefix + this.ctx.settings.ribbonCommands.length + TEXTS3.ribbonCountSeparator + total + TEXTS3.ribbonCountSuffix;
-  }
-  /** 一行：图标 + 命令名 + 开关。图标带着它的分组功能色，就是它在边栏上的样子，勾之前先看见 */
-  renderRibbonRow(containerEl, spec) {
-    const { id, icon, name } = spec;
-    const label = createFragment((frag) => {
-      const iconEl = frag.createSpan({ cls: "ziminos-ribbon-icon" });
-      (0, import_obsidian33.setIcon)(iconEl, icon);
-      iconEl.style.color = GROUP_COLORS[spec.group];
-      frag.createSpan({ text: name });
-    });
-    new import_obsidian33.Setting(containerEl).setName(label).setClass("ziminos-ribbon-row").addToggle((toggle) => {
-      toggle.setValue(this.ctx.settings.ribbonCommands.includes(id)).onChange(async (value) => {
-        this.ctx.settings.ribbonCommands = this.nextRibbonCommands(id, value);
-        await this.ctx.saveSettings();
-        this.actions.syncRibbon();
-        this.refreshRibbonCount();
-      });
-    });
-  }
-  /**
-   * 算出勾选之后的新清单。
-   *
-   * 一律照花名册重排一遍而不是往旧数组里增删：其一，边栏顺序因此永远等于命令的注册顺序，
-   * 与用户先勾哪个无关；其二，data.json 里若混进了不认识的 id（换过版本、手改过文件），
-   * 第一次勾选就顺手扫掉，不会留一条永远没人认领的记录。
-   * 返回的是新数组，绝不原地改——ribbonCommands 在用户没调过时与 DEFAULT_SETTINGS 共用引用。
-   */
-  nextRibbonCommands(id, enabled) {
-    const chosen = new Set(this.ctx.settings.ribbonCommands);
-    if (enabled) chosen.add(id);
-    else chosen.delete(id);
-    return this.ctx.commands.list().map((command) => command.spec.id).filter((candidate) => chosen.has(candidate));
-  }
 };
 
 // src/main.ts
-var ZiminosPlugin = class extends import_obsidian34.Plugin {
+var ZiminosPlugin = class extends import_obsidian41.Plugin {
   constructor() {
     super(...arguments);
     /**
@@ -20564,6 +21600,17 @@ var ZiminosPlugin = class extends import_obsidian34.Plugin {
     registerClientCommands(ctx, (seed) => applySeed(ctx, seed));
     registerFormatter(ctx);
     const syncAppearanceSwitch = registerAppearanceSwitch(ctx);
+    registerPasteLink(ctx);
+    registerCursorMemory(ctx);
+    const syncFolderCount = registerFolderCount(ctx);
+    const syncRecentFiles = registerRecentFiles(ctx);
+    const syncFilePath = registerFilePath(ctx);
+    const syncExplorer = () => {
+      syncFolderCount();
+      syncRecentFiles();
+      syncFilePath();
+    };
+    registerLegacyDock(ctx);
     const syncRibbon = registerRibbon(ctx);
     registerViewCodeBlock(ctx, [
       ...reviewThemeViews,
@@ -20584,6 +21631,7 @@ var ZiminosPlugin = class extends import_obsidian34.Plugin {
         connectWeread: () => loginWeread(ctx),
         syncAppearanceSwitch,
         syncRibbon,
+        syncExplorer,
         // 设置页的「关于作者」区与导航页尾的视图块画同一张名片，实现只有 about 一份
         renderAbout: renderAboutPanel
       })
