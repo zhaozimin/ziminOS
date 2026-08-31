@@ -31,7 +31,6 @@ const TEXTS = {
     /** 视图可能在热重载时早于自有图标注册，标签页用 Obsidian 内建图标最稳（与日历同因） */
     icon: 'history',
     empty: '还没有记录。打开任意一篇笔记，它就会出现在这里。',
-    rootLabel: '库根目录',
 } as const;
 
 /** 落盘防抖（毫秒）。理由与光标记忆同一条：翻一篇写一次盘没必要，只在退出时写又会丢 */
@@ -299,21 +298,19 @@ class RecentFilesView extends ItemView {
     }
 
     /**
-     * 一行：文件名一行，它在哪个文件夹另起一行。
+     * 一行一篇，只有笔记名。
      *
-     * 两行而不是一行「目录/文件名」，是因为侧栏窄：挤成一行时最先被省略号吃掉的
-     * 恰好是文件名的尾巴，而那正是用来认它的那几个字。
+     * 曾经在名字下面另起一行写它在哪个文件夹，v0.17.0 由用户明令去掉——
+     * 判据是这张清单该长得**与文件树一致**：文件树里一行就是一个名字，
+     * 这里多出一行灰字，它就从「同一棵树的另一种排法」变成了另一种控件，
+     * 而学员每认一行都要多读一行不需要的字。侧栏本来就窄，省下来的是行数也是注意力。
+     * 完整路径没有丢，只是搬进了悬停提示——两篇同名笔记要分辨时问一句就有，
+     * 平时不占屏幕。这也是「尽可能不显示路径」与「必须能分辨」唯一同时成立的位置。
      * 点一下用 openLinkText 打开——它认路径也认别名，与库里所有双链走同一条解析。
      */
     private renderRow(list: HTMLElement, file: TFile): void {
-        const row = list.createDiv({ cls: 'ziminos-recent-row' });
-        const folder = file.parent?.path ?? '';
+        const row = list.createDiv({ cls: 'ziminos-recent-row', text: file.basename });
 
-        row.createDiv({ cls: 'ziminos-recent-name', text: file.basename });
-        row.createDiv({
-            cls: 'ziminos-recent-folder',
-            text: !folder || folder === '/' ? TEXTS.rootLabel : folder,
-        });
         setTooltip(row, file.path, { placement: 'top' });
 
         row.addEventListener('click', () => {

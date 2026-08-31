@@ -7,9 +7,10 @@
  *          core/markdownStyle 的 FORMAT_RULES、core/types 的 ZiminosContext
  * [OUTPUT]: 对外提供 PanelRenderer/PanelHost 两个契约与 SettingsPanels 一个类，
  *           后者交出 render 一张 Record<TabId, PanelRenderer> 表
- * [POS]: 设置页九张页**各自的控件**。隔壁 settings.ts 是骨架：标签栏怎么画、
+ * [POS]: 设置页八张页**各自的控件**。隔壁 settings.ts 是骨架：标签栏怎么画、
  *        一页分哪四段、开关与文本框长什么样、折叠区怎么收；这里是每一页在那副骨架里
- *        塞进去的东西——开荒的那颗按钮、项目页的读书一段、边栏那三十五行、文件页的三段。
+ *        塞进去的东西——开荒的那颗按钮、项目页的读书一段、编辑页的排版一段、
+ *        边栏那三十五行、文件页的三段。
  *        v0.17.0 从 settings.ts 分出来，判据与 v0.14.0 分出 settingsModel.ts 时同一条：
  *        变更理由不同。加一个设置项、给一页多一段，动的是这个文件；
  *        改标签栏样式、改滚动行为、改一页的四段先后，动的是那个文件。
@@ -106,6 +107,8 @@ export class SettingsPanels {
      *
      * 用 Record<TabId, …> 而不是可选查表：加一张标签页却忘了写它的渲染，
      * 在这里是一个编译错误，而不是一张点进去空空如也的页。
+     * 反过来也成立：v0.17.0 把「排版」并进「编辑」时，只需从 TabId 里删掉一个取值，
+     * 这张表漏删的那一行立刻报编译错，不会留下一个再也翻不到的渲染函数。
      */
     readonly render: Readonly<Record<TabId, PanelRenderer>>;
 
@@ -124,7 +127,6 @@ export class SettingsPanels {
             inspiration: (el) => this.renderInspirationPanel(el),
             review: FIELDS_ONLY,
             contacts: FIELDS_ONLY,
-            format: (el) => this.renderFormatPanel(el),
             editing: (el) => this.renderEditingPanel(el),
             explorer: (el) => this.renderExplorerPanel(el),
             ribbon: (el) => this.renderRibbonPanel(el),
@@ -316,17 +318,21 @@ export class SettingsPanels {
     }
 
     // ============================================================
-    // 四、排版页：一个自动开关，加九条规则
+    // 四、排版段：编辑页的后半截，一个自动开关加九条规则
     // ============================================================
 
     /**
-     * 排版页：先决定「要不要替我按」，再决定「按下去做哪几件事」。
+     * 排版：先决定「要不要替我按」，再决定「按下去做哪几件事」。
      *
      * 两者刻意不合成一个开关：自动整理关掉之后，命令仍然照这九条勾选执行——
      * 规则回答的是「标准写法是什么」，自动回答的是「谁来按」，把它们绑在一起，
      * 就没法表达「我自己按，但按下去要全套」这个再正常不过的用法。
+     *
+     * v0.17.0 起它不再是一整页，而是「编辑」页的后半截：排版与粘贴、光标发生在
+     * 同一个时刻（都在你敲字的那会儿），单列成页会逼学员先分清「整理格式算不算编辑」
+     * 才知道该翻哪一页。前面那道小标题由 renderEditingPanel 落下。
      */
-    private renderFormatPanel(containerEl: HTMLElement): void {
+    private renderFormatSection(containerEl: HTMLElement): void {
         this.host.renderToggle(
             containerEl,
             'autoFormat',
@@ -606,14 +612,21 @@ export class SettingsPanels {
     }
 
     // ============================================================
-    // 八、编辑页：两个开关，各管一件互不相干的事
+    // 八、编辑页：打字时发生的三件事（粘贴、光标，加后半截的排版）
     // ============================================================
 
     /**
-     * 编辑页：粘贴与光标。
+     * 编辑页：你在编辑器里敲字时发生的全部事情。
      *
-     * 两项都不需要叫任何人重画——监听与记忆每次触发都现读设置对象，天然看得见新值。
-     * 这一页因此是九张页里唯一「改完什么都不用同步」的一张，
+     * 三件事同住一页是用户在 v0.17.0 明令的，判据比前几处并页都直白——
+     * **它们发生在同一个时刻**：粘贴变成链接、光标记住位置、走开之后这一篇
+     * 被整理成标准写法。排版单列成页时，学员得先分清「整理格式算不算编辑」
+     * 才知道该翻哪一页，而那个问题本身就不该存在。
+     *
+     * 页内的先后是「立刻发生的」在前、「走开之后发生的」在后：
+     * 粘贴与光标是你按下键的那一瞬间，排版是你离开这一篇之后。
+     * 三项都不需要叫任何人重画——监听与记忆每次触发都现读设置对象，天然看得见新值；
+     * 这一页因此是八张页里唯一「改完什么都不用同步」的一张，
      * 那正好说明它管的不是屏幕上的东西，而是行为。
      */
     private renderEditingPanel(containerEl: HTMLElement): void {
@@ -629,6 +642,13 @@ export class SettingsPanels {
             TEXTS.rememberCursorName,
             TEXTS.rememberCursorDesc,
         );
+
+        new Setting(containerEl)
+            .setName(TEXTS.formatHeading)
+            .setDesc(TEXTS.formatIntro)
+            .setHeading();
+
+        this.renderFormatSection(containerEl);
     }
 
     /** 防御手改 data.json 产生的未知口径，与灵感插入位置同一姿态、同一回落策略 */

@@ -4552,8 +4552,7 @@ var TEXTS4 = {
   title: "\u6700\u8FD1\u6587\u4EF6",
   /** 视图可能在热重载时早于自有图标注册，标签页用 Obsidian 内建图标最稳（与日历同因） */
   icon: "history",
-  empty: "\u8FD8\u6CA1\u6709\u8BB0\u5F55\u3002\u6253\u5F00\u4EFB\u610F\u4E00\u7BC7\u7B14\u8BB0\uFF0C\u5B83\u5C31\u4F1A\u51FA\u73B0\u5728\u8FD9\u91CC\u3002",
-  rootLabel: "\u5E93\u6839\u76EE\u5F55"
+  empty: "\u8FD8\u6CA1\u6709\u8BB0\u5F55\u3002\u6253\u5F00\u4EFB\u610F\u4E00\u7BC7\u7B14\u8BB0\uFF0C\u5B83\u5C31\u4F1A\u51FA\u73B0\u5728\u8FD9\u91CC\u3002"
 };
 var PERSIST_DEBOUNCE_MS2 = 1e3;
 function registerRecentFiles(ctx) {
@@ -4719,21 +4718,18 @@ var RecentFilesView = class extends import_obsidian19.ItemView {
     for (const file of files) this.renderRow(list, file);
   }
   /**
-   * 一行：文件名一行，它在哪个文件夹另起一行。
+   * 一行一篇，只有笔记名。
    *
-   * 两行而不是一行「目录/文件名」，是因为侧栏窄：挤成一行时最先被省略号吃掉的
-   * 恰好是文件名的尾巴，而那正是用来认它的那几个字。
+   * 曾经在名字下面另起一行写它在哪个文件夹，v0.17.0 由用户明令去掉——
+   * 判据是这张清单该长得**与文件树一致**：文件树里一行就是一个名字，
+   * 这里多出一行灰字，它就从「同一棵树的另一种排法」变成了另一种控件，
+   * 而学员每认一行都要多读一行不需要的字。侧栏本来就窄，省下来的是行数也是注意力。
+   * 完整路径没有丢，只是搬进了悬停提示——两篇同名笔记要分辨时问一句就有，
+   * 平时不占屏幕。这也是「尽可能不显示路径」与「必须能分辨」唯一同时成立的位置。
    * 点一下用 openLinkText 打开——它认路径也认别名，与库里所有双链走同一条解析。
    */
   renderRow(list, file) {
-    var _a, _b;
-    const row = list.createDiv({ cls: "ziminos-recent-row" });
-    const folder = (_b = (_a = file.parent) == null ? void 0 : _a.path) != null ? _b : "";
-    row.createDiv({ cls: "ziminos-recent-name", text: file.basename });
-    row.createDiv({
-      cls: "ziminos-recent-folder",
-      text: !folder || folder === "/" ? TEXTS4.rootLabel : folder
-    });
+    const row = list.createDiv({ cls: "ziminos-recent-row", text: file.basename });
     (0, import_obsidian19.setTooltip)(row, file.path, { placement: "top" });
     row.addEventListener("click", () => {
       void this.ctx.app.workspace.openLinkText(file.path, "", false);
@@ -20878,18 +20874,11 @@ var TABS = [
     status: "\u8FD0\u884C\u4E2D \xB7 \u65B0\u5EFA\u4EBA\u8109\u3001\u8BB0\u4EBA\u60C5\uFF0C\u6863\u6848\u4E0E MOC \u5171\u516B\u4E2A\u89C6\u56FE\uFF1B\u5BA2\u6237\u6309\u9700\u542F\u7528\uFF0C\u8FD0\u884C\u300C\u521D\u59CB\u5316\u5BA2\u6237\u6A21\u5757\u300D\u540E\u957F\u51FA MOC \u4E0E\u53E6\u5916\u516B\u4E2A\u89C6\u56FE"
   },
   {
-    id: "format",
-    label: "\u6392\u7248",
-    icon: COMMAND_ICONS.format,
-    module: "\u6392\u7248 v1",
-    status: "\u8FD0\u884C\u4E2D \xB7 \u4E5D\u6761\u6807\u51C6 Markdown \u5199\u6CD5\uFF0C\u6539\u5B8C\u8D70\u5F00\u5C31\u66FF\u4F60\u6574\u7406"
-  },
-  {
     id: "editing",
     label: "\u7F16\u8F91",
     icon: COMMAND_ICONS.editing,
-    module: "\u7F16\u8F91 v1",
-    status: "\u8FD0\u884C\u4E2D \xB7 \u9009\u4E2D\u6587\u5B57\u7C98\u4E00\u6761\u7F51\u5740\u5C31\u6210\u5916\u94FE\uFF1B\u6BCF\u7BC7\u7B14\u8BB0\u8BB0\u4F4F\u4E0A\u6B21\u7684\u5149\u6807\u4F4D\u7F6E"
+    module: "\u7F16\u8F91\u4E0E\u6392\u7248 v1",
+    status: "\u8FD0\u884C\u4E2D \xB7 \u9009\u4E2D\u6587\u5B57\u7C98\u4E00\u6761\u7F51\u5740\u5C31\u6210\u5916\u94FE\u3001\u6BCF\u7BC7\u7B14\u8BB0\u8BB0\u4F4F\u4E0A\u6B21\u7684\u5149\u6807\u4F4D\u7F6E\uFF0C\u52A0\u4E5D\u6761\u6807\u51C6 Markdown \u5199\u6CD5\uFF08\u6539\u5B8C\u8D70\u5F00\u5C31\u66FF\u4F60\u6574\u7406\uFF09"
   },
   {
     id: "explorer",
@@ -20934,6 +20923,8 @@ var TEXTS6 = {
   ribbonCountSuffix: " \u6761",
   autoFormatName: "\u6539\u5B8C\u8D70\u5F00\u81EA\u52A8\u6574\u7406",
   autoFormatDesc: "\u79BB\u5F00\u4E00\u7BC7\u521A\u6539\u8FC7\u7684\u7B14\u8BB0\u65F6\uFF0C\u6309\u4E0B\u9762\u52FE\u9009\u7684\u89C4\u5219\u6574\u7406\u5B83\u4E00\u6B21\uFF1B\u63D2\u4EF6\u81EA\u5DF1\u5F80\u7B14\u8BB0\u91CC\u5199\u8FC7\u4E1C\u897F\u4E4B\u540E\u540C\u6837\u4F1A\u6574\u7406\u3002\u5B83\u523B\u610F\u4E0D\u52A8\u4F60\u6B63\u5F00\u7740\u7684\u90A3\u4E00\u7BC7\u2014\u2014\u4E2D\u6587\u8F93\u5165\u6CD5\u5728\u5408\u6210\u4E2D\u9014\u88AB\u5916\u90E8\u6539\u5199\u4F1A\u541E\u5B57\uFF0C\u800C\u4E24\u79D2\u7684\u505C\u987F\u5728\u659F\u914C\u4E00\u53E5\u8BDD\u65F6\u592A\u5E38\u89C1\u3002\u60F3\u5F53\u573A\u6574\u7406\uFF0C\u7528\u547D\u4EE4\u300C\u6574\u7406\u5F53\u524D\u7B14\u8BB0\u683C\u5F0F\u300D\u3002",
+  formatHeading: "\u6392\u7248",
+  formatIntro: "\u6392\u7248\u4E0E\u4E0A\u9762\u4E24\u9879\u540C\u4F4F\u4E00\u9875\uFF0C\u56E0\u4E3A\u5B83\u4EEC\u53D1\u751F\u5728\u540C\u4E00\u4E2A\u65F6\u523B\uFF1A\u4F60\u5728\u7F16\u8F91\u5668\u91CC\u6572\u5B57\uFF0C\u7C98\u8D34\u53D8\u6210\u94FE\u63A5\u3001\u5149\u6807\u8BB0\u4F4F\u4F4D\u7F6E\u3001\u8D70\u5F00\u4E4B\u540E\u8FD9\u4E00\u7BC7\u88AB\u6574\u7406\u6210\u6807\u51C6\u5199\u6CD5\u3002\u4E0B\u9762\u5148\u51B3\u5B9A\u300C\u8981\u4E0D\u8981\u66FF\u6211\u6309\u300D\uFF0C\u518D\u51B3\u5B9A\u300C\u6309\u4E0B\u53BB\u505A\u54EA\u51E0\u4EF6\u4E8B\u300D\u2014\u2014\u4E24\u8005\u4E0D\u5408\u6210\u4E00\u4E2A\u5F00\u5173\uFF1A\u81EA\u52A8\u6574\u7406\u5173\u6389\u4E4B\u540E\uFF0C\u547D\u4EE4\u300C\u6574\u7406\u5F53\u524D\u7B14\u8BB0\u683C\u5F0F\u300D\u4ECD\u7167\u8FD9\u4E5D\u6761\u52FE\u9009\u6267\u884C\u3002",
   formatRulesHeading: "\u4E5D\u6761\u89C4\u5219",
   formatRulesIntro: "\u5173\u6389\u54EA\u4E00\u6761\uFF0C\u6574\u7406\u65F6\u5C31\u4E0D\u518D\u6267\u884C\u5B83\u3002\u547D\u4EE4\u4E0E\u81EA\u52A8\u6574\u7406\u8D70\u7684\u662F\u540C\u4E00\u4EFD\u52FE\u9009\u3002",
   appearanceSwitchName: "\u72B6\u6001\u680F\u5916\u89C2\u5F00\u5173",
@@ -21019,7 +21010,6 @@ var SettingsPanels = class {
       inspiration: (el) => this.renderInspirationPanel(el),
       review: FIELDS_ONLY,
       contacts: FIELDS_ONLY,
-      format: (el) => this.renderFormatPanel(el),
       editing: (el) => this.renderEditingPanel(el),
       explorer: (el) => this.renderExplorerPanel(el),
       ribbon: (el) => this.renderRibbonPanel(el)
@@ -21146,16 +21136,20 @@ var SettingsPanels = class {
     return INSPIRATION_INSERT_POSITIONS.includes(candidate) ? candidate : INSPIRATION_DEFAULTS.insertPosition;
   }
   // ============================================================
-  // 四、排版页：一个自动开关，加九条规则
+  // 四、排版段：编辑页的后半截，一个自动开关加九条规则
   // ============================================================
   /**
-   * 排版页：先决定「要不要替我按」，再决定「按下去做哪几件事」。
+   * 排版：先决定「要不要替我按」，再决定「按下去做哪几件事」。
    *
    * 两者刻意不合成一个开关：自动整理关掉之后，命令仍然照这九条勾选执行——
    * 规则回答的是「标准写法是什么」，自动回答的是「谁来按」，把它们绑在一起，
    * 就没法表达「我自己按，但按下去要全套」这个再正常不过的用法。
+   *
+   * v0.17.0 起它不再是一整页，而是「编辑」页的后半截：排版与粘贴、光标发生在
+   * 同一个时刻（都在你敲字的那会儿），单列成页会逼学员先分清「整理格式算不算编辑」
+   * 才知道该翻哪一页。前面那道小标题由 renderEditingPanel 落下。
    */
-  renderFormatPanel(containerEl) {
+  renderFormatSection(containerEl) {
     this.host.renderToggle(
       containerEl,
       "autoFormat",
@@ -21347,13 +21341,20 @@ var SettingsPanels = class {
     });
   }
   // ============================================================
-  // 八、编辑页：两个开关，各管一件互不相干的事
+  // 八、编辑页：打字时发生的三件事（粘贴、光标，加后半截的排版）
   // ============================================================
   /**
-   * 编辑页：粘贴与光标。
+   * 编辑页：你在编辑器里敲字时发生的全部事情。
    *
-   * 两项都不需要叫任何人重画——监听与记忆每次触发都现读设置对象，天然看得见新值。
-   * 这一页因此是九张页里唯一「改完什么都不用同步」的一张，
+   * 三件事同住一页是用户在 v0.17.0 明令的，判据比前几处并页都直白——
+   * **它们发生在同一个时刻**：粘贴变成链接、光标记住位置、走开之后这一篇
+   * 被整理成标准写法。排版单列成页时，学员得先分清「整理格式算不算编辑」
+   * 才知道该翻哪一页，而那个问题本身就不该存在。
+   *
+   * 页内的先后是「立刻发生的」在前、「走开之后发生的」在后：
+   * 粘贴与光标是你按下键的那一瞬间，排版是你离开这一篇之后。
+   * 三项都不需要叫任何人重画——监听与记忆每次触发都现读设置对象，天然看得见新值；
+   * 这一页因此是八张页里唯一「改完什么都不用同步」的一张，
    * 那正好说明它管的不是屏幕上的东西，而是行为。
    */
   renderEditingPanel(containerEl) {
@@ -21369,6 +21370,8 @@ var SettingsPanels = class {
       TEXTS6.rememberCursorName,
       TEXTS6.rememberCursorDesc
     );
+    new import_obsidian39.Setting(containerEl).setName(TEXTS6.formatHeading).setDesc(TEXTS6.formatIntro).setHeading();
+    this.renderFormatSection(containerEl);
   }
   /** 防御手改 data.json 产生的未知口径，与灵感插入位置同一姿态、同一回落策略 */
   normalizeFolderCountTarget(value) {

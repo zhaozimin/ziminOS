@@ -182,7 +182,8 @@ export default class ZiminosPlugin extends Plugin {
 
         // 排版整理横跨全库、不属于任何一套笔记，它注册的是一条命令与一个编辑监听，一篇笔记都不生产。
         // 位置排在这里而不是更早：注册顺序就是左侧边栏的分组顺序，它该落在客户与外观之间，
-        // 与设置页那九张标签的先后对齐——两处只要有一处自作主张，学员就会觉得是两套东西
+        // 与设置页那八张标签的先后对齐——两处只要有一处自作主张，学员就会觉得是两套东西。
+        // v0.17.0 起排版是「编辑」页的后半截（同一个时刻发生的事），装配顺序不变
         registerFormatter(ctx);
 
         // 外观开关在状态栏常驻一个按钮，而设置页只会改设置对象、没法让已经画出来的按钮消失，
@@ -206,7 +207,7 @@ export default class ZiminosPlugin extends Plugin {
         // **一个**同步函数：设置页不必知道那个模块内部由几个文件把这三样画出来。
         // 装配位置从「边栏之后」挪到了这里（v0.17.0）——最近文件与复制路径是两条命令，
         // 而边栏是照着花名册摆图标的，摆的时候花名册必须已经收齐。
-        // 这也让装配顺序重新等于设置页那九张标签的先后：排版 → 编辑 → 文件 → 边栏
+        // 这也让装配顺序重新等于设置页那八张标签的先后：编辑（含排版）→ 文件 → 边栏
         const syncFolderCount = registerFolderCount(ctx);
         const syncRecentFiles = registerRecentFiles(ctx);
         const syncFilePath = registerFilePath(ctx);
