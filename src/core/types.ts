@@ -1,9 +1,9 @@
 /**
- * [INPUT]: 依赖 obsidian 的 App/Plugin 类型，依赖 ./constants 的 PARA、时间与灵感收集默认值，
- *          依赖 ./commands 的 DEFAULT_RIBBON_COMMANDS 与 CommandRegistry 类型，
- *          依赖 ./markdownStyle 的 DEFAULT_FORMAT_RULES，依赖 ./guard 的 SelfWriteGuard 类型
- * [OUTPUT]: 对外提供 ZiminosSettings 设置契约、DEFAULT_SETTINGS 默认值、ZiminosContext 运行时上下文，
- *           以及开荒贡献契约 VaultSeed/VaultSeedNote
+ * [INPUT]: 依赖 obsidian 的 App/Plugin 类型，依赖 ./constants 的 PARA、时间、灵感与读书设置合法集合，
+ *          依赖 ./commands 的 DEFAULT_RIBBON_COMMANDS/normalizeRibbonCommands 与 CommandRegistry 类型，
+ *          依赖 ./markdownStyle 的 DEFAULT_FORMAT_RULES/normalizeFormatRules，依赖 ./guard 的 SelfWriteGuard 类型
+ * [OUTPUT]: 对外提供 ZiminosSettings 设置契约、DEFAULT_SETTINGS 默认值、normalizeSettings 持久化边界验形、
+ *           ZiminosContext 运行时上下文，以及开荒贡献契约 VaultSeed/VaultSeedNote
  * [POS]: core 的契约层，定义插件与各功能模块之间唯一的传参形态。
  *        功能模块一律只接收 ZiminosContext，不直接持有 Plugin 实例细节，也不各自读写设置文件——
  *        这样 main.ts 是唯一装配点，模块之间彼此不可见，可以并行开发、独立替换
@@ -11,16 +11,18 @@
  */
 
 import type { App, Plugin } from 'obsidian';
-import { DEFAULT_RIBBON_COMMANDS } from './commands';
+import { DEFAULT_RIBBON_COMMANDS, normalizeRibbonCommands } from './commands';
 import type { CommandRegistry } from './commands';
-import { DEFAULT_FORMAT_RULES } from './markdownStyle';
+import { DEFAULT_FORMAT_RULES, normalizeFormatRules } from './markdownStyle';
 import {
     BOOK_TAG_DEFAULTS,
+    BOOK_TAG_COUNTS,
     CLIENT_FOLDER,
     CONTACT_FOLDER,
     DEFAULT_DATETIME_FORMAT,
     FOLDERS,
     INSPIRATION_DEFAULTS,
+    INSPIRATION_INSERT_POSITIONS,
 } from './constants';
 import type { InspirationInsertPosition } from './constants';
 import type { SelfWriteGuard } from './guard';
@@ -145,6 +147,70 @@ export const DEFAULT_SETTINGS: ZiminosSettings = {
     wereadCookie: '',
     initializedAt: '',
 };
+
+/** 持久化 JSON 只在这里被当作未知输入；进入运行时上下文之后每个字段都已经是契约形态 */
+export function normalizeSettings(input: unknown): ZiminosSettings {
+    const stored = isRecord(input) ? input : {};
+    const stringValue = <K extends keyof ZiminosSettings>(key: K): string =>
+        typeof stored[key] === 'string'
+            ? stored[key]
+            : String(DEFAULT_SETTINGS[key]);
+    const booleanValue = <K extends keyof ZiminosSettings>(key: K): boolean =>
+        typeof stored[key] === 'boolean'
+            ? stored[key]
+            : Boolean(DEFAULT_SETTINGS[key]);
+    const insertPosition = isInspirationInsertPosition(stored.inspirationInsertPosition)
+        ? stored.inspirationInsertPosition
+        : DEFAULT_SETTINGS.inspirationInsertPosition;
+    const bookTagCount = isBookTagCount(stored.bookTagCount)
+        ? stored.bookTagCount
+        : DEFAULT_SETTINGS.bookTagCount;
+
+    return {
+        autoCardInit: booleanValue('autoCardInit'),
+        autoUpdated: booleanValue('autoUpdated'),
+        projectFolder: stringValue('projectFolder'),
+        areaFolder: stringValue('areaFolder'),
+        archiveFolder: stringValue('archiveFolder'),
+        dateTimeFormat: stringValue('dateTimeFormat'),
+        inspirationFolder: stringValue('inspirationFolder'),
+        inspirationFileName: stringValue('inspirationFileName'),
+        inspirationHeading: stringValue('inspirationHeading'),
+        inspirationInsertPosition: insertPosition,
+        inspirationFormat: stringValue('inspirationFormat'),
+        diaryFolder: stringValue('diaryFolder'),
+        contactFolder: stringValue('contactFolder'),
+        clientFolder: stringValue('clientFolder'),
+        clientSources: stringValue('clientSources'),
+        clientProducts: stringValue('clientProducts'),
+        showAppearanceSwitch: booleanValue('showAppearanceSwitch'),
+        ribbonCommands: normalizeRibbonCommands(stored.ribbonCommands),
+        autoFormat: booleanValue('autoFormat'),
+        formatRules: normalizeFormatRules(stored.formatRules),
+        bookTagPrefix: stringValue('bookTagPrefix'),
+        bookTagCount,
+        wereadCookie: stringValue('wereadCookie'),
+        initializedAt: stringValue('initializedAt'),
+    };
+}
+
+/** JSON 对象守卫；数组与 null 都不是设置记录 */
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** 灵感插入位置只接受界面能够产生的闭合集合 */
+function isInspirationInsertPosition(value: unknown): value is InspirationInsertPosition {
+    return (
+        typeof value === 'string' &&
+        INSPIRATION_INSERT_POSITIONS.some((position) => position === value)
+    );
+}
+
+/** 读书标签条数只接受设置页列出的数值，拒绝 NaN 与任意手改数字 */
+function isBookTagCount(value: unknown): value is number {
+    return typeof value === 'number' && BOOK_TAG_COUNTS.includes(value);
+}
 
 /**
  * 一份笔记的开荒诉求：路径 + 正文。

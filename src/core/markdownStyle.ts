@@ -1,7 +1,7 @@
 /**
- * [INPUT]: 零 import。它只认字符串，不认识 Obsidian、不认识业务、也不认识设置对象
+ * [INPUT]: 依赖 ./lineEndings 的 lineEndingOf；其余只认字符串，不认识 Obsidian 与业务
  * [OUTPUT]: 对外提供规则目录 FORMAT_RULES 与它的键 FormatRuleKey、默认启用清单 DEFAULT_FORMAT_RULES、
- *           读取侧兜底 normalizeFormatRules，以及唯一的入口 formatMarkdown
+ *           读取侧兜底 normalizeFormatRules，以及保留原换行风格的唯一入口 formatMarkdown
  * [POS]: core 的 Markdown 排版层，与 markdown.ts 分工明确：那边动的是「往哪一行插什么」，
  *        这边动的是「这一篇写得规不规范」。九条规则合成一趟纯函数变换，
  *        同输入同输出、且**幂等**——formatMarkdown(formatMarkdown(x)) === formatMarkdown(x)。
@@ -12,6 +12,8 @@
  *        而断链既不报错也没人当天发现
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
+
+import { lineEndingOf } from './lineEndings';
 
 // ============================================================
 // 规则目录
@@ -285,7 +287,9 @@ export function formatMarkdown(content: string, enabled: readonly string[]): str
 
     if (on.size === 0) return content;
 
-    const { frontmatter, body } = splitFrontmatter(content);
+    const lineEnding = lineEndingOf(content);
+    const normalized = content.replace(/\r\n|\r/g, '\n');
+    const { frontmatter, body } = splitFrontmatter(normalized);
     const lines = body.split('\n');
     const kinds = classifyLines(lines);
     const out: string[] = [];
@@ -318,7 +322,9 @@ export function formatMarkdown(content: string, enabled: readonly string[]): str
         previousKind = kind;
     }
 
-    return assemble(frontmatter, out.join('\n'), on);
+    const formatted = assemble(frontmatter, out.join('\n'), on);
+
+    return lineEnding === '\n' ? formatted : formatted.replace(/\n/g, lineEnding);
 }
 
 /**

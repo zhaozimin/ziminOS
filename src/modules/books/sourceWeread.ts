@@ -2,7 +2,8 @@
  * [INPUT]: 依赖 obsidian 的 Platform/Notice/requestUrl（后者是公开 API，可自定义请求头与携带 Cookie）；
  *          运行时按需 require('@electron/remote') 取 BrowserWindow（登录窗口，仅桌面端）；
  *          依赖 core/types 的 ZiminosContext、parsers 的 ParsedHighlight
- * [OUTPUT]: 对外提供 wereadAvailable、loginWeread、listWereadBooks、readWereadBookHighlights
+ * [OUTPUT]: 对外提供 wereadAvailable、loginWeread/disconnectWeread/disposeWereadSession 登录态生命周期、
+ *           listWereadBooks、readWereadBookHighlights
  * [POS]: 划线来源之一：微信读书。三个来源里唯一需要登录的一个，也因此是唯一会失效的一个。
  *        它与另两个来源的分工写在这里：苹果图书与 Kindle 的数据在本机，读它们是确定的；
  *        微信读书的数据在腾讯的服务器上，只能带着登录态去要。
@@ -23,6 +24,8 @@
  *        断开时要记得一并清掉的凭据——全插件的持久凭据仍然只有 Cookie 一份。
  *        章节名有两个来源：划线接口自带的章节表，以及想法条目自带的 chapterName；
  *        后者不是冗余——一本书可能一条纯划线都没有，那时章节表是空的
+ *        部分取数也必须诚实：想法接口失败时可以保留已取回的划线，
+ *        但结果必须带 note，不得把「只成功一半」伪装成完整同步
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -68,6 +71,12 @@ const SKILL_VERSION = '1.0.3';
 /** 登录成功的判据：这两个 Cookie 同时在，就是登录态 */
 const REQUIRED_COOKIES = ['wr_vid', 'wr_skey'];
 
+/** 扫码窗口最多存活两分钟；超时就是一次正常取消，不让轮询永久悬挂 */
+const LOGIN_TIMEOUT_MS = 120000;
+
+/** 当前扫码窗口的取消句柄；全模块同时只允许存在一个登录会话 */
+let activeLoginCancel: (() => void) | null = null;
+
 // ============================================================
 // 登录
 // ============================================================
@@ -92,6 +101,9 @@ export async function loginWeread(ctx: ZiminosContext): Promise<boolean> {
 
     if (!BrowserWindow) return false;
 
+    // 重复点击连接时先收掉上一扇窗口，避免两个轮询争着覆盖同一份 Cookie
+    activeLoginCancel?.();
+
     return new Promise<boolean>((resolve) => {
         const win = new BrowserWindow({
             width: 480,
@@ -102,11 +114,16 @@ export async function loginWeread(ctx: ZiminosContext): Promise<boolean> {
         });
 
         let settled = false;
+        let timer: number | null = null;
+        let timeout: number | null = null;
+        const cancel = (): void => finish(false);
         const finish = (ok: boolean): void => {
             if (settled) return;
 
             settled = true;
-            window.clearInterval(timer);
+            if (timer !== null) window.clearInterval(timer);
+            if (timeout !== null) window.clearTimeout(timeout);
+            if (activeLoginCancel === cancel) activeLoginCancel = null;
 
             try {
                 if (!win.isDestroyed()) win.close();
@@ -117,13 +134,15 @@ export async function loginWeread(ctx: ZiminosContext): Promise<boolean> {
             resolve(ok);
         };
 
+        activeLoginCancel = cancel;
+
         /**
          * 轮询会话里的 Cookie 而不是监听某个跳转地址：
          * 微信读书登录成功后的落地页改过不止一次，而「Cookie 里有没有 wr_skey」
          * 是这件事本身，不随页面结构变。这个轮询只活在登录窗口开着的那几十秒里，
          * 与「插件内无后台轮询」那条纪律说的不是一回事——它有明确的起止与用户在场。
          */
-        const timer = window.setInterval(() => {
+        timer = window.setInterval(() => {
             void (async () => {
                 try {
                     if (win.isDestroyed()) {
@@ -135,13 +154,21 @@ export async function loginWeread(ctx: ZiminosContext): Promise<boolean> {
                     const cookies = await win.webContents.session.cookies.get({
                         domain: '.weread.qq.com',
                     });
+
+                    // 等 Cookie 的间隙里窗口可能已被关闭或被新会话取代。
+                    // 旧请求不再有权把凭据写回设置。
+                    if (settled || activeLoginCancel !== cancel) return;
+
                     const names = cookies.map((cookie: { name: string }) => cookie.name);
 
                     if (!REQUIRED_COOKIES.every((name) => names.includes(name))) return;
 
-                    ctx.settings.wereadCookie = cookies
+                    const cookie = cookies
                         .map((cookie: { name: string; value: string }) => `${cookie.name}=${cookie.value}`)
                         .join('; ');
+
+                    clearCachedKey();
+                    ctx.settings.wereadCookie = cookie;
                     await ctx.saveSettings();
                     finish(true);
                 } catch {
@@ -150,9 +177,25 @@ export async function loginWeread(ctx: ZiminosContext): Promise<boolean> {
             })();
         }, 1000);
 
+        timeout = window.setTimeout(() => finish(false), LOGIN_TIMEOUT_MS);
+
         win.on('closed', () => finish(false));
-        void win.loadURL(`${BASE}/#login`);
+        void win.loadURL(`${BASE}/#login`).catch(() => finish(false));
     });
+}
+
+/** 设置页断开：持久 Cookie 与内存令牌作为一个认证状态同时清掉 */
+export async function disconnectWeread(ctx: ZiminosContext): Promise<void> {
+    activeLoginCancel?.();
+    clearCachedKey();
+    ctx.settings.wereadCookie = '';
+    await ctx.saveSettings();
+}
+
+/** 插件卸载时收掉扫码窗口与全部内存凭据 */
+export function disposeWereadSession(): void {
+    activeLoginCancel?.();
+    clearCachedKey();
 }
 
 /**
@@ -254,9 +297,23 @@ const EXPIRED = '微信读书的登录已过期，重新运行「连接微信读
  * 「断开」因此仍然只需要清那一个字段。插件重载即重新换取，代价是一次 GET。
  */
 let cachedKey = '';
+let cachedCookie = '';
+
+/** 内存令牌与产生它的 Cookie 必须一起失效 */
+function clearCachedKey(): void {
+    cachedKey = '';
+    cachedCookie = '';
+}
 
 /** 用登录态换一枚取数令牌。换不到返回空串——调用方据此降级，而不是抛错中断 */
 async function apiKey(ctx: ZiminosContext): Promise<string> {
+    const cookie = ctx.settings.wereadCookie.trim();
+
+    if (cachedCookie !== cookie) {
+        cachedKey = '';
+        cachedCookie = cookie;
+    }
+
     if (cachedKey) return cachedKey;
 
     try {
@@ -295,7 +352,7 @@ async function gateway(
 
     if (response.status === 401) {
         // 令牌失效：丢掉缓存，下次调用会拿登录态重换一枚
-        cachedKey = '';
+        clearCachedKey();
         throw new Error(EXPIRED);
     }
 
@@ -371,6 +428,8 @@ export async function readWereadBookHighlights(
     }
 
     // 想法单独一趟：接口不同、失败也不该让划线跟着丢
+    let note = '';
+
     try {
         const reviews = await gateway(ctx, '/review/list/mine', key, {
             bookid: book.id,
@@ -383,9 +442,13 @@ export async function readWereadBookHighlights(
         // 但若划线也一条没有，这次失败就是全部真相，必须抛出去——
         // 否则学员得到的是「这本书没有划线」，而事实是「微读没让我们看」
         if (!highlights.length) throw error;
+
+        const message = error instanceof Error ? error.message : String(error);
+
+        note = `微信读书想法取数失败：${message || '未知错误'}；本次只同步了划线。`;
     }
 
-    return { highlights, note: '' };
+    return { highlights, note };
 }
 
 /**
