@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖同目录 sourceAppleBooks 与 sourceKindle 的探测与取数函数，
  *          以及 parsers 的 ParsedHighlight 类型
- * [OUTPUT]: 对外提供 SourceBook/SourceHit 契约、collectHighlightsFor（按书名从全部可用来源取划线）
+ * [OUTPUT]: 对外提供 SourceBook/SourceHit 契约、collectHighlightsFor（按书名从全部可用来源取划线并保留失败说明）
  *           与 availableSourceLabels（这台机器上此刻有哪些来源）
  * [POS]: 划线来源的汇流处。它存在的理由是「一步」这个目标本身：
  *        学员不该被问「你这本书的划线在哪个 App 里」——那是他刚刚做完的事，机器自己能查。
@@ -12,7 +12,8 @@
  *        其二，**书名匹配从严到宽**——先逐字，再去标点空白，最后互相包含；
  *        宁可漏一本让学员手动指，也不能把《人类简史》的划线倒进《未来简史》；
  *        其三，来源之间**不去重**——那是 mergeHighlights 的活儿，它按归一文本去重，
- *        同一句话从两个设备来也只会写进去一次
+ *        同一句话从两个设备来也只会写进去一次；任何可用来源没匹配到目标书时也返回 note，
+ *        不把漏匹配伪装成「这本书没有划线」
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -61,11 +62,23 @@ export interface SourceHit {
 export function availableSourceLabels(ctx: ZiminosContext): readonly string[] {
     const labels: string[] = [];
 
-    if (wereadAvailable(ctx)) labels.push('微信读书');
-    if (appleBooksAvailable()) labels.push('苹果图书');
-    if (kindleAvailable()) labels.push('Kindle');
+    if (probeAvailable(() => wereadAvailable(ctx))) labels.push('微信读书');
+    if (probeAvailable(appleBooksAvailable)) labels.push('苹果图书');
+    if (probeAvailable(kindleAvailable)) labels.push('Kindle');
 
     return labels;
+}
+
+/**
+ * 探测抛错不等于「来源不存在」：把它留在候选里，
+ * 后续取数层才能捕获同一个错误并向用户交代。
+ */
+function probeAvailable(probe: () => boolean): boolean {
+    try {
+        return probe();
+    } catch {
+        return true;
+    }
 }
 
 // ============================================================
@@ -98,10 +111,12 @@ export async function collectHighlightsFor(
                 if (highlights.length || note) {
                     hits.push({ label: '微信读书', title: matched.title, highlights, note });
                 }
+            } else {
+                hits.push(unmatchedHit('微信读书', names));
             }
         }
-    } catch {
-        // 登录过期或接口变了：少一个来源，另两个照常
+    } catch (error) {
+        hits.push(failedHit('微信读书', names, error));
     }
 
     try {
@@ -115,10 +130,12 @@ export async function collectHighlightsFor(
                 if (highlights.length) {
                     hits.push({ label: '苹果图书', title: matched.title, highlights });
                 }
+            } else {
+                hits.push(unmatchedHit('苹果图书', names));
             }
         }
-    } catch {
-        // 苹果图书这一支失手：少一个来源而已
+    } catch (error) {
+        hits.push(failedHit('苹果图书', names, error));
     }
 
     try {
@@ -137,13 +154,37 @@ export async function collectHighlightsFor(
                 if (highlights.length) {
                     hits.push({ label: 'Kindle', title: matched.title, highlights });
                 }
+            } else {
+                hits.push(unmatchedHit('Kindle', names));
             }
         }
-    } catch {
-        // 同上
+    } catch (error) {
+        hits.push(failedHit('Kindle', names, error));
     }
 
     return hits;
+}
+
+/** 来源失败仍然是一条结果：零划线加一句实话，调用方才能与“确实没有”分开 */
+function failedHit(label: string, names: readonly string[], error: unknown): SourceHit {
+    const message = error instanceof Error ? error.message : String(error);
+
+    return {
+        label,
+        title: names.find((name) => name.trim()) ?? '',
+        highlights: [],
+        note: `${label}取数失败：${message || '未知错误'}`,
+    };
+}
+
+/** 来源能读、书单也拿到了，但没有一本能安全认成目标书；它不等于“这本书没有划线” */
+function unmatchedHit(label: string, names: readonly string[]): SourceHit {
+    return {
+        label,
+        title: names.find((name) => name.trim()) ?? '',
+        highlights: [],
+        note: `${label}没有匹配到这本书（可能是书名或副标题不同），没有把其他书的划线混进来。`,
+    };
 }
 
 // ============================================================

@@ -252,8 +252,9 @@ export class SettingsPanels {
 
                     try {
                         if (connected) {
-                            this.ctx.settings.wereadCookie = '';
-                            await this.ctx.saveSettings();
+                            // 只抹掉 data.json 里那串 Cookie 不算断开——同一会话的内存令牌还在。
+                            // 「断开」的边界只有 books 模块自己知道，因此走注入（v0.16.0 审计结论）
+                            await this.actions.disconnectWeread();
                         } else {
                             await this.actions.connectWeread();
                         }

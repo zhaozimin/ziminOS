@@ -13,8 +13,9 @@ docs/ - 设计规格与第三方组件锁定记录；代码、交付物与规格
 fonts/ - 四款阅读字体的锁定资产 (4子目录: 文楷 GB 屏幕版＝默认正文、思源宋体 CN、朱雀仿宋、新晰黑＋)；OFL×3 + IPA×1 许可随行，安装时装进用户级字体目录，笔记库内零字节
 skill/ - SKILL.md 桌面智能体交付契约；当前工作区就是用户已命名的笔记库，源码只在外部临时目录施工
 vault/ - 笔记库成品模板；同一交付物内独立放置 ziminOS、Dataview、Outliner、Quiet Outline、Minimal、Style Settings、默认配色与自有 CSS
-vault/.obsidian/plugins/ziminos/ - 插件安装位；manifest.json 是版本号事实源，main.js 是刻意入库的构建产物（三十五枚命令图标、三枚设置页专用图标与五个品牌 logo 的 SVG 也在里面），styles.css 服务二十二个笔记内视图、中国日历与最近文件两个 ItemView、外观开关浮层、文件夹计数、状态栏当前路径、八张设置页与作者名片（手工维护，不经 esbuild）；三份状态文件（holiday-cache / recent-files / cursor-positions）由插件在运行时自建，升级一律不碰
+vault/.obsidian/plugins/ziminos/ - 插件安装位；package.json 的 version 才是版本唯一事实源，manifest.json 是构建链自动同步出来的发布镜像（回归测试里有一条专盯这对数字），main.js 是刻意入库的构建产物（三十五枚命令图标、三枚设置页专用图标与五个品牌 logo 的 SVG 也在里面），styles.css 服务二十二个笔记内视图、中国日历与最近文件两个 ItemView、外观开关浮层、文件夹计数、状态栏当前路径、八张设置页与作者名片（手工维护，不经 esbuild）；三份状态文件（holiday-cache / recent-files / cursor-positions）由插件在运行时自建，升级一律不碰
 vault/.obsidian/snippets/ - 十二个 CSS 片段，外观包的可拆装部分；十个默认启用，全部由右下角外观开关逐个开关。appearance.json 的 enabledCssSnippets 是它们开着还是关着的唯一事实源
+tests/ - 审计与回归入口；直接编译 src 事实源，覆盖数据合并、划线身份、日期、换行符、ISBN、设置验形、外观拒写、数据库选择、项目回滚、版本同构与移动端 Node 边界
 src/ - 插件源码 (2子目录: core 无业务的基础设施、命令注册台与视图引擎、modules 含 setup 开荒、projects 项目领域与容器流程、books 读书笔记与划线导入、inspiration 灵感收集、calendar 中国日历与节假日缓存、review 五级复盘、contacts 人脉与客户、appearance 外观开关、format 排版整理、editing 粘贴成链接与光标记忆、explorer 文件夹计数与最近文件与当前路径、legacy 旧版三入口、ribbon 左侧边栏命令、about 作者名片)
 </directory>
 
@@ -52,11 +53,12 @@ esbuild.config.mjs - 唯一构建出口；产物直接写入 vault 插件目录�
 .gitignore - 只忽略 node_modules 与 .DS_Store；main.js 不忽略，学员克隆即可用
 .gitattributes - 锁定 Dataview、Minimal、Style Settings 与 fonts/ 字体发布资产的原始字节，防止 Git 换行/格式化破坏 SHA-256
 docs/第三方组件.md - lunar-typescript / holiday-cn / Dataview / Minimal / Style Settings / Pikaicons / Simple Icons / 四款正文字体的版本、上游、许可与升级边界
-docs/设计规格书-V2.md - v0.4.0 起的唯一设计事实源；现追记至 v0.17.0 的七个社区功能取舍（§28：五个自己写、两个打包，含红线第二处缺口与设置页第二次分家），前两节是 v0.16.0 的文件夹计数（§27）与 v0.15.0 的中国农历日历（§26），与 V1 规格并存，交集处以它为准
+docs/设计规格书-V2.md - v0.4.0 起的唯一设计事实源；§26 中国农历日历（v0.15.0）、§27 三轮代码审计加固、§28 Gitee 公开部署源、§29 文件夹计数（v0.16.0）、§30 七个社区功能的取舍（v0.17.0：五个自己写、两个打包，含红线第二处缺口与设置页第二次分家）。§29/§30 原编 §27/§28，v0.18.0 合线时让号——两条线撞号，后到的一方改，没有任何一节被覆盖。与 V1 规格并存，交集处以它为准
+docs/插件代码审计修复报告-2026-08-18.html - 对外交付的单文件审计报告；源码与设计规格仍是事实源
 </config>
 
 <delivery>
-用户先创建并命名文件夹 A，再用桌面 Agent 打开 A；GitHub README 顶部那段「一分钟安装」是对人的入口，默认分支的 skill/SKILL.md 是 Agent 的唯一施工契约。此时 A 同时是 Agent 工作区与最终 Obsidian 笔记库。安装时不再询问名称或路径，不创建子目录，不在 A 内克隆源码；GitHub 仓库只能进入 A 外部的系统临时目录，最终把 vault/ 的内部内容直接铺到 A 根。全新安装交付锁定的 Dataview、Outliner、Quiet Outline、外观包（含十二个 CSS 片段与它们的默认启用清单）与 fonts/ 的四款字体——字体装进用户级字体目录（免管理员，不碰系统级），appearance.json 的 textFontFamily 预设文楷 GB 屏幕版，正文换字走 Obsidian 官方设置正门、插件零参与；升级只更新受管运行文件、合并必要开关，绝不覆盖用户配色、用户自己放进 snippets/ 的片段、其他插件配置（含 Outliner 与 Quiet Outline 各自的 data.json）、ziminOS 自己那三份运行时状态文件（holiday-cache / recent-files / cursor-positions）、用户自选的正文字体与用户字体目录里已存在的同名文件。禁止让用户打开仓库或仓库内的 vault/，禁止安装 Node/npm 依赖，交付后必须清理临时源码。
+用户先创建并命名文件夹 A，再用桌面 Agent 打开 A；Gitee README 顶部那段「一分钟安装」是对人的入口，默认分支的 skill/SKILL.md 是 Agent 的唯一施工契约。此时 A 同时是 Agent 工作区与最终 Obsidian 笔记库。安装时不再询问名称或路径，不创建子目录，不在 A 内克隆源码；GitHub 仓库只能进入 A 外部的系统临时目录，最终把 vault/ 的内部内容直接铺到 A 根。全新安装交付锁定的 Dataview、Outliner、Quiet Outline、外观包（含十二个 CSS 片段与它们的默认启用清单）与 fonts/ 的四款字体——字体装进用户级字体目录（免管理员，不碰系统级），appearance.json 的 textFontFamily 预设文楷 GB 屏幕版，正文换字走 Obsidian 官方设置正门、插件零参与；升级只更新受管运行文件、合并必要开关，绝不覆盖用户配色、用户自己放进 snippets/ 的片段、其他插件配置（含 Outliner 与 Quiet Outline 各自的 data.json）、ziminOS 自己那三份运行时状态文件（holiday-cache / recent-files / cursor-positions）、用户自选的正文字体与用户字体目录里已存在的同名文件。禁止让用户打开仓库或仓库内的 vault/，禁止安装 Node/npm 依赖，交付后必须清理临时源码。
 </delivery>
 
 <deviations>

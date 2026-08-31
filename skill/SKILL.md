@@ -1,6 +1,6 @@
 ---
 name: ziminos-vault-setup
-description: 在用户已经创建并命名一个文件夹、再用桌面 Agent 打开该文件夹后，根据 ziminOS GitHub 仓库把当前工作区原地搭建或升级为 Obsidian 个人知识管理笔记库。用户发送仓库地址并说「按照这个仓库搭建我的个人知识管理系统」「搭建/开荒 Obsidian 笔记库」「安装/更新 ziminOS」时使用；不询问名称或安装路径，不创建子级笔记库，不把源码仓库克隆到当前工作区。
+description: 在用户已经创建并命名一个文件夹、再用桌面 Agent 打开该文件夹后，根据 ziminOS Gitee 官方仓库把当前工作区原地搭建或升级为 Obsidian 个人知识管理笔记库。用户发送仓库地址并说「按照这个仓库搭建我的个人知识管理系统」「搭建/开荒 Obsidian 笔记库」「安装/更新 ziminOS」时使用；不询问名称或安装路径，不创建子级笔记库，不把源码仓库克隆到当前工作区。
 ---
 
 # ziminOS 当前工作区安装
@@ -44,11 +44,11 @@ vault_root="$(pwd -P)"
 
 ## 二、在工作区外取得施工源
 
-若用户只给出 GitHub 地址，把仓库浅克隆到系统临时目录。临时目录必须位于当前工作区之外：
+官方施工源固定为 `https://gitee.com/ziminzhao/zimin-os-v1.git`。无论用户给出仓库网页、文件链接还是没有给出克隆地址，都把该仓库浅克隆到系统临时目录；临时目录必须位于当前工作区之外：
 
 ```bash
 install_staging_dir="$(mktemp -d /tmp/ziminos-install.XXXXXX)"
-git clone --depth 1 "https://github.com/zhaozimin/ziminOS.git" "$install_staging_dir/repo"
+git clone --depth 1 "https://gitee.com/ziminzhao/zimin-os-v1.git" "$install_staging_dir/repo"
 ```
 
 把 `$install_staging_dir/repo` 记为施工源。禁止在 `$vault_root` 内执行 `git clone`，禁止把仓库根目录复制进 `$vault_root`。
@@ -319,7 +319,7 @@ esac
 ## 红线
 
 - 当前工作区就是最终笔记库，不另建目录。
-- 不在当前工作区克隆 GitHub 仓库。
+- 不在当前工作区克隆 Gitee 源码仓库。
 - 不让用户打开仓库或仓库内的 `vault/`。
 - 不删除或覆盖用户笔记。
 - 只交付仓库已锁定的 ziminOS、Dataview、Outliner、Quiet Outline、Minimal、Style Settings、ziminOS CSS 与 `fonts/` 里的四款字体；不临时下载或安装任何额外软件、插件、主题、图标包或字体。三十五枚命令图标与三枚设置页专用图标的 SVG 已经编进 `main.js`，不需要也不允许另外下载。**Outliner 与 Quiet Outline 同样已在仓库里，不要去 GitHub 或插件市场重新拉一份**——版本与 SHA-256 由 `docs/第三方组件.md` 锁定，现拉的那份对不上。

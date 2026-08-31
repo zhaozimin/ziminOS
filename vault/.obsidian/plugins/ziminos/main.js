@@ -711,15 +711,22 @@ var ViewHost = class {
 var ViewBlock = class extends import_obsidian3.MarkdownRenderChild {
   constructor(el, host, request, sourcePath) {
     super(el);
+    /** 每次重画递增；异步返回时只有最新一代有权提交 DOM */
+    this.renderGeneration = 0;
+    /** 卸载后的异步结果必须丢弃，不能再碰已经离场的容器 */
+    this.loaded = false;
     this.host = host;
     this.request = request;
     this.sourcePath = sourcePath;
   }
   onload() {
+    this.loaded = true;
     this.host.attach(this);
     void this.render();
   }
   onunload() {
+    this.loaded = false;
+    this.renderGeneration += 1;
     this.host.detach(this);
   }
   /**
@@ -728,26 +735,38 @@ var ViewBlock = class extends import_obsidian3.MarkdownRenderChild {
    * 任何一种都必须画出一句中文说明，绝不能留一个空白块让学员以为系统坏了。
    */
   async render() {
-    this.containerEl.empty();
+    const generation = ++this.renderGeneration;
+    const output = document.createElement("div");
     if (!this.request.name) {
-      renderEmpty(this.containerEl, "\u8FD9\u4E2A ziminos \u4EE3\u7801\u5757\u6CA1\u5199\u89C6\u56FE\u540D\u3002\u7B2C\u4E00\u884C\u5199\u89C6\u56FE\u540D\u5373\u53EF\uFF0C\u4F8B\u5982\u300C\u4EBA\u8109\u540D\u5F55\u300D\u3002");
+      renderEmpty(output, "\u8FD9\u4E2A ziminos \u4EE3\u7801\u5757\u6CA1\u5199\u89C6\u56FE\u540D\u3002\u7B2C\u4E00\u884C\u5199\u89C6\u56FE\u540D\u5373\u53EF\uFF0C\u4F8B\u5982\u300C\u4EBA\u8109\u540D\u5F55\u300D\u3002");
+      this.commit(output, generation);
       return;
     }
     const definition = this.host.registry.get(this.request.name);
     if (!definition) {
-      renderEmpty(this.containerEl, `\u6CA1\u6709\u540D\u4E3A\u300C${this.request.name}\u300D\u7684\u89C6\u56FE\u3002`);
-      renderNote(this.containerEl, `\u53EF\u7528\u89C6\u56FE\uFF1A${this.host.names.join(" \xB7 ")}`);
+      renderEmpty(output, `\u6CA1\u6709\u540D\u4E3A\u300C${this.request.name}\u300D\u7684\u89C6\u56FE\u3002`);
+      renderNote(output, `\u53EF\u7528\u89C6\u56FE\uFF1A${this.host.names.join(" \xB7 ")}`);
+      this.commit(output, generation);
       return;
     }
     try {
       await definition.render(
-        this.host.contextFor(this.containerEl, this.sourcePath, this.request.params)
+        this.host.contextFor(output, this.sourcePath, this.request.params)
       );
+      this.commit(output, generation);
     } catch (error) {
+      if (!this.loaded || generation !== this.renderGeneration) return;
       const message = error instanceof Error ? error.message : String(error);
-      this.containerEl.empty();
-      renderEmpty(this.containerEl, `\u89C6\u56FE\u300C${this.request.name}\u300D\u6E32\u67D3\u5931\u8D25\uFF1A${message}`);
+      output.empty();
+      renderEmpty(output, `\u89C6\u56FE\u300C${this.request.name}\u300D\u6E32\u67D3\u5931\u8D25\uFF1A${message}`);
+      this.commit(output, generation);
     }
+  }
+  /** 将离屏结果一次性换上去；旧代与卸载后的结果在这里无声作废 */
+  commit(output, generation) {
+    if (!this.loaded || generation !== this.renderGeneration) return;
+    this.containerEl.empty();
+    while (output.firstChild) this.containerEl.appendChild(output.firstChild);
   }
 };
 function parseBlock(source) {
@@ -1142,6 +1161,51 @@ var CommandRegistry = class {
   }
 };
 
+// src/core/guard.ts
+var SelfWriteGuard = class {
+  constructor() {
+    /** 路径 → 插件最近一次写入该路径的时间戳（毫秒） */
+    this.marks = /* @__PURE__ */ new Map();
+  }
+  /** 插件写入任一文件之前调用，声明「接下来这个路径的变化是我干的」 */
+  mark(path) {
+    this.marks.set(path, Date.now());
+  }
+  /**
+   * 判断某路径是否仍处于自写窗口内。
+   * 遍历时顺手清掉所有过期登记：读多写少的场景下，这比另起定时器清理更简单，
+   * 也符合「无定时器、无后台轮询」的红线。
+   */
+  isRecent(path, windowMs = SELF_WRITE_WINDOW_MS) {
+    const now = Date.now();
+    let recent = false;
+    for (const [markedPath, markedAt] of this.marks) {
+      if (now - markedAt > windowMs) {
+        this.marks.delete(markedPath);
+        continue;
+      }
+      if (markedPath === path) recent = true;
+    }
+    return recent;
+  }
+};
+
+// src/core/lineEndings.ts
+function lineEndingOf(content) {
+  var _a;
+  const matched = (_a = content.match(/\r\n|\n|\r/)) == null ? void 0 : _a[0];
+  return matched === "\r\n" || matched === "\r" ? matched : "\n";
+}
+function splitTextLines(content) {
+  return {
+    lines: content.split(/\r\n|\n|\r/),
+    lineEnding: lineEndingOf(content)
+  };
+}
+function joinTextLines(lines, lineEnding) {
+  return lines.join(lineEnding);
+}
+
 // src/core/markdownStyle.ts
 var FORMAT_RULES = [
   {
@@ -1297,7 +1361,9 @@ var ISOLATING_RULE = {
 function formatMarkdown(content, enabled) {
   const on = new Set(enabled);
   if (on.size === 0) return content;
-  const { frontmatter, body } = splitFrontmatter(content);
+  const lineEnding = lineEndingOf(content);
+  const normalized = content.replace(/\r\n|\r/g, "\n");
+  const { frontmatter, body } = splitFrontmatter(normalized);
   const lines = body.split("\n");
   const kinds = classifyLines(lines);
   const out = [];
@@ -1320,7 +1386,8 @@ function formatMarkdown(content, enabled) {
     out.push(line);
     previousKind = kind;
   }
-  return assemble(frontmatter, out.join("\n"), on);
+  const formatted = assemble(frontmatter, out.join("\n"), on);
+  return lineEnding === "\n" ? formatted : formatted.replace(/\n/g, lineEnding);
 }
 function needsBlankBetween(before, after, on) {
   if (before === after && after !== "heading") return false;
@@ -1351,35 +1418,6 @@ ${text3}`;
 `;
   return text3;
 }
-
-// src/core/guard.ts
-var SelfWriteGuard = class {
-  constructor() {
-    /** 路径 → 插件最近一次写入该路径的时间戳（毫秒） */
-    this.marks = /* @__PURE__ */ new Map();
-  }
-  /** 插件写入任一文件之前调用，声明「接下来这个路径的变化是我干的」 */
-  mark(path) {
-    this.marks.set(path, Date.now());
-  }
-  /**
-   * 判断某路径是否仍处于自写窗口内。
-   * 遍历时顺手清掉所有过期登记：读多写少的场景下，这比另起定时器清理更简单，
-   * 也符合「无定时器、无后台轮询」的红线。
-   */
-  isRecent(path, windowMs = SELF_WRITE_WINDOW_MS) {
-    const now = Date.now();
-    let recent = false;
-    for (const [markedPath, markedAt] of this.marks) {
-      if (now - markedAt > windowMs) {
-        this.marks.delete(markedPath);
-        continue;
-      }
-      if (markedPath === path) recent = true;
-    }
-    return recent;
-  }
-};
 
 // src/core/types.ts
 var DEFAULT_SETTINGS = {
@@ -1416,6 +1454,68 @@ var DEFAULT_SETTINGS = {
   rememberCursor: true,
   initializedAt: ""
 };
+function normalizeSettings(input) {
+  const stored = isRecord(input) ? input : {};
+  const stringValue = (key) => typeof stored[key] === "string" ? stored[key] : String(DEFAULT_SETTINGS[key]);
+  const booleanValue = (key) => typeof stored[key] === "boolean" ? stored[key] : Boolean(DEFAULT_SETTINGS[key]);
+  const insertPosition = isInspirationInsertPosition(stored.inspirationInsertPosition) ? stored.inspirationInsertPosition : DEFAULT_SETTINGS.inspirationInsertPosition;
+  const bookTagCount = isBookTagCount(stored.bookTagCount) ? stored.bookTagCount : DEFAULT_SETTINGS.bookTagCount;
+  const folderCountTarget = isFolderCountTarget(stored.folderCountTarget) ? stored.folderCountTarget : DEFAULT_SETTINGS.folderCountTarget;
+  const recentFilesSort = isRecentFilesSort(stored.recentFilesSort) ? stored.recentFilesSort : DEFAULT_SETTINGS.recentFilesSort;
+  const recentFilesLimit = isRecentFilesLimit(stored.recentFilesLimit) ? stored.recentFilesLimit : DEFAULT_SETTINGS.recentFilesLimit;
+  return {
+    autoCardInit: booleanValue("autoCardInit"),
+    autoUpdated: booleanValue("autoUpdated"),
+    projectFolder: stringValue("projectFolder"),
+    areaFolder: stringValue("areaFolder"),
+    archiveFolder: stringValue("archiveFolder"),
+    dateTimeFormat: stringValue("dateTimeFormat"),
+    inspirationFolder: stringValue("inspirationFolder"),
+    inspirationFileName: stringValue("inspirationFileName"),
+    inspirationHeading: stringValue("inspirationHeading"),
+    inspirationInsertPosition: insertPosition,
+    inspirationFormat: stringValue("inspirationFormat"),
+    diaryFolder: stringValue("diaryFolder"),
+    contactFolder: stringValue("contactFolder"),
+    clientFolder: stringValue("clientFolder"),
+    clientSources: stringValue("clientSources"),
+    clientProducts: stringValue("clientProducts"),
+    showAppearanceSwitch: booleanValue("showAppearanceSwitch"),
+    ribbonCommands: normalizeRibbonCommands(stored.ribbonCommands),
+    autoFormat: booleanValue("autoFormat"),
+    formatRules: normalizeFormatRules(stored.formatRules),
+    bookTagPrefix: stringValue("bookTagPrefix"),
+    bookTagCount,
+    wereadCookie: stringValue("wereadCookie"),
+    showFolderCount: booleanValue("showFolderCount"),
+    folderCountTarget,
+    folderCountRecursive: booleanValue("folderCountRecursive"),
+    showFilePath: booleanValue("showFilePath"),
+    recentFilesLimit,
+    recentFilesSort,
+    pasteLinkEnabled: booleanValue("pasteLinkEnabled"),
+    rememberCursor: booleanValue("rememberCursor"),
+    initializedAt: stringValue("initializedAt")
+  };
+}
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function isInspirationInsertPosition(value) {
+  return typeof value === "string" && INSPIRATION_INSERT_POSITIONS.some((position) => position === value);
+}
+function isBookTagCount(value) {
+  return typeof value === "number" && BOOK_TAG_COUNTS.includes(value);
+}
+function isFolderCountTarget(value) {
+  return typeof value === "string" && FOLDER_COUNT_TARGETS.some((target) => target === value);
+}
+function isRecentFilesSort(value) {
+  return typeof value === "string" && RECENT_FILES_SORTS.some((sort) => sort === value);
+}
+function isRecentFilesLimit(value) {
+  return typeof value === "number" && RECENT_FILES_LIMITS.includes(value);
+}
 
 // src/modules/about/avatar.ts
 var AVATAR_DATA_URI = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QBARXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAoKADAAQAAAABAAAAnwAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/+IH2ElDQ19QUk9GSUxFAAEBAAAHyGFwcGwCIAAAbW50clJHQiBYWVogB9kAAgAZAAsAGgALYWNzcEFQUEwAAAAAYXBwbAAAAAAAAAAAAAAAAAAAAAAAAPbWAAEAAAAA0y1hcHBsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALZGVzYwAAAQgAAABvZHNjbQAAAXgAAAWKY3BydAAABwQAAAA4d3RwdAAABzwAAAAUclhZWgAAB1AAAAAUZ1hZWgAAB2QAAAAUYlhZWgAAB3gAAAAUclRSQwAAB4wAAAAOY2hhZAAAB5wAAAAsYlRSQwAAB4wAAAAOZ1RSQwAAB4wAAAAOZGVzYwAAAAAAAAAUR2VuZXJpYyBSR0IgUHJvZmlsZQAAAAAAAAAAAAAAFEdlbmVyaWMgUkdCIFByb2ZpbGUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG1sdWMAAAAAAAAAHwAAAAxza1NLAAAAKAAAAYRkYURLAAAAJAAAAaxjYUVTAAAAJAAAAdB2aVZOAAAAJAAAAfRwdEJSAAAAJgAAAhh1a1VBAAAAKgAAAj5mckZVAAAAKAAAAmhodUhVAAAAKAAAApB6aFRXAAAAEgAAArhrb0tSAAAAFgAAAspuYk5PAAAAJgAAAuBjc0NaAAAAIgAAAwZoZUlMAAAAHgAAAyhyb1JPAAAAJAAAA0ZkZURFAAAALAAAA2ppdElUAAAAKAAAA5ZzdlNFAAAAJgAAAuB6aENOAAAAEgAAA75qYUpQAAAAGgAAA9BlbEdSAAAAIgAAA+pwdFBPAAAAJgAABAxubE5MAAAAKAAABDJlc0VTAAAAJgAABAx0aFRIAAAAJAAABFp0clRSAAAAIgAABH5maUZJAAAAKAAABKBockhSAAAAKAAABMhwbFBMAAAALAAABPBydVJVAAAAIgAABRxlblVTAAAAJgAABT5hckVHAAAAJgAABWQAVgFhAGUAbwBiAGUAYwBuAP0AIABSAEcAQgAgAHAAcgBvAGYAaQBsAEcAZQBuAGUAcgBlAGwAIABSAEcAQgAtAHAAcgBvAGYAaQBsAFAAZQByAGYAaQBsACAAUgBHAEIAIABnAGUAbgDoAHIAaQBjAEMepQB1ACAAaADsAG4AaAAgAFIARwBCACAAQwBoAHUAbgBnAFAAZQByAGYAaQBsACAAUgBHAEIAIABHAGUAbgDpAHIAaQBjAG8EFwQwBDMEMAQ7BEwEPQQ4BDkAIAQ/BEAEPgREBDAEOQQ7ACAAUgBHAEIAUAByAG8AZgBpAGwAIABnAOkAbgDpAHIAaQBxAHUAZQAgAFIAVgBCAMEAbAB0AGEAbADhAG4AbwBzACAAUgBHAEIAIABwAHIAbwBmAGkAbJAadSgAUgBHAEKCcl9pY8+P8Md8vBgAIABSAEcAQgAg1QS4XNMMx3wARwBlAG4AZQByAGkAcwBrACAAUgBHAEIALQBwAHIAbwBmAGkAbABPAGIAZQBjAG4A/QAgAFIARwBCACAAcAByAG8AZgBpAGwF5AXoBdUF5AXZBdwAIABSAEcAQgAgBdsF3AXcBdkAUAByAG8AZgBpAGwAIABSAEcAQgAgAGcAZQBuAGUAcgBpAGMAQQBsAGwAZwBlAG0AZQBpAG4AZQBzACAAUgBHAEIALQBQAHIAbwBmAGkAbABQAHIAbwBmAGkAbABvACAAUgBHAEIAIABnAGUAbgBlAHIAaQBjAG9mbpAaAFIARwBCY8+P8GWHTvZOAIIsACAAUgBHAEIAIDDXMO0w1TChMKQw6wOTA7UDvQO5A7oDzAAgA8ADwQO/A8YDrwO7ACAAUgBHAEIAUABlAHIAZgBpAGwAIABSAEcAQgAgAGcAZQBuAOkAcgBpAGMAbwBBAGwAZwBlAG0AZQBlAG4AIABSAEcAQgAtAHAAcgBvAGYAaQBlAGwOQg4bDiMORA4fDiUOTAAgAFIARwBCACAOFw4xDkgOJw5EDhsARwBlAG4AZQBsACAAUgBHAEIAIABQAHIAbwBmAGkAbABpAFkAbABlAGkAbgBlAG4AIABSAEcAQgAtAHAAcgBvAGYAaQBpAGwAaQBHAGUAbgBlAHIAaQENAGsAaQAgAFIARwBCACAAcAByAG8AZgBp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";
@@ -1700,10 +1800,13 @@ async function readAppearanceConfig(app) {
   let parsed;
   try {
     parsed = JSON.parse(await app.vault.adapter.read(path));
-  } catch (e) {
-    return config;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`\u65E0\u6CD5\u8BFB\u53D6\u5916\u89C2\u914D\u7F6E ${path}\uFF1A${message || "\u6587\u4EF6\u4E0D\u662F\u5408\u6CD5 JSON"}`);
   }
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return config;
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error(`\u5916\u89C2\u914D\u7F6E ${path} \u7684\u9876\u5C42\u5FC5\u987B\u662F JSON \u5BF9\u8C61\uFF0C\u5DF2\u62D2\u7EDD\u8986\u76D6\u539F\u6587\u4EF6`);
+  }
   for (const [key, value] of Object.entries(parsed)) config[key] = value;
   return config;
 }
@@ -2150,16 +2253,22 @@ function today() {
   return momentFactory().format(DAY_FORMAT);
 }
 function dayText(value) {
+  var _a;
   if (value === null || value === void 0) return null;
   if (value instanceof Date) {
     const time = value.getTime();
-    return Number.isNaN(time) ? null : momentFactory(time).format(DAY_FORMAT);
+    const parsed = momentFactory(time);
+    return Number.isNaN(time) || !parsed.isValid() ? null : parsed.format(DAY_FORMAT);
   }
   if (typeof value === "number") {
-    return Number.isFinite(value) ? momentFactory(value).format(DAY_FORMAT) : null;
+    if (!Number.isFinite(value)) return null;
+    const parsed = momentFactory(value);
+    return parsed.isValid() ? parsed.format(DAY_FORMAT) : null;
   }
   const text3 = String(value).trim();
-  return /^\d{4}-\d{2}-\d{2}/.test(text3) ? text3.slice(0, 10) : null;
+  const day = (_a = /^\d{4}-\d{2}-\d{2}/.exec(text3)) == null ? void 0 : _a[0];
+  if (!day) return null;
+  return momentFactory(day, DAY_FORMAT, true).isValid() ? day : null;
 }
 function dayOfMillis(millis) {
   return momentFactory(millis).format(DAY_FORMAT);
@@ -2374,6 +2483,59 @@ async function excerptCard(ctx) {
 
 // src/modules/books/importHighlights.ts
 var import_obsidian9 = require("obsidian");
+
+// src/modules/books/highlightIdentity.ts
+function flattenHighlight(highlight) {
+  return {
+    chapter: highlight.chapter.replace(/\s+/g, " ").trim(),
+    text: highlight.text.replace(/\s+/g, " ").trim(),
+    thoughts: highlight.thoughts.map((thought) => thought.replace(/\s+/g, " ").trim()).filter(Boolean)
+  };
+}
+function normalizedHighlightKey(text3) {
+  let normalized = text3;
+  let previous = "";
+  while (normalized !== previous) {
+    previous = normalized;
+    normalized = normalized.replace(/\*\*(.+?)\*\*/g, "$1").replace(/__(.+?)__/g, "$1").replace(/~~(.+?)~~/g, "$1").replace(/==(.+?)==/g, "$1").replace(/`([^`\n]+)`/g, "$1");
+  }
+  return normalized.replace(/\s/g, "");
+}
+function highlightKey(highlight) {
+  var _a;
+  if (highlight.text) return normalizedHighlightKey(highlight.text);
+  const thoughtKey = normalizedHighlightKey((_a = highlight.thoughts[0]) != null ? _a : "");
+  return thoughtKey ? BOOK_THOUGHT_PREFIX.trim() + thoughtKey : "";
+}
+function coalesceHighlights(incoming) {
+  const collected = /* @__PURE__ */ new Map();
+  for (const raw of incoming) {
+    const highlight = flattenHighlight(raw);
+    const key = highlightKey(highlight);
+    if (!key) continue;
+    const existing = collected.get(key);
+    if (!existing) {
+      collected.set(key, {
+        highlight,
+        thoughtKeys: new Set(highlight.thoughts.map(normalizedHighlightKey))
+      });
+      continue;
+    }
+    const thoughts = [...existing.highlight.thoughts];
+    for (const thought of highlight.thoughts) {
+      const thoughtKey = normalizedHighlightKey(thought);
+      if (!thoughtKey || existing.thoughtKeys.has(thoughtKey)) continue;
+      existing.thoughtKeys.add(thoughtKey);
+      thoughts.push(thought);
+    }
+    existing.highlight = {
+      ...existing.highlight,
+      chapter: existing.highlight.chapter || highlight.chapter,
+      thoughts
+    };
+  }
+  return [...collected.values()].map(({ highlight }) => highlight);
+}
 
 // src/modules/books/parsers.ts
 var KINDLE_SEPARATOR = /^={6,}\s*$/;
@@ -2856,18 +3018,25 @@ async function runImport(ctx) {
     if (((_a = ctx.app.workspace.getActiveFile()) == null ? void 0 : _a.path) !== target.path) {
       await ctx.app.workspace.getLeaf(false).openFile(target, { active: true });
     }
-    ctx.guard.mark(target.path);
-    await ctx.app.vault.process(
-      target,
-      (content) => mergeHighlights(content, book.highlights).content
-    );
-    new import_obsidian9.Notice(describeImported(preview, targetName));
+    let outcome = null;
+    await ctx.app.vault.process(target, (content) => {
+      const merged = mergeHighlights(content, book.highlights);
+      outcome = merged;
+      if (merged.content === content) return content;
+      ctx.guard.mark(target.path);
+      return merged.content;
+    });
+    if (!outcome) throw new Error("\u5212\u7EBF\u5408\u5E76\u6CA1\u6709\u8FD4\u56DE\u7ED3\u679C");
+    new import_obsidian9.Notice(describeImported(outcome, targetName));
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     new import_obsidian9.Notice(MESSAGES3.failedPrefix + message);
   }
 }
 function describeImported(outcome, targetName) {
+  if (!outcome.added && !outcome.attachedThoughts) {
+    return `\u786E\u8BA4\u671F\u95F4${targetName}\u5DF2\u88AB\u5176\u4ED6\u540C\u6B65\u8865\u9F50\uFF0C\u6CA1\u6709\u91CD\u590D\u5199\u5165\u3002`;
+  }
   const parts = [];
   if (outcome.added) parts.push(`${outcome.added} \u6761\u5212\u7EBF`);
   if (outcome.attachedThoughts) parts.push(`${outcome.attachedThoughts} \u6761\u60F3\u6CD5`);
@@ -2917,23 +3086,19 @@ function stripQuote(line, depth) {
 var THOUGHT_MARKER = BOOK_THOUGHT_PREFIX.trim();
 var TOP_BULLET = /^- /;
 var NESTED_BULLET = /^[ \t]+- /;
-function flatten(highlight) {
-  return {
-    chapter: highlight.chapter.replace(/\s+/g, " ").trim(),
-    text: highlight.text.replace(/\s+/g, " ").trim(),
-    thoughts: highlight.thoughts.map((thought) => thought.replace(/\s+/g, " ").trim())
-  };
-}
 function mergeHighlights(content, incoming) {
   var _a, _b, _c, _d;
-  const highlights = incoming.map(flatten);
-  let lines = content.split("\n");
+  const highlights = coalesceHighlights(incoming);
+  const split = splitTextLines(content);
+  const lineEnding = split.lineEnding;
+  let lines = split.lines;
   let headingIndex = lines.findIndex((line) => line.trim() === BOOK_HEADINGS.highlights);
   if (headingIndex < 0) {
-    lines = `${content.replace(/\s*$/, "")}
-
-${BOOK_HEADINGS.highlights}
-`.split("\n");
+    const rebuilt = joinTextLines(
+      [content.replace(/\s*$/, ""), "", BOOK_HEADINGS.highlights, ""],
+      lineEnding
+    );
+    lines = splitTextLines(rebuilt).lines;
     headingIndex = lines.findIndex((line) => line.trim() === BOOK_HEADINGS.highlights);
   }
   let sectionEnd = lines.length;
@@ -2949,7 +3114,10 @@ ${BOOK_HEADINGS.highlights}
   for (let cursor = headingIndex + 1; cursor < sectionEnd; cursor += 1) {
     const raw = lines[cursor];
     if (raw.startsWith(BOOK_CHAPTER_PREFIX)) {
-      chapterHeadingAt.set(normalizedKey(raw.slice(BOOK_CHAPTER_PREFIX.length)), cursor);
+      chapterHeadingAt.set(
+        normalizedHighlightKey(raw.slice(BOOK_CHAPTER_PREFIX.length)),
+        cursor
+      );
       owner = null;
       continue;
     }
@@ -2961,12 +3129,14 @@ ${BOOK_HEADINGS.highlights}
       continue;
     }
     if (isCalloutHead(raw, BOOK_CALLOUTS.thought, 1)) {
-      owner == null ? void 0 : owner.thoughts.add(normalizedKey(stripQuote((_b = lines[cursor + 1]) != null ? _b : "", 2)));
+      owner == null ? void 0 : owner.thoughts.add(
+        normalizedHighlightKey(stripQuote((_b = lines[cursor + 1]) != null ? _b : "", 2))
+      );
       cursor += 1;
       continue;
     }
     if (isCalloutHead(raw, BOOK_CALLOUTS.thought)) {
-      const body = normalizedKey(stripQuote((_c = lines[cursor + 1]) != null ? _c : "", 1));
+      const body = normalizedHighlightKey(stripQuote((_c = lines[cursor + 1]) != null ? _c : "", 1));
       owner = { line: cursor + 1, thoughts: /* @__PURE__ */ new Set([body]), legacy: false };
       existingHighlights.set(body ? THOUGHT_MARKER + body : "", owner);
       cursor += 1;
@@ -2979,7 +3149,7 @@ ${BOOK_HEADINGS.highlights}
     }
     if (NESTED_BULLET.test(raw)) {
       owner == null ? void 0 : owner.thoughts.add(
-        normalizedKey(stripThoughtPrefix(raw.replace(NESTED_BULLET, "").trim()))
+        normalizedHighlightKey(stripThoughtPrefix(raw.replace(NESTED_BULLET, "").trim()))
       );
     }
   }
@@ -3023,14 +3193,14 @@ ${BOOK_HEADINGS.highlights}
   let skipped = 0;
   let attachedThoughts = 0;
   for (const highlight of highlights) {
-    const key = keyOfHighlight(highlight);
+    const key = highlightKey(highlight);
     if (!key) continue;
     const existing = existingHighlights.get(key);
     if (existing) {
       skipped += 1;
       if (highlight.text && existing.line >= 0) {
         const fresh = highlight.thoughts.filter(
-          (thought) => !existing.thoughts.has(normalizedKey(thought))
+          (thought) => !existing.thoughts.has(normalizedHighlightKey(thought))
         );
         if (fresh.length) {
           let at = existing.line + 1;
@@ -3043,7 +3213,9 @@ ${BOOK_HEADINGS.highlights}
             for (const thought of fresh) rendered2.push(...thoughtLines(thought));
           }
           pushThought(at, rendered2);
-          for (const thought of fresh) existing.thoughts.add(normalizedKey(thought));
+          for (const thought of fresh) {
+            existing.thoughts.add(normalizedHighlightKey(thought));
+          }
           attachedThoughts += fresh.length;
         }
       }
@@ -3051,7 +3223,7 @@ ${BOOK_HEADINGS.highlights}
     }
     existingHighlights.set(key, {
       line: -1,
-      thoughts: new Set(highlight.thoughts.map(normalizedKey)),
+      thoughts: new Set(highlight.thoughts.map(normalizedHighlightKey)),
       legacy: false
     });
     const rendered = highlightLines(highlight);
@@ -3061,7 +3233,7 @@ ${BOOK_HEADINGS.highlights}
       pushInsert(chapterlessTail, rendered);
       continue;
     }
-    const chapterKey = normalizedKey(chapter);
+    const chapterKey = normalizedHighlightKey(chapter);
     const headingLine = chapterHeadingAt.get(chapterKey);
     if (headingLine !== void 0) {
       pushInsert(chapterTail(headingLine), rendered);
@@ -3077,24 +3249,17 @@ ${BOOK_HEADINGS.highlights}
     const bucket = inserts.get(at);
     if (bucket) lines.splice(at, 0, ...bucket.thoughts, ...bucket.lines);
   }
-  return { content: lines.join("\n"), added, skipped, attachedThoughts };
+  return { content: joinTextLines(lines, lineEnding), added, skipped, attachedThoughts };
 }
 function isFenceLine(line) {
   return line.replace(/^\s+/, "").startsWith("```");
 }
-function normalizedKey(text3) {
-  return text3.replace(/[\s*_~=`]/g, "");
-}
-function keyOfHighlight(highlight) {
-  var _a;
-  if (highlight.text) return normalizedKey(highlight.text);
-  const thoughtKey = normalizedKey((_a = highlight.thoughts[0]) != null ? _a : "");
-  return thoughtKey ? BOOK_THOUGHT_PREFIX.trim() + thoughtKey : "";
-}
 function keyOfLineBody(body) {
   const marker = BOOK_THOUGHT_PREFIX.trim();
-  if (body.startsWith(marker)) return marker + normalizedKey(body.slice(marker.length));
-  return normalizedKey(body);
+  if (body.startsWith(marker)) {
+    return marker + normalizedHighlightKey(body.slice(marker.length));
+  }
+  return normalizedHighlightKey(body);
 }
 function stripThoughtPrefix(body) {
   const marker = BOOK_THOUGHT_PREFIX.trim();
@@ -3360,9 +3525,25 @@ function text(value) {
 // src/modules/books/isbn.ts
 function isbnUid(raw) {
   const compact = raw.replace(/[^0-9Xx]/g, "").toUpperCase();
-  if (/^\d{13}$/.test(compact)) return Number(compact);
-  if (/^\d{9}[\dX]$/.test(compact)) return Number(toIsbn13(compact));
+  if (/^\d{13}$/.test(compact) && validIsbn13(compact)) return Number(compact);
+  if (/^\d{9}[\dX]$/.test(compact) && validIsbn10(compact)) return Number(toIsbn13(compact));
   return null;
+}
+function validIsbn13(isbn) {
+  if (!/^97[89]/.test(isbn)) return false;
+  let sum2 = 0;
+  for (let index = 0; index < 12; index += 1) {
+    sum2 += Number(isbn[index]) * (index % 2 === 0 ? 1 : 3);
+  }
+  return (10 - sum2 % 10) % 10 === Number(isbn[12]);
+}
+function validIsbn10(isbn) {
+  let sum2 = 0;
+  for (let index = 0; index < isbn.length; index += 1) {
+    const digit = isbn[index] === "X" ? 10 : Number(isbn[index]);
+    sum2 += digit * (10 - index);
+  }
+  return sum2 % 11 === 0;
 }
 function toIsbn13(isbn10) {
   const body = `978${isbn10.slice(0, 9)}`;
@@ -3408,12 +3589,15 @@ var GATEWAY = "https://i.weread.qq.com/api/agent/gateway";
 var API_KEY_PATH = "/api/skills/apikeyGet";
 var SKILL_VERSION = "1.0.3";
 var REQUIRED_COOKIES = ["wr_vid", "wr_skey"];
+var LOGIN_TIMEOUT_MS = 12e4;
+var activeLoginCancel = null;
 function wereadAvailable(ctx) {
   return import_obsidian11.Platform.isDesktopApp && !!ctx.settings.wereadCookie.trim();
 }
 async function loginWeread(ctx) {
   const BrowserWindow = resolveBrowserWindow();
   if (!BrowserWindow) return false;
+  activeLoginCancel == null ? void 0 : activeLoginCancel();
   return new Promise((resolve) => {
     const win = new BrowserWindow({
       width: 480,
@@ -3423,17 +3607,23 @@ async function loginWeread(ctx) {
       webPreferences: { nodeIntegration: false, contextIsolation: true }
     });
     let settled = false;
+    let timer = null;
+    let timeout = null;
+    const cancel = () => finish(false);
     const finish = (ok) => {
       if (settled) return;
       settled = true;
-      window.clearInterval(timer);
+      if (timer !== null) window.clearInterval(timer);
+      if (timeout !== null) window.clearTimeout(timeout);
+      if (activeLoginCancel === cancel) activeLoginCancel = null;
       try {
         if (!win.isDestroyed()) win.close();
       } catch (e) {
       }
       resolve(ok);
     };
-    const timer = window.setInterval(() => {
+    activeLoginCancel = cancel;
+    timer = window.setInterval(() => {
       void (async () => {
         try {
           if (win.isDestroyed()) {
@@ -3443,9 +3633,12 @@ async function loginWeread(ctx) {
           const cookies = await win.webContents.session.cookies.get({
             domain: ".weread.qq.com"
           });
-          const names = cookies.map((cookie) => cookie.name);
+          if (settled || activeLoginCancel !== cancel) return;
+          const names = cookies.map((cookie2) => cookie2.name);
           if (!REQUIRED_COOKIES.every((name) => names.includes(name))) return;
-          ctx.settings.wereadCookie = cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
+          const cookie = cookies.map((cookie2) => `${cookie2.name}=${cookie2.value}`).join("; ");
+          clearCachedKey();
+          ctx.settings.wereadCookie = cookie;
           await ctx.saveSettings();
           finish(true);
         } catch (e) {
@@ -3453,9 +3646,20 @@ async function loginWeread(ctx) {
         }
       })();
     }, 1e3);
+    timeout = window.setTimeout(() => finish(false), LOGIN_TIMEOUT_MS);
     win.on("closed", () => finish(false));
-    void win.loadURL(`${BASE}/#login`);
+    void win.loadURL(`${BASE}/#login`).catch(() => finish(false));
   });
+}
+async function disconnectWeread(ctx) {
+  activeLoginCancel == null ? void 0 : activeLoginCancel();
+  clearCachedKey();
+  ctx.settings.wereadCookie = "";
+  await ctx.saveSettings();
+}
+function disposeWereadSession() {
+  activeLoginCancel == null ? void 0 : activeLoginCancel();
+  clearCachedKey();
 }
 function resolveBrowserWindow() {
   if (!import_obsidian11.Platform.isDesktopApp) return null;
@@ -3491,7 +3695,17 @@ async function api(ctx, path) {
 }
 var EXPIRED = "\u5FAE\u4FE1\u8BFB\u4E66\u7684\u767B\u5F55\u5DF2\u8FC7\u671F\uFF0C\u91CD\u65B0\u8FD0\u884C\u300C\u8FDE\u63A5\u5FAE\u4FE1\u8BFB\u4E66\u300D\u3002";
 var cachedKey = "";
+var cachedCookie = "";
+function clearCachedKey() {
+  cachedKey = "";
+  cachedCookie = "";
+}
 async function apiKey(ctx) {
+  const cookie = ctx.settings.wereadCookie.trim();
+  if (cachedCookie !== cookie) {
+    cachedKey = "";
+    cachedCookie = cookie;
+  }
   if (cachedKey) return cachedKey;
   try {
     const payload = await api(ctx, API_KEY_PATH);
@@ -3514,7 +3728,7 @@ async function gateway(ctx, apiName, key, params) {
     throw: false
   });
   if (response.status === 401) {
-    cachedKey = "";
+    clearCachedKey();
     throw new Error(EXPIRED);
   }
   if (response.status >= 400) throw new Error(`\u5FAE\u4FE1\u8BFB\u4E66\u7F51\u5173\u8FD4\u56DE ${response.status}`);
@@ -3560,6 +3774,7 @@ async function readWereadBookHighlights(ctx, book) {
       thoughts: []
     });
   }
+  let note = "";
   try {
     const reviews = await gateway(ctx, "/review/list/mine", key, {
       bookid: book.id,
@@ -3568,8 +3783,10 @@ async function readWereadBookHighlights(ctx, book) {
     mergeReviews(highlights, reviews, chapterNames);
   } catch (error) {
     if (!highlights.length) throw error;
+    const message = error instanceof Error ? error.message : String(error);
+    note = `\u5FAE\u4FE1\u8BFB\u4E66\u60F3\u6CD5\u53D6\u6570\u5931\u8D25\uFF1A${message || "\u672A\u77E5\u9519\u8BEF"}\uFF1B\u672C\u6B21\u53EA\u540C\u6B65\u4E86\u5212\u7EBF\u3002`;
   }
-  return { highlights, note: "" };
+  return { highlights, note };
 }
 async function cookieOnly(ctx, bookId) {
   const highlights = [];
@@ -3629,21 +3846,44 @@ function text2(value) {
 
 // src/modules/books/sourceAppleBooks.ts
 var import_obsidian12 = require("obsidian");
-var import_child_process = require("child_process");
-var import_os = require("os");
-var import_fs = require("fs");
-var import_path = require("path");
 var LIBRARY_DIR = "Library/Containers/com.apple.iBooksX/Data/Documents/BKLibrary";
 var ANNOTATION_DIR = "Library/Containers/com.apple.iBooksX/Data/Documents/AEAnnotation";
-function firstSqliteIn(relative) {
-  const dir = (0, import_path.join)((0, import_os.homedir)(), relative);
-  if (!(0, import_fs.existsSync)(dir)) return null;
-  const found = (0, import_fs.readdirSync)(dir).filter((name) => name.endsWith(".sqlite"));
-  return found.length ? (0, import_path.join)(dir, found[0]) : null;
+var cachedNodeTools;
+function nodeTools() {
+  if (!import_obsidian12.Platform.isDesktopApp) return null;
+  if (cachedNodeTools !== void 0) return cachedNodeTools;
+  try {
+    const childProcess = require("child_process");
+    const os = require("os");
+    const fs = require("fs");
+    const path = require("path");
+    cachedNodeTools = {
+      spawn: childProcess.spawn,
+      homedir: os.homedir,
+      existsSync: fs.existsSync,
+      readdirSync: fs.readdirSync,
+      statSync: fs.statSync,
+      join: path.join
+    };
+  } catch (e) {
+    cachedNodeTools = null;
+  }
+  return cachedNodeTools;
+}
+function sqliteCandidatesIn(relative) {
+  const tools = nodeTools();
+  if (!tools) return [];
+  const dir = tools.join(tools.homedir(), relative);
+  if (!tools.existsSync(dir)) return [];
+  const found = tools.readdirSync(dir).filter((name) => name.endsWith(".sqlite")).map((name) => {
+    const path = tools.join(dir, name);
+    return { path, modified: tools.statSync(path).mtimeMs };
+  }).sort((left, right) => right.modified - left.modified);
+  return found.map(({ path }) => path);
 }
 function appleBooksAvailable() {
   if (!import_obsidian12.Platform.isDesktopApp || process.platform !== "darwin") return false;
-  return !!firstSqliteIn(LIBRARY_DIR) && !!firstSqliteIn(ANNOTATION_DIR);
+  return sqliteCandidatesIn(LIBRARY_DIR).length > 0 && sqliteCandidatesIn(ANNOTATION_DIR).length > 0;
 }
 async function query(dbPath, sql) {
   try {
@@ -3653,8 +3893,10 @@ async function query(dbPath, sql) {
   }
 }
 async function runSqlite(dbPath, sql, openMode) {
+  const tools = nodeTools();
+  if (!tools) throw new Error("\u5F53\u524D\u5E73\u53F0\u4E0D\u80FD\u8BFB\u53D6\u82F9\u679C\u56FE\u4E66\u6570\u636E\u5E93");
   return new Promise((resolve, reject) => {
-    const child = (0, import_child_process.spawn)("sqlite3", [`file:${dbPath}?${openMode}`, sql, "-json"], {
+    const child = tools.spawn("sqlite3", [`file:${dbPath}?${openMode}`, sql, "-json"], {
       timeout: 2e4
     });
     let out = "";
@@ -3686,9 +3928,27 @@ async function runSqlite(dbPath, sql, openMode) {
 function quote(value) {
   return `'${value.replace(/'/g, "''")}'`;
 }
+async function compatibleSqliteIn(relative, requiredTable) {
+  let lastError = null;
+  for (const candidate of sqliteCandidatesIn(relative)) {
+    try {
+      const table = await query(
+        candidate,
+        `SELECT name FROM sqlite_master WHERE type = 'table' AND name = ${quote(requiredTable)} LIMIT 1`
+      );
+      if (table.length) return candidate;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  if (lastError) throw lastError;
+  return null;
+}
 async function listAppleBooks() {
-  const libraryDb = firstSqliteIn(LIBRARY_DIR);
-  const annotationDb = firstSqliteIn(ANNOTATION_DIR);
+  const [libraryDb, annotationDb] = await Promise.all([
+    compatibleSqliteIn(LIBRARY_DIR, "ZBKLIBRARYASSET"),
+    compatibleSqliteIn(ANNOTATION_DIR, "ZAEANNOTATION")
+  ]);
   if (!libraryDb || !annotationDb) return [];
   const withHighlights = await query(
     annotationDb,
@@ -3715,7 +3975,7 @@ async function listAppleBooks() {
   }).filter((book) => book.id && book.title);
 }
 async function readAppleBookHighlights(assetId) {
-  const annotationDb = firstSqliteIn(ANNOTATION_DIR);
+  const annotationDb = await compatibleSqliteIn(ANNOTATION_DIR, "ZAEANNOTATION");
   if (!annotationDb) return [];
   const rows = await query(
     annotationDb,
@@ -3740,40 +4000,59 @@ async function readAppleBookHighlights(assetId) {
 
 // src/modules/books/sourceKindle.ts
 var import_obsidian13 = require("obsidian");
-var import_fs2 = require("fs");
-var import_os2 = require("os");
-var import_path2 = require("path");
-var DEVICE_RELATIVE = (0, import_path2.join)("documents", "My Clippings.txt");
-function kindleClippingsPath() {
+var cachedNodeTools2;
+function nodeTools2() {
   if (!import_obsidian13.Platform.isDesktopApp) return null;
-  for (const candidate of candidatePaths()) {
+  if (cachedNodeTools2 !== void 0) return cachedNodeTools2;
+  try {
+    const fs = require("fs");
+    const os = require("os");
+    const path = require("path");
+    cachedNodeTools2 = {
+      existsSync: fs.existsSync,
+      readFileSync: fs.readFileSync,
+      readdirSync: fs.readdirSync,
+      statSync: fs.statSync,
+      homedir: os.homedir,
+      join: path.join
+    };
+  } catch (e) {
+    cachedNodeTools2 = null;
+  }
+  return cachedNodeTools2;
+}
+function kindleClippingsPath() {
+  const tools = nodeTools2();
+  if (!tools) return null;
+  for (const candidate of candidatePaths(tools)) {
     try {
-      if ((0, import_fs2.existsSync)(candidate) && (0, import_fs2.statSync)(candidate).isFile()) return candidate;
+      if (tools.existsSync(candidate) && tools.statSync(candidate).isFile()) return candidate;
     } catch (e) {
     }
   }
   return null;
 }
-function candidatePaths() {
+function candidatePaths(tools) {
   var _a, _b;
   const paths = [];
-  const home = (0, import_os2.homedir)();
+  const home = tools.homedir();
+  const deviceRelative = tools.join("documents", "My Clippings.txt");
   for (const mountRoot of ["/Volumes", `/media/${(_a = process.env.USER) != null ? _a : ""}`, `/run/media/${(_b = process.env.USER) != null ? _b : ""}`]) {
     try {
-      if (!(0, import_fs2.existsSync)(mountRoot)) continue;
-      for (const volume of (0, import_fs2.readdirSync)(mountRoot)) {
-        paths.push((0, import_path2.join)(mountRoot, volume, DEVICE_RELATIVE));
+      if (!tools.existsSync(mountRoot)) continue;
+      for (const volume of tools.readdirSync(mountRoot)) {
+        paths.push(tools.join(mountRoot, volume, deviceRelative));
       }
     } catch (e) {
     }
   }
   if (process.platform === "win32") {
     for (const letter of "DEFGHIJKLMNOPQRSTUVWXYZ") {
-      paths.push(`${letter}:\\${DEVICE_RELATIVE}`);
+      paths.push(`${letter}:\\${deviceRelative}`);
     }
   }
-  paths.push((0, import_path2.join)(home, "Downloads", "My Clippings.txt"));
-  paths.push((0, import_path2.join)(home, "Desktop", "My Clippings.txt"));
+  paths.push(tools.join(home, "Downloads", "My Clippings.txt"));
+  paths.push(tools.join(home, "Desktop", "My Clippings.txt"));
   return paths;
 }
 function kindleAvailable() {
@@ -3782,12 +4061,9 @@ function kindleAvailable() {
 function listKindleBooks() {
   var _a, _b;
   const path = kindleClippingsPath();
-  if (!path) return [];
-  try {
-    return (_b = (_a = parseHighlightExport((0, import_fs2.readFileSync)(path, "utf8"))) == null ? void 0 : _a.books) != null ? _b : [];
-  } catch (e) {
-    return [];
-  }
+  const tools = nodeTools2();
+  if (!path || !tools) return [];
+  return (_b = (_a = parseHighlightExport(tools.readFileSync(path, "utf8"))) == null ? void 0 : _a.books) != null ? _b : [];
 }
 function readKindleBookHighlights(title) {
   var _a, _b;
@@ -3797,10 +4073,17 @@ function readKindleBookHighlights(title) {
 // src/modules/books/sources.ts
 function availableSourceLabels(ctx) {
   const labels = [];
-  if (wereadAvailable(ctx)) labels.push("\u5FAE\u4FE1\u8BFB\u4E66");
-  if (appleBooksAvailable()) labels.push("\u82F9\u679C\u56FE\u4E66");
-  if (kindleAvailable()) labels.push("Kindle");
+  if (probeAvailable(() => wereadAvailable(ctx))) labels.push("\u5FAE\u4FE1\u8BFB\u4E66");
+  if (probeAvailable(appleBooksAvailable)) labels.push("\u82F9\u679C\u56FE\u4E66");
+  if (probeAvailable(kindleAvailable)) labels.push("Kindle");
   return labels;
+}
+function probeAvailable(probe) {
+  try {
+    return probe();
+  } catch (e) {
+    return true;
+  }
 }
 async function collectHighlightsFor(ctx, names, author = "") {
   const hits = [];
@@ -3813,9 +4096,12 @@ async function collectHighlightsFor(ctx, names, author = "") {
         if (highlights.length || note) {
           hits.push({ label: "\u5FAE\u4FE1\u8BFB\u4E66", title: matched.title, highlights, note });
         }
+      } else {
+        hits.push(unmatchedHit("\u5FAE\u4FE1\u8BFB\u4E66", names));
       }
     }
-  } catch (e) {
+  } catch (error) {
+    hits.push(failedHit("\u5FAE\u4FE1\u8BFB\u4E66", names, error));
   }
   try {
     if (appleBooksAvailable()) {
@@ -3826,9 +4112,12 @@ async function collectHighlightsFor(ctx, names, author = "") {
         if (highlights.length) {
           hits.push({ label: "\u82F9\u679C\u56FE\u4E66", title: matched.title, highlights });
         }
+      } else {
+        hits.push(unmatchedHit("\u82F9\u679C\u56FE\u4E66", names));
       }
     }
-  } catch (e) {
+  } catch (error) {
+    hits.push(failedHit("\u82F9\u679C\u56FE\u4E66", names, error));
   }
   try {
     if (kindleAvailable()) {
@@ -3844,11 +4133,33 @@ async function collectHighlightsFor(ctx, names, author = "") {
         if (highlights.length) {
           hits.push({ label: "Kindle", title: matched.title, highlights });
         }
+      } else {
+        hits.push(unmatchedHit("Kindle", names));
       }
     }
-  } catch (e) {
+  } catch (error) {
+    hits.push(failedHit("Kindle", names, error));
   }
   return hits;
+}
+function failedHit(label, names, error) {
+  var _a;
+  const message = error instanceof Error ? error.message : String(error);
+  return {
+    label,
+    title: (_a = names.find((name) => name.trim())) != null ? _a : "",
+    highlights: [],
+    note: `${label}\u53D6\u6570\u5931\u8D25\uFF1A${message || "\u672A\u77E5\u9519\u8BEF"}`
+  };
+}
+function unmatchedHit(label, names) {
+  var _a;
+  return {
+    label,
+    title: (_a = names.find((name) => name.trim())) != null ? _a : "",
+    highlights: [],
+    note: `${label}\u6CA1\u6709\u5339\u914D\u5230\u8FD9\u672C\u4E66\uFF08\u53EF\u80FD\u662F\u4E66\u540D\u6216\u526F\u6807\u9898\u4E0D\u540C\uFF09\uFF0C\u6CA1\u6709\u628A\u5176\u4ED6\u4E66\u7684\u5212\u7EBF\u6DF7\u8FDB\u6765\u3002`
+  };
 }
 function matchBook(books, names, author) {
   const candidates = names.map((name) => name.trim()).filter(Boolean);
@@ -3898,7 +4209,12 @@ var MESSAGES4 = {
 };
 function registerReadBookCommand(ctx, create) {
   ctx.commands.register(BOOK_COMMANDS.read, () => {
-    void readBook(ctx, create);
+    runBookCommand(() => readBook(ctx, create), "\u8BFB\u4E00\u672C\u4E66\u5931\u8D25\uFF1A");
+  });
+}
+function runBookCommand(task, failurePrefix) {
+  void task().catch((error) => {
+    new import_obsidian14.Notice(failurePrefix + (describe2(error) || "\u672A\u77E5\u9519\u8BEF"), 1e4);
   });
 }
 async function readBook(ctx, create) {
@@ -3972,8 +4288,12 @@ async function pullHighlights(ctx, moc, names, author) {
   }
   const title = (_a = names[0]) != null ? _a : "";
   const pulling = new import_obsidian14.Notice(MESSAGES4.pulling, 0);
-  const hits = await collectHighlightsFor(ctx, names, author);
-  pulling.hide();
+  let hits;
+  try {
+    hits = await collectHighlightsFor(ctx, names, author);
+  } finally {
+    pulling.hide();
+  }
   const notes = hits.map((hit) => {
     var _a2;
     return (_a2 = hit.note) != null ? _a2 : "";
@@ -3986,14 +4306,21 @@ async function pullHighlights(ctx, moc, names, author) {
     );
     return;
   }
-  ctx.guard.mark(moc.path);
-  await ctx.app.vault.process(moc, (content) => mergeHighlights(content, all).content);
-  const outcome = mergeHighlights(await ctx.app.vault.read(moc), all);
+  const mergeRun = {};
+  await ctx.app.vault.process(moc, (content) => {
+    mergeRun.outcome = mergeHighlights(content, all);
+    if (mergeRun.outcome.content === content) return content;
+    ctx.guard.mark(moc.path);
+    return mergeRun.outcome.content;
+  });
+  const outcome = mergeRun.outcome;
+  if (!outcome) throw new Error("\u5212\u7EBF\u5408\u5E76\u6CA1\u6709\u8FD4\u56DE\u7ED3\u679C");
   const from = hits.filter((hit) => hit.highlights.length).map((hit) => `${hit.label} ${hit.highlights.length} \u6761`).join("\u3001");
   const tail = notes.length ? `
 ${notes.join("\n")}` : "";
+  const result = !outcome.added && !outcome.attachedThoughts ? `\u5212\u7EBF\u5DF2\u662F\u6700\u65B0\uFF08${from}\uFF09\u3002` : !outcome.added ? `\u5DF2\u4ECE ${from} \u8865\u8FDB ${outcome.attachedThoughts} \u6761\u60F3\u6CD5\u3002` : `\u5DF2\u4ECE ${from} \u53D6\u56DE\u5212\u7EBF\uFF0C\u5199\u8FDB\u300A${title}\u300B\u3002` + (outcome.attachedThoughts ? `\u53E6\u8865\u8FDB ${outcome.attachedThoughts} \u6761\u60F3\u6CD5\u3002` : "");
   new import_obsidian14.Notice(
-    (outcome.skipped && !outcome.added ? `\u5212\u7EBF\u5DF2\u662F\u6700\u65B0\uFF08${from}\uFF09\u3002` : `\u5DF2\u4ECE ${from} \u53D6\u56DE\u5212\u7EBF\uFF0C\u5199\u8FDB\u300A${title}\u300B\u3002`) + tail,
+    result + tail,
     notes.length ? 12e3 : 6e3
   );
 }
@@ -4005,7 +4332,7 @@ function describe2(error) {
 }
 function registerSyncHighlightsCommand(ctx) {
   ctx.commands.register(BOOK_COMMANDS.sync, () => {
-    void syncCurrentBook(ctx);
+    runBookCommand(() => syncCurrentBook(ctx), "\u540C\u6B65\u8BFB\u4E66\u5212\u7EBF\u5931\u8D25\uFF1A");
   });
 }
 async function syncCurrentBook(ctx) {
@@ -4046,13 +4373,13 @@ function stripBraces2(name) {
 }
 function registerConnectWereadCommand(ctx) {
   ctx.commands.register(BOOK_COMMANDS.connectWeread, () => {
-    void (async () => {
+    runBookCommand(async () => {
       const ok = await loginWeread(ctx);
       new import_obsidian14.Notice(
         ok ? "\u5FAE\u4FE1\u8BFB\u4E66\u5DF2\u8FDE\u4E0A\u3002\u4EE5\u540E\u300C\u8BFB\u4E00\u672C\u4E66\u300D\u4F1A\u81EA\u52A8\u628A\u4F60\u5728\u5FAE\u8BFB\u4E0A\u7684\u5212\u7EBF\u4E00\u5E76\u53D6\u56DE\u6765\u3002" : "\u6CA1\u6709\u8FDE\u4E0A\u5FAE\u4FE1\u8BFB\u4E66\u3002\u7A97\u53E3\u5173\u6389\u4E86\u3001\u6216\u8005\u8FD8\u6CA1\u626B\u7801\uFF1B\u968F\u65F6\u53EF\u4EE5\u518D\u6309\u4E00\u6B21\u3002",
         8e3
       );
-    })();
+    }, "\u8FDE\u63A5\u5FAE\u4FE1\u8BFB\u4E66\u5931\u8D25\uFF1A");
   });
 }
 
@@ -4767,20 +5094,37 @@ function registerFormatter(ctx) {
   const dirtyWhileOpen = /* @__PURE__ */ new Set();
   const lastRun = /* @__PURE__ */ new Map();
   let openPath = null;
-  const formatFile = async (file) => {
+  const formatFile = async (file, mayWrite = () => true) => {
     const rules = ctx.settings.formatRules;
     const current = await ctx.app.vault.cachedRead(file);
     if (formatMarkdown(current, rules) === current) return false;
-    lastRun.set(file.path, Date.now());
-    ctx.guard.mark(file.path);
-    await ctx.app.vault.process(file, (content) => formatMarkdown(content, rules));
-    return true;
+    if (!mayWrite()) return false;
+    let changed = false;
+    await ctx.app.vault.process(file, (content) => {
+      if (!mayWrite()) return content;
+      const next = formatMarkdown(content, rules);
+      if (next === content) return content;
+      changed = true;
+      lastRun.set(file.path, Date.now());
+      ctx.guard.mark(file.path);
+      return next;
+    });
+    return changed;
   };
   const formatPath = async (path) => {
     if (!ctx.settings.autoFormat) return;
     const file = ctx.app.vault.getAbstractFileByPath(path);
     if (!(file instanceof import_obsidian20.TFile) || file.extension !== "md") return;
-    await formatFile(file);
+    const mayWrite = () => {
+      var _a;
+      return ((_a = ctx.app.workspace.getActiveFile()) == null ? void 0 : _a.path) !== path;
+    };
+    if (!mayWrite()) {
+      dirtyWhileOpen.add(path);
+      return;
+    }
+    const changed = await formatFile(file, mayWrite);
+    if (!changed && !mayWrite()) dirtyWhileOpen.add(path);
   };
   const cancel = (path) => {
     const pending2 = pendingTimeouts.get(path);
@@ -4950,7 +5294,7 @@ var SOURCES = [
   (year) => `https://fastly.jsdelivr.net/gh/NateScarlet/holiday-cn@master/${year}.json`,
   (year) => `https://raw.githubusercontent.com/NateScarlet/holiday-cn/master/${year}.json`
 ];
-function isRecord(value) {
+function isRecord2(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 function isIsoDate(value) {
@@ -4968,7 +5312,7 @@ function isGovernmentPaper(value) {
   }
 }
 function parseHolidayDataset(input, expectedYear) {
-  if (!isRecord(input) || input.year !== expectedYear) return null;
+  if (!isRecord2(input) || input.year !== expectedYear) return null;
   if (!Array.isArray(input.papers) || !Array.isArray(input.days)) return null;
   const papers = [];
   for (const paper of input.papers) {
@@ -4978,7 +5322,7 @@ function parseHolidayDataset(input, expectedYear) {
   const days = [];
   const seen = /* @__PURE__ */ new Set();
   for (const item of input.days) {
-    if (!isRecord(item)) return null;
+    if (!isRecord2(item)) return null;
     const name = typeof item.name === "string" ? item.name.trim() : "";
     const date = typeof item.date === "string" ? item.date : "";
     const dateYear = Number(date.slice(0, 4));
@@ -5092,14 +5436,14 @@ var HolidayService = class {
     try {
       if (!await adapter.exists(this.cachePath)) return;
       const raw = JSON.parse(await adapter.read(this.cachePath));
-      if (!isRecord(raw) || raw.schemaVersion !== CACHE_SCHEMA_VERSION || !Array.isArray(raw.notices)) {
+      if (!isRecord2(raw) || raw.schemaVersion !== CACHE_SCHEMA_VERSION || !Array.isArray(raw.notices)) {
         return;
       }
       for (const item of raw.notices) {
-        if (!isRecord(item) || typeof item.checkedAt !== "number" || !Number.isFinite(item.checkedAt)) {
+        if (!isRecord2(item) || typeof item.checkedAt !== "number" || !Number.isFinite(item.checkedAt)) {
           continue;
         }
-        if (!isRecord(item.dataset)) continue;
+        if (!isRecord2(item.dataset)) continue;
         const year = item.dataset.year;
         if (typeof year !== "number" || !Number.isInteger(year)) continue;
         const dataset = parseHolidayDataset(item.dataset, year);
@@ -17227,9 +17571,10 @@ var serviceClients = {
   name: "\u670D\u52A1\u5BA2\u6237",
   render: async (view) => {
     var _a;
+    const archive = archiveFolderOf(view.ctx);
     const stats = /* @__PURE__ */ new Map();
     for (const { project, client } of clientProjects(view)) {
-      if (!client) continue;
+      if (!client || !isLivePath(archive, client.path)) continue;
       const bucket = (_a = stats.get(client.path)) != null ? _a : { note: client, open: 0, total: 0 };
       bucket.total += 1;
       if (toText(view.index.fieldOf(project, FIELDS.status)).toLowerCase() === "active") {
@@ -17396,7 +17741,7 @@ var ANY_HEADING = /^#{1,6}\s/;
 var PLACEHOLDER = "-";
 var TASK_BOX = /^(\s*(?:[-*+]|\d+[.)])\s+\[)([^\]])(\]\s)/;
 function toggleTaskLine(content, line, expectedChecked) {
-  const lines = content.split("\n");
+  const { lines, lineEnding } = splitTextLines(content);
   const current = lines[line];
   if (typeof current !== "string") return null;
   const match = TASK_BOX.exec(current);
@@ -17404,17 +17749,14 @@ function toggleTaskLine(content, line, expectedChecked) {
   const checked = match[2].trim().toLowerCase() === "x";
   if (checked !== expectedChecked) return null;
   lines[line] = current.replace(TASK_BOX, `$1${checked ? " " : "x"}$3`);
-  return lines.join("\n");
+  return joinTextLines(lines, lineEnding);
 }
 function insertIntoSection(content, heading, line) {
-  const lines = content.split("\n");
+  const { lines, lineEnding } = splitTextLines(content);
   const headingIndex = lines.findIndex((text3) => text3.trim() === heading);
-  if (headingIndex < 0) return `${content.replace(/\s*$/, "")}
-
-${heading}
-
-${line}
-`;
+  if (headingIndex < 0) {
+    return [content.replace(/\s*$/, ""), "", heading, "", line, ""].join(lineEnding);
+  }
   let sectionEnd = lines.length;
   for (let cursor = headingIndex + 1; cursor < lines.length; cursor += 1) {
     if (ANY_HEADING.test(lines[cursor])) {
@@ -17432,10 +17774,10 @@ ${line}
   while (insertAt > headingIndex + 1 && lines[insertAt - 1].trim() === "") insertAt -= 1;
   if (insertAt > headingIndex + 1 && lines[insertAt - 1].trim() === PLACEHOLDER) {
     lines[insertAt - 1] = line;
-    return lines.join("\n");
+    return joinTextLines(lines, lineEnding);
   }
   lines.splice(insertAt, 0, line);
-  return lines.join("\n");
+  return joinTextLines(lines, lineEnding);
 }
 
 // src/modules/review/templates.ts
@@ -18306,14 +18648,12 @@ var openTasks = {
   }
 };
 async function toggleTask(view, task) {
-  view.ctx.guard.mark(task.file.path);
-  await view.ctx.app.vault.process(
-    task.file,
-    (content) => {
-      var _a;
-      return (_a = toggleTaskLine(content, task.line, task.checked)) != null ? _a : content;
-    }
-  );
+  await view.ctx.app.vault.process(task.file, (content) => {
+    const changed = toggleTaskLine(content, task.line, task.checked);
+    if (changed === null || changed === content) return content;
+    view.ctx.guard.mark(task.file.path);
+    return changed;
+  });
 }
 function mentionSources(view, host) {
   const sources = [];
@@ -18421,7 +18761,7 @@ async function recordFavor(ctx, openDaily) {
       new import_obsidian27.Notice(MESSAGES7.noDiary);
       return;
     }
-    const line = ledgerLine(person.basename, kind, item, status);
+    const line = ledgerLine(personLink(person), kind, item, status);
     ctx.guard.mark(diary.path);
     await ctx.app.vault.process(
       diary,
@@ -18436,8 +18776,11 @@ async function recordFavor(ctx, openDaily) {
 function cleanItem(raw) {
   return raw.replace(/\s+/g, " ").split(LEDGER.separator).join("|").trim();
 }
-function ledgerLine(name, kind, item, status) {
-  const segments = [`[[${name}]]`, kind, item];
+function personLink(person) {
+  return `[[${person.path.replace(/\.md$/i, "")}|${person.basename}]]`;
+}
+function ledgerLine(person, kind, item, status) {
+  const segments = [person, kind, item];
   if (status !== LEDGER.defaultStatus) segments.push(status);
   return `- ${segments.join(LEDGER.separator)}`;
 }
@@ -19157,7 +19500,8 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
         if (person) {
           relation = {
             field: field2,
-            target: person.basename
+            // 全路径消除人脉与客户目录里的同名歧义，别名仍让属性面板只显示姓名
+            target: `${person.path.replace(/\.md$/i, "")}|${person.basename}`
           };
         }
       }
@@ -19381,6 +19725,7 @@ function resolveTransitionPlan(ctx, transition) {
     projectFolder,
     projectName,
     currentStatus,
+    previousArchived: frontmatter == null ? void 0 : frontmatter[FIELDS.archived],
     sourceProjectPath,
     targetRoot,
     targetProjectPath,
@@ -19390,43 +19735,53 @@ function resolveTransitionPlan(ctx, transition) {
 }
 async function applyTransition(ctx, plan) {
   const { app, guard } = ctx;
-  await ensureFolderPath(app, plan.targetRoot);
-  const progress = {
-    moved: false,
-    statusChanged: false,
-    basePathChanged: false,
-    previousArchived: void 0
+  const original = {
+    status: plan.currentStatus,
+    archived: plan.previousArchived
   };
+  const trace = {
+    frontmatterVisited: false,
+    basePathChanged: false
+  };
+  await ensureFolderPath(app, plan.targetRoot);
   try {
     markFolderTree(ctx, plan.projectFolder, plan.targetProjectPath);
     await app.fileManager.renameFile(plan.projectFolder, plan.targetProjectPath);
-    progress.moved = true;
     const movedMoc = app.vault.getAbstractFileByPath(plan.targetMocPath);
     if (!(movedMoc instanceof import_obsidian32.TFile)) {
       throw new Error(`\u79FB\u52A8\u540E\u6CA1\u6709\u627E\u5230\u9879\u76EE MOC\uFF1A${plan.targetMocPath}`);
     }
     guard.mark(movedMoc.path);
     await app.fileManager.processFrontMatter(movedMoc, (movedFrontmatter) => {
+      original.status = normalizeText(movedFrontmatter.status);
+      original.archived = movedFrontmatter[FIELDS.archived];
+      trace.frontmatterVisited = true;
       if (!MOVABLE_TYPES.includes(normalizeText(movedFrontmatter.type))) {
         throw new Error("\u79FB\u52A8\u540E\u7684 MOC \u7F3A\u5C11 type: project\uFF08\u9879\u76EE\uFF09\u6216 type: book\uFF08\u4E66\uFF09\u3002");
       }
+      if (!plan.transition.allowedStatuses.includes(original.status)) {
+        throw new Error(
+          `\u786E\u8BA4\u671F\u95F4\u9879\u76EE\u72B6\u6001\u5DF2\u53D8\u4E3A\u201C${formatStatusForDisplay(original.status)}\u201D\uFF0C\u672C\u6B21\u6D41\u8F6C\u5DF2\u505C\u6B62\u3002`
+        );
+      }
       movedFrontmatter.status = plan.transition.status;
-      progress.previousArchived = movedFrontmatter[FIELDS.archived];
       if (plan.transition.target === "archive") {
         movedFrontmatter[FIELDS.archived] = today();
       } else {
         delete movedFrontmatter[FIELDS.archived];
       }
     });
-    progress.statusChanged = true;
-    progress.basePathChanged = await updateMocBaseFolderPath(
+    return await updateMocBaseFolderPath(
       ctx,
       movedMoc,
       plan.sourceProjectPath,
-      plan.targetProjectPath
+      plan.targetProjectPath,
+      () => {
+        trace.basePathChanged = true;
+      }
     );
   } catch (operationError) {
-    const rollbackError = await rollbackTransition(ctx, plan, progress);
+    const rollbackError = await rollbackTransition(ctx, plan, original, trace);
     if (rollbackError) {
       throw new Error(
         `${getErrorMessage(operationError)}\uFF1B\u81EA\u52A8\u56DE\u6EDA\u4E5F\u5931\u8D25\uFF1A${getErrorMessage(rollbackError)}`
@@ -19434,7 +19789,6 @@ async function applyTransition(ctx, plan) {
     }
     throw operationError;
   }
-  return progress.basePathChanged;
 }
 function markFolderTree(ctx, folder, targetPath) {
   const { guard } = ctx;
@@ -19456,45 +19810,60 @@ async function reopenMovedMoc(ctx, targetMocPath) {
   } catch (e) {
   }
 }
-async function updateMocBaseFolderPath(ctx, mocFile, oldProjectPath, newProjectPath) {
+async function updateMocBaseFolderPath(ctx, mocFile, oldProjectPath, newProjectPath, onChange) {
   const oldFilter = `file.folder == ${JSON.stringify(oldProjectPath)}`;
   const newFilter = `file.folder == ${JSON.stringify(newProjectPath)}`;
   let changed = false;
-  ctx.guard.mark(mocFile.path);
   await ctx.app.vault.process(mocFile, (content) => {
     if (!content.includes(oldFilter)) return content;
     changed = true;
+    onChange == null ? void 0 : onChange();
+    ctx.guard.mark(mocFile.path);
     return content.split(oldFilter).join(newFilter);
   });
   return changed;
 }
-async function rollbackTransition(ctx, plan, progress) {
-  var _a;
-  if (!progress.moved) return null;
+async function rollbackTransition(ctx, plan, original, trace) {
   const { app, guard } = ctx;
   try {
-    const currentFolder = (_a = app.vault.getAbstractFileByPath(plan.targetProjectPath)) != null ? _a : plan.projectFolder;
-    if (!(currentFolder instanceof import_obsidian32.TFolder)) {
-      throw new Error(`\u56DE\u6EDA\u65F6\u6CA1\u6709\u627E\u5230\u9879\u76EE\u76EE\u5F55\uFF1A${plan.targetProjectPath}`);
+    const sourceEntry = app.vault.getAbstractFileByPath(plan.sourceProjectPath);
+    const targetEntry = app.vault.getAbstractFileByPath(plan.targetProjectPath);
+    if (sourceEntry && targetEntry) {
+      throw new Error("\u56DE\u6EDA\u65F6\u539F\u4F4D\u7F6E\u4E0E\u76EE\u6807\u4F4D\u7F6E\u540C\u65F6\u5B58\u5728\uFF0C\u5DF2\u505C\u6B62\u4EE5\u514D\u8986\u76D6\u4EFB\u4F55\u4E00\u8FB9");
     }
-    if (app.vault.getAbstractFileByPath(plan.sourceProjectPath)) {
-      throw new Error(`\u539F\u4F4D\u7F6E\u5DF2\u7ECF\u88AB\u5360\u7528\uFF1A${plan.sourceProjectPath}`);
+    if (!sourceEntry && !targetEntry) {
+      throw new Error("\u56DE\u6EDA\u65F6\u539F\u4F4D\u7F6E\u4E0E\u76EE\u6807\u4F4D\u7F6E\u90FD\u4E0D\u5B58\u5728\uFF0C\u65E0\u6CD5\u5B9A\u4F4D\u9879\u76EE\u76EE\u5F55");
     }
-    markFolderTree(ctx, currentFolder, plan.sourceProjectPath);
-    await app.fileManager.renameFile(currentFolder, plan.sourceProjectPath);
+    if (sourceEntry && !(sourceEntry instanceof import_obsidian32.TFolder)) {
+      throw new Error(`\u56DE\u6EDA\u65F6\u539F\u4F4D\u7F6E\u4E0D\u662F\u9879\u76EE\u76EE\u5F55\uFF1A${plan.sourceProjectPath}`);
+    }
+    if (targetEntry) {
+      if (!(targetEntry instanceof import_obsidian32.TFolder)) {
+        throw new Error(`\u56DE\u6EDA\u65F6\u76EE\u6807\u4F4D\u7F6E\u4E0D\u662F\u9879\u76EE\u76EE\u5F55\uFF1A${plan.targetProjectPath}`);
+      }
+      markFolderTree(ctx, targetEntry, plan.sourceProjectPath);
+      try {
+        await app.fileManager.renameFile(targetEntry, plan.sourceProjectPath);
+      } catch (renameError) {
+        const restored = app.vault.getAbstractFileByPath(plan.sourceProjectPath);
+        const remains = app.vault.getAbstractFileByPath(plan.targetProjectPath);
+        if (!(restored instanceof import_obsidian32.TFolder) || remains) throw renameError;
+      }
+    }
+    if (!trace.frontmatterVisited && !trace.basePathChanged) return null;
     const restoredMoc = app.vault.getAbstractFileByPath(plan.expectedMocPath);
     if (!(restoredMoc instanceof import_obsidian32.TFile)) {
       throw new Error(`\u56DE\u6EDA\u540E\u6CA1\u6709\u627E\u5230\u9879\u76EE MOC\uFF1A${plan.expectedMocPath}`);
     }
-    if (progress.statusChanged) {
+    if (trace.frontmatterVisited) {
       guard.mark(restoredMoc.path);
       await app.fileManager.processFrontMatter(restoredMoc, (frontmatter) => {
-        frontmatter.status = plan.currentStatus;
-        if (progress.previousArchived === void 0) delete frontmatter[FIELDS.archived];
-        else frontmatter[FIELDS.archived] = progress.previousArchived;
+        frontmatter.status = original.status;
+        if (original.archived === void 0) delete frontmatter[FIELDS.archived];
+        else frontmatter[FIELDS.archived] = original.archived;
       });
     }
-    if (progress.basePathChanged) {
+    if (trace.basePathChanged) {
       await updateMocBaseFolderPath(
         ctx,
         restoredMoc,
@@ -19979,12 +20348,12 @@ function renderClosedGroup(view, title, list) {
 }
 function renderActiveGroup(view, list, end, year) {
   if (!list.length) return;
-  const isPastYear = end <= today();
-  const cutoff = isPastYear ? today() : end;
+  const cutoff = today();
+  const isPastYear = end <= cutoff;
   const sorted = [...list].sort(
     (left, right) => String(left.born).localeCompare(String(right.born))
   );
-  renderHeading(view.el, 4, `\u{1F525} ${isPastYear ? "\u622A\u81F3\u4ECA\u65E5" : "\u5E74\u672B"}\u4ECD\u5728\u8FDB\u884C\uFF08${list.length}\uFF09`);
+  renderHeading(view.el, 4, `\u{1F525} \u622A\u81F3\u4ECA\u65E5\u4ECD\u5728\u8FDB\u884C\uFF08${list.length}\uFF09`);
   if (isPastYear) {
     renderNote(
       view.el,
@@ -20786,7 +21155,7 @@ async function initializeVault(ctx, seeds) {
   var _a;
   try {
     const isFirstRun = ctx.settings.initializedAt === "";
-    if (isFirstRun && hasUserNotes(ctx)) {
+    if (isFirstRun && hasUserNotes(ctx, seeds)) {
       new import_obsidian38.Notice(MESSAGES10.notEmpty);
       return;
     }
@@ -20799,14 +21168,12 @@ async function initializeVault(ctx, seeds) {
       await applySeed(ctx, seed);
     }
     if (isFirstRun) {
+      ctx.settings.initializedAt = nowStamp(ctx.settings.dateTimeFormat);
+      await ctx.saveSettings();
       for (const seed of seeds) {
         await ((_a = seed.finish) == null ? void 0 : _a.call(seed));
       }
     }
-    if (isFirstRun) {
-      ctx.settings.initializedAt = nowStamp(ctx.settings.dateTimeFormat);
-    }
-    await ctx.saveSettings();
     new import_obsidian38.Notice(MESSAGES10.done);
     const landing = ctx.app.vault.getAbstractFileByPath(README_FILE) ? README_FILE : NAV_FILE;
     await ctx.app.workspace.openLinkText(landing, "", false);
@@ -20823,9 +21190,14 @@ async function applySeed(ctx, seed) {
     await createFileIfMissing(ctx, note.path, note.content);
   }
 }
-function hasUserNotes(ctx) {
+function hasUserNotes(ctx, seeds) {
   const systemPrefix = `${FOLDERS.system}/`;
-  return ctx.app.vault.getMarkdownFiles().some((file) => file.path !== README_FILE && !file.path.startsWith(systemPrefix));
+  const generated = /* @__PURE__ */ new Set([
+    README_FILE,
+    SCHEMA_NOTE,
+    ...seeds.flatMap((seed) => seed.notes.map((note) => note.path))
+  ]);
+  return ctx.app.vault.getMarkdownFiles().some((file) => !generated.has(file.path) && !file.path.startsWith(systemPrefix));
 }
 async function createFileIfMissing(ctx, path, content) {
   if (ctx.app.vault.getAbstractFileByPath(path)) return;
@@ -21095,8 +21467,7 @@ var SettingsPanels = class {
         button.setDisabled(true);
         try {
           if (connected) {
-            this.ctx.settings.wereadCookie = "";
-            await this.ctx.saveSettings();
+            await this.actions.disconnectWeread();
           } else {
             await this.actions.connectWeread();
           }
@@ -21571,6 +21942,7 @@ var ZiminosPlugin = class extends import_obsidian41.Plugin {
       // 注册台同样全库唯一：它手里那份花名册就是左侧边栏与设置页看到的命令清单
       commands: new CommandRegistry(this)
     };
+    this.register(disposeWereadSession);
     const collectSeeds = () => [
       projectsSeed(ctx),
       reviewSeed(ctx),
@@ -21632,6 +22004,7 @@ var ZiminosPlugin = class extends import_obsidian41.Plugin {
         // 设置页里那颗「扫码连接」按钮，与命令面板那条「连接微信读书」是同一段登录流程；
         // 设置页不 import books 模块，因此这项能力也走注入
         connectWeread: () => loginWeread(ctx),
+        disconnectWeread: () => disconnectWeread(ctx),
         syncAppearanceSwitch,
         syncRibbon,
         syncExplorer,
@@ -21641,14 +22014,11 @@ var ZiminosPlugin = class extends import_obsidian41.Plugin {
     );
   }
   /**
-   * 读取持久化设置并补齐缺省值。
-   * 用「默认值打底、存档覆盖」的顺序合并：新版本新增的字段对老库自动生效，
-   * 老库里已有的选择则一个都不会被冲掉。首次安装时 loadData 返回 null，结果即纯默认值。
+   * 读取持久化设置并在唯一入口逐字段验形。
+   * 合法旧值原样保留，缺失或类型错误的字段各自回落默认；数组与枚举再走自己的白名单，
+   * 因此损坏或手改过的 data.json 不会把错误形态带进模块。首次安装仍得到纯默认值。
    */
   async loadSettings() {
-    const stored = await this.loadData();
-    this.settings = { ...DEFAULT_SETTINGS, ...stored != null ? stored : {} };
-    this.settings.ribbonCommands = normalizeRibbonCommands(this.settings.ribbonCommands);
-    this.settings.formatRules = normalizeFormatRules(this.settings.formatRules);
+    this.settings = normalizeSettings(await this.loadData());
   }
 };

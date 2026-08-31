@@ -1,12 +1,12 @@
 /**
  * [INPUT]: 依赖 obsidian 的 Plugin 基类；依赖 core 的 SelfWriteGuard、CommandRegistry、
- *          INIT_VAULT_COMMAND、normalizeRibbonCommands、DEFAULT_SETTINGS、
+ *          INIT_VAULT_COMMAND、DEFAULT_SETTINGS/normalizeSettings、
  *          ZiminosSettings/ZiminosContext/VaultSeed 契约、PERIODS 与 registerViewCodeBlock；
  *          依赖 modules/setup 的 initializeVault/applySeed，以及项目管理、读书笔记、灵感收集、
  *          日历、复盘、人脉与客户七个模块各自的 seed、register 函数与视图数组，
  *          其中读书笔记那三条命令还要 modules/projects/createContainer 的 createContainer/BOOK_KIND
  *          来填「建一个书籍容器」那个洞，设置页那颗「扫码连接」还要 modules/books/sourceWeread
- *          的 loginWeread 来填「开微信读书的登录窗口」那个洞；
+ *          的 loginWeread/disconnectWeread/disposeWereadSession 来管理登录窗口、断开与卸载清理；
  *          复盘的打开命令还要 theme 的 promptThemeIfMissing 来填「日记已打开」那个洞；
  *          再加 modules/format 的 registerFormatter、modules/appearance 的 registerAppearanceSwitch、
  *          modules/ribbon 的 registerRibbon、
@@ -36,11 +36,10 @@
 
 import { Plugin } from 'obsidian';
 import { registerViewCodeBlock } from './core/codeblock';
-import { CommandRegistry, INIT_VAULT_COMMAND, normalizeRibbonCommands } from './core/commands';
-import { normalizeFormatRules } from './core/markdownStyle';
+import { CommandRegistry, INIT_VAULT_COMMAND } from './core/commands';
 import { PERIODS } from './core/constants';
 import { SelfWriteGuard } from './core/guard';
-import { DEFAULT_SETTINGS } from './core/types';
+import { DEFAULT_SETTINGS, normalizeSettings } from './core/types';
 import type { VaultSeed, ZiminosContext, ZiminosSettings } from './core/types';
 import { aboutViews, renderAboutPanel } from './modules/about/view';
 import { registerAppearanceSwitch } from './modules/appearance/statusBar';
@@ -52,7 +51,7 @@ import {
     registerReadBookCommand,
     registerSyncHighlightsCommand,
 } from './modules/books/readBook';
-import { loginWeread } from './modules/books/sourceWeread';
+import { disconnectWeread, disposeWereadSession, loginWeread } from './modules/books/sourceWeread';
 import { registerCursorMemory } from './modules/editing/cursorMemory';
 import { registerPasteLink } from './modules/editing/pasteLink';
 import { registerFolderCount } from './modules/explorer/badge';
@@ -115,6 +114,9 @@ export default class ZiminosPlugin extends Plugin {
             // 注册台同样全库唯一：它手里那份花名册就是左侧边栏与设置页看到的命令清单
             commands: new CommandRegistry(this),
         };
+
+        // 扫码窗口与内存令牌属于插件会话；卸载时必须一并收口
+        this.register(disposeWereadSession);
 
         // ============================================================
         // 开荒：各模块自报诉求，开荒模块只认这份契约，不认识任何模块
@@ -258,6 +260,7 @@ export default class ZiminosPlugin extends Plugin {
                 // 设置页里那颗「扫码连接」按钮，与命令面板那条「连接微信读书」是同一段登录流程；
                 // 设置页不 import books 模块，因此这项能力也走注入
                 connectWeread: () => loginWeread(ctx),
+                disconnectWeread: () => disconnectWeread(ctx),
                 syncAppearanceSwitch,
                 syncRibbon,
                 syncExplorer,
@@ -268,18 +271,11 @@ export default class ZiminosPlugin extends Plugin {
     }
 
     /**
-     * 读取持久化设置并补齐缺省值。
-     * 用「默认值打底、存档覆盖」的顺序合并：新版本新增的字段对老库自动生效，
-     * 老库里已有的选择则一个都不会被冲掉。首次安装时 loadData 返回 null，结果即纯默认值。
+     * 读取持久化设置并在唯一入口逐字段验形。
+     * 合法旧值原样保留，缺失或类型错误的字段各自回落默认；数组与枚举再走自己的白名单，
+     * 因此损坏或手改过的 data.json 不会把错误形态带进模块。首次安装仍得到纯默认值。
      */
     private async loadSettings(): Promise<void> {
-        const stored = (await this.loadData()) as Partial<ZiminosSettings> | null;
-
-        this.settings = { ...DEFAULT_SETTINGS, ...(stored ?? {}) };
-        // 唯一需要额外收敛的字段。浅合并对坏值毫无抵抗力，而它是全部设置里唯一一个
-        // 「值坏了会让设置页画到一半炸掉」的——理由与做法见 normalizeRibbonCommands
-        this.settings.ribbonCommands = normalizeRibbonCommands(this.settings.ribbonCommands);
-        // 同因同治：formatRules 也被 .includes 直接使用，坏值会让整趟排版在第一条规则上炸掉
-        this.settings.formatRules = normalizeFormatRules(this.settings.formatRules);
+        this.settings = normalizeSettings(await this.loadData());
     }
 }
