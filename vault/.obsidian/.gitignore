@@ -2,4 +2,8 @@
 workspace*.json
 plugins/ziminos/data.json
 plugins/ziminos/holiday-cache.json
+plugins/ziminos/recent-files.json
+plugins/ziminos/cursor-positions.json
 plugins/dataview/data.json
+plugins/obsidian-outliner/data.json
+plugins/obsidian-quiet-outline/data.json

@@ -191,11 +191,47 @@ const CREDITS: readonly Credit[] = [
         url: 'https://github.com/platers/obsidian-linter',
         what: '「改完走开就替你整理」这件事本来该装它。排版模块那九条规则是照着它的行为重写的，为的是让学员少装一个插件。',
     },
+    {
+        name: 'File Explorer Note Count',
+        url: 'https://github.com/ozntel/file-explorer-note-count',
+        what: '「计数该长在文件夹名右侧」这个交互结论是它给的。它读的是文件浏览器视图的 view.fileItems——正是看清那个字段不在 obsidian.d.ts 里，我们才改走公开的 getLeavesOfType。',
+    },
+    {
+        name: 'Recent Files',
+        url: 'https://github.com/tgrosinger/recent-files-obsidian',
+        what: '「最近」的成员是你**打开过**的、而不是库里改动过的。这条语义分得清清楚楚，于是一个从没打开过的文件不会突然出现在清单里让人愣一下。',
+    },
+    {
+        name: 'Remember cursor position',
+        url: 'https://github.com/dy-sh/obsidian-remember-cursor-position',
+        what: '光标位置该在**离开一篇时**记下，而不是边打字边记——就这一条把定时器从方案里彻底去掉了。',
+    },
+    {
+        name: 'Paste URL into selection',
+        url: 'https://github.com/denolehov/obsidian-url-into-selection',
+        what: '「选中文字 + 粘贴网址 = 外链」这个动作本身。它没有许可证，一个字节都不能转发，但这个动作值得留下来。',
+    },
+    {
+        name: 'Show Current File Path',
+        url: 'https://github.com/ravimashru/obsidian-show-file-path',
+        what: '当前路径该住在右下角状态栏、点一下就复制——位置与交互都照它。',
+    },
+    {
+        name: 'Legacy Vault Switcher',
+        url: 'https://github.com/Quorafind/Obsidian-Legacy-Vault-Switcher',
+        what: 'Obsidian 1.6 挪走的那三个按钮请得回来。它同样没有许可证不能转发，但它先证明了这件事做得成。',
+    },
 ];
 
 /** 随库或随 main.js 交付的第三方资产：这一段是许可要求的署名，不是客套 */
 const BUNDLED: readonly Credit[] = [
     { name: 'Dataview', url: 'https://github.com/blacksmithgu/obsidian-dataview', what: 'MIT' },
+    { name: 'Outliner', url: 'https://github.com/vslinko/obsidian-outliner', what: 'MIT' },
+    {
+        name: 'Quiet Outline',
+        url: 'https://github.com/guopenghui/obsidian-quiet-outline',
+        what: 'MIT',
+    },
     { name: 'Minimal', url: 'https://github.com/kepano/obsidian-minimal', what: 'MIT' },
     {
         name: 'Style Settings',

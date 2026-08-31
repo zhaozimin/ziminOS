@@ -1,5 +1,6 @@
 /**
- * [INPUT]: 依赖 obsidian 的 App/Plugin 类型，依赖 ./constants 的 PARA、时间、灵感与读书设置合法集合，
+ * [INPUT]: 依赖 obsidian 的 App/Plugin 类型，依赖 ./constants 的 PARA、时间、灵感、读书、
+ *          文件夹计数与最近文件的默认值与合法集合，
  *          依赖 ./commands 的 DEFAULT_RIBBON_COMMANDS/normalizeRibbonCommands 与 CommandRegistry 类型，
  *          依赖 ./markdownStyle 的 DEFAULT_FORMAT_RULES/normalizeFormatRules，依赖 ./guard 的 SelfWriteGuard 类型
  * [OUTPUT]: 对外提供 ZiminosSettings 设置契约、DEFAULT_SETTINGS 默认值、normalizeSettings 持久化边界验形、
@@ -20,11 +21,20 @@ import {
     CLIENT_FOLDER,
     CONTACT_FOLDER,
     DEFAULT_DATETIME_FORMAT,
+    FOLDER_COUNT_DEFAULTS,
     FOLDERS,
     INSPIRATION_DEFAULTS,
     INSPIRATION_INSERT_POSITIONS,
+    RECENT_FILES_DEFAULTS,
+    RECENT_FILES_LIMITS,
+    RECENT_FILES_SORTS,
+    FOLDER_COUNT_TARGETS,
 } from './constants';
-import type { InspirationInsertPosition } from './constants';
+import type {
+    FolderCountTarget,
+    InspirationInsertPosition,
+    RecentFilesSort,
+} from './constants';
 import type { SelfWriteGuard } from './guard';
 
 /** 插件设置，持久化在 vault/.obsidian/plugins/ziminos/data.json */
@@ -116,6 +126,50 @@ export interface ZiminosSettings {
      * 空串＝没连过，那时读书命令只查本机的苹果图书与 Kindle。
      */
     wereadCookie: string;
+    /**
+     * 是否在文件浏览器里给每个文件夹右侧挂一个计数。
+     *
+     * 与状态栏那个按钮同一条纪律：插件往用户屏幕上常驻一样东西，就必须给出撤走它的办法。
+     * 关掉之后计数当场消失、DOM 里一个残留节点都不留——一个「关掉了却还在那儿，重启才没」的
+     * 开关，用户第二次就不会再信它。
+     */
+    showFolderCount: boolean;
+    /** 那个数字数的是什么：笔记 / 子文件夹 / 全部条目。取值见 FOLDER_COUNT_TARGETS */
+    folderCountTarget: FolderCountTarget;
+    /**
+     * 计数是否穿透子文件夹。
+     *
+     * 它与上面那个口径是**两个**设置而不是一个六选一的下拉框，因为两个问题彼此独立：
+     * 「数什么」问的是我关心哪一类东西，「数多深」问的是这个文件夹算到哪儿为止。
+     * 合成六个选项之后，学员为了把「笔记」换成「文件夹」得先想清楚自己刚才选的是哪一档深度。
+     */
+    folderCountRecursive: boolean;
+    /**
+     * 是否在右下角状态栏显示当前笔记的完整路径（点一下复制）。
+     *
+     * 与外观开关、文件夹计数同一条纪律：往用户屏幕上常驻一样东西，就得给出撤走它的办法。
+     * 关掉只是收起那一块，命令「复制当前笔记路径」照常可用。
+     */
+    showFilePath: boolean;
+    /** 「最近文件」清单显示几条；取值见 RECENT_FILES_LIMITS。记录本身另有更大的上限 */
+    recentFilesLimit: number;
+    /** 清单怎么排：按打开时刻还是按文件最后修改时间。取值见 RECENT_FILES_SORTS */
+    recentFilesSort: RecentFilesSort;
+    /**
+     * 粘贴时，若剪贴板里是一条带协议的网址而编辑器里选着一段文字，
+     * 是否把这次粘贴理解成「给这段文字加外链」。
+     *
+     * 关掉之后粘贴完全回到 Obsidian 自己的行为——这个开关必须存在，
+     * 因为拦截 Cmd+V 是全库最容易让人不安的一件事，得让人随时能收回这份授权。
+     */
+    pasteLinkEnabled: boolean;
+    /**
+     * 是否记住每篇笔记关掉时的光标与滚动位置，下次打开时回到那里。
+     *
+     * 位置本身不在这里——它们是状态，住在插件目录下的 cursor-positions.json，
+     * 与 data.json 分家（理由见那个常量的注释）。这里只有「要不要记」这一个开关。
+     */
+    rememberCursor: boolean;
     /** 首次开荒完成的时间戳；空字符串表示尚未初始化，是「首次」与「补齐」的唯一判据 */
     initializedAt: string;
 }
@@ -145,6 +199,14 @@ export const DEFAULT_SETTINGS: ZiminosSettings = {
     bookTagPrefix: BOOK_TAG_DEFAULTS.prefix,
     bookTagCount: BOOK_TAG_DEFAULTS.count,
     wereadCookie: '',
+    showFolderCount: true,
+    folderCountTarget: FOLDER_COUNT_DEFAULTS.target,
+    folderCountRecursive: FOLDER_COUNT_DEFAULTS.recursive,
+    showFilePath: true,
+    recentFilesLimit: RECENT_FILES_DEFAULTS.limit,
+    recentFilesSort: RECENT_FILES_DEFAULTS.sort,
+    pasteLinkEnabled: true,
+    rememberCursor: true,
     initializedAt: '',
 };
 
@@ -165,6 +227,17 @@ export function normalizeSettings(input: unknown): ZiminosSettings {
     const bookTagCount = isBookTagCount(stored.bookTagCount)
         ? stored.bookTagCount
         : DEFAULT_SETTINGS.bookTagCount;
+    // 三个枚举/候选型字段各走一次验形，与上面两个同一姿态：
+    // 它们的值会被直接用来查表（PICKERS）或喂给 slice，坏值不是显示错而是运行时错
+    const folderCountTarget = isFolderCountTarget(stored.folderCountTarget)
+        ? stored.folderCountTarget
+        : DEFAULT_SETTINGS.folderCountTarget;
+    const recentFilesSort = isRecentFilesSort(stored.recentFilesSort)
+        ? stored.recentFilesSort
+        : DEFAULT_SETTINGS.recentFilesSort;
+    const recentFilesLimit = isRecentFilesLimit(stored.recentFilesLimit)
+        ? stored.recentFilesLimit
+        : DEFAULT_SETTINGS.recentFilesLimit;
 
     return {
         autoCardInit: booleanValue('autoCardInit'),
@@ -190,6 +263,14 @@ export function normalizeSettings(input: unknown): ZiminosSettings {
         bookTagPrefix: stringValue('bookTagPrefix'),
         bookTagCount,
         wereadCookie: stringValue('wereadCookie'),
+        showFolderCount: booleanValue('showFolderCount'),
+        folderCountTarget,
+        folderCountRecursive: booleanValue('folderCountRecursive'),
+        showFilePath: booleanValue('showFilePath'),
+        recentFilesLimit,
+        recentFilesSort,
+        pasteLinkEnabled: booleanValue('pasteLinkEnabled'),
+        rememberCursor: booleanValue('rememberCursor'),
         initializedAt: stringValue('initializedAt'),
     };
 }
@@ -210,6 +291,18 @@ function isInspirationInsertPosition(value: unknown): value is InspirationInsert
 /** 读书标签条数只接受设置页列出的数值，拒绝 NaN 与任意手改数字 */
 function isBookTagCount(value: unknown): value is number {
     return typeof value === 'number' && BOOK_TAG_COUNTS.includes(value);
+}
+
+function isFolderCountTarget(value: unknown): value is FolderCountTarget {
+    return typeof value === 'string' && FOLDER_COUNT_TARGETS.some((target) => target === value);
+}
+
+function isRecentFilesSort(value: unknown): value is RecentFilesSort {
+    return typeof value === 'string' && RECENT_FILES_SORTS.some((sort) => sort === value);
+}
+
+function isRecentFilesLimit(value: unknown): value is number {
+    return typeof value === 'number' && RECENT_FILES_LIMITS.includes(value);
 }
 
 /**

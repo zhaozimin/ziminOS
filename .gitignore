@@ -18,4 +18,8 @@ id_ed25519
 /vault/.obsidian/workspace*.json
 /vault/.obsidian/plugins/ziminos/data.json
 /vault/.obsidian/plugins/ziminos/holiday-cache.json
+/vault/.obsidian/plugins/ziminos/recent-files.json
+/vault/.obsidian/plugins/ziminos/cursor-positions.json
 /vault/.obsidian/plugins/dataview/data.json
+/vault/.obsidian/plugins/obsidian-outliner/data.json
+/vault/.obsidian/plugins/obsidian-quiet-outline/data.json

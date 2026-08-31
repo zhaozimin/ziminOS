@@ -113,6 +113,8 @@ test('公开源码隔离运行时凭据与本机路径', () => {
         '/vault/.obsidian/workspace*.json',
         '/vault/.obsidian/plugins/ziminos/data.json',
         '/vault/.obsidian/plugins/ziminos/holiday-cache.json',
+        '/vault/.obsidian/plugins/ziminos/recent-files.json',
+        '/vault/.obsidian/plugins/ziminos/cursor-positions.json',
         '/vault/.obsidian/plugins/dataview/data.json',
     ]) {
         assert.ok(rootIgnore.includes(rule), `源码忽略规则缺失：${rule}`);
@@ -121,6 +123,8 @@ test('公开源码隔离运行时凭据与本机路径', () => {
         'workspace*.json',
         'plugins/ziminos/data.json',
         'plugins/ziminos/holiday-cache.json',
+        'plugins/ziminos/recent-files.json',
+        'plugins/ziminos/cursor-positions.json',
         'plugins/dataview/data.json',
     ]) {
         assert.ok(vaultIgnore.includes(rule), `部署库隐私规则缺失：${rule}`);
