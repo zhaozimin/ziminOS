@@ -1599,10 +1599,46 @@ var CREDITS = [
     name: "Obsidian Linter",
     url: "https://github.com/platers/obsidian-linter",
     what: "\u300C\u6539\u5B8C\u8D70\u5F00\u5C31\u66FF\u4F60\u6574\u7406\u300D\u8FD9\u4EF6\u4E8B\u672C\u6765\u8BE5\u88C5\u5B83\u3002\u6392\u7248\u6A21\u5757\u90A3\u4E5D\u6761\u89C4\u5219\u662F\u7167\u7740\u5B83\u7684\u884C\u4E3A\u91CD\u5199\u7684\uFF0C\u4E3A\u7684\u662F\u8BA9\u5B66\u5458\u5C11\u88C5\u4E00\u4E2A\u63D2\u4EF6\u3002"
+  },
+  {
+    name: "File Explorer Note Count",
+    url: "https://github.com/ozntel/file-explorer-note-count",
+    what: "\u300C\u8BA1\u6570\u8BE5\u957F\u5728\u6587\u4EF6\u5939\u540D\u53F3\u4FA7\u300D\u8FD9\u4E2A\u4EA4\u4E92\u7ED3\u8BBA\u662F\u5B83\u7ED9\u7684\u3002\u5B83\u8BFB\u7684\u662F\u6587\u4EF6\u6D4F\u89C8\u5668\u89C6\u56FE\u7684 view.fileItems\u2014\u2014\u6B63\u662F\u770B\u6E05\u90A3\u4E2A\u5B57\u6BB5\u4E0D\u5728 obsidian.d.ts \u91CC\uFF0C\u6211\u4EEC\u624D\u6539\u8D70\u516C\u5F00\u7684 getLeavesOfType\u3002"
+  },
+  {
+    name: "Recent Files",
+    url: "https://github.com/tgrosinger/recent-files-obsidian",
+    what: "\u300C\u6700\u8FD1\u300D\u7684\u6210\u5458\u662F\u4F60**\u6253\u5F00\u8FC7**\u7684\u3001\u800C\u4E0D\u662F\u5E93\u91CC\u6539\u52A8\u8FC7\u7684\u3002\u8FD9\u6761\u8BED\u4E49\u5206\u5F97\u6E05\u6E05\u695A\u695A\uFF0C\u4E8E\u662F\u4E00\u4E2A\u4ECE\u6CA1\u6253\u5F00\u8FC7\u7684\u6587\u4EF6\u4E0D\u4F1A\u7A81\u7136\u51FA\u73B0\u5728\u6E05\u5355\u91CC\u8BA9\u4EBA\u6123\u4E00\u4E0B\u3002"
+  },
+  {
+    name: "Remember cursor position",
+    url: "https://github.com/dy-sh/obsidian-remember-cursor-position",
+    what: "\u5149\u6807\u4F4D\u7F6E\u8BE5\u5728**\u79BB\u5F00\u4E00\u7BC7\u65F6**\u8BB0\u4E0B\uFF0C\u800C\u4E0D\u662F\u8FB9\u6253\u5B57\u8FB9\u8BB0\u2014\u2014\u5C31\u8FD9\u4E00\u6761\u628A\u5B9A\u65F6\u5668\u4ECE\u65B9\u6848\u91CC\u5F7B\u5E95\u53BB\u6389\u4E86\u3002"
+  },
+  {
+    name: "Paste URL into selection",
+    url: "https://github.com/denolehov/obsidian-url-into-selection",
+    what: "\u300C\u9009\u4E2D\u6587\u5B57 + \u7C98\u8D34\u7F51\u5740 = \u5916\u94FE\u300D\u8FD9\u4E2A\u52A8\u4F5C\u672C\u8EAB\u3002\u5B83\u6CA1\u6709\u8BB8\u53EF\u8BC1\uFF0C\u4E00\u4E2A\u5B57\u8282\u90FD\u4E0D\u80FD\u8F6C\u53D1\uFF0C\u4F46\u8FD9\u4E2A\u52A8\u4F5C\u503C\u5F97\u7559\u4E0B\u6765\u3002"
+  },
+  {
+    name: "Show Current File Path",
+    url: "https://github.com/ravimashru/obsidian-show-file-path",
+    what: "\u5F53\u524D\u8DEF\u5F84\u8BE5\u4F4F\u5728\u53F3\u4E0B\u89D2\u72B6\u6001\u680F\u3001\u70B9\u4E00\u4E0B\u5C31\u590D\u5236\u2014\u2014\u4F4D\u7F6E\u4E0E\u4EA4\u4E92\u90FD\u7167\u5B83\u3002"
+  },
+  {
+    name: "Legacy Vault Switcher",
+    url: "https://github.com/Quorafind/Obsidian-Legacy-Vault-Switcher",
+    what: "Obsidian 1.6 \u632A\u8D70\u7684\u90A3\u4E09\u4E2A\u6309\u94AE\u8BF7\u5F97\u56DE\u6765\u3002\u5B83\u540C\u6837\u6CA1\u6709\u8BB8\u53EF\u8BC1\u4E0D\u80FD\u8F6C\u53D1\uFF0C\u4F46\u5B83\u5148\u8BC1\u660E\u4E86\u8FD9\u4EF6\u4E8B\u505A\u5F97\u6210\u3002"
   }
 ];
 var BUNDLED = [
   { name: "Dataview", url: "https://github.com/blacksmithgu/obsidian-dataview", what: "MIT" },
+  { name: "Outliner", url: "https://github.com/vslinko/obsidian-outliner", what: "MIT" },
+  {
+    name: "Quiet Outline",
+    url: "https://github.com/guopenghui/obsidian-quiet-outline",
+    what: "MIT"
+  },
   { name: "Minimal", url: "https://github.com/kepano/obsidian-minimal", what: "MIT" },
   {
     name: "Style Settings",

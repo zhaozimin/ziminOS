@@ -1,6 +1,6 @@
 # ziminOS - 让零基础学员一键长出能管项目、收灵感、记读书划线、看中国日历、经营人脉、逐级复盘且带完整外观的 Obsidian 个人知识管理系统
 
-TypeScript 7.0 + esbuild 0.28 + Obsidian API 1.13（manifest minAppVersion 1.13.0）+ lunar-typescript 1.8.6 + Dataview 0.5.68 + Minimal 9.0.2 + Style Settings 1.0.9 + Pikaicons（图标，MIT，编译进 main.js）
+TypeScript 7.0 + esbuild 0.28 + Obsidian API 1.13（manifest minAppVersion 1.13.0）+ lunar-typescript 1.8.6 + Dataview 0.5.68 + Outliner 4.10.2 + Quiet Outline 0.5.18 + Minimal 9.0.2 + Style Settings 1.0.9 + Pikaicons（图标，MIT，编译进 main.js）
 
 三条红线贯穿全仓库：人主导（一切写入由用户命令或用户建的文件触发，无定时器、无轮询）、脚本驱动（插件内零 AI 调用，同输入同结果）、只用官方公开 API。
 
