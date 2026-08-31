@@ -2,8 +2,8 @@
  * [INPUT]: 依赖 node:test/assert/fs/path/url 与 esbuild，直接编译并载入 src 中的纯 TypeScript 模块
  * [OUTPUT]: 提供 npm test 的审计回归集，覆盖版本镜像、ISBN 校验、日期严格性、
  *           划线身份与批次归并、设置验形、外观配置保护、换行符保真、桌面数据库选择、
- *           项目回滚、Gitee 安装入口同构与移动端 Node 边界，并在专业版源码存在时
- *           额外覆盖出库单的分隔符往返
+ *           项目回滚、Gitee 安装入口与作者名片同构、公开源码隐私边界与移动端 Node 边界，
+ *           并在专业版源码存在时额外覆盖出库单的分隔符往返
  * [POS]: tests 的唯一可执行入口；只验证公开行为与关键平台边界，不复制业务实现
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -81,6 +81,52 @@ test('README 与安装契约共同指向 Gitee 唯一部署源', () => {
     assert.ok(skill.includes(`git clone --depth 1 "${cloneUrl}"`));
     assert.equal(readme.includes(retiredGitHubUrl), false);
     assert.equal(skill.includes(retiredGitHubUrl), false);
+});
+
+test('作者名片把 Gitee 主页放在中国大陆分组', () => {
+    const source = readFileSync(path.join(ROOT, 'src/modules/about/view.ts'), 'utf8');
+    const mainlandStart = source.indexOf("label: '中国大陆'");
+    const mainlandEnd = source.indexOf('],\n    },', mainlandStart);
+
+    assert.notEqual(mainlandStart, -1);
+    assert.notEqual(mainlandEnd, -1);
+
+    const mainland = source.slice(mainlandStart, mainlandEnd);
+    const giteeIndex = mainland.indexOf("name: 'Gitee'");
+    const bilibiliIndex = mainland.indexOf("name: '哔哩哔哩'");
+
+    assert.notEqual(giteeIndex, -1);
+    assert.match(mainland, /url: 'https:\/\/gitee\.com\/ziminzhao'/);
+    assert.match(mainland, /path: GITEE_PATH, color: '#C71D23'/);
+    assert.ok(giteeIndex < bilibiliIndex);
+});
+
+test('公开源码隔离运行时凭据与本机路径', () => {
+    const rootIgnore = readFileSync(path.join(ROOT, '.gitignore'), 'utf8');
+    const vaultIgnore = readFileSync(path.join(ROOT, 'vault/.obsidian/.gitignore'), 'utf8');
+    const specifications = [
+        readFileSync(path.join(ROOT, 'docs/设计规格书.md'), 'utf8'),
+        readFileSync(path.join(ROOT, 'docs/设计规格书-V2.md'), 'utf8'),
+    ].join('\n');
+
+    for (const rule of [
+        '/vault/.obsidian/workspace*.json',
+        '/vault/.obsidian/plugins/ziminos/data.json',
+        '/vault/.obsidian/plugins/ziminos/holiday-cache.json',
+        '/vault/.obsidian/plugins/dataview/data.json',
+    ]) {
+        assert.ok(rootIgnore.includes(rule), `源码忽略规则缺失：${rule}`);
+    }
+    for (const rule of [
+        'workspace*.json',
+        'plugins/ziminos/data.json',
+        'plugins/ziminos/holiday-cache.json',
+        'plugins/dataview/data.json',
+    ]) {
+        assert.ok(vaultIgnore.includes(rule), `部署库隐私规则缺失：${rule}`);
+    }
+
+    assert.doesNotMatch(specifications, /\/(?:Users|Volumes|private\/tmp)\//);
 });
 
 test('ISBN-13 只接受正确前缀与校验位', () => {

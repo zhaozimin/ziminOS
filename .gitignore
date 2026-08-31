@@ -2,3 +2,20 @@ node_modules/
 .DS_Store
 /ziminOS-*.zip
 /ziminOS-*.zip.sha256
+
+# 本地凭据与环境文件
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+
+# ziminOS 开发库运行时私有状态
+/vault/.obsidian/workspace*.json
+/vault/.obsidian/plugins/ziminos/data.json
+/vault/.obsidian/plugins/ziminos/holiday-cache.json
+/vault/.obsidian/plugins/dataview/data.json
