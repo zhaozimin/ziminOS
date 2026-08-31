@@ -96,6 +96,7 @@ git clone --depth 1 "https://gitee.com/ziminzhao/zimin-os-v1.git" "$install_stag
 施工源/vault/.obsidian/snippets/【编辑-图片】居中显示.css
 施工源/vault/.obsidian/snippets/【编辑-水平线】中间图标.css
 施工源/vault/.obsidian/types.json
+施工源/vault/.obsidian/.gitignore
 施工源/vault/.obsidian/app.json
 施工源/vault/.obsidian/templates.json
 施工源/vault/.obsidian/community-plugins.json
@@ -114,7 +115,7 @@ git clone --depth 1 "https://gitee.com/ziminzhao/zimin-os-v1.git" "$install_stag
 
 这十二个片段的文件名带【】与中文，复制时一律用引号包住路径；扩展名必须是小写 `.css`，大写的 `.CSS` Obsidian 的片段加载器认不出来。
 
-最后四份是笔记库的开箱设置，别当成可有可无的杂项：`app.json` 定下附件落在 `./附件`、粘链接用 wiki 语法并自动跟着改名；`templates.json` 把模板目录指向 `90-system/Template`，缺了它学员打开核心「模板」插件后得自己去翻路径；`community-plugins.json` 决定三个系统插件是否启用；`appearance.json` 决定主题与十个默认启用的片段。
+`.obsidian/.gitignore` 是随库落地的隐私护栏：即使学员以后在笔记库里初始化 Git，也不会把微信读书 Cookie、工作区状态和本机运行缓存提交出去。最后四份则是笔记库的开箱设置，别当成可有可无的杂项：`app.json` 定下附件落在 `./附件`、粘链接用 wiki 语法并自动跟着改名；`templates.json` 把模板目录指向 `90-system/Template`，缺了它学员打开核心「模板」插件后得自己去翻路径；`community-plugins.json` 决定三个系统插件是否启用；`appearance.json` 决定主题与十个默认启用的片段。
 
 任一缺失就停止并说明仓库不完整。ziminOS（含左侧边栏命令坞、三十五枚命令图标与三枚设置页专用图标，图标 SVG 已编进 `main.js`）、Dataview、Outliner、Quiet Outline、Minimal 与 Style Settings 的运行产物已全部在 `vault/` 中，四款正文字体已全部锁定在 `fonts/` 中；不要运行 `npm install` / `npm run build`，不要安装 Node.js，也不要去 Obsidian 商店或网络另行下载主题/插件、图标包或字体。禁止额外安装 QuickAdd、Linter 等非系统组件。
 
@@ -194,8 +195,9 @@ done
 
 然后按下列所有权规则处理用户配置：
 
-0. **ziminOS 自己的 `plugins/ziminos/data.json`：存在就一个字节都不许碰，施工源也不提供它。** 这条排在最前面，因为它最容易被当成「我们自己的文件」而顺手覆盖——它不是。它装着用户在设置页做过的每一个决定：左侧边栏摆了哪几条命令、右下角外观开关显不显示、七个目录改没改过名、灵感落点与时间格式。覆盖它等于把学员用了半年的工作台一键推平，而且没有任何报错。插件启动时以默认值打底合并这份存档，所以新版本新增的设置项对老库自动生效，根本不需要在安装侧动它。
-0a. **ziminOS 插件目录下的三份运行时状态文件：存在就保留，不归安装器替换或清理。** 它们是 `holiday-cache.json`（日历已通过严格校验的最后好数据）、`recent-files.json`（最近打开过哪几篇）与 `cursor-positions.json`（每篇笔记上次的光标位置）。施工源一份都不提供；升级后新版插件各自按 schema 读取，读不懂就当没有、从头开始记，安装侧不代替业务层判断。这条与 `data.json` 那条的区别值得说清：`data.json` 是**选择**，这三份是**状态**——两者都不受管，但状态文件丢了只是少一点便利，选择丢了是把学员的设置抹掉。
+0. **ziminOS 自己的 `plugins/ziminos/data.json`：存在就一个字节都不许碰，施工源也不提供它。** 这条排在最前面，因为它最容易被当成「我们自己的文件」而顺手覆盖——它不是。它装着用户在设置页做过的每一个决定：左侧边栏摆了哪几条命令、右下角外观开关显不显示、七个目录改没改过名、灵感落点与时间格式；连接微信读书之后还包含登录 Cookie。**安装与审计只能确认它是否存在或比较 SHA-256，禁止复制、上传、展示或输出文件内容。** 覆盖它等于把学员用了半年的工作台一键推平，而且没有任何报错；公开它则等于泄露登录凭据。插件启动时以默认值打底合并这份存档，所以新版本新增的设置项对老库自动生效，根本不需要在安装侧动它。
+0a. **ziminOS 插件目录下的三份运行时状态文件：存在就保留，不归安装器替换或清理。** 它们是 `holiday-cache.json`（日历已通过严格校验的最后好数据）、`recent-files.json`（最近打开过哪几篇）与 `cursor-positions.json`（每篇笔记上次的光标位置）。施工源一份都不提供；升级后新版插件各自按 schema 读取，读不懂就当没有、从头开始记，安装侧不代替业务层判断。这条与 `data.json` 那条的区别值得说清：`data.json` 是**选择**，这三份是**状态**——两者都不受管，但状态文件丢了只是少一点便利，选择丢了是把学员的设置抹掉。后两份还各自装着笔记的完整路径，因此与 `data.json` 同样不得输出内容。
+0b. **`.obsidian/.gitignore`：保留用户已有的全部规则，只补齐缺少的八行。** 它们是 `workspace*.json`、`plugins/ziminos/data.json`、`plugins/ziminos/holiday-cache.json`、`plugins/ziminos/recent-files.json`、`plugins/ziminos/cursor-positions.json`、`plugins/dataview/data.json`、`plugins/obsidian-outliner/data.json` 与 `plugins/obsidian-quiet-outline/data.json`。文件不存在时复制施工源版本；存在时逐行检查并只追加缺项，禁止整份覆盖。它不是装饰文档，而是用户未来把笔记库纳入 Git 时阻断 Cookie、笔记路径与设备状态外泄的最后一道防线。
 1. Dataview `data.json`：施工源不提供默认设置文件；目标存在时原样保留，不得创建或覆盖。DataviewJS 因此保持插件上游默认关闭，用户已有选择仍归用户所有。
 1b. `types.json`（属性类型登记表）：目标不存在时才从施工源复制；已存在则解析现有 JSON，只补进缺失的属性键，绝不改写用户已经调过的类型。它决定属性面板给每个属性什么控件（文本/日期时间/日期/数字/列表/勾选框），缺了它学员会看到所有属性都是文本，只能一个个手动改。
 2. Style Settings `data.json`：目标不存在时才从施工源复制；已存在则一个字节都不得改。
@@ -272,6 +274,7 @@ README.md
 - `$vault_root/.obsidian/themes/Minimal/theme.css` 存在，版本为 9.0.2。
 - `$vault_root/.obsidian/snippets/` 下十二个片段全部存在，扩展名一律小写 `.css`（`ls .obsidian/snippets/*.css | wc -l` 至少为 12）。
 - `$vault_root/.obsidian/types.json` 存在且是合法 JSON，`types` 下至少含 `created: datetime`、`UID: number`、`up: multitext`。
+- `$vault_root/.obsidian/.gitignore` 存在，并包含 `workspace*.json`、`plugins/ziminos/data.json`、`plugins/ziminos/holiday-cache.json`、`plugins/ziminos/recent-files.json`、`plugins/ziminos/cursor-positions.json`、`plugins/dataview/data.json`、`plugins/obsidian-outliner/data.json` 与 `plugins/obsidian-quiet-outline/data.json` 八条隐私规则。
 - `$vault_root/.obsidian/community-plugins.json` 包含 `ziminos`、`dataview`、`obsidian-style-settings`、`obsidian-outliner` 与 `obsidian-quiet-outline` 五个 id。
 - `$vault_root/.obsidian/appearance.json` 的全新安装默认主题为 `Minimal`，`textFontFamily` 为 `LXGW WenKai GB Screen`，`enabledCssSnippets` 恰好是上面列出的十个默认启用片段。
 - 用户字体目录里五个字体文件齐全（macOS `~/Library/Fonts`、Linux `~/.local/share/fonts`、Windows `%LOCALAPPDATA%\Microsoft\Windows\Fonts`）：`LXGWWenKaiGBScreen.ttf`、`SourceHanSerifCN-Regular.otf`、`SourceHanSerifCN-Bold.otf`、`ZhuqueFangsong-Regular.ttf`、`LXGWNeoXiHeiPlus.ttf`；Windows 还要确认 HKCU 字体注册表键下五个值名齐全且各自指向存在的文件。
@@ -279,7 +282,7 @@ README.md
 - `$vault_root/.obsidian/plugins/ziminos/data.json` **不存在**。全新安装不该生成它——它由插件在用户第一次改设置时自己写出来。
 - `$vault_root` 内不存在 `.git/`、`src/`、`docs/`、`skill/`、`vault/`、`fonts/`、`node_modules/` 或 `package.json`——字体的家在用户字体目录，不在笔记库。
 
-升级模式还要确认：升级前已存在的 **ziminOS / Dataview / Style Settings / Outliner / Quiet Outline 各份 `data.json` SHA-256 全部不变**（Outliner 与 Quiet Outline 的设置同样是学员的选择，不归 ziminOS 管）；ziminOS 插件目录下已存在的 `holiday-cache.json` / `recent-files.json` / `cursor-positions.json` 一份都没被删或被覆盖（ziminOS 那份装着侧边栏摆放与全部设置，最不能动）；`types.json` 里用户原有的属性类型一个都没被改写；用户原有插件 ID、非空自选主题、自己放进 `snippets/` 的其他 CSS 片段与 Markdown 笔记全部仍在；`enabledCssSnippets` 里升级前已有的名字一个没少，升级前被用户关掉的片段一个都没被重新打开；升级前 `textFontFamily` 已是其他非空值的，升级后原样未动；`app.json` 与 `templates.json` 保持升级前原样。
+升级模式还要确认：升级前已存在的 **ziminOS / Dataview / Style Settings / Outliner / Quiet Outline 各份 `data.json` SHA-256 全部不变**（一律不得打印内容；Outliner 与 Quiet Outline 的设置同样是学员的选择，不归 ziminOS 管，而 ziminOS 那份装着侧边栏摆放与全部设置、还可能包含微信读书 Cookie，最不能动也最不能公开）；ziminOS 插件目录下已存在的 `holiday-cache.json` / `recent-files.json` / `cursor-positions.json` 一份都没被删或被覆盖；`.obsidian/.gitignore` 原有行全部保留且八条系统隐私规则齐全；`types.json` 里用户原有的属性类型一个都没被改写；用户原有插件 ID、非空自选主题、自己放进 `snippets/` 的其他 CSS 片段与 Markdown 笔记全部仍在；`enabledCssSnippets` 里升级前已有的名字一个没少，升级前被用户关掉的片段一个都没被重新打开；升级前 `textFontFamily` 已是其他非空值的，升级后原样未动；`app.json` 与 `templates.json` 保持升级前原样。
 
 若发现开发文件，说明安装错误；由 Agent 修正，不让用户判断哪些文件该删。
 
@@ -325,4 +328,5 @@ esac
 - 只交付仓库已锁定的 ziminOS、Dataview、Outliner、Quiet Outline、Minimal、Style Settings、ziminOS CSS 与 `fonts/` 里的四款字体；不临时下载或安装任何额外软件、插件、主题、图标包或字体。三十五枚命令图标与三枚设置页专用图标的 SVG 已经编进 `main.js`，不需要也不允许另外下载。**Outliner 与 Quiet Outline 同样已在仓库里，不要去 GitHub 或插件市场重新拉一份**——版本与 SHA-256 由 `docs/第三方组件.md` 锁定，现拉的那份对不上。
 - 字体只装进当前用户的字体目录，绝不碰系统级目录、绝不提权要密码；目标位置已有同名文件绝不覆盖。升级时用户已自选的 `textFontFamily` 绝不改动。
 - 全新安装可播种默认配色与默认启用的片段；升级绝不覆盖 **ziminOS 自己的 `data.json`**（侧边栏摆放与全部设置都在里面）、用户 Dataview / Style Settings `data.json`、非空自选主题、额外插件、自带片段，也绝不替用户重新打开他关掉的片段。
+- 不复制、不上传、不展示、不输出 `.obsidian/plugins/ziminos/data.json` 的内容；它可能含微信读书 Cookie。升级只可比较摘要，隐私规则只可增量合并。
 - 判断不了当前目录是否安全时停止，不要猜。
