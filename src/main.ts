@@ -37,6 +37,7 @@
 import { Plugin } from 'obsidian';
 import { registerViewCodeBlock } from './core/codeblock';
 import { CommandRegistry, INIT_VAULT_COMMAND } from './core/commands';
+import { readEdition } from './core/edition';
 import { PERIODS } from './core/constants';
 import { SelfWriteGuard } from './core/guard';
 import { DEFAULT_SETTINGS, normalizeSettings } from './core/types';
@@ -72,6 +73,8 @@ import { registerInspirationCaptureCommand } from './modules/inspiration/capture
 import { registerCardAutoInit, registerCardInitCommand } from './modules/projects/cardInit';
 import { registerCreateAreaCommand } from './modules/projects/createArea';
 import { BOOK_KIND, createContainer } from './modules/projects/createContainer';
+import { createExportHook } from './modules/eternal/export';
+import { eternalRawViews, humanEternalViews } from './modules/eternal/views';
 import { registerCreateProjectCommand } from './modules/projects/createProject';
 import { projectsSeed } from './modules/projects/seed';
 import { registerTransitionCommands } from './modules/projects/transitions';
@@ -100,6 +103,11 @@ export default class ZiminosPlugin extends Plugin {
     async onload(): Promise<void> {
         await this.loadSettings();
 
+        // 版次必须最先读出来：它决定下面哪几条注册线根本不铺。
+        // 免费库里没有那个标记文件，readEdition 走的是「文件不存在」那条最短路径，
+        // 结果恒为 FREE_EDITION，第二版的模块因此一次都不会被调用
+        const edition = await readEdition(this.app);
+
         // ============================================================
         // 装配上下文：模块要用的一切能力都从这里获得，不再各自去摸 app 或磁盘
         // ============================================================
@@ -113,6 +121,7 @@ export default class ZiminosPlugin extends Plugin {
             guard: new SelfWriteGuard(),
             // 注册台同样全库唯一：它手里那份花名册就是左侧边栏与设置页看到的命令清单
             commands: new CommandRegistry(this),
+            edition,
         };
 
         // 扫码窗口与内存令牌属于插件会话；卸载时必须一并收口
@@ -126,7 +135,7 @@ export default class ZiminosPlugin extends Plugin {
         // seed 里带着 created 与 UID，插件早上加载、下午开荒的话，
         // 预先算好的时间戳会把开荒时刻记成加载时刻
         const collectSeeds = (): VaultSeed[] => [
-            projectsSeed(ctx),
+            projectsSeed(),
             reviewSeed(ctx),
             contactsSeed(ctx),
         ];
@@ -145,7 +154,13 @@ export default class ZiminosPlugin extends Plugin {
         registerCreateAreaCommand(ctx);
         registerCardInitCommand(ctx);
         registerCardAutoInit(ctx);
-        registerTransitionCommands(ctx);
+        // 归档移交：只有第二版的「以人为本」库才递得出这个洞。
+        // 免费版与另外两本库拿到的是 undefined，于是流转命令里那条 if 恒为假，
+        // 归档流程与第二版出现之前逐字节相同——这就是「保留第一版」在代码里的样子
+        registerTransitionCommands(
+            ctx,
+            ctx.edition.role === 'human' ? createExportHook(ctx) : undefined,
+        );
         registerUpdatedMaintainer(ctx);
 
         // 一本书就是一个项目：建书要的「一个文件夹 + 一篇 MOC」正是 createContainer 那套流程，
@@ -248,6 +263,12 @@ export default class ZiminosPlugin extends Plugin {
             ...clientViews,
             // 作者名片：开荒写进导航页尾的那个块由它渲染
             ...aboutViews,
+            // 第二版的两张清单按角色分发：出库单那张只在「以人为本」画得出，
+            // 待提炼那张只在《赛博永生》画得出。免费版两个 role 都不是，两张都不注册，
+            // 于是学员的笔记里即便凑巧写了同名代码块，也只会看到「未知视图」而不是一张空表——
+            // 空表会让他以为系统坏了，而未知视图如实说明这里没有这个东西
+            ...(ctx.edition.role === 'human' ? humanEternalViews : []),
+            ...(ctx.edition.role === 'eternal' ? eternalRawViews : []),
         ]);
 
         // ============================================================

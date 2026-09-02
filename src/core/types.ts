@@ -2,9 +2,11 @@
  * [INPUT]: 依赖 obsidian 的 App/Plugin 类型，依赖 ./constants 的 PARA、时间、灵感、读书、
  *          文件夹计数与最近文件的默认值与合法集合，
  *          依赖 ./commands 的 DEFAULT_RIBBON_COMMANDS/normalizeRibbonCommands 与 CommandRegistry 类型，
- *          依赖 ./markdownStyle 的 DEFAULT_FORMAT_RULES/normalizeFormatRules，依赖 ./guard 的 SelfWriteGuard 类型
+ *          依赖 ./markdownStyle 的 DEFAULT_FORMAT_RULES/normalizeFormatRules，依赖 ./guard 的 SelfWriteGuard 类型，
+ *          依赖 ./edition 的 EditionInfo 类型
  * [OUTPUT]: 对外提供 ZiminosSettings 设置契约、DEFAULT_SETTINGS 默认值、normalizeSettings 持久化边界验形、
- *           ZiminosContext 运行时上下文，以及开荒贡献契约 VaultSeed/VaultSeedNote
+ *           ZiminosContext 运行时上下文、开荒贡献契约 VaultSeed/VaultSeedNote，
+ *           以及归档移交契约 ArchivedContainer/ArchivedHook（projects 交出、eternal 接住）
  * [POS]: core 的契约层，定义插件与各功能模块之间唯一的传参形态。
  *        功能模块一律只接收 ZiminosContext，不直接持有 Plugin 实例细节，也不各自读写设置文件——
  *        这样 main.ts 是唯一装配点，模块之间彼此不可见，可以并行开发、独立替换
@@ -25,6 +27,7 @@ import {
     FOLDERS,
     INSPIRATION_DEFAULTS,
     INSPIRATION_INSERT_POSITIONS,
+    LEGACY_INSPIRATION_FORMATS,
     RECENT_FILES_DEFAULTS,
     RECENT_FILES_LIMITS,
     RECENT_FILES_SORTS,
@@ -35,6 +38,7 @@ import type {
     InspirationInsertPosition,
     RecentFilesSort,
 } from './constants';
+import type { EditionInfo } from './edition';
 import type { SelfWriteGuard } from './guard';
 
 /** 插件设置，持久化在 vault/.obsidian/plugins/ziminos/data.json */
@@ -250,7 +254,7 @@ export function normalizeSettings(input: unknown): ZiminosSettings {
         inspirationFileName: stringValue('inspirationFileName'),
         inspirationHeading: stringValue('inspirationHeading'),
         inspirationInsertPosition: insertPosition,
-        inspirationFormat: stringValue('inspirationFormat'),
+        inspirationFormat: currentInspirationFormat(stringValue('inspirationFormat')),
         diaryFolder: stringValue('diaryFolder'),
         contactFolder: stringValue('contactFolder'),
         clientFolder: stringValue('clientFolder'),
@@ -273,6 +277,15 @@ export function normalizeSettings(input: unknown): ZiminosSettings {
         rememberCursor: booleanValue('rememberCursor'),
         initializedAt: stringValue('initializedAt'),
     };
+}
+
+/**
+ * 单条格式是全表唯一一个会被**改值**的字段：与某条旧默认字节相等时换成当前默认值。
+ * 判据是字节相等而不是「看起来像默认值」——用户改过一个字，它就不再等于任何旧默认，
+ * 于是原样留下。这条不是迁移脚本的开端：其余字段仍然只验形、不改值。
+ */
+function currentInspirationFormat(stored: string): string {
+    return LEGACY_INSPIRATION_FORMATS.includes(stored) ? INSPIRATION_DEFAULTS.format : stored;
 }
 
 /** JSON 对象守卫；数组与 null 都不是设置记录 */
@@ -328,12 +341,40 @@ export interface VaultSeed {
     readonly folders: readonly string[];
     /** 本模块要求存在的笔记；已存在的一律不读不改不覆盖 */
     readonly notes: readonly VaultSeedNote[];
-    /**
-     * 仅首次开荒执行的收尾动作，例如开出第一个项目。
-     * 补齐时不执行——补齐是修复骨架，不是重来一次。
-     */
-    readonly finish?: () => Promise<void>;
 }
+
+/**
+ * 一个刚刚归档完成的容器（项目或书）的身份。
+ *
+ * 它住在 core 而不是 projects 模块里，理由与 VaultSeed 完全相同：
+ * 它是**两个模块之间的契约**——projects 在归档成功后交出它，eternal 接住它写出库单。
+ * 让 eternal 去 import projects 的类型，依赖图就从一棵树变成了一张网；
+ * 契约上移到 core，两个模块就仍然彼此不认识。
+ *
+ * uid 是跨库身份，也是这份契约里最要紧的一个字段：项目可以被重新开始、
+ * 再次完成，于是同一个项目会两次出现在出库单上。智能体靠 uid 判断
+ * 「这是同一件事的新版本」而不是「又一个新项目」——没有它，
+ * 《赛博永生》里会长出两页讲同一个项目的 wiki，而且谁都不知道该信哪一页。
+ */
+export interface ArchivedContainer {
+    /** 项目名，也是文件夹名与 MOC 的基名 */
+    readonly name: string;
+    /** 容器类型，取 NOTE_TYPES 里的 project 或 book */
+    readonly kind: string;
+    /** 归档后的 MOC 库内路径 */
+    readonly mocPath: string;
+    /** 归档后的项目文件夹库内路径 */
+    readonly folderPath: string;
+    /** MOC 的 UID。跨库唯一身份，取不到时为空串——空串不写出库单，见 eternal 模块 */
+    readonly uid: string;
+}
+
+/**
+ * 「一个容器刚刚完成归档」这件事的接收者。
+ * projects 模块声明这个洞，main 用 eternal 模块的能力填上；免费版根本不填，
+ * 于是归档流程与第二版出现之前逐字节相同。
+ */
+export type ArchivedHook = (container: ArchivedContainer) => void;
 
 /**
  * 运行时上下文：功能模块能力的全部来源。
@@ -356,4 +397,14 @@ export interface ZiminosContext {
      * 那样命令才会同时出现在命令面板和左侧边栏的可选清单里，两处不会各说各话。
      */
     commands: CommandRegistry;
+    /**
+     * 本库的版次与它在三库系统里的角色，onload 时读一次磁盘得出，此后只读。
+     *
+     * 它放进上下文而不是让模块各自去读，理由与 settings 相同：全局唯一一份引用，
+     * 不存在两个模块对「这是免费版还是付费版」给出不同答案的可能。
+     * 但真正的隔离不在这里——第二版的模块压根不会在免费库里被注册（见 main.ts）。
+     * 这个字段服务的是已经被注册起来的那些模块：它们需要知道赛博永生那本库叫什么，
+     * 才能在出库单里写清目的地、在提示语里说对话。
+     */
+    edition: EditionInfo;
 }

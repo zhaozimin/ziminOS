@@ -2,14 +2,15 @@
  * [INPUT]: 依赖 node:test/assert/fs/path/url 与 esbuild，直接编译并载入 src 中的纯 TypeScript 模块
  * [OUTPUT]: 提供 npm test 的审计回归集，覆盖版本镜像、ISBN 校验、日期严格性、
  *           划线身份与批次归并、设置验形、外观配置保护、换行符保真、桌面数据库选择、
- *           项目回滚、Gitee 安装入口与作者名片同构、公开源码隐私边界与移动端 Node 边界，
- *           并在专业版源码存在时额外覆盖出库单的分隔符往返
+ *           项目回滚、Gitee 安装入口与作者名片同构、公开源码隐私边界、移动端 Node 边界与
+ *           智能体路由完整性，并在专业版源码存在时额外覆盖出库单往返、《赛博永生》路径同构
+ *           与第二版安装入口
  * [POS]: tests 的唯一可执行入口；只验证公开行为与关键平台边界，不复制业务实现
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -59,6 +60,9 @@ const { coalesceHighlights, normalizedHighlightKey } = await loadTypeScript(
 );
 const { dayText } = await loadTypeScript('src/core/time.ts', { stubObsidian: true });
 const { DEFAULT_SETTINGS, normalizeSettings } = await loadTypeScript('src/core/types.ts');
+const { buildInitialInspirationContent, insertInspiration } = await loadTypeScript(
+    'src/modules/inspiration/templates.ts',
+);
 const { setSnippetEnabled } = await loadTypeScript('src/modules/appearance/snippets.ts');
 
 test('package 版本是唯一事实源，manifest 镜像已同步', () => {
@@ -232,6 +236,66 @@ test('持久化设置在进入运行时前逐字段验形', () => {
     assert.equal(normalized.projectFolder, '');
 });
 
+/**
+ * 灵感集的系统页眉是「查询在上、标题在下」，新的一条紧贴标题。
+ *
+ * v0.19.0 由用户拍板换的向，判据是这篇笔记被打开的姿势：它是收件箱，
+ * 打开就为看还没勾掉的那几条，渲染出来的清单该占第一屏。
+ * 两个写入方共用这一种版式——插件走这里，口述走 notectl，
+ * 分叉的表现不是报错，是同一本库里两篇灵感集长得不一样。
+ */
+test('灵感集页眉是查询在上、标题在下，新的一条紧贴标题', () => {
+    const path = '00-inbox/灵感集.md';
+    const first = buildInitialInspirationContent('- [ ] 第一条', '# 灵感集', path);
+
+    assert.match(first, /^```dataview\n/);
+    assert.match(first, /```\n\n# 灵感集\n\n- \[ \] 第一条\n$/);
+
+    const second = insertInspiration(first, '- [ ] 第二条', 'heading-top', '# 灵感集', path);
+
+    assert.match(second, /# 灵感集\n\n- \[ \] 第二条\n- \[ \] 第一条\n$/);
+});
+
+/**
+ * v0.4.0–v0.18.0 的老页眉（标题在上、查询在下）在下一次记录灵感时换位，且**只换一次**。
+ *
+ * 幂等这一半必须钉住：换位与「认得出换位后的样子」是同一段代码的两面，
+ * 认不出的表现不是报错，是每记一条就把页眉重排一遍，用户的笔记天天在变。
+ */
+test('老页眉换位一次，此后逐字节稳定', () => {
+    const path = '00-inbox/灵感集.md';
+    const legacyHeader = insertInspiration(
+        '# 灵感集\n\n```dataview\ntask\nfrom\n    "00-inbox/灵感集.md"\nwhere\n    !completed\n' +
+            'group by\n    "最后更新 · " + dateformat(file.mtime, "yyyy-MM-dd HH:mm")\n```\n\n- [ ] 旧的\n',
+        '- [ ] 新的',
+        'heading-top',
+        '# 灵感集',
+        path,
+    );
+
+    assert.match(legacyHeader, /^```dataview\n/);
+    assert.match(legacyHeader, /# 灵感集\n\n- \[ \] 新的\n- \[ \] 旧的\n$/);
+
+    const again = insertInspiration(legacyHeader, '- [ ] 更新的', 'heading-top', '# 灵感集', path);
+
+    assert.equal(again.replace('- [ ] 更新的\n', ''), legacyHeader);
+});
+
+/**
+ * 单条格式是全表唯一一个会被**改值**的字段。
+ *
+ * `- [ ]` 后面那两个空格是默认值自带的笔误，老库的 data.json 里躺着它的副本，
+ * 只改 INSPIRATION_DEFAULTS 救不了已经装过的人——他们的灵感会一直多带一个空格。
+ * 换值的判据是字节相等：用户改过一个字，它就不再等于任何一条旧默认，于是原样留下。
+ */
+test('旧默认的单条格式被换成当前默认，用户改过的一个字不动', () => {
+    const legacy = normalizeSettings({ inspirationFormat: '- [ ]  {{content}} [[{{date}}]] {{time}}' });
+    const mine = normalizeSettings({ inspirationFormat: '{{time}} {{content}}' });
+
+    assert.equal(legacy.inspirationFormat, DEFAULT_SETTINGS.inspirationFormat);
+    assert.equal(mine.inspirationFormat, '{{time}} {{content}}');
+});
+
 test('损坏的 appearance.json 被拒绝，不覆盖用户外观配置', async () => {
     let writes = 0;
     const app = {
@@ -304,10 +368,275 @@ test('项目流转异常后以源目标路径事实决定回滚', () => {
     assert.doesNotMatch(source, /interface TransitionProgress/);
 });
 
-const manifestPath = path.join(ROOT, 'src/modules/eternal/manifest.ts');
+/**
+ * 每一份存在的施工契约都必须出现在 AGENTS.md 的路由表里。
+ *
+ * AGENTS.md 是桌面智能体自动读到的第一份指令，优先级高于用户那句话。第二版落库时它被漏改，
+ * 于是整整一个版本里它都在说无条件的「安装请求 → skill/SKILL.md」与「不得创建另一层目录」——
+ * 后一句恰好把三库布局明令禁止了。拿着第二版指令来的智能体被它劫持成第一版，
+ * 只装出一本库，而且**不报错**：用户看到的是一个装好了的笔记库，只是少了两本。
+ *
+ * 这条把「新增契约必须同步路由」变成硬约束。再加第三份契约时它会先红。
+ */
+test('每一份施工契约都在 AGENTS.md 的路由表里', () => {
+    const agents = readFileSync(path.join(ROOT, 'AGENTS.md'), 'utf8');
 
-if (existsSync(manifestPath)) {
+    for (const contract of ['skill/SKILL.md', 'skill-pro/SKILL.md']) {
+        if (!existsSync(path.join(ROOT, contract))) continue;
+
+        assert.ok(agents.includes(contract), `AGENTS.md 的路由表里没有 ${contract}`);
+    }
+});
+
+/**
+ * 专业版测试的闸门是**交付物**而不是源码。
+ *
+ * 从 v0.19.0 起 `src/` 整份同步到第一版的公开仓库（第二版那部分被装配期开关关着、
+ * 一行都不执行），因此 `src/modules/eternal/` 在两个仓库里都存在，拿它当闸门会让
+ * 下面这几条在第一版仓库里跑起来，然后找不到 `skill-pro/`、`vault-pro/` 而红。
+ * 真正区分两个仓库的是交付物：只有第二版仓库才有那份契约。
+ */
+const proContractPath = path.join(ROOT, 'skill-pro/SKILL.md');
+
+if (existsSync(proContractPath)) {
     const { manifestLine, parseManifestLine } = await loadTypeScript('src/modules/eternal/manifest.ts');
+
+    const {
+        ETERNAL_FOLDERS,
+        ETERNAL_INDEX_FILE,
+        ETERNAL_LOG_FILE,
+        ETERNAL_LOG_INGEST_MARKS,
+        INSPIRATION_DEFAULTS,
+        LEGACY_INSPIRATION_FORMATS,
+    } = await loadTypeScript('src/core/constants.ts');
+
+    const PRO_REPO = 'gitee.com/ziminzhao/ziminos-pro';
+    const V1_REPO = 'gitee.com/ziminzhao/zimin-os-v1';
+
+    /**
+     * 两个版次住在两个 Gitee 仓库：第一版 zimin-os-v1（公开、免费），第二版 ziminos-pro。
+     *
+     * 分开不是洁癖：第一版的安装契约会把施工源整份克隆到用户机器的临时目录，
+     * 指向 pro 仓库等于让每一个免费用户顺手把付费版的全部交付物拉到本地。
+     * 反过来第二版指向 v1 仓库更糟——那里没有 vault-pro/ 与 skill-pro/，
+     * clone 照样成功，缺目录要等到交付物清单才发作，报的是「仓库不完整」这种像网络抖动的话。
+     */
+    test('第二版的入口指向第二版仓库，第一版的入口不指向它', () => {
+        const proContract = readFileSync(path.join(ROOT, 'skill-pro/SKILL.md'), 'utf8');
+        const v1Contract = readFileSync(path.join(ROOT, 'skill/SKILL.md'), 'utf8');
+        const readme = readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+
+        assert.match(proContract, new RegExp(`git clone[^\\n]*${PRO_REPO.replace(/\./g, '\\.')}`));
+        assert.equal(proContract.includes(V1_REPO), false, '第二版契约不该取第一版仓库');
+
+        // 第一版契约整份克隆施工源，指向 pro 仓库就等于把付费交付物发给每一个免费用户
+        assert.equal(v1Contract.includes(PRO_REPO), false, '第一版契约不该取第二版仓库');
+
+        // 首页两段指令各自导向自己那个仓库的契约
+        assert.ok(readme.includes(`${V1_REPO}/blob/main/skill/SKILL.md`));
+        assert.ok(readme.includes(`${PRO_REPO}/blob/main/skill-pro/SKILL.md`));
+    });
+
+    /**
+     * 首页那两段升级口令，必须点得到各自契约里真实存在的小节。
+     *
+     * 它们是给用户复制粘贴的，里面写死了小节标题。契约那边改一次标题，口令就开始
+     * 指向一个不存在的小节——而智能体不会因此报错，它会自己找一个看起来差不多的地方
+     * 接着干，于是「百分之百走升级」这句承诺悄悄退回成「它自己判断」，
+     * 也就是这两段口令存在的理由被抵消掉的那一刻。
+     */
+    test('首页的升级口令指向两份契约里真实存在的小节', () => {
+        const readme = readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+        const cited = {
+            'skill/SKILL.md': ['## 三、原地搭建当前工作区', '### 升级', '## 五、清理临时施工源'],
+            'skill-pro/SKILL.md': ['## 三、C 三库系统的日常升级', '## 四、验证'],
+        };
+
+        for (const [contractPath, headings] of Object.entries(cited)) {
+            const contract = readFileSync(path.join(ROOT, contractPath), 'utf8');
+
+            for (const heading of headings) {
+                const title = heading.replace(/^#+ /, '');
+
+                assert.ok(readme.includes(title), `README 的升级口令没有点名「${title}」`);
+                assert.ok(contract.includes(heading), `${contractPath} 里没有「${title}」这一节`);
+            }
+
+            // 取施工源那一步两份契约同名，且是最容易被跳过的一步：跳过了升级就静默地什么都不做
+            assert.ok(contract.includes('## 二、在工作区外取得施工源'));
+        }
+
+        // 自证真的干了活，这一条是口令区别于「把安装那段再发一次」的全部价值
+        assert.ok(readme.includes('升级前后的插件版本号'));
+        assert.ok(readme.includes('升级前后的 ziminOS 版本号'));
+    });
+
+    /**
+     * 发布通道的三张清单必须覆盖仓库根的每一个条目。
+     *
+     * publish-v1.sh 把共享部分单向推到第一版的公开仓库，靠 SHARED / PRO_ONLY / PER_REPO
+     * 三张手写清单分流。新增一个第二版专属的顶层目录却忘了写进 PRO_ONLY，
+     * 后果是把付费交付物推进公开仓库——而 git、rsync、脚本自己的防泄漏断言
+     * **都不会报错**，因为那个断言只认清单里已经写着的名字。
+     * 因此判据反过来：不是「清单里的东西都在」，而是「根目录里的东西都被分类过」。
+     */
+    test('publish-v1.sh 的三张清单覆盖仓库根的每一个条目', () => {
+        const script = readFileSync(path.join(ROOT, 'publish-v1.sh'), 'utf8');
+        const classified = new Set();
+
+        for (const listName of ['SHARED', 'PRO_ONLY', 'PER_REPO']) {
+            const matched = new RegExp(`^${listName}=\\(([\\s\\S]*?)^\\)`, 'm').exec(script);
+
+            assert.ok(matched, `publish-v1.sh 缺少 ${listName} 清单`);
+
+            for (const line of matched[1].split('\n')) {
+                const name = line.trim();
+
+                if (name && !name.startsWith('#')) classified.add(name);
+            }
+        }
+
+        // 开发环境的产物与工具目录不进任何一个仓库，不需要分类
+        const ignored = new Set(['.git', 'node_modules', '.claude', '.DS_Store', '.impeccable', '.publish-staging']);
+
+        for (const entry of readdirSync(ROOT)) {
+            if (ignored.has(entry)) continue;
+
+            assert.ok(classified.has(entry), `仓库根的 ${entry} 没有出现在 publish-v1.sh 的任何一张清单里`);
+        }
+    });
+
+    /**
+     * 插件认的路径与模板、安装契约里实际写着的路径必须是同一批字符串。
+     *
+     * 常量改了而模板没改（或反过来）不会有任何东西报错，表现只是「待提炼」永远显示空——
+     * 它去一个不存在的目录里找原料。三处各自都说得通，合起来是错的。
+     */
+    test('《赛博永生》的目录名在常量、模板与安装契约三处一致', () => {
+        const eternalRoot = path.join(ROOT, 'vault-pro/赛博永生');
+
+        assert.ok(existsSync(path.join(eternalRoot, ETERNAL_INDEX_FILE)), ETERNAL_INDEX_FILE);
+        assert.ok(existsSync(path.join(eternalRoot, ETERNAL_LOG_FILE)), ETERNAL_LOG_FILE);
+
+        // 原料层是空目录，空目录不进 git，因此它的事实源是安装契约里那行 mkdir
+        const contract = readFileSync(path.join(ROOT, 'skill-pro/SKILL.md'), 'utf8');
+
+        assert.ok(contract.includes(`mkdir -p "$eternal/${ETERNAL_FOLDERS.raw}"`), ETERNAL_FOLDERS.raw);
+    });
+
+    /**
+     * 三种安装模式都必须真实存在，且每一种都得给得出可执行的命令。
+     *
+     * 这条钉的是一次真实事故：模式判定写着「进入二、C 三库升级模式」，而文档里
+     * 根本没有「二、C」——真实标题是「三、C」；那一节又通篇是散文，一行 cp 都没有。
+     * 于是智能体照着升级，什么都没拷，而**没有任何东西报错**：用户重启 Obsidian
+     * 才发现插件还是旧的，却找不到哪一步失败了。
+     *
+     * 两头都验：判定里引用的小节标题必须真的存在；每种模式的正文里必须有命令。
+     * 只验前者，散文照样能骗过去；只验后者，指错门的判定照样能把人送到空处。
+     */
+    test('三种安装模式的入口都指得对，且都给得出可执行命令', () => {
+        const contract = readFileSync(path.join(ROOT, 'skill-pro/SKILL.md'), 'utf8');
+        const headings = contract.split('\n').filter((line) => line.startsWith('## '));
+
+        for (const mode of ['A', 'B', 'C']) {
+            const heading = headings.find((line) => line.startsWith(`## 三、${mode}`));
+
+            assert.ok(heading, `缺少「三、${mode}」这一节`);
+            assert.ok(
+                contract.includes(`进入「${heading.slice(3)}`) || mode === 'A',
+                `模式判定没有指向真实存在的「${heading.slice(3)}」`,
+            );
+
+            // 该节正文里必须有 bash 代码块，且块里有真的在动文件的命令
+            const start = contract.indexOf(heading);
+            const rest = contract.slice(start + heading.length);
+            const end = rest.indexOf('\n## ');
+            const body = end < 0 ? rest : rest.slice(0, end);
+
+            assert.match(body, /```bash/, `「三、${mode}」没有任何 bash 代码块`);
+            assert.match(
+                body,
+                /^(cp|mkdir|rm|rsync|for) /m,
+                `「三、${mode}」没有一行真的在动文件的命令——它只是在用散文描述该发生什么`,
+            );
+        }
+
+        // 升级模式必须自证程序真的前进了；只检查「没被改坏」的验收，
+        // 会让一次什么都没干的升级顺利通过
+        assert.match(contract, /先确认程序真的前进了/);
+    });
+
+    /**
+     * 系统根必须有一份自己的认路文件，而且安装契约必须真的铺它。
+     *
+     * 这条钉的是「新会话冷启动」那个问题：契约躺在 .ziminos/skills/ 里没有用——
+     * 没有任何东西告诉一个刚打开这个文件夹的智能体去读它，而智能体会自动读的
+     * 恰恰是 CLAUDE.md 与 AGENTS.md。模板在仓库里却没被安装契约拷过去，
+     * 表现不是报错，是用户每开一个窗口都要重新解释一遍这套系统是什么。
+     *
+     * 两头都要验：模板存在、契约里有那两行 cp。少哪一头都等于没有。
+     */
+    test('系统根的认路文件既有模板，也真的被安装契约铺开', () => {
+        const contract = readFileSync(path.join(ROOT, 'skill-pro/SKILL.md'), 'utf8');
+
+        for (const name of ['CLAUDE.md', 'AGENTS.md']) {
+            const template = path.join(ROOT, 'skill-pro/system-root', name);
+
+            assert.ok(existsSync(template), `缺模板 skill-pro/system-root/${name}`);
+            assert.ok(
+                contract.includes(`"$src/skill-pro/system-root/${name}" "$system_root/${name}"`),
+                `安装契约没有把 system-root/${name} 铺到系统根`,
+            );
+        }
+
+        // 认路文件不许写死三本库的目录名当事实源——升级上来的用户那本工作台是他自己取的名字
+        const boot = readFileSync(path.join(ROOT, 'skill-pro/system-root/CLAUDE.md'), 'utf8');
+
+        assert.ok(boot.includes('edition.json'), '认路文件必须指向 edition.json 这个布局事实源');
+    });
+
+    /** AGENTS.md 必须说得出三本库的名字，否则「工作区不是笔记库」这件事讲不清楚 */
+    test('AGENTS.md 说得出三库的布局', () => {
+        const agents = readFileSync(path.join(ROOT, 'AGENTS.md'), 'utf8');
+
+        for (const vault of ['兼收并蓄', '以人为本', '赛博永生']) {
+            assert.ok(agents.includes(vault), `AGENTS.md 没有提到《${vault}》`);
+        }
+    });
+
+    /**
+     * 汉化之前写下的账本行用的是英文 `ingest`。少认这一个标记不会报错，
+     * 只会让那几份原料整体退回「待提炼」，接着被重复消化一遍、知识层跟着重一遍。
+     */
+    test('账本仍认得汉化之前写下的 ingest 行', () => {
+        assert.ok(ETERNAL_LOG_INGEST_MARKS.includes('消化'));
+        assert.ok(ETERNAL_LOG_INGEST_MARKS.includes('ingest'));
+    });
+
+    /**
+     * 灵感行的形态两侧同源。
+     *
+     * 同一条灵感有两个写入方：《以人为本》里的「记录灵感」命令与口述走的 notectl。
+     * 两处各存一份格式串，分叉时不报错——只是同一种记录长出两种复选框，
+     * 一种 `- [ ] `、一种 `- [ ]  `。肉眼几乎分不出，Markdown 却把多出来的那个空格
+     * 算进内容，于是同一串灵感在缩进、折叠与勾选回写上表现不一。
+     * v0.19.0 之前两边都是两个空格，正因为它们当时是一致的，谁都没发现那是个笔误。
+     */
+    test('灵感行的格式两侧同源', () => {
+        const script = readFileSync(path.join(ROOT, 'skill-pro/scripts/notectl.py'), 'utf8');
+        const matched = /^INSPIRATION_FORMAT = "([^"]*)"/m.exec(script);
+
+        assert.ok(matched, 'notectl.py 里找不到 INSPIRATION_FORMAT');
+        assert.equal(
+            matched[1].replace(/\{(content|date|time)\}/g, '{{$1}}'),
+            INSPIRATION_DEFAULTS.format,
+        );
+
+        // 老默认值必须留在场上：只改默认值救不了 data.json 里躺着旧副本的老库
+        assert.ok(LEGACY_INSPIRATION_FORMATS.includes('- [ ]  {{content}} [[{{date}}]] {{time}}'));
+        assert.equal(LEGACY_INSPIRATION_FORMATS.includes(INSPIRATION_DEFAULTS.format), false);
+    });
 
     test('出库单项目名与路径含可见分隔符时仍能无损往返', () => {
         const entry = {

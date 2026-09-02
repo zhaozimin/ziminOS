@@ -3,7 +3,8 @@
  * [OUTPUT]: 对外提供 PARA 目录常量 FOLDERS/INIT_FOLDERS/CONTACT_FOLDER/CLIENT_FOLDER、
  *           笔记路径常量 NAV_FILE/TEMPLATE_FILES/CONTACT_MOC/CLIENT_MOC、
  *           卡片字段序 CARD_FIELDS 与其字段类型 CardField、统一字段名 FIELDS 与身份取值 NOTE_TYPES、
- *           时间格式 DEFAULT_DATETIME_FORMAT/UID_FORMAT/DAY_FORMAT、灵感收集默认值与插入位置，
+ *           时间格式 DEFAULT_DATETIME_FORMAT/UID_FORMAT/DAY_FORMAT、
+ *           灵感收集默认值 INSPIRATION_DEFAULTS/LEGACY_INSPIRATION_FORMATS 与插入位置，
  *           自写抑制窗口 SELF_WRITE_WINDOW_MS，项目生命周期状态机 TRANSITIONS/STATUS_LABELS
  *           及其类型 ProjectStatus/TransitionAction/FolderRole/ProjectTransition，
  *           五级复盘周期表 PERIODS 及其类型 PeriodKey/PeriodDefinition，
@@ -15,7 +16,10 @@
  *           最近文件契约 RECENT_FILES_FILE/RECENT_FILES_KEEP/RECENT_FILES_LIMITS/
  *           RECENT_FILES_SORTS/RECENT_FILES_DEFAULTS 及其类型 RecentFilesSort，
  *           光标记忆契约 CURSOR_STATE_FILE/CURSOR_MEMORY_LIMIT，
- *           以及视图代码块契约 VIEW_BLOCK_LANG/VIEW_REFRESH_DEBOUNCE_MS。
+ *           视图代码块契约 VIEW_BLOCK_LANG/VIEW_REFRESH_DEBOUNCE_MS，
+ *           以及第二版三库系统的赛博永生契约 EXPORT_MANIFEST_FILE/EXPORT_MANIFEST_HEADING/
+ *           EXPORT_MANIFEST_SEPARATOR 与 ETERNAL_FOLDERS/ETERNAL_INDEX_FILE/ETERNAL_LOG_FILE/
+ *           ETERNAL_LOG_INGEST_MARKS。
  *           三十条命令的身份（id/名字/图标/分组）不在这里，在 ./commands——
  *           本文件回答「系统里有哪些东西」，那里回答「用户能让系统做哪些事」
  * [POS]: 全仓库唯一的常量源。规格要求「禁魔法字符串」，任何目录名、字段名、状态名、时间格式
@@ -127,8 +131,18 @@ export const INSPIRATION_DEFAULTS = {
     fileName: '灵感集.md',
     heading: '# 灵感集',
     insertPosition: 'heading-top' as InspirationInsertPosition,
-    format: '- [ ]  {{content}} [[{{date}}]] {{time}}',
+    format: '- [ ] {{content}} [[{{date}}]] {{time}}',
 } as const;
+
+/**
+ * 曾经当过默认值、如今要被换掉的单条格式。
+ * `- [ ]` 后面那两个空格从来不是谁的选择，是默认值自带的笔误；老库的 data.json 里
+ * 躺着它的副本，只改上面那行救不了已经装过的人。normalizeSettings 按**字节相等**
+ * 认出它并换成当前默认值——自己改过格式的人一个字不动，因为改过的不等于任何一条旧默认。
+ */
+export const LEGACY_INSPIRATION_FORMATS: readonly string[] = [
+    '- [ ]  {{content}} [[{{date}}]] {{time}}',
+];
 
 // ============================================================
 // 卡片 YAML 字段
@@ -715,3 +729,62 @@ export const VIEW_BLOCK_LANG = 'ziminos';
  * 它靠一个 2500ms 的 setInterval 刷新，而「无定时器、无后台轮询」是红线。
  */
 export const VIEW_REFRESH_DEBOUNCE_MS = 200;
+
+// ============================================================
+// 赛博永生（第二版三库系统，free 版永远走不到这里）
+// ============================================================
+
+/**
+ * 出库单：住在「以人为本」库里，记着哪些已完成的项目还没搬进《赛博永生》。
+ *
+ * 它是插件与桌面智能体之间唯一的书面约定，因此收在常量里而不是两边各写一遍——
+ * 判据与 DIARY_LOG_HEADING 完全相同：**写入方与读取方共同的约定**。
+ * 插件按这个路径追加，智能体按这个路径读取并勾掉，两处一旦分叉，
+ * 归档的项目会静静地躺在一张没人看的清单上，而没有任何东西会报错。
+ *
+ * 它刻意是一篇普通的、可见的、可删的 Markdown，而不是 .obsidian 里的一个 json：
+ * 这套系统对用户的承诺是「一切都是你能打开、能看懂、能删的文件」，
+ * 一张他看不见的待办清单会把那句话变成半句真话。
+ */
+export const EXPORT_MANIFEST_FILE = `${FOLDERS.system}/赛博永生出库单.md`;
+
+/** 出库单里那个装待办行的小节标题。新行追加到它末尾，与记人情写日记同一套画法 */
+export const EXPORT_MANIFEST_HEADING = '## 待搬运';
+
+/**
+ * 出库单一行的字段分隔符。
+ *
+ * 用「 · 」而不是人情账本那个全角竖线：出库单行本身是一条任务行，
+ * 而全角竖线是账本行的形态判据——两种行长得像，解析器就迟早会把一个已归档项目
+ * 当成一笔人情债记进别人的档案，且不报错。这条与捕获域清洗竖线是同一个理由的两面。
+ */
+export const EXPORT_MANIFEST_SEPARATOR = ' · ';
+
+/**
+ * 《赛博永生》库的三层结构，取自卡帕西 LLM wiki 的 Raw / Wiki / Schema。
+ *
+ * 原料层只读——它装的是从「以人为本」搬来的已完成项目副本，是不可变的事实；
+ * wiki 层归机器写，人也可以改；log 是 append-only 的账本，也是「哪些原料已经提炼过」
+ * 这个问题的唯一答案。用账本而不是在原料上打标记，是为了让原料层真的保持不可变——
+ * 往原料里写一个 ingested 字段，它就不再是当初归档时的那份东西了。
+ */
+export const ETERNAL_FOLDERS = {
+    raw: '10-原料',
+    wiki: '20-知识',
+    system: '90-系统',
+} as const;
+
+/** wiki 的目录页与账本，两者都是卡帕西原文点名的关键文件 */
+export const ETERNAL_INDEX_FILE = `${ETERNAL_FOLDERS.wiki}/索引.md`;
+export const ETERNAL_LOG_FILE = `${ETERNAL_FOLDERS.system}/账本.md`;
+
+/**
+ * 账本里一条「消化」记录的标记；「待提炼」视图靠它认出哪些原料已经提炼过。
+ *
+ * 写只写第一个，读认全部。留着英文 `ingest` 不是念旧：这本库的三层结构本来是英文的，
+ * 而账本是**智能体逐行追加、用户也会去手改**的文件——万一某台机器上 `.ziminos/skills/`
+ * 还是汉化之前那份契约，它写下的仍是 `ingest`。少认一个标记的表现不是报错，
+ * 是那几份原料整体退回「待提炼」，接着一次重复提炼把 wiki 写重一遍。
+ * 认错方向的代价在这里高度不对称，因此宽松在安全侧。
+ */
+export const ETERNAL_LOG_INGEST_MARKS: readonly string[] = ['消化', 'ingest'];

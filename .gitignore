@@ -14,7 +14,9 @@ node_modules/
 id_rsa
 id_ed25519
 
-# ziminOS 开发库运行时私有状态
+# 开发库运行时私有状态。data.json 可能装着微信读书 Cookie，
+# recent-files.json 与 cursor-positions.json 装着每一篇笔记的完整本机路径 ——
+# 三者都不许随公开仓库出门
 /vault/.obsidian/workspace*.json
 /vault/.obsidian/plugins/ziminos/data.json
 /vault/.obsidian/plugins/ziminos/holiday-cache.json
@@ -23,3 +25,17 @@ id_ed25519
 /vault/.obsidian/plugins/dataview/data.json
 /vault/.obsidian/plugins/obsidian-outliner/data.json
 /vault/.obsidian/plugins/obsidian-quiet-outline/data.json
+
+# 三库的运行时私有状态，与 vault/ 同理
+/vault-pro/*/.obsidian/workspace*.json
+/vault-pro/*/.obsidian/plugins/*/data.json
+/vault-pro/*/.obsidian/plugins/*/holiday-cache.json
+/vault-pro/*/.obsidian/plugins/*/recent-files.json
+/vault-pro/*/.obsidian/plugins/*/cursor-positions.json
+
+# 发布通道的暂存目录。它必须住在仓库内部（见 publish-v1.sh），因此必须被忽略
+/.publish-staging/
+
+# 开发垃圾，打包时也会被剔除
+.impeccable/
+__pycache__/
