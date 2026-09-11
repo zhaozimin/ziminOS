@@ -1,7 +1,7 @@
 /*
  * ziminOS 视图样式
  *
- * 服务插件自渲染的二十二个笔记内视图、中国日历与最近文件两个 ItemView、外观开关浮层、
+ * 服务插件自渲染的二十三个笔记内视图、中国日历与最近文件两个 ItemView、外观开关浮层、
  * 文件浏览器里那串文件夹计数、状态栏那一块当前路径，
  * 以及设置页的九张标签页与开荒页尾的落款，
  * 全部选择器都带 ziminos- 前缀，不碰用户笔记正文。
@@ -1145,6 +1145,23 @@ div.ziminos-table-wrap > table.ziminos-table tbody tr:hover {
 
 .ziminos-file-path:hover {
     color: var(--text-normal);
+}
+
+/* ── Eagle 身份附件 ── */
+
+/*
+ * Markdown 里留的始终是 ziminos-eagle:// 身份链接，渲染层只把图片 src
+ * 暂时换成 blob URL。光标因此是这层唯一需要的视觉信号：点它会去 Eagle，
+ * 不是在 Obsidian 里打开一份本地副本。尺寸、居中和边框仍交给主题与用户片段。
+ */
+.ziminos-eagle-attachment,
+a[href^="ziminos-eagle://"] {
+    cursor: pointer;
+}
+
+.ziminos-eagle-attachment[data-ziminos-eagle-state="error"] {
+    outline: 1px dashed var(--text-error);
+    outline-offset: 3px;
 }
 
 /* ── 开荒页尾：作者名片当落款 ── */

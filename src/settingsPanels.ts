@@ -3,14 +3,15 @@
  *          BOOK_TAG_PREFIX_FIELD/FOLDER_COUNT_LABELS/RECENT_SORT_LABELS/FILE_PATH_SCOPE_LABELS 与
  *          TabId/BooleanSettingKey/TextField/SettingActions 类型；
  *          依赖 core/commands 的 GROUP_COLORS 与 CommandSpec 类型、
- *          core/constants 的 BOOK_TAG_COUNTS/灵感与文件夹计数/最近文件/状态栏路径的候选与默认值、
+ *          core/constants 的 BOOK_TAG_COUNTS/灵感与文件夹计数/最近文件候选，
+ *          core/device 的状态栏路径口径与 Eagle 本机参数，
  *          core/markdownStyle 的 FORMAT_RULES、core/types 的 ZiminosContext
  * [OUTPUT]: 对外提供 PanelRenderer/PanelHost 两个契约与 SettingsPanels 一个类，
  *           后者交出 render 一张 Record<TabId, PanelRenderer> 表
  * [POS]: 设置页八张页**各自的控件**。隔壁 settings.ts 是骨架：标签栏怎么画、
  *        一页分哪四段、开关与文本框长什么样、折叠区怎么收；这里是每一页在那副骨架里
- *        塞进去的东西——开荒的那颗按钮、项目页的读书一段、编辑页的排版一段、
- *        边栏那三十五行、文件页的三段。
+ *        塞进去的东西——开荒的那颗按钮、项目页的读书一段、编辑页的 Eagle/排版两段、
+ *        边栏那三十八行、文件页的三段。
  *        v0.17.0 从 settings.ts 分出来，判据与 v0.14.0 分出 settingsModel.ts 时同一条：
  *        变更理由不同。加一个设置项、给一页多一段，动的是这个文件；
  *        改标签栏样式、改滚动行为、改一页的四段先后，动的是那个文件。
@@ -25,8 +26,6 @@ import { GROUP_COLORS } from './core/commands';
 import type { CommandSpec } from './core/commands';
 import {
     BOOK_TAG_COUNTS,
-    FILE_PATH_DEFAULTS,
-    FILE_PATH_SCOPES,
     FOLDER_COUNT_DEFAULTS,
     FOLDER_COUNT_TARGETS,
     INSPIRATION_DEFAULTS,
@@ -36,11 +35,12 @@ import {
     RECENT_FILES_SORTS,
 } from './core/constants';
 import type {
-    FilePathScope,
     FolderCountTarget,
     InspirationInsertPosition,
     RecentFilesSort,
 } from './core/constants';
+import { EAGLE_DEFAULTS, EAGLE_PORT_RANGE, FILE_PATH_DEFAULTS, FILE_PATH_SCOPES } from './core/device';
+import type { FilePathScope } from './core/device';
 import { FORMAT_RULES } from './core/markdownStyle';
 import { DEFAULT_SETTINGS } from './core/types';
 import type { ZiminosContext } from './core/types';
@@ -97,10 +97,10 @@ export class SettingsPanels {
     private readonly actions: SettingActions;
 
     /**
-     * 「已摆出 N / 35 条」那行字。
+     * 「已摆出 N / 38 条」那行字。
      *
      * 这是全文件唯一一处持有 DOM 引用的地方，理由很具体：勾选要即时更新这个数，
-     * 而重建整页会把滚动条弹回顶部——三十五行排下来，用户勾第二十行时页面一跳，
+     * 而重建整页会把滚动条弹回顶部——三十八行排下来，用户勾第二十行时页面一跳，
      * 他就得重新找回刚才那一行。持有的是一个渲染出来的节点，不是第二份状态：
      * 数字仍然现算自设置对象，每次重画也会把它换成新节点。
      */
@@ -358,7 +358,7 @@ export class SettingsPanels {
     /**
      * 一条规则一行。
      *
-     * 它与边栏那三十行是同一种控件——勾选决定一个 id 在不在清单里，而不是翻一个布尔字段。
+     * 它与边栏命令行是同一种控件——勾选决定一个 id 在不在清单里，而不是翻一个布尔字段。
      * 存清单而不是九个布尔字段，是为了让「加一条规则」不必动设置契约：
      * 老库升级时那条新规则不在清单里，于是默认不开，这与「不替用户改他没选过的东西」同源。
      */
@@ -412,11 +412,11 @@ export class SettingsPanels {
     }
 
     // ============================================================
-    // 六、边栏页：三十五行
+    // 六、边栏页：三十八行
     // ============================================================
 
     /**
-     * 边栏页：一句说明 + 按分组排下来的三十行。
+     * 边栏页：一句说明 + 按分组排下来的全部命令。
      *
      * 清单现读花名册而不是自己维护一份，因此它与命令面板里能搜到的命令永远是同一批；
      * 分组标题按「相邻两行的 group 不同」切出来，与外观开关面板用的是同一套画法——
@@ -447,7 +447,7 @@ export class SettingsPanels {
     }
 
     /**
-     * 「已摆出 7 / 30 条」。给的是一个量级感：勾多了那条边栏会变成谁也不看的图标柱。
+     * 「已摆出 7 / 38 条」。给的是一个量级感：勾多了那条边栏会变成谁也不看的图标柱。
      * 总数现算自花名册，不写死——这一页不认识任何一条具体命令，也就不该认识它们有几条。
      */
     private describeRibbonCount(): string {
@@ -647,20 +647,21 @@ export class SettingsPanels {
     }
 
     // ============================================================
-    // 八、编辑页：打字时发生的三件事（粘贴、光标，加后半截的排版）
+    // 八、编辑页：粘贴、Eagle 附件、光标与排版
     // ============================================================
 
     /**
      * 编辑页：你在编辑器里敲字时发生的全部事情。
      *
-     * 三件事同住一页是用户在 v0.17.0 明令的，判据比前几处并页都直白——
-     * **它们发生在同一个时刻**：粘贴变成链接、光标记住位置、走开之后这一篇
+     * 原有三件事同住一页是用户在 v0.17.0 明令的，Eagle 附件沿同一判据加入——
+     * **它们发生在同一个编辑过程**：粘贴变成链接、附件交给 Eagle、光标记住位置、走开之后这一篇
      * 被整理成标准写法。排版单列成页时，学员得先分清「整理格式算不算编辑」
      * 才知道该翻哪一页，而那个问题本身就不该存在。
      *
      * 页内的先后是「立刻发生的」在前、「走开之后发生的」在后：
-     * 粘贴与光标是你按下键的那一瞬间，排版是你离开这一篇之后。
-     * 三项都不需要叫任何人重画——监听与记忆每次触发都现读设置对象，天然看得见新值；
+     * 粘贴、Eagle 附件与光标是你按下键的那一瞬间，排版是你离开这一篇之后。
+     * 行为开关都不需要重新注册——监听与记忆每次触发都现读设置对象，天然看得见新值；
+     * Eagle 的五个按钮是显式设备操作，不是把已经画好的业务 DOM 推一遍。
      * 这一页因此是八张页里唯一「改完什么都不用同步」的一张，
      * 那正好说明它管的不是屏幕上的东西，而是行为。
      */
@@ -671,6 +672,7 @@ export class SettingsPanels {
             TEXTS.pasteLinkName,
             TEXTS.pasteLinkDesc,
         );
+        this.renderEaglePanel(containerEl);
         this.host.renderToggle(
             containerEl,
             'rememberCursor',
@@ -684,6 +686,64 @@ export class SettingsPanels {
             .setHeading();
 
         this.renderFormatSection(containerEl);
+    }
+
+    /** Eagle 是编辑页的附件支线：行为/图片分流、项目归档、本机连接与设备参数收在同一段 */
+    private renderEaglePanel(containerEl: HTMLElement): void {
+        new Setting(containerEl).setName(TEXTS.eagleHeading).setDesc(TEXTS.eagleIntro).setHeading();
+        this.host.renderToggle(containerEl, 'eagleEnabled', TEXTS.eagleEnabledName, TEXTS.eagleEnabledDesc);
+        this.host.renderToggle(
+            containerEl,
+            'eagleExcludeImages',
+            TEXTS.eagleExcludeImagesName,
+            TEXTS.eagleExcludeImagesDesc,
+        );
+
+        new Setting(containerEl)
+            .setName(TEXTS.eaglePackageName)
+            .setDesc(TEXTS.eaglePackageDesc)
+            .addButton((button) => button.setButtonText('显示安装包').onClick(() => void this.actions.revealEaglePackage()));
+
+        const connection = new Setting(containerEl)
+            .setName(TEXTS.eagleStatusName)
+            .setDesc(TEXTS.eagleStatusChecking)
+            .addButton((button) => button.setButtonText('配对').setCta().onClick(async () => {
+                button.setDisabled(true);
+                await this.actions.pairEagle();
+                this.host.rebuild();
+            }))
+            .addButton((button) => button.setButtonText('检测').onClick(() => void this.actions.testEagle()))
+            .addButton((button) => button.setButtonText('断开').setWarning().onClick(async () => {
+                await this.actions.disconnectEagle();
+                this.host.rebuild();
+            }));
+
+        void this.actions.describeEagleStatus().then((status) => {
+            if (connection.descEl.isConnected) connection.setDesc(status);
+        });
+
+        new Setting(containerEl)
+            .setName(TEXTS.eaglePortName)
+            .setDesc(TEXTS.eaglePortDesc)
+            .addText((text) => text.setPlaceholder(String(EAGLE_DEFAULTS.port))
+                .setValue(String(this.ctx.settings.eaglePort))
+                .onChange(async (value) => {
+                    const candidate = Number(value);
+
+                    if (!Number.isInteger(candidate) || candidate < EAGLE_PORT_RANGE.min || candidate > EAGLE_PORT_RANGE.max) return;
+                    this.ctx.settings.eaglePort = candidate;
+                    await this.ctx.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName(TEXTS.eagleFolderName)
+            .setDesc(TEXTS.eagleFolderDesc)
+            .addText((text) => text.setPlaceholder('项目外留空：未归类')
+                .setValue(this.ctx.settings.eagleFolderId)
+                .onChange(async (value) => {
+                    this.ctx.settings.eagleFolderId = value.trim();
+                    await this.ctx.saveSettings();
+                }));
     }
 
     /** 防御手改 data.json 产生的未知口径，与灵感插入位置同一姿态、同一回落策略 */

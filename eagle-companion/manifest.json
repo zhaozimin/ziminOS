@@ -1,0 +1,27 @@
+{
+  "id": "ZMEAGLEBRIDGE",
+  "version": "0.23.1",
+  "platform": "all",
+  "arch": "all",
+  "name": "ziminOS Obsidian Bridge",
+  "logo": "/logo.png",
+  "description": "让 ziminOS 按 Obsidian 容器归档，并从稳定链接打开 Eagle 附件当前文件夹。",
+  "keywords": [
+    "ziminOS",
+    "Obsidian",
+    "attachment",
+    "bridge"
+  ],
+  "devTools": false,
+  "main": {
+    "serviceMode": true,
+    "url": "index.html",
+    "width": 520,
+    "height": 620,
+    "minWidth": 480,
+    "minHeight": 520,
+    "resizable": true,
+    "multiple": false,
+    "runAfterInstall": true
+  }
+}

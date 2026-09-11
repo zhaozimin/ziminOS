@@ -2,15 +2,19 @@
  * [INPUT]: 依赖 obsidian 的 Plugin 基类；依赖 core 的 SelfWriteGuard、CommandRegistry、
  *          INIT_VAULT_COMMAND、DEFAULT_SETTINGS/normalizeSettings、
  *          ZiminosSettings/ZiminosContext/VaultSeed 契约、PERIODS 与 registerViewCodeBlock；
- *          依赖 modules/setup 的 initializeVault/applySeed，以及项目管理、读书笔记、灵感收集、
- *          日历、复盘、人脉与客户七个模块各自的 seed、register 函数与视图数组，
+ *          依赖 modules/setup 的 initializeVault/applySeed，以及项目管理（含存量 Bases 迁移）、读书笔记、灵感收集、
+ *          日历、复盘、人脉与客户等业务模块各自的 seed、register 函数与视图数组，
  *          其中读书笔记那三条命令还要 modules/projects/createContainer 的 createContainer/BOOK_KIND
  *          来填「建一个书籍容器」那个洞，设置页那颗「扫码连接」还要 modules/books/sourceWeread
  *          的 loginWeread/disconnectWeread/disposeWereadSession 来管理登录窗口、断开与卸载清理；
- *          复盘的打开命令还要 theme 的 promptThemeIfMissing 来填「日记已打开」那个洞；
+ *          复盘的打开命令还要 theme 的 promptThemeIfMissing 来填「日记已打开」那个洞，
+ *          registerPeriodAutoInit 则不需要任何注入——它只认名字与位置；
  *          再加 modules/format 的 registerFormatter、modules/appearance 的 registerAppearanceSwitch、
  *          modules/ribbon 的 registerRibbon、
+ *          modules/eagle 的 registerEagleBridge（附件粘贴/呈现与 Eagle 配对），并由
+ *          modules/projects/location 向它注入“当前笔记应归入哪个容器/日记”的唯一判定、
  *          modules/editing 的 registerPasteLink/registerCursorMemory、
+ *          modules/export 的 registerExportCommand、
  *          modules/explorer 的 registerFolderCount/registerRecentFiles/registerFilePath、
  *          modules/legacy 的 registerLegacyDock
  *          与 modules/about 的 aboutViews/renderAboutPanel
@@ -19,7 +23,7 @@
  *        把它连同 app/plugin/guard 装配成 ZiminosContext、把上下文分发给各模块去自行注册、
  *        再把彼此需要但不该互相认识的能力接上线。
  *        最后这件事是 V2 新增的，也是本文件最有分量的部分：
- *        记人情要往当天日记里写一行，客户模块要按需长出自己的产物，
+ *        记人情要往当天日记里写一行，客户模块的补齐命令要复用默认开荒能力，
  *        建一本书要走项目模块那套「文件夹 + MOC」的流程，
  *        设置页要能开出读书模块那个扫码登录窗口，
  *        还要能让状态栏那两块、左侧边栏那列图标与文件模块画出来的三样东西按新设置重画——
@@ -55,15 +59,17 @@ import {
 import { disconnectWeread, disposeWereadSession, loginWeread } from './modules/books/sourceWeread';
 import { registerCursorMemory } from './modules/editing/cursorMemory';
 import { registerPasteLink } from './modules/editing/pasteLink';
+import { registerEagleBridge } from './modules/eagle';
 import { registerFolderCount } from './modules/explorer/badge';
 import { registerFilePath } from './modules/explorer/filePath';
 import { registerRecentFiles } from './modules/explorer/recentFiles';
+import { registerExportCommand } from './modules/export/exporter';
 import { registerFormatter } from './modules/format/formatter';
 import { registerLegacyDock } from './modules/legacy/vaultDock';
 import { registerCalendar } from './modules/calendar/view';
 import { circleViews } from './modules/contacts/circleViews';
 import { clientViews } from './modules/contacts/clientViews';
-import { registerClientCommands } from './modules/contacts/client';
+import { clientSeed, registerClientCommands } from './modules/contacts/client';
 import { registerCreateContactCommand } from './modules/contacts/createContact';
 import { pickPerson } from './modules/contacts/identity';
 import { personViews } from './modules/contacts/personViews';
@@ -76,10 +82,16 @@ import { BOOK_KIND, createContainer } from './modules/projects/createContainer';
 import { createExportHook } from './modules/eternal/export';
 import { eternalRawViews, humanEternalViews } from './modules/eternal/views';
 import { registerCreateProjectCommand } from './modules/projects/createProject';
+import { attachmentRouteOfNotePath } from './modules/projects/location';
+import { registerBaseMigrationCommand } from './modules/projects/migrateBases';
 import { projectsSeed } from './modules/projects/seed';
 import { registerTransitionCommands } from './modules/projects/transitions';
 import { registerUpdatedMaintainer } from './modules/projects/updatedMaintainer';
-import { openPeriodNote, registerPeriodicCommands } from './modules/review/periodic';
+import {
+    openPeriodNote,
+    registerPeriodAutoInit,
+    registerPeriodicCommands,
+} from './modules/review/periodic';
 import { reviewProjectViews } from './modules/review/projectViews';
 import { reviewSeed } from './modules/review/seed';
 import { promptThemeIfMissing, registerThemeCommand } from './modules/review/theme';
@@ -138,6 +150,7 @@ export default class ZiminosPlugin extends Plugin {
             projectsSeed(),
             reviewSeed(ctx),
             contactsSeed(ctx),
+            clientSeed(ctx),
         ];
 
         // 开荒内部已把全部异常转成中文 Notice，此处无需等待也无需接住
@@ -153,6 +166,7 @@ export default class ZiminosPlugin extends Plugin {
         registerCreateProjectCommand(ctx, (title) => pickPerson(ctx, title));
         registerCreateAreaCommand(ctx);
         registerCardInitCommand(ctx);
+        registerBaseMigrationCommand(ctx);
         registerCardAutoInit(ctx);
         // 归档移交：只有第二版的「以人为本」库才递得出这个洞。
         // 免费版与另外两本库拿到的是 undefined，于是流转命令里那条 if 恒为假，
@@ -188,13 +202,18 @@ export default class ZiminosPlugin extends Plugin {
         // 打开命令只管「打开」，主题模块只管「有没有主题」；
         // 这里把两者接上，于是首次打开会问，已有主题再打开就安静
         registerPeriodicCommands(ctx, (file) => promptThemeIfMissing(ctx, file));
+        // 命令与日历之外，一篇复盘笔记还有第三种诞生方式：学员在文件夹里新建、
+        // 或点开导航行里那条还没有目标的双链。这一行让那条路也套上模板并归到该去的目录，
+        // 于是「这是不是一篇日记」由名字与位置回答，而不是由谁把它建出来回答
+        registerPeriodAutoInit(ctx);
         registerThemeCommand(ctx);
 
         registerCreateContactCommand(ctx);
         // 记人情要往当天日记里写一行。它不认识复盘模块，只声明了一个「拿到今天的日记」的洞，
         // 由这里用复盘模块的能力填上；reveal 关掉，顺手记一笔不该顶掉学员正在读的笔记
         registerRecordFavorCommand(ctx, () => openPeriodNote(ctx, PERIODS.daily, { reveal: false }));
-        // 客户模块要按需长出自己的产物，同理只声明了一个「落一份开荒贡献」的洞
+        // 客户产物已进默认开荒；这条旧命令仍是老库补齐与误删修复入口，
+        // 复用同一份 seed 与同一段落盘能力，不另造一条恢复流程
         registerClientCommands(ctx, (seed) => applySeed(ctx, seed));
 
         // 排版整理横跨全库、不属于任何一套笔记，它注册的是一条命令与一个编辑监听，一篇笔记都不生产。
@@ -208,16 +227,22 @@ export default class ZiminosPlugin extends Plugin {
         const syncAppearanceSwitch = registerAppearanceSwitch(ctx);
 
         // ============================================================
-        // 编辑：粘贴与光标，两个监听、一条命令都不注册
+        // 编辑：Eagle 附件、粘贴外链与光标，全是监听而非笔记生产流程
         // ============================================================
 
-        // 它们不交回任何同步函数：监听与记忆每次触发都现读设置对象，天然看得见新值。
+        // Eagle 必须先注册：它先拦下 File，后面的“选中文字加外链”仍只看纯文本 URL。
+        // 两者都遵守 defaultPrevented，不会重复接管同一次粘贴。
+        const eagleActions = registerEagleBridge(
+            ctx,
+            (notePath) => attachmentRouteOfNotePath(ctx.settings, notePath),
+        );
+        // 下面两个不交回同步函数：监听与记忆每次触发都现读设置对象，天然看得见新值。
         // 需要有人去推一把的，永远只是「已经画在屏幕上」的东西
         registerPasteLink(ctx);
         registerCursorMemory(ctx);
 
         // ============================================================
-        // 文件：文件夹计数、最近文件与状态栏路径
+        // 文件：导出、文件夹计数、最近文件与状态栏路径
         // ============================================================
 
         // 三样东西回答同一个问题（我在哪、有哪些、刚才去过哪儿），因此只向设置页交回
@@ -225,6 +250,8 @@ export default class ZiminosPlugin extends Plugin {
         // 装配位置从「边栏之后」挪到了这里（v0.17.0）——最近文件与复制路径是两条命令，
         // 而边栏是照着花名册摆图标的，摆的时候花名册必须已经收齐。
         // 这也让装配顺序重新等于设置页那八张标签的先后：编辑（含排版）→ 文件 → 边栏
+        // 导出只在用户按命令时渲染一次，不持有视图状态，因此无需交回同步函数。
+        registerExportCommand(ctx);
         const syncFolderCount = registerFolderCount(ctx);
         const syncRecentFiles = registerRecentFiles(ctx);
         const syncFilePath = registerFilePath(ctx);
@@ -250,7 +277,7 @@ export default class ZiminosPlugin extends Plugin {
         const syncRibbon = registerRibbon(ctx);
 
         // ============================================================
-        // 代码块视图引擎：二十二个笔记内视图；日历是独立 ItemView，不在此处重复注册
+        // 代码块视图引擎：二十四个笔记内视图；日历是独立 ItemView，不在此处重复注册
         // ============================================================
 
         registerViewCodeBlock(ctx, [
@@ -285,6 +312,7 @@ export default class ZiminosPlugin extends Plugin {
                 syncAppearanceSwitch,
                 syncRibbon,
                 syncExplorer,
+                ...eagleActions,
                 // 设置页的「关于作者」区与导航页尾的视图块画同一张名片，实现只有 about 一份
                 renderAbout: renderAboutPanel,
             }),

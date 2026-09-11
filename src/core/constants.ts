@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 无。本文件不 import 任何模块，是 core 层依赖图的最底层叶子
  * [OUTPUT]: 对外提供 PARA 目录常量 FOLDERS/INIT_FOLDERS/CONTACT_FOLDER/CLIENT_FOLDER、
- *           笔记路径常量 NAV_FILE/TEMPLATE_FILES/CONTACT_MOC/CLIENT_MOC、
+ *           笔记路径常量 NAV_FILE/TEMPLATE_FILES/CONTACT_MOC/CLIENT_MOC 与两张 MOC 的存量旧路径、
  *           卡片字段序 CARD_FIELDS 与其字段类型 CardField、统一字段名 FIELDS 与身份取值 NOTE_TYPES、
  *           时间格式 DEFAULT_DATETIME_FORMAT/UID_FORMAT/DAY_FORMAT、
  *           灵感收集默认值 INSPIRATION_DEFAULTS/LEGACY_INSPIRATION_FORMATS 与插入位置，
@@ -16,15 +16,14 @@
  *           最近文件契约 RECENT_FILES_FILE/RECENT_FILES_KEEP/RECENT_FILES_LIMITS/
  *           RECENT_FILES_SORTS/RECENT_FILES_DEFAULTS 及其类型 RecentFilesSort，
  *           光标记忆契约 CURSOR_STATE_FILE/CURSOR_MEMORY_LIMIT，
- *           状态栏路径契约 FILE_PATH_SCOPES/FILE_PATH_DEFAULTS 及其类型 FilePathScope，
  *           视图代码块契约 VIEW_BLOCK_LANG/VIEW_REFRESH_DEBOUNCE_MS，
  *           以及第二版三库系统的赛博永生契约 EXPORT_MANIFEST_FILE/EXPORT_MANIFEST_HEADING/
  *           EXPORT_MANIFEST_SEPARATOR 与 ETERNAL_FOLDERS/ETERNAL_INDEX_FILE/ETERNAL_LOG_FILE/
  *           ETERNAL_LOG_INGEST_MARKS。
- *           三十条命令的身份（id/名字/图标/分组）不在这里，在 ./commands——
+ *           全部命令的身份（id/名字/图标/分组）不在这里，在 ./commands——
  *           本文件回答「系统里有哪些东西」，那里回答「用户能让系统做哪些事」
- * [POS]: 全仓库唯一的常量源。规格要求「禁魔法字符串」，任何目录名、字段名、状态名、时间格式
- *        都必须从这里取而不得就地硬编码；因为它零依赖，所有模块都可单向依赖它而不产生环
+ * [POS]: 全仓库的业务字典；目录名、字段名、状态名与时间格式在此收口，
+ *        只随本机交互变化的参数由 device.ts 承担。两者都零依赖，不向上认识任何模块
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -69,7 +68,7 @@ export const INIT_FOLDERS: readonly string[] = [
 /** 人脉档案的家：平铺存放，不建子目录（分组靠 up 归属链接，不靠文件夹） */
 export const CONTACT_FOLDER = `${FOLDERS.areas}/人脉`;
 
-/** 客户档案的家；它不进开荒骨架，由「初始化客户模块」命令按需长出 */
+/** 客户档案的家；不进 PARA 固定骨架，由客户 seed 随默认开荒长出 */
 export const CLIENT_FOLDER = `${FOLDERS.areas}/客户`;
 
 // ============================================================
@@ -105,11 +104,15 @@ export const TEMPLATE_FILES = {
     client: `${FOLDERS.template}/客户模板.md`,
 } as const;
 
-/** 人脉领域总控台，也是新建档案时 up 的默认指向 */
-export const CONTACT_MOC = `${CONTACT_FOLDER}/人脉MOC.md`;
+/** 人脉领域总控台，也是新建档案时 up 的默认指向；MOC 统一前缀置顶 */
+export const CONTACT_MOC = `${CONTACT_FOLDER}/MOC-人脉.md`;
 
-/** 客户领域总控台，随客户模块一起长出 */
-export const CLIENT_MOC = `${CLIENT_FOLDER}/客户MOC.md`;
+/** 客户领域总控台，随客户模块一起长出；MOC 统一前缀置顶 */
+export const CLIENT_MOC = `${CLIENT_FOLDER}/MOC-客户.md`;
+
+/** 仅供已安装库继续寻址；新初始化不得再生成这两个旧名 */
+export const LEGACY_CONTACT_MOC = `${CONTACT_FOLDER}/人脉MOC.md`;
+export const LEGACY_CLIENT_MOC = `${CLIENT_FOLDER}/客户MOC.md`;
 
 // ============================================================
 // 灵感收集
@@ -707,33 +710,6 @@ export const RECENT_FILES_DEFAULTS = {
  * 与「状态文件仍然只有几十 KB」之间的取值。
  */
 export const CURSOR_MEMORY_LIMIT = 200;
-
-// ============================================================
-// 文件浏览器：状态栏那块路径
-// ============================================================
-
-/**
- * 点一下状态栏那块路径，复制走的是哪一种路径。
- *
- * 两个取值对应两种去处，而不是「短的」和「长的」：
- * `vault` 是**库内路径**（`01-projects/开源之道/开源之道.md`），说给 Obsidian 自己听——
- * 双链、笔记里的引用、跟同一个库的人说「我那篇在哪儿」，认的都是这一种；
- * `system` 是**本机绝对路径**（`/你的用户目录/笔记库/01-projects/开源之道/开源之道.md`），
- * 说给库外面的世界听——终端里 `cd` 过去、拖进别的程序、交给一个智能体去读那个文件。
- *
- * 分成设置而不是猜，是因为这两种去处都真实且常用，而猜错的代价不对称：
- * 猜短了，人拿去粘进终端得到「文件不存在」；猜长了，人粘进笔记里得到一条永远断的链接。
- * 默认 `vault`——它是 v0.20.0 之前唯一的行为，升级不该替用户改他没选过的东西。
- */
-export const FILE_PATH_SCOPES = ['vault', 'system'] as const;
-
-/** 复制口径的联合类型，供设置页与状态栏共用；写错一个字母在编译期倒下 */
-export type FilePathScope = (typeof FILE_PATH_SCOPES)[number];
-
-/** 全新库的复制口径，也是读取侧的回落值。见上面那段：默认必须与老行为一致 */
-export const FILE_PATH_DEFAULTS = {
-    scope: 'vault',
-} as const;
 
 // ============================================================
 // 视图代码块

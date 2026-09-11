@@ -1,8 +1,9 @@
 /**
  * [INPUT]: 依赖 ./core/commands 的 COMMAND_ICONS（标签页图标与左侧边栏同源），
- *          依赖 ./core/constants 的 FolderCountTarget、RecentFilesSort 与 FilePathScope 类型
+ *          依赖 ./core/constants 的 FolderCountTarget/RecentFilesSort 与 ./core/device 的 FilePathScope
  *          （计数口径、最近文件排法与复制口径的显示名各按它们建一张表）
- * [OUTPUT]: 对外提供设置页的注入契约 SettingActions，与它的三张数据表——
+ * [OUTPUT]: 对外提供设置页的注入契约 SettingActions（含 Eagle 配对/检测/断开/状态），
+ *           与它的三张数据表——
  *           TABS（八张标签页的身份）、TEXTS（全部界面文案）、
  *           TEXT_FIELDS 与 BOOK_TAG_PREFIX_FIELD（文本框）、FOLDER_COUNT_LABELS、
  *           RECENT_SORT_LABELS 与 FILE_PATH_SCOPE_LABELS（三个下拉框的显示名），
@@ -17,7 +18,8 @@
  */
 
 import { COMMAND_ICONS } from './core/commands';
-import type { FilePathScope, FolderCountTarget, RecentFilesSort } from './core/constants';
+import type { FolderCountTarget, RecentFilesSort } from './core/constants';
+import type { FilePathScope } from './core/device';
 
 // ============================================================
 // 八张标签页：一页一个系统模块
@@ -28,7 +30,9 @@ import type { FilePathScope, FolderCountTarget, RecentFilesSort } from './core/c
  * 设置页的分页若与代码的模块边界对不上，学员问「客户的设置在哪」时，
  * 答案就会取决于当初谁把它排在了哪一段。
  *
- * 三个模块刻意没有自己的页，判据是同一条——**一个控件撑一整页是把分页做成摆设**：
+ * Eagle、appearance、about 等模块刻意没有自己的页，判据是同一条——页面按用户找设置的语境分：
+ * Eagle 附件就是粘贴/拖入时发生的编辑行为，住 editing；
+ * **一个控件撑一整页是把分页做成摆设**：
  * appearance 只有一个开关、about 只有一张名片（v0.9.2 拍板），
  * 而它们本就天然属于「开荒」（外观是开荒交付物的一部分，名片是这套交付物的落款）；
  * explorer 反过来说明了同一条判据的另一半（v0.16.0）：它的三项——开不开、数什么、
@@ -139,7 +143,7 @@ export const TABS: readonly SettingsTab[] = [
         module: '人脉与客户 v1',
         status:
             '运行中 · 新建人脉、记人情，档案与 MOC 共八个视图；' +
-            '客户按需启用，运行「初始化客户模块」后长出 MOC 与另外八个视图',
+            '客户 MOC 默认随开荒生成，以人物、金额、交付和创建日期汇总客户',
     },
     {
         id: 'editing',
@@ -162,7 +166,7 @@ export const TABS: readonly SettingsTab[] = [
         label: '边栏',
         icon: COMMAND_ICONS.dock,
         module: '左侧边栏 v1',
-        status: '运行中 · 三十五条命令配 Pikaicons 图标，默认摆出十条',
+        status: '运行中 · 三十八条命令配 Pikaicons 图标，默认摆出十条',
     },
 ];
 
@@ -171,12 +175,13 @@ export const TABS: readonly SettingsTab[] = [
 // ============================================================
 
 /**
- * 设置页干不了、必须由 main 递进来的七件事。
+ * 设置页干不了、必须由 main 递进来的十二件事。
  *
- * 编辑那一页刻意**没有**自己的洞：粘贴监听与光标记忆每次触发都现读设置对象，
- * 天然看得见新值；需要有人去推一把的永远只是「已经画在屏幕上」的东西。
+ * 纯行为开关仍无需同步：粘贴监听与光标记忆每次触发都现读设置对象。
+ * Eagle 的五个洞不是同步 DOM，而是把配对、鉴权、HTTP 与本机包路径留在领域模块里，
+ * 设置页只发起用户动作、显示业务结果。
  *
- * 用一个对象而不是七个位置参数：中间三个函数的类型都是 `() => void`，
+ * 用一个对象而不是一串位置参数：多组函数拥有相同签名，
  * 摆成位置参数的话调换顺序照样能通过编译，出的错却是「改了外观开关，边栏跟着动」——
  * 这种错没有任何编译期信号，只能靠人肉眼盯着几行长长的实参对齐。
  * 三处显隐同步并列摆在这里，也正好说明它们是同一类东西：
@@ -210,6 +215,12 @@ export interface SettingActions {
      * 设置页不必知道那个模块内部由几个文件把这三样画出来。
      */
     readonly syncExplorer: () => void;
+    /** Eagle 伴侣的配对、检测、断开与状态；凭据与 HTTP 细节不进设置页 */
+    readonly pairEagle: () => Promise<boolean>;
+    readonly testEagle: () => Promise<boolean>;
+    readonly disconnectEagle: () => Promise<void>;
+    readonly describeEagleStatus: () => Promise<string>;
+    readonly revealEaglePackage: () => Promise<void>;
     /** 把作者名片画进开荒页尾。名片住在 about 模块，设置页因此不认识它 */
     readonly renderAbout: (el: HTMLElement) => void;
 }
@@ -329,6 +340,31 @@ export const TEXTS = {
         '四条都满足才会动手：选了字、剪贴板里只有一条**带协议**的网址（www 开头的裸域名不算）、' +
         '选中的文字里没有换行、这次粘贴还没被别的插件处理过。任何一条不满足就原样粘贴。',
 
+    eagleHeading: 'Eagle 附件',
+    eagleIntro:
+        '默认将粘贴或拖入的图片与附件存入 Eagle，笔记只保留稳定 itemId 链接。' +
+        '项目笔记里的附件会自动进入“项目/项目名称”；同一 Eagle 资源库内换文件夹不会影响链接。' +
+        '导入失败时明确报错，不会偷偷在 Obsidian 留副本。',
+    eagleEnabledName: '附件交给 Eagle',
+    eagleEnabledDesc:
+        '只在 macOS / Windows 生效。请先安装 ziminOS Eagle 伴侣并完成配对；' +
+        '若图片要继续走现有图床，打开下一项。',
+    eagleExcludeImagesName: '图片不交给 Eagle（交给图床）',
+    eagleExcludeImagesDesc:
+        '打开后，单独粘贴或拖入的图片会原样放行，由你已安装的图床插件处理；' +
+        'PDF、压缩包、音视频等其他附件仍进 Eagle。ziminOS 不保存图床密钥。' +
+        '图片与其他附件请分两次粘贴或拖入。',
+    eagleStatusName: '伴侣连接',
+    eagleStatusChecking: '正在检查本机 Eagle…',
+    eaglePackageName: 'Eagle 伴侣安装包',
+    eaglePackageDesc: '伴侣已随 ziminOS 放在本机插件目录；在 Eagle 中安装这份 .eagleplugin 后再回来配对。',
+    eaglePortName: '本机端口',
+    eaglePortDesc: '默认 23119，必须与 Eagle 伴侣窗口中的端口一致。端口不写进笔记。',
+    eagleFolderName: '非项目附件的 Eagle 文件夹 ID（可选）',
+    eagleFolderDesc:
+        '项目目录和归档目录中的笔记会自动进入“项目/项目名称”，不读取这里。' +
+        '只有项目外的附件才使用此 ID；留空即进入当前资源库未归类区。',
+
     rememberCursorName: '记住每篇笔记的光标位置',
     rememberCursorDesc:
         '离开一篇笔记时记下光标在第几行、滚动条在哪儿，下次打开就回到那里，重启 Obsidian 也还在。' +
@@ -389,6 +425,8 @@ export type BooleanSettingKey =
     | 'folderCountRecursive'
     | 'showFilePath'
     | 'pasteLinkEnabled'
+    | 'eagleEnabled'
+    | 'eagleExcludeImages'
     | 'rememberCursor';
 
 /** 可由文本框直接编辑的设置项，全部是字符串字段 */
@@ -461,7 +499,7 @@ export const TEXT_FIELDS: readonly TextFieldSpec[] = [
     { key: 'clientSources', tab: 'contacts', section: '客户', name: '客户渠道', hint: '「新建客户」的渠道候选，用逗号分隔。走选择而非手打，统计才不会被同义写法打散。', advanced: false },
     { key: 'clientProducts', tab: 'contacts', section: '客户', name: '产品清单', hint: '「增加付费」的产品候选，用逗号分隔。写你自己在卖的东西。', advanced: false },
     { key: 'contactFolder', tab: 'contacts', section: '人脉', name: '人脉目录', hint: '人物档案平铺存放在这里；视图靠 type 认人，挪走也不影响。', advanced: true },
-    { key: 'clientFolder', tab: 'contacts', section: '客户', name: '客户目录', hint: '付费用户档案放在这里，运行「初始化客户模块」后才会用到。', advanced: true },
+    { key: 'clientFolder', tab: 'contacts', section: '客户', name: '客户目录', hint: '客户 MOC 与付费用户档案存放在这里；视图靠 type 识别客户。', advanced: true },
 
     { key: 'dateTimeFormat', tab: 'setup', name: '时间格式', hint: 'created 与 updated 字段的写法，moment 语法。', advanced: true },
 ];

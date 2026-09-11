@@ -2,8 +2,10 @@
  * [INPUT]: 依赖 node:test/assert/fs/path/url 与 esbuild，直接编译并载入 src 中的纯 TypeScript 模块
  * [OUTPUT]: 提供 npm test 的审计回归集，覆盖版本镜像、ISBN 校验、日期严格性、
  *           划线身份与批次归并、设置验形、外观配置保护、换行符保真、桌面数据库选择、
- *           项目回滚、Gitee 安装入口与作者名片同构、公开源码隐私边界、移动端 Node 边界、
- *           片段出境口的桌面端闸门、本机绝对路径的唯一算处与状态栏路径的看拿分离，以及
+ *           项目状态回滚、Gitee 安装入口与作者名片同构、公开源码隐私边界、移动端 Node 边界、
+ *           片段出境口的桌面端闸门、本机绝对路径的唯一算处、状态栏路径的看拿分离、
+ *           废弃正文/双链在编辑阅读两态的分层示警与三本库外观同构、五级周期的文件名反解、
+ *           后台写入的分栏滚动保护、光标焦点切换、四类内容容器与日记附件路由，以及
  *           智能体路由完整性，并在专业版源码存在时额外覆盖出库单往返、《赛博永生》路径同构
  *           与第二版安装入口
  * [POS]: tests 的唯一可执行入口；只验证公开行为与关键平台边界，不复制业务实现
@@ -20,7 +22,9 @@ import { build } from 'esbuild';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 async function loadTypeScript(relativePath, options = {}) {
-    const plugins = options.stubObsidian
+    const obsidianStub = options.obsidianStub
+        ?? (options.stubObsidian ? "import moment from 'moment'; export { moment };" : null);
+    const plugins = obsidianStub
         ? [
               {
                   name: 'obsidian-test-stub',
@@ -30,7 +34,7 @@ async function loadTypeScript(relativePath, options = {}) {
                           namespace: 'test-stub',
                       }));
                       builder.onLoad({ filter: /.*/, namespace: 'test-stub' }, () => ({
-                          contents: "import moment from 'moment'; export { moment };",
+                          contents: obsidianStub,
                           loader: 'js',
                           resolveDir: ROOT,
                       }));
@@ -59,12 +63,39 @@ const { insertIntoSection, toggleTaskLine } = await loadTypeScript('src/core/mar
 const { coalesceHighlights, normalizedHighlightKey } = await loadTypeScript(
     'src/modules/books/highlightIdentity.ts',
 );
-const { dayText } = await loadTypeScript('src/core/time.ts', { stubObsidian: true });
+const { dayText, periodOfTitle } = await loadTypeScript('src/core/time.ts', {
+    stubObsidian: true,
+});
+
+/**
+ * 这份源码此刻躺在哪个仓库里。
+ *
+ * 两个 Gitee 仓库的 src/ 逐字节相同（第二版那部分被装配期开关关着），
+ * 所以拿代码当判据认不出来；真正区分两者的是**交付物**——只有第二版仓库有那份契约。
+ * publish-v1.sh 会把 tests/ 整份同步过去并要求它在那边自己跑得过，
+ * 因此每一条读 skill-pro/ 或 vault-pro/ 的断言都必须经这道闸，漏一条就卡死整条发布通道。
+ */
+const isProRepo = existsSync(path.join(ROOT, 'skill-pro/SKILL.md'));
 const { DEFAULT_SETTINGS, normalizeSettings } = await loadTypeScript('src/core/types.ts');
+const { attachmentRouteOfNotePath } = await loadTypeScript('src/modules/projects/location.ts', {
+    obsidianStub: 'export class TFolder {} export const normalizePath = (value) => String(value);',
+});
 const { buildInitialInspirationContent, insertInspiration } = await loadTypeScript(
     'src/modules/inspiration/templates.ts',
 );
 const { setSnippetEnabled } = await loadTypeScript('src/modules/appearance/snippets.ts');
+const { withPreservedMarkdownScroll } = await loadTypeScript(
+    'src/core/markdownViewState.ts',
+    {
+        obsidianStub: `
+            export class MarkdownView {
+                static [Symbol.hasInstance](value) {
+                    return value?.isMarkdownView === true;
+                }
+            }
+        `,
+    },
+);
 
 test('package 版本是唯一事实源，manifest 镜像已同步', () => {
     const packageJson = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
@@ -209,10 +240,103 @@ test('日期前缀只接受真实存在的日期', () => {
     assert.equal(dayText(Number.POSITIVE_INFINITY), null);
 });
 
+test('五级周期由文件名唯一反解，不是复盘笔记的名字一个都认不出来', () => {
+    // 五种标题格式在严格解析下互不相容，因此反解结果与遍历次序无关
+    assert.equal(periodOfTitle('2026-09-10')?.key, 'daily');
+    assert.equal(periodOfTitle('2026-W37')?.key, 'weekly');
+    assert.equal(periodOfTitle('2026-09')?.key, 'monthly');
+    assert.equal(periodOfTitle('2026-Q3')?.key, 'quarterly');
+    assert.equal(periodOfTitle('2026')?.key, 'yearly');
+
+    // 认错一次，插件就会往一篇不是日记的笔记里写日记骨架
+    assert.equal(periodOfTitle('未命名'), null);
+    assert.equal(periodOfTitle('Untitled'), null);
+    assert.equal(periodOfTitle('2026-13-45'), null);
+    assert.equal(periodOfTitle('2026-02-29'), null);
+    assert.equal(periodOfTitle('会议纪要 2026-09-10'), null);
+    assert.equal(periodOfTitle('2026-09-10 复盘'), null);
+    assert.equal(periodOfTitle(''), null);
+});
+
 test('全部规则关闭时逐字节原样返回', () => {
     const input = '\ufeff中文English\r\n\r\n';
 
     assert.equal(formatMarkdown(input, []), input);
+});
+
+test('后台写笔记后保住所有已显示分栏的滚动位置', async () => {
+    const frames = [];
+    const originalWindow = globalThis.window;
+    const file = { path: 'A.md' };
+    const makeView = (path, scroll, mode = 'source') => ({
+        isMarkdownView: true,
+        file: { path },
+        getMode: () => mode,
+        currentMode: {
+            getScroll: () => scroll.value,
+            applyScroll: (next) => {
+                scroll.value = next;
+            },
+        },
+    });
+    const sourceScroll = { value: 420 };
+    const previewScroll = { value: 860 };
+    const otherScroll = { value: 210 };
+    const sourceView = makeView(file.path, sourceScroll);
+    const previewView = makeView(file.path, previewScroll, 'preview');
+    const otherView = makeView('B.md', otherScroll);
+    const app = {
+        workspace: {
+            iterateAllLeaves(callback) {
+                for (const view of [sourceView, previewView, otherView]) callback({ view });
+            },
+        },
+    };
+
+    globalThis.window = {
+        requestAnimationFrame(callback) {
+            frames.push(callback);
+            return frames.length;
+        },
+    };
+
+    try {
+        await withPreservedMarkdownScroll(app, file, async () => {
+            sourceScroll.value = 0;
+            previewScroll.value = 0;
+            otherScroll.value = 0;
+        });
+
+        assert.equal(sourceScroll.value, 420);
+        assert.equal(previewScroll.value, 860);
+        assert.equal(otherScroll.value, 0);
+
+        // 下一帧再压一次延后重排；已换走文件的分栏不受旧状态影响。
+        sourceScroll.value = 0;
+        previewScroll.value = 0;
+        previewView.file = { path: 'B.md' };
+        frames.shift()(0);
+
+        assert.equal(sourceScroll.value, 420);
+        assert.equal(previewScroll.value, 0);
+    } finally {
+        if (originalWindow === undefined) delete globalThis.window;
+        else globalThis.window = originalWindow;
+    }
+});
+
+test('光标记忆同时覆盖换文件与分栏间换焦点', () => {
+    const source = readFileSync(path.join(ROOT, 'src/modules/editing/cursorMemory.ts'), 'utf8');
+    const formatter = readFileSync(path.join(ROOT, 'src/modules/format/formatter.ts'), 'utf8');
+    const updated = readFileSync(
+        path.join(ROOT, 'src/modules/projects/updatedMaintainer.ts'),
+        'utf8',
+    );
+
+    assert.ok(source.includes("on('file-open', switchTrackedView)"));
+    assert.ok(source.includes("on('active-leaf-change', switchTrackedView)"));
+    assert.ok(formatter.includes('withPreservedMarkdownScroll(ctx.app, file'));
+    assert.ok(updated.includes('withPreservedMarkdownScroll(ctx.app, file'));
 });
 
 test('持久化设置在进入运行时前逐字段验形', () => {
@@ -226,6 +350,7 @@ test('持久化设置在进入运行时前逐字段验形', () => {
         formatRules: [],
         projectFolder: '',
         filePathScope: 'anywhere',
+        eagleExcludeImages: 'yes',
     });
 
     assert.equal(normalized.autoUpdated, DEFAULT_SETTINGS.autoUpdated);
@@ -237,6 +362,51 @@ test('持久化设置在进入运行时前逐字段验形', () => {
     assert.deepEqual(normalized.formatRules, []);
     assert.equal(normalized.projectFolder, '');
     assert.equal(normalized.filePathScope, DEFAULT_SETTINGS.filePathScope);
+    assert.equal(normalized.eagleExcludeImages, DEFAULT_SETTINGS.eagleExcludeImages);
+});
+
+/** 新开关默认不能改变老用户已有的“图片也进 Eagle”语义。 */
+test('老库升级后仍由 Eagle 接管图片，只有用户明确打开才分流到图床', () => {
+    assert.equal(DEFAULT_SETTINGS.eagleExcludeImages, false);
+    assert.equal(normalizeSettings({}).eagleExcludeImages, false);
+    assert.equal(normalizeSettings({ eagleExcludeImages: true }).eagleExcludeImages, true);
+});
+
+test('附件路由把四棵内容根归入项目容器，把全部日记折叠到单一文件夹', () => {
+    const settings = {
+        ...DEFAULT_SETTINGS,
+        projectFolder: '我的项目',
+        areaFolder: '我的领域',
+        archiveFolder: '我的存档',
+        diaryFolder: '我的日记',
+    };
+
+    assert.deepEqual(
+        attachmentRouteOfNotePath(settings, '我的项目/以人为本/卡片/课程.md'),
+        { kind: 'project', name: '以人为本' },
+    );
+    assert.deepEqual(
+        attachmentRouteOfNotePath(settings, '我的领域/内容创作/文章.md'),
+        { kind: 'project', name: '内容创作' },
+    );
+    assert.deepEqual(
+        attachmentRouteOfNotePath(settings, '03-resources/AI 工具/材料.md'),
+        { kind: 'project', name: 'AI 工具' },
+    );
+    assert.deepEqual(
+        attachmentRouteOfNotePath(settings, '我的存档/旧课程/往期/复盘.md'),
+        { kind: 'project', name: '旧课程' },
+    );
+    assert.deepEqual(
+        attachmentRouteOfNotePath(settings, '我的日记/01-daily/2026-09-08.md'),
+        { kind: 'diary' },
+    );
+    assert.deepEqual(
+        attachmentRouteOfNotePath(settings, '我的日记/05-yearly/2026.md'),
+        { kind: 'diary' },
+    );
+    assert.equal(attachmentRouteOfNotePath(settings, '我的领域/散落笔记.md'), null);
+    assert.equal(attachmentRouteOfNotePath(settings, '00-inbox/临时.md'), null);
 });
 
 /**
@@ -328,6 +498,64 @@ test('损坏的 appearance.json 被拒绝，不覆盖用户外观配置', async 
 
     await assert.rejects(setSnippetEnabled(app, '【测试】片段', true), /无法读取外观配置/);
     assert.equal(writes, 0);
+});
+
+test('废弃内容与其中双链在编辑阅读两态分层示警，随库外观默认开启', () => {
+    const snippetName = '【编辑-删除线】突出废弃内容';
+    const snippetDir = path.join(ROOT, 'vault/.obsidian/snippets');
+    const source = readFileSync(
+        path.join(snippetDir, `${snippetName}.css`),
+        'utf8',
+    );
+
+    assert.match(source, /\.markdown-rendered :is\(del, s\)/);
+    assert.match(source, /\.cm-strikethrough:not\(\.cm-formatting-strikethrough\)/);
+    assert.match(source, /background-color:/);
+    assert.match(source, /text-decoration-thickness:\s*2px/);
+    assert.match(source, /text-decoration-skip-ink:\s*none/);
+    assert.match(source, /:is\(del, s\) a\.internal-link/);
+    assert.match(source, /\.cm-strikethrough\.cm-hmd-internal-link/);
+    assert.match(source, /\.cm-strikethrough \.cm-hmd-internal-link/);
+    assert.match(source, /a\.internal-link\.is-unresolved/);
+    assert.match(source, /text-decoration-line:\s*line-through underline/);
+    assert.match(source, /box-shadow:\s*inset 0 0 0 1px var\(--color-orange\)/);
+    assert.match(source, /outline:\s*1px dashed var\(--text-error\)/);
+
+    assert.equal(
+        readdirSync(snippetDir).filter((name) => name.endsWith('.css')).length,
+        13,
+        '共享外观包应当恰好交付十三个 CSS 片段',
+    );
+
+    // 第二版那两本库与那份契约只住在第二版仓库里：publish-v1.sh 不搬 vault-pro/
+    // 与 skill-pro/，所以它们在第一版仓库里没有对象。判据沿用本文件已经写下的那条——
+    // 区分两个仓库的是**交付物**而不是 src/，因为 src/ 两边逐字节相同。
+    // 闸是「这是不是第二版仓库」而不是「这个文件在不在」：后者会在 vault-pro 改名时
+    // 静默跳过，把一条本该变红的测试变成一条永远绿的测试。
+    for (const relativePath of [
+        'vault/.obsidian/appearance.json',
+        ...(isProRepo
+            ? [
+                  'vault-pro/兼收并蓄/.obsidian/appearance.json',
+                  'vault-pro/赛博永生/.obsidian/appearance.json',
+              ]
+            : []),
+    ]) {
+        const appearance = JSON.parse(readFileSync(path.join(ROOT, relativePath), 'utf8'));
+
+        assert.ok(
+            appearance.enabledCssSnippets.includes(snippetName),
+            `${relativePath} 没有默认开启废弃内容样式`,
+        );
+        assert.equal(appearance.enabledCssSnippets.length, 11);
+    }
+
+    for (const relativePath of ['skill/SKILL.md', ...(isProRepo ? ['skill-pro/SKILL.md'] : [])]) {
+        const contract = readFileSync(path.join(ROOT, relativePath), 'utf8');
+
+        assert.match(contract, new RegExp(snippetName));
+        assert.match(contract, /十三个实名片段/);
+    }
 });
 
 test('本机书源不在模块顶层静态引入 Node 内建模块', () => {
@@ -433,8 +661,8 @@ test('项目流转异常后以源目标路径事实决定回滚', () => {
 
     assert.match(source, /const sourceEntry = .*sourceProjectPath/);
     assert.match(source, /const targetEntry = .*targetProjectPath/);
-    assert.match(source, /trace\.frontmatterVisited = true/);
-    assert.match(source, /trace\.basePathChanged = true/);
+    assert.match(source, /frontmatterVisited = true/);
+    assert.doesNotMatch(source, /basePathChanged|updateMocBaseFolderPath/);
     assert.doesNotMatch(source, /interface TransitionProgress/);
 });
 
@@ -539,6 +767,50 @@ if (existsSync(proContractPath)) {
         // 自证真的干了活，这一条是口令区别于「把安装那段再发一次」的全部价值
         assert.ok(readme.includes('升级前后的插件版本号'));
         assert.ok(readme.includes('升级前后的 ziminOS 版本号'));
+    });
+
+    /**
+     * 首页那段手机口令，必须指得到安装契约真正铺下的那两个文件。
+     *
+     * 它与升级口令是同一类东西的两半：那一段钉小节标题，这一段钉**路径**。
+     * 手机接进来的窗口读不到系统根的认路文件（工作目录常常不在那儿），
+     * 于是这段口令是唯一入口，而它把 `.ziminos/skills/` 下的契约与脚本位置写死了。
+     * 安装契约哪天换个地方铺，口令就指向一个不存在的文件——智能体不会因此停下，
+     * 它会自己找一份看着差不多的说明接着干，或者干脆手写笔记，
+     * 而「不许手写笔记」正是这段口令存在的全部理由。
+     *
+     * 顺带钉住取路径那几步点名的控件：设置项改个名字，首页第一步就落空，
+     * 而用户在设置页里翻不到「复制哪一种路径」时，只会以为自己的版本不对。
+     */
+    test('首页的手机口令指向契约真实铺下的那两个文件', () => {
+        const readme = readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+        const proContract = readFileSync(proContractPath, 'utf8');
+        const notectl = readFileSync(path.join(ROOT, 'skill-pro/scripts/notectl.py'), 'utf8');
+        const settingsModel = readFileSync(path.join(ROOT, 'src/settingsModel.ts'), 'utf8');
+        const commands = readFileSync(path.join(ROOT, 'src/core/commands.ts'), 'utf8');
+
+        // 只认手机那一节：同样两个路径在「换个窗口」那段里也出现，整篇搜等于没搜
+        const start = readme.indexOf('## 从手机记一句话');
+        assert.notEqual(start, -1, 'README 少了手机那一节');
+        const section = readme.slice(start, readme.indexOf('\n## ', start + 1));
+
+        for (const installed of ['.ziminos/skills/capture/SKILL.md', '.ziminos/skills/scripts/notectl.py']) {
+            assert.ok(section.includes(installed), `手机口令没点名「${installed}」`);
+            assert.ok(proContract.includes(installed), `skill-pro/SKILL.md 没铺下「${installed}」`);
+        }
+
+        // 口令要它先跑一次 status 自证真的连上了库，那必须是个真的子命令
+        assert.ok(section.includes('跑一次 status'));
+        assert.match(notectl, /add_parser\("status"/);
+
+        // 取路径那几步点名的设置项、选项与命令，得是界面上真有的那几个
+        for (const label of ['复制哪一种路径', '本机完整路径']) {
+            assert.ok(section.includes(label), `取路径那几步没点名「${label}」`);
+            assert.ok(settingsModel.includes(label), `设置页里没有「${label}」`);
+        }
+
+        assert.ok(section.includes('复制当前笔记路径'));
+        assert.ok(commands.includes("name: '复制当前笔记路径'"));
     });
 
     /**
