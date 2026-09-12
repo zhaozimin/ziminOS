@@ -994,3 +994,106 @@ if (existsSync(proContractPath)) {
         assert.equal(parseManifestLine('- [ ] 一条没有 UID 的手写备注'), null);
     });
 }
+
+test('日历把「今天」与「写过了」画成两个事实，而不是三选一', () => {
+    const view = readFileSync(path.join(ROOT, 'src/modules/calendar/view.ts'), 'utf8');
+    const main = readFileSync(path.join(ROOT, 'src/main.ts'), 'utf8');
+    const css = readFileSync(path.join(ROOT, 'vault/.obsidian/plugins/ziminos/styles.css'), 'utf8');
+
+    // 日历不认识 review：它只想知道「这一格要不要涂绿」，
+    // 目录规则与文件名格式归 review，由 main 填洞——与 opener 同一条路数
+    assert.match(view, /export type CalendarNoteProbe/);
+    assert.doesNotMatch(view, /periodFolderOf|titleOfDay/);
+    assert.match(main, /periodFolderOf\(ctx, period\)/);
+
+    // 日格与周格都要涂：他要的是「日记或者周记」
+    assert.match(view, /button\.toggleClass\('has-note', this\.hasNote\('daily', day\.date\)\)/);
+    assert.match(view, /weekButton\.toggleClass\('has-note', this\.hasNote\('weekly', week\.anchor\)\)/);
+
+    // 两个类而不是一个三态：今天也可能已经写完，那恰恰是最该一眼看见的一格
+    assert.match(css, /\.ziminos-calendar-day\.has-note/);
+    assert.match(css, /\.ziminos-calendar-day\.is-today \{[^}]*--color-red/);
+    assert.match(css, /\.ziminos-calendar-day\.is-today\.has-note::after/);
+
+    // is-today 必须排在 has-note 之后：同特异性下后来者胜
+    assert.ok(
+        css.indexOf('.ziminos-calendar-day.has-note') < css.indexOf('.ziminos-calendar-day.is-today {'),
+        'is-today 要排在 has-note 之后，否则今天会被写过那层底压住',
+    );
+});
+
+test('日历只在真有事发生时重画：无定时器、无轮询', () => {
+    const view = readFileSync(path.join(ROOT, 'src/modules/calendar/view.ts'), 'utf8');
+
+    // 三个 vault 事件各注册一次——它们的回调签名不同，合成一个联合类型谁都对不上
+    for (const name of ['create', 'delete', 'rename']) {
+        assert.ok(view.includes(`this.app.vault.on('${name}', onChange)`), `少了 ${name} 的监听`);
+    }
+
+    // 只认 Markdown：附件与文件夹的增删与「这天写没写复盘」无关
+    assert.match(view, /file instanceof TFile && file\.extension === 'md'/);
+
+    // 点一格之后也要重画：更常见的结果是「那篇已经在了，只是打开它」，
+    // 那时没有任何 vault 事件，而用户仍然期待看见自己刚点过的那一格是绿的
+    assert.match(view, /await this\.openPeriod\(period, anchorDay\);\s*\n\s*this\.renderCalendar\(\);/);
+
+    // 防抖而不是定时器
+    assert.match(view, /scheduleRepaint/);
+    assert.doesNotMatch(view, /setInterval/);
+});
+
+/**
+ * Obsidian 运行时的 View / ItemView / Component 身上真有、但子类不该拿去当自己名字的成员。
+ *
+ * 名单分两半，危险程度不同：
+ *   · open / close / load / unload —— `obsidian.d.ts`（1.13.1，8482 行）里**一个字都没有**，
+ *     在真机控制台沿原型链枚举才看得见（View.prototype 有 open、close，
+ *     Component.prototype 有 load、unload）。撞上它们编译器一声不吭，运行期宿主调进你的方法，
+ *     参数全是 undefined——v0.30.0 的日历就是这么整个开不出来的：
+ *     右侧栏一片空白，报错只出现在没人会打开的开发者控制台里。
+ *   · app / leaf / containerEl / contentEl / scope / icon / navigation / addAction /
+ *     register* / addChild / removeChild —— 这些声明文件里有，但同名字段会把宿主那份遮掉，
+ *     同样不报错。
+ *
+ * 刻意不收 onOpen / onClose / onload / onunload / getViewType / getDisplayText / getIcon /
+ * getState / setState / getEphemeralState / setEphemeralState / onResize / onPaneMenu：
+ * 那些是宿主明写着留给子类去覆盖的钩子，覆盖它们正是用法。
+ */
+const HOST_VIEW_MEMBERS = new Set([
+    'open', 'close', 'load', 'unload',
+    'app', 'leaf', 'containerEl', 'contentEl', 'scope', 'icon', 'navigation', 'addAction',
+    'register', 'registerEvent', 'registerDomEvent', 'registerInterval',
+    'addChild', 'removeChild',
+]);
+
+test('ItemView 子类不占用宿主自己的成员名', () => {
+    const files = ['src/modules/calendar/view.ts', 'src/modules/explorer/recentFiles.ts'];
+    let classesChecked = 0;
+
+    for (const relative of files) {
+        const source = readFileSync(path.join(ROOT, relative), 'utf8');
+        const start = source.search(/^class \w+ extends ItemView \{$/m);
+
+        assert.ok(start >= 0, `${relative} 里找不到 ItemView 子类`);
+        classesChecked += 1;
+
+        // 类体：从类头到第一个顶格的 }，也就是这个类自己结束的地方
+        const body = source.slice(start).split(/^\}$/m)[0];
+        const members = [...body.matchAll(
+            /^ {4}(?:private |protected |public )?(?:static )?(?:readonly |async )*([A-Za-z_$][\w$]*)\s*[(:=]/gm,
+        )].map((match) => match[1]);
+
+        assert.ok(members.length > 5, `${relative} 的成员没解析出来，正则该修了`);
+
+        for (const name of members) {
+            assert.ok(
+                !HOST_VIEW_MEMBERS.has(name),
+                `${relative} 的 ${name} 与 Obsidian 自己的成员同名：`
+                + '编译期不会报错，运行期宿主会调进你这一份（或读到你这一份），视图直接开不出来。换个名字。',
+            );
+        }
+    }
+
+    assert.equal(classesChecked, files.length);
+});
+

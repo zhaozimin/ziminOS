@@ -57,9 +57,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-// ../../../node_modules/dom-to-image-more/dist/dom-to-image-more.min.js
+// node_modules/dom-to-image-more/dist/dom-to-image-more.min.js
 var require_dom_to_image_more_min = __commonJS({
-  "../../../node_modules/dom-to-image-more/dist/dom-to-image-more.min.js"(exports, module2) {
+  "node_modules/dom-to-image-more/dist/dom-to-image-more.min.js"(exports, module2) {
     ((m4) => {
       let g2 = /* @__PURE__ */ (() => {
         let e3 = 0;
@@ -789,7 +789,7 @@ var require_dom_to_image_more_min = __commonJS({
   }
 });
 
-// ../../../node_modules/@babel/runtime/helpers/esm/typeof.js
+// node_modules/@babel/runtime/helpers/esm/typeof.js
 function _typeof(o3) {
   "@babel/helpers - typeof";
   return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function(o4) {
@@ -799,13 +799,13 @@ function _typeof(o3) {
   }, _typeof(o3);
 }
 var init_typeof = __esm({
-  "../../../node_modules/@babel/runtime/helpers/esm/typeof.js"() {
+  "node_modules/@babel/runtime/helpers/esm/typeof.js"() {
   }
 });
 
-// ../../../node_modules/html2canvas/dist/html2canvas.js
+// node_modules/html2canvas/dist/html2canvas.js
 var require_html2canvas = __commonJS({
-  "../../../node_modules/html2canvas/dist/html2canvas.js"(exports, module2) {
+  "node_modules/html2canvas/dist/html2canvas.js"(exports, module2) {
     (function(global2, factory) {
       typeof exports === "object" && typeof module2 !== "undefined" ? module2.exports = factory() : typeof define === "function" && define.amd ? define(factory) : (global2 = typeof globalThis !== "undefined" ? globalThis : global2 || self, global2.html2canvas = factory());
     })(exports, (function() {
@@ -2517,14 +2517,14 @@ var require_html2canvas = __commonJS({
           return COLORS2.TRANSPARENT;
         }
       };
-      var isTransparent = function(color2) {
-        return (255 & color2) === 0;
+      var isTransparent = function(color3) {
+        return (255 & color3) === 0;
       };
-      var asString = function(color2) {
-        var alpha = 255 & color2;
-        var blue = 255 & color2 >> 8;
-        var green = 255 & color2 >> 16;
-        var red = 255 & color2 >> 24;
+      var asString = function(color3) {
+        var alpha = 255 & color3;
+        var blue = 255 & color3 >> 8;
+        var green = 255 & color3 >> 16;
+        var red = 255 & color3 >> 24;
         return alpha < 255 ? "rgba(" + red + "," + green + "," + blue + "," + alpha / 255 + ")" : "rgb(" + red + "," + green + "," + blue + ")";
       };
       var pack = function(r2, g2, b2, a4) {
@@ -2773,9 +2773,9 @@ var require_html2canvas = __commonJS({
         format: "color"
       };
       var parseColorStop = function(context, args) {
-        var color2 = color$1.parse(context, args[0]);
+        var color3 = color$1.parse(context, args[0]);
         var stop = args[1];
-        return stop && isLengthPercentage(stop) ? { color: color2, stop } : { color: color2, stop: null };
+        return stop && isLengthPercentage(stop) ? { color: color3, stop } : { color: color3, stop: null };
       };
       var processColorStops = function(stops, lineLength) {
         var first = stops[0];
@@ -2820,8 +2820,8 @@ var require_html2canvas = __commonJS({
           }
         }
         return stops.map(function(_a2, i6) {
-          var color2 = _a2.color;
-          return { color: color2, stop: Math.max(Math.min(1, processStops[i6] / lineLength), 0) };
+          var color3 = _a2.color;
+          return { color: color3, stop: Math.max(Math.min(1, processStops[i6] / lineLength), 0) };
         });
       };
       var getAngleFromCorner = function(corner, width, height) {
@@ -2981,20 +2981,20 @@ var require_html2canvas = __commonJS({
           }
           if (firstToken.type === 18) {
             if (firstToken.name === "from") {
-              var color2 = color$1.parse(context, firstToken.values[0]);
-              stops.push({ stop: ZERO_LENGTH, color: color2 });
+              var color3 = color$1.parse(context, firstToken.values[0]);
+              stops.push({ stop: ZERO_LENGTH, color: color3 });
             } else if (firstToken.name === "to") {
-              var color2 = color$1.parse(context, firstToken.values[0]);
-              stops.push({ stop: HUNDRED_PERCENT, color: color2 });
+              var color3 = color$1.parse(context, firstToken.values[0]);
+              stops.push({ stop: HUNDRED_PERCENT, color: color3 });
             } else if (firstToken.name === "color-stop") {
               var values = firstToken.values.filter(nonFunctionArgSeparator);
               if (values.length === 2) {
-                var color2 = color$1.parse(context, values[1]);
+                var color3 = color$1.parse(context, values[1]);
                 var stop_1 = values[0];
                 if (isNumberToken(stop_1)) {
                   stops.push({
                     stop: { type: 16, number: stop_1.number * 100, flags: stop_1.flags },
-                    color: color2
+                    color: color3
                   });
                 }
               }
@@ -3384,7 +3384,7 @@ var require_html2canvas = __commonJS({
       var borderRightWidth = borderWidthForSide("right");
       var borderBottomWidth = borderWidthForSide("bottom");
       var borderLeftWidth = borderWidthForSide("left");
-      var color = {
+      var color2 = {
         name: "color",
         initialValue: "transparent",
         prefix: false,
@@ -4378,7 +4378,7 @@ var require_html2canvas = __commonJS({
             this.borderBottomWidth = parse(context, borderBottomWidth, declaration.borderBottomWidth);
             this.borderLeftWidth = parse(context, borderLeftWidth, declaration.borderLeftWidth);
             this.boxShadow = parse(context, boxShadow, declaration.boxShadow);
-            this.color = parse(context, color, declaration.color);
+            this.color = parse(context, color2, declaration.color);
             this.direction = parse(context, direction, declaration.direction);
             this.display = parse(context, display, declaration.display);
             this.float = parse(context, float, declaration.cssFloat);
@@ -4899,11 +4899,11 @@ var require_html2canvas = __commonJS({
         });
         var offset = 0;
         var prev = {};
-        var supports = textList.every(function(text4, i5) {
+        var supports = textList.every(function(text6, i5) {
           range.setStart(node2, offset);
-          range.setEnd(node2, offset + text4.length);
+          range.setEnd(node2, offset + text6.length);
           var rect = range.getBoundingClientRect();
-          offset += text4.length;
+          offset += text6.length;
           var boundAhead = rect.x > prev.x || rect.y > prev.y;
           prev = rect;
           if (i5 === 0) {
@@ -5042,8 +5042,8 @@ var require_html2canvas = __commonJS({
       var TextBounds = (
         /** @class */
         /* @__PURE__ */ (function() {
-          function TextBounds2(text4, bounds) {
-            this.text = text4;
+          function TextBounds2(text6, bounds) {
+            this.text = text6;
             this.bounds = bounds;
           }
           return TextBounds2;
@@ -5053,29 +5053,29 @@ var require_html2canvas = __commonJS({
         var textList = breakText(value, styles);
         var textBounds = [];
         var offset = 0;
-        textList.forEach(function(text4) {
-          if (styles.textDecorationLine.length || text4.trim().length > 0) {
+        textList.forEach(function(text6) {
+          if (styles.textDecorationLine.length || text6.trim().length > 0) {
             if (FEATURES.SUPPORT_RANGE_BOUNDS) {
-              var clientRects = createRange(node2, offset, text4.length).getClientRects();
+              var clientRects = createRange(node2, offset, text6.length).getClientRects();
               if (clientRects.length > 1) {
-                var subSegments = segmentGraphemes(text4);
+                var subSegments = segmentGraphemes(text6);
                 var subOffset_1 = 0;
                 subSegments.forEach(function(subSegment) {
                   textBounds.push(new TextBounds(subSegment, Bounds.fromDOMRectList(context, createRange(node2, subOffset_1 + offset, subSegment.length).getClientRects())));
                   subOffset_1 += subSegment.length;
                 });
               } else {
-                textBounds.push(new TextBounds(text4, Bounds.fromDOMRectList(context, clientRects)));
+                textBounds.push(new TextBounds(text6, Bounds.fromDOMRectList(context, clientRects)));
               }
             } else {
-              var replacementNode = node2.splitText(text4.length);
-              textBounds.push(new TextBounds(text4, getWrapperBounds(context, node2)));
+              var replacementNode = node2.splitText(text6.length);
+              textBounds.push(new TextBounds(text6, getWrapperBounds(context, node2)));
               node2 = replacementNode;
             }
           } else if (!FEATURES.SUPPORT_RANGE_BOUNDS) {
-            node2 = node2.splitText(text4.length);
+            node2 = node2.splitText(text6.length);
           }
-          offset += text4.length;
+          offset += text6.length;
         });
         return textBounds;
       };
@@ -5173,16 +5173,16 @@ var require_html2canvas = __commonJS({
           return TextContainer2;
         })()
       );
-      var transform = function(text4, transform2) {
+      var transform = function(text6, transform2) {
         switch (transform2) {
           case 1:
-            return text4.toLowerCase();
+            return text6.toLowerCase();
           case 3:
-            return text4.replace(CAPITALIZE, capitalize);
+            return text6.replace(CAPITALIZE, capitalize);
           case 2:
-            return text4.toUpperCase();
+            return text6.toUpperCase();
           default:
-            return text4;
+            return text6;
         }
       };
       var CAPITALIZE = /(^|\s|:|-|\(|\))([a-z])/g;
@@ -6106,9 +6106,9 @@ var require_html2canvas = __commonJS({
             try {
               var sheet = node2.sheet;
               if (sheet && sheet.cssRules) {
-                var css = [].slice.call(sheet.cssRules, 0).reduce(function(css2, rule) {
-                  if (rule && typeof rule.cssText === "string") {
-                    return css2 + rule.cssText;
+                var css = [].slice.call(sheet.cssRules, 0).reduce(function(css2, rule2) {
+                  if (rule2 && typeof rule2.cssText === "string") {
+                    return css2 + rule2.cssText;
                   }
                   return css2;
                 }, "");
@@ -6294,10 +6294,10 @@ var require_html2canvas = __commonJS({
                     var counterStates = _this.counters.getCounterValues(counter.value);
                     var counterType_1 = counterStyle && isIdentToken(counterStyle) ? listStyleType.parse(_this.context, counterStyle.value) : 3;
                     var separator = delim && delim.type === 0 ? delim.value : "";
-                    var text4 = counterStates.map(function(value2) {
+                    var text6 = counterStates.map(function(value2) {
                       return createCounterText(value2, counterType_1, false);
                     }).join(separator);
-                    anonymousReplacedElement.appendChild(document2.createTextNode(text4));
+                    anonymousReplacedElement.appendChild(document2.createTextNode(text6));
                   }
                 } else ;
               } else if (token.type === 20) {
@@ -7429,23 +7429,23 @@ var require_html2canvas = __commonJS({
               });
             });
           };
-          CanvasRenderer2.prototype.renderNode = function(paint) {
+          CanvasRenderer2.prototype.renderNode = function(paint2) {
             return __awaiter(this, void 0, void 0, function() {
               return __generator(this, function(_a2) {
                 switch (_a2.label) {
                   case 0:
                     if (contains(
-                      paint.container.flags,
+                      paint2.container.flags,
                       16
                       /* DEBUG_RENDER */
                     )) {
                       debugger;
                     }
-                    if (!paint.container.styles.isVisible()) return [3, 3];
-                    return [4, this.renderNodeBackgroundAndBorders(paint)];
+                    if (!paint2.container.styles.isVisible()) return [3, 3];
+                    return [4, this.renderNodeBackgroundAndBorders(paint2)];
                   case 1:
                     _a2.sent();
-                    return [4, this.renderNodeContent(paint)];
+                    return [4, this.renderNodeContent(paint2)];
                   case 2:
                     _a2.sent();
                     _a2.label = 3;
@@ -7458,16 +7458,16 @@ var require_html2canvas = __commonJS({
               });
             });
           };
-          CanvasRenderer2.prototype.renderTextWithLetterSpacing = function(text4, letterSpacing2, baseline) {
+          CanvasRenderer2.prototype.renderTextWithLetterSpacing = function(text6, letterSpacing2, baseline) {
             var _this = this;
             if (letterSpacing2 === 0) {
-              this.ctx.fillText(text4.text, text4.bounds.left, text4.bounds.top + baseline);
+              this.ctx.fillText(text6.text, text6.bounds.left, text6.bounds.top + baseline);
             } else {
-              var letters = segmentGraphemes(text4.text);
+              var letters = segmentGraphemes(text6.text);
               letters.reduce(function(left, letter) {
-                _this.ctx.fillText(letter, left, text4.bounds.top + baseline);
+                _this.ctx.fillText(letter, left, text6.bounds.top + baseline);
                 return left + _this.ctx.measureText(letter).width;
-              }, text4.bounds.left);
+              }, text6.bounds.left);
             }
           };
           CanvasRenderer2.prototype.createFontStyle = function(styles) {
@@ -7482,7 +7482,7 @@ var require_html2canvas = __commonJS({
               fontSize2
             ];
           };
-          CanvasRenderer2.prototype.renderTextNode = function(text4, styles) {
+          CanvasRenderer2.prototype.renderTextNode = function(text6, styles) {
             return __awaiter(this, void 0, void 0, function() {
               var _a2, font, fontFamily2, fontSize2, _b2, baseline, middle, paintOrder2;
               var _this = this;
@@ -7494,20 +7494,20 @@ var require_html2canvas = __commonJS({
                 this.ctx.textBaseline = "alphabetic";
                 _b2 = this.fontMetrics.getMetrics(fontFamily2, fontSize2), baseline = _b2.baseline, middle = _b2.middle;
                 paintOrder2 = styles.paintOrder;
-                text4.textBounds.forEach(function(text5) {
+                text6.textBounds.forEach(function(text7) {
                   paintOrder2.forEach(function(paintOrderLayer) {
                     switch (paintOrderLayer) {
                       case 0:
                         _this.ctx.fillStyle = asString(styles.color);
-                        _this.renderTextWithLetterSpacing(text5, styles.letterSpacing, baseline);
+                        _this.renderTextWithLetterSpacing(text7, styles.letterSpacing, baseline);
                         var textShadows = styles.textShadow;
-                        if (textShadows.length && text5.text.trim().length) {
+                        if (textShadows.length && text7.text.trim().length) {
                           textShadows.slice(0).reverse().forEach(function(textShadow2) {
                             _this.ctx.shadowColor = asString(textShadow2.color);
                             _this.ctx.shadowOffsetX = textShadow2.offsetX.number * _this.options.scale;
                             _this.ctx.shadowOffsetY = textShadow2.offsetY.number * _this.options.scale;
                             _this.ctx.shadowBlur = textShadow2.blur.number;
-                            _this.renderTextWithLetterSpacing(text5, styles.letterSpacing, baseline);
+                            _this.renderTextWithLetterSpacing(text7, styles.letterSpacing, baseline);
                           });
                           _this.ctx.shadowColor = "";
                           _this.ctx.shadowOffsetX = 0;
@@ -7519,24 +7519,24 @@ var require_html2canvas = __commonJS({
                           styles.textDecorationLine.forEach(function(textDecorationLine2) {
                             switch (textDecorationLine2) {
                               case 1:
-                                _this.ctx.fillRect(text5.bounds.left, Math.round(text5.bounds.top + baseline), text5.bounds.width, 1);
+                                _this.ctx.fillRect(text7.bounds.left, Math.round(text7.bounds.top + baseline), text7.bounds.width, 1);
                                 break;
                               case 2:
-                                _this.ctx.fillRect(text5.bounds.left, Math.round(text5.bounds.top), text5.bounds.width, 1);
+                                _this.ctx.fillRect(text7.bounds.left, Math.round(text7.bounds.top), text7.bounds.width, 1);
                                 break;
                               case 3:
-                                _this.ctx.fillRect(text5.bounds.left, Math.ceil(text5.bounds.top + middle), text5.bounds.width, 1);
+                                _this.ctx.fillRect(text7.bounds.left, Math.ceil(text7.bounds.top + middle), text7.bounds.width, 1);
                                 break;
                             }
                           });
                         }
                         break;
                       case 1:
-                        if (styles.webkitTextStrokeWidth && text5.text.trim().length) {
+                        if (styles.webkitTextStrokeWidth && text7.text.trim().length) {
                           _this.ctx.strokeStyle = asString(styles.webkitTextStrokeColor);
                           _this.ctx.lineWidth = styles.webkitTextStrokeWidth;
                           _this.ctx.lineJoin = !!window.chrome ? "miter" : "round";
-                          _this.ctx.strokeText(text5.text, text5.bounds.left, text5.bounds.top + baseline);
+                          _this.ctx.strokeText(text7.text, text7.bounds.left, text7.bounds.top + baseline);
                         }
                         _this.ctx.strokeStyle = "";
                         _this.ctx.lineWidth = 0;
@@ -7563,18 +7563,18 @@ var require_html2canvas = __commonJS({
               this.ctx.restore();
             }
           };
-          CanvasRenderer2.prototype.renderNodeContent = function(paint) {
+          CanvasRenderer2.prototype.renderNodeContent = function(paint2) {
             return __awaiter(this, void 0, void 0, function() {
               var container, curves, styles, _i, _a2, child, image2, image2, iframeRenderer, canvas, size, _b2, fontFamily2, fontSize2, baseline, bounds, x3, textBounds, img, image2, url, fontFamily2, bounds;
               return __generator(this, function(_c) {
                 switch (_c.label) {
                   case 0:
-                    this.applyEffects(paint.getEffects(
+                    this.applyEffects(paint2.getEffects(
                       4
                       /* CONTENT */
                     ));
-                    container = paint.container;
-                    curves = paint.curves;
+                    container = paint2.container;
+                    curves = paint2.curves;
                     styles = container.styles;
                     _i = 0, _a2 = container.textNodes;
                     _c.label = 1;
@@ -7722,14 +7722,14 @@ var require_html2canvas = __commonJS({
                   case 18:
                     return [3, 20];
                   case 19:
-                    if (paint.listValue && container.styles.listStyleType !== -1) {
+                    if (paint2.listValue && container.styles.listStyleType !== -1) {
                       fontFamily2 = this.createFontStyle(styles)[0];
                       this.ctx.font = fontFamily2;
                       this.ctx.fillStyle = asString(styles.color);
                       this.ctx.textBaseline = "middle";
                       this.ctx.textAlign = "right";
                       bounds = new Bounds(container.bounds.left, container.bounds.top + getAbsoluteValue(container.styles.paddingTop, container.bounds.width), container.bounds.width, computeLineHeight(styles.lineHeight, styles.fontSize.number) / 2 + 1);
-                      this.renderTextWithLetterSpacing(new TextBounds(paint.listValue, bounds), styles.letterSpacing, computeLineHeight(styles.lineHeight, styles.fontSize.number) / 2 + 2);
+                      this.renderTextWithLetterSpacing(new TextBounds(paint2.listValue, bounds), styles.letterSpacing, computeLineHeight(styles.lineHeight, styles.fontSize.number) / 2 + 2);
                       this.ctx.textBaseline = "bottom";
                       this.ctx.textAlign = "left";
                     }
@@ -8030,11 +8030,11 @@ var require_html2canvas = __commonJS({
               });
             });
           };
-          CanvasRenderer2.prototype.renderSolidBorder = function(color2, side, curvePoints) {
+          CanvasRenderer2.prototype.renderSolidBorder = function(color3, side, curvePoints) {
             return __awaiter(this, void 0, void 0, function() {
               return __generator(this, function(_a2) {
                 this.path(parsePathForBorder(curvePoints, side));
-                this.ctx.fillStyle = asString(color2);
+                this.ctx.fillStyle = asString(color3);
                 this.ctx.fill();
                 return [
                   2
@@ -8043,14 +8043,14 @@ var require_html2canvas = __commonJS({
               });
             });
           };
-          CanvasRenderer2.prototype.renderDoubleBorder = function(color2, width, side, curvePoints) {
+          CanvasRenderer2.prototype.renderDoubleBorder = function(color3, width, side, curvePoints) {
             return __awaiter(this, void 0, void 0, function() {
               var outerPaths, innerPaths;
               return __generator(this, function(_a2) {
                 switch (_a2.label) {
                   case 0:
                     if (!(width < 3)) return [3, 2];
-                    return [4, this.renderSolidBorder(color2, side, curvePoints)];
+                    return [4, this.renderSolidBorder(color3, side, curvePoints)];
                   case 1:
                     _a2.sent();
                     return [
@@ -8060,7 +8060,7 @@ var require_html2canvas = __commonJS({
                   case 2:
                     outerPaths = parsePathForBorderDoubleOuter(curvePoints, side);
                     this.path(outerPaths);
-                    this.ctx.fillStyle = asString(color2);
+                    this.ctx.fillStyle = asString(color3);
                     this.ctx.fill();
                     innerPaths = parsePathForBorderDoubleInner(curvePoints, side);
                     this.path(innerPaths);
@@ -8073,18 +8073,18 @@ var require_html2canvas = __commonJS({
               });
             });
           };
-          CanvasRenderer2.prototype.renderNodeBackgroundAndBorders = function(paint) {
+          CanvasRenderer2.prototype.renderNodeBackgroundAndBorders = function(paint2) {
             return __awaiter(this, void 0, void 0, function() {
               var styles, hasBackground, borders, backgroundPaintingArea, side, _i, borders_1, border;
               var _this = this;
               return __generator(this, function(_a2) {
                 switch (_a2.label) {
                   case 0:
-                    this.applyEffects(paint.getEffects(
+                    this.applyEffects(paint2.getEffects(
                       2
                       /* BACKGROUND_BORDERS */
                     ));
-                    styles = paint.container.styles;
+                    styles = paint2.container.styles;
                     hasBackground = !isTransparent(styles.backgroundColor) || styles.backgroundImage.length;
                     borders = [
                       { style: styles.borderTopStyle, color: styles.borderTopColor, width: styles.borderTopWidth },
@@ -8092,7 +8092,7 @@ var require_html2canvas = __commonJS({
                       { style: styles.borderBottomStyle, color: styles.borderBottomColor, width: styles.borderBottomWidth },
                       { style: styles.borderLeftStyle, color: styles.borderLeftColor, width: styles.borderLeftWidth }
                     ];
-                    backgroundPaintingArea = calculateBackgroundCurvedPaintingArea(getBackgroundValueForIndex(styles.backgroundClip, 0), paint.curves);
+                    backgroundPaintingArea = calculateBackgroundCurvedPaintingArea(getBackgroundValueForIndex(styles.backgroundClip, 0), paint2.curves);
                     if (!(hasBackground || styles.boxShadow.length)) return [3, 2];
                     this.ctx.save();
                     this.path(backgroundPaintingArea);
@@ -8101,13 +8101,13 @@ var require_html2canvas = __commonJS({
                       this.ctx.fillStyle = asString(styles.backgroundColor);
                       this.ctx.fill();
                     }
-                    return [4, this.renderBackgroundImage(paint.container)];
+                    return [4, this.renderBackgroundImage(paint2.container)];
                   case 1:
                     _a2.sent();
                     this.ctx.restore();
                     styles.boxShadow.slice(0).reverse().forEach(function(shadow) {
                       _this.ctx.save();
-                      var borderBoxArea = calculateBorderBoxPath(paint.curves);
+                      var borderBoxArea = calculateBorderBoxPath(paint2.curves);
                       var maskOffset = shadow.inset ? 0 : MASK_OFFSET;
                       var shadowPaintingArea = transformPath(borderBoxArea, -maskOffset + (shadow.inset ? 1 : -1) * shadow.spread.number, (shadow.inset ? 1 : -1) * shadow.spread.number, shadow.spread.number * (shadow.inset ? -2 : 2), shadow.spread.number * (shadow.inset ? -2 : 2));
                       if (shadow.inset) {
@@ -8141,7 +8141,7 @@ var require_html2canvas = __commonJS({
                       border.color,
                       border.width,
                       side,
-                      paint.curves,
+                      paint2.curves,
                       2
                       /* DASHED */
                     )];
@@ -8154,7 +8154,7 @@ var require_html2canvas = __commonJS({
                       border.color,
                       border.width,
                       side,
-                      paint.curves,
+                      paint2.curves,
                       3
                       /* DOTTED */
                     )];
@@ -8163,12 +8163,12 @@ var require_html2canvas = __commonJS({
                     return [3, 11];
                   case 7:
                     if (!(border.style === 4)) return [3, 9];
-                    return [4, this.renderDoubleBorder(border.color, border.width, side, paint.curves)];
+                    return [4, this.renderDoubleBorder(border.color, border.width, side, paint2.curves)];
                   case 8:
                     _a2.sent();
                     return [3, 11];
                   case 9:
-                    return [4, this.renderSolidBorder(border.color, side, paint.curves)];
+                    return [4, this.renderSolidBorder(border.color, side, paint2.curves)];
                   case 10:
                     _a2.sent();
                     _a2.label = 11;
@@ -8187,7 +8187,7 @@ var require_html2canvas = __commonJS({
               });
             });
           };
-          CanvasRenderer2.prototype.renderDashedDottedBorder = function(color2, width, side, curvePoints, style) {
+          CanvasRenderer2.prototype.renderDashedDottedBorder = function(color3, width, side, curvePoints, style) {
             return __awaiter(this, void 0, void 0, function() {
               var strokePaths, boxPaths, startX, startY, endX, endY, length, dashLength, spaceLength, useLineDash, multiplier, numberOfDashes, minSpace, maxSpace, path1, path2, path1, path2;
               return __generator(this, function(_a2) {
@@ -8255,7 +8255,7 @@ var require_html2canvas = __commonJS({
                 } else {
                   this.ctx.lineWidth = width * 2 + 1.1;
                 }
-                this.ctx.strokeStyle = asString(color2);
+                this.ctx.strokeStyle = asString(color3);
                 this.ctx.stroke();
                 this.ctx.setLineDash([]);
                 if (style === 2) {
@@ -8398,9 +8398,9 @@ var require_html2canvas = __commonJS({
         /** @class */
         (function() {
           function Logger2(_a2) {
-            var id = _a2.id, enabled = _a2.enabled;
+            var id = _a2.id, enabled2 = _a2.enabled;
             this.id = id;
-            this.enabled = enabled;
+            this.enabled = enabled2;
             this.start = Date.now();
           }
           Logger2.prototype.debug = function() {
@@ -8588,7 +8588,7 @@ var require_html2canvas = __commonJS({
   }
 });
 
-// ../../../node_modules/dompurify/dist/purify.es.mjs
+// node_modules/dompurify/dist/purify.es.mjs
 var purify_es_exports = {};
 __export(purify_es_exports, {
   default: () => purify
@@ -8851,7 +8851,7 @@ function createDOMPurify() {
   const MUSTACHE_EXPR$1 = MUSTACHE_EXPR, ERB_EXPR$1 = ERB_EXPR, TMPLIT_EXPR$1 = TMPLIT_EXPR, DATA_ATTR$1 = DATA_ATTR, ARIA_ATTR$1 = ARIA_ATTR, IS_SCRIPT_OR_DATA$1 = IS_SCRIPT_OR_DATA, ATTR_WHITESPACE$1 = ATTR_WHITESPACE, CUSTOM_ELEMENT$1 = CUSTOM_ELEMENT;
   let IS_ALLOWED_URI$1 = IS_ALLOWED_URI;
   let ALLOWED_TAGS = null;
-  const DEFAULT_ALLOWED_TAGS = addToSet({}, [...html$1, ...svg$1, ...svgFilters, ...mathMl$1, ...text3]);
+  const DEFAULT_ALLOWED_TAGS = addToSet({}, [...html$1, ...svg$1, ...svgFilters, ...mathMl$1, ...text4]);
   let ALLOWED_ATTR = null;
   const DEFAULT_ALLOWED_ATTR = addToSet({}, [...html, ...svg, ...mathMl, ...xml]);
   let CUSTOM_ELEMENT_HANDLING = Object.seal(create(null, {
@@ -9060,7 +9060,7 @@ function createDOMPurify() {
       RETURN_DOM = true;
     }
     if (USE_PROFILES) {
-      ALLOWED_TAGS = addToSet({}, text3);
+      ALLOWED_TAGS = addToSet({}, text4);
       ALLOWED_ATTR = create(null);
       if (USE_PROFILES.html === true) {
         addToSet(ALLOWED_TAGS, html$1);
@@ -10029,9 +10029,9 @@ function createDOMPurify() {
   };
   return DOMPurify;
 }
-var entries, setPrototypeOf, isFrozen, getPrototypeOf, getOwnPropertyDescriptor, freeze, seal, create, _ref, apply, construct, arrayForEach, arrayLastIndexOf, arrayPop, arrayPush, arraySplice, arrayIsArray, stringToLowerCase, stringToString, stringMatch, stringReplace, stringIndexOf, stringTrim, numberToString, booleanToString, bigintToString, symbolToString, objectHasOwnProperty, objectToString, regExpTest, typeErrorCreate, html$1, svg$1, svgFilters, svgDisallowed, mathMl$1, mathMlDisallowed, text3, html, svg, mathMl, xml, MUSTACHE_EXPR, ERB_EXPR, TMPLIT_EXPR, DATA_ATTR, ARIA_ATTR, IS_ALLOWED_URI, IS_SCRIPT_OR_DATA, ATTR_WHITESPACE, DOCTYPE_NAME, CUSTOM_ELEMENT, ELEMENT_MARKUP_PROBE, COMMENT_MARKUP_PROBE, FALLBACK_TAG_CLOSE, SELF_CLOSING_TAG, NODE_TYPE, LITERAL_TEXT_ELEMENT_NAMES, LITERAL_TEXT_ELEMENTS, LITERAL_TEXT_CLOSE, getGlobal, _createTrustedTypesPolicy, _createHooksMap, _resolveSetOption, _resolveObjectOption, purify;
+var entries, setPrototypeOf, isFrozen, getPrototypeOf, getOwnPropertyDescriptor, freeze, seal, create, _ref, apply, construct, arrayForEach, arrayLastIndexOf, arrayPop, arrayPush, arraySplice, arrayIsArray, stringToLowerCase, stringToString, stringMatch, stringReplace, stringIndexOf, stringTrim, numberToString, booleanToString, bigintToString, symbolToString, objectHasOwnProperty, objectToString, regExpTest, typeErrorCreate, html$1, svg$1, svgFilters, svgDisallowed, mathMl$1, mathMlDisallowed, text4, html, svg, mathMl, xml, MUSTACHE_EXPR, ERB_EXPR, TMPLIT_EXPR, DATA_ATTR, ARIA_ATTR, IS_ALLOWED_URI, IS_SCRIPT_OR_DATA, ATTR_WHITESPACE, DOCTYPE_NAME, CUSTOM_ELEMENT, ELEMENT_MARKUP_PROBE, COMMENT_MARKUP_PROBE, FALLBACK_TAG_CLOSE, SELF_CLOSING_TAG, NODE_TYPE, LITERAL_TEXT_ELEMENT_NAMES, LITERAL_TEXT_ELEMENTS, LITERAL_TEXT_CLOSE, getGlobal, _createTrustedTypesPolicy, _createHooksMap, _resolveSetOption, _resolveObjectOption, purify;
 var init_purify_es = __esm({
-  "../../../node_modules/dompurify/dist/purify.es.mjs"() {
+  "node_modules/dompurify/dist/purify.es.mjs"() {
     entries = Object.entries;
     setPrototypeOf = Object.setPrototypeOf;
     isFrozen = Object.isFrozen;
@@ -10095,7 +10095,7 @@ var init_purify_es = __esm({
     svgDisallowed = freeze(["animate", "color-profile", "cursor", "discard", "font-face", "font-face-format", "font-face-name", "font-face-src", "font-face-uri", "foreignobject", "hatch", "hatchpath", "mesh", "meshgradient", "meshpatch", "meshrow", "missing-glyph", "script", "set", "solidcolor", "unknown", "use"]);
     mathMl$1 = freeze(["math", "menclose", "merror", "mfenced", "mfrac", "mglyph", "mi", "mlabeledtr", "mmultiscripts", "mn", "mo", "mover", "mpadded", "mphantom", "mroot", "mrow", "ms", "mspace", "msqrt", "mstyle", "msub", "msup", "msubsup", "mtable", "mtd", "mtext", "mtr", "munder", "munderover", "mprescripts"]);
     mathMlDisallowed = freeze(["maction", "maligngroup", "malignmark", "mlongdiv", "mscarries", "mscarry", "msgroup", "mstack", "msline", "msrow", "semantics", "annotation", "annotation-xml", "mprescripts", "none"]);
-    text3 = freeze(["#text"]);
+    text4 = freeze(["#text"]);
     html = freeze(["accept", "action", "align", "alt", "autocapitalize", "autocomplete", "autopictureinpicture", "autoplay", "background", "bgcolor", "border", "capture", "cellpadding", "cellspacing", "checked", "cite", "class", "clear", "color", "cols", "colspan", "command", "commandfor", "controls", "controlslist", "coords", "crossorigin", "datetime", "decoding", "default", "dir", "disabled", "disablepictureinpicture", "disableremoteplayback", "download", "draggable", "enctype", "enterkeyhint", "exportparts", "face", "for", "headers", "height", "hidden", "high", "href", "hreflang", "id", "inert", "inputmode", "integrity", "ismap", "kind", "label", "lang", "list", "loading", "loop", "low", "max", "maxlength", "media", "method", "min", "minlength", "multiple", "muted", "name", "nonce", "noshade", "novalidate", "nowrap", "open", "optimum", "part", "pattern", "placeholder", "playsinline", "popover", "popovertarget", "popovertargetaction", "poster", "preload", "pubdate", "radiogroup", "readonly", "rel", "required", "rev", "reversed", "role", "rows", "rowspan", "spellcheck", "scope", "selected", "shape", "size", "sizes", "slot", "span", "srclang", "start", "src", "srcset", "step", "style", "summary", "tabindex", "title", "translate", "type", "usemap", "valign", "value", "width", "wrap", "xmlns"]);
     svg = freeze(["accent-height", "accumulate", "additive", "alignment-baseline", "amplitude", "ascent", "attributename", "attributetype", "azimuth", "basefrequency", "baseline-shift", "begin", "bias", "by", "class", "clip", "clippathunits", "clip-path", "clip-rule", "color", "color-interpolation", "color-interpolation-filters", "color-profile", "color-rendering", "cx", "cy", "d", "dx", "dy", "diffuseconstant", "direction", "display", "divisor", "dominant-baseline", "dur", "edgemode", "elevation", "end", "exponent", "fill", "fill-opacity", "fill-rule", "filter", "filterunits", "flood-color", "flood-opacity", "font-family", "font-size", "font-size-adjust", "font-stretch", "font-style", "font-variant", "font-weight", "fx", "fy", "g1", "g2", "glyph-name", "glyphref", "gradientunits", "gradienttransform", "height", "href", "id", "image-rendering", "in", "in2", "intercept", "k", "k1", "k2", "k3", "k4", "kerning", "keypoints", "keysplines", "keytimes", "lang", "lengthadjust", "letter-spacing", "kernelmatrix", "kernelunitlength", "lighting-color", "local", "marker-end", "marker-mid", "marker-start", "markerheight", "markerunits", "markerwidth", "maskcontentunits", "maskunits", "max", "mask", "mask-type", "media", "method", "mode", "min", "name", "numoctaves", "offset", "operator", "opacity", "order", "orient", "orientation", "origin", "overflow", "paint-order", "path", "pathlength", "patterncontentunits", "patterntransform", "patternunits", "pointer-events", "points", "preservealpha", "preserveaspectratio", "primitiveunits", "r", "rx", "ry", "radius", "refx", "refy", "repeatcount", "repeatdur", "restart", "result", "rotate", "scale", "seed", "shape-rendering", "slope", "specularconstant", "specularexponent", "spreadmethod", "startoffset", "stddeviation", "stitchtiles", "stop-color", "stop-opacity", "stroke-dasharray", "stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-miterlimit", "stroke-opacity", "stroke", "stroke-width", "style", "surfacescale", "systemlanguage", "tabindex", "tablevalues", "targetx", "targety", "transform", "transform-origin", "text-anchor", "text-decoration", "text-orientation", "text-rendering", "textlength", "type", "u1", "u2", "unicode", "values", "vector-effect", "viewbox", "visibility", "version", "vert-adv-y", "vert-origin-x", "vert-origin-y", "width", "word-spacing", "wrap", "writing-mode", "xchannelselector", "ychannelselector", "x", "x1", "x2", "xmlns", "y", "y1", "y2", "z", "zoomandpan"]);
     mathMl = freeze(["accent", "accentunder", "align", "bevelled", "close", "columnalign", "columnlines", "columnspacing", "columnspan", "denomalign", "depth", "dir", "display", "displaystyle", "encoding", "fence", "frame", "height", "href", "id", "largeop", "length", "linethickness", "lquote", "lspace", "mathbackground", "mathcolor", "mathsize", "mathvariant", "maxsize", "minsize", "movablelimits", "notation", "numalign", "open", "rowalign", "rowlines", "rowspacing", "rowspan", "rspace", "rquote", "scriptlevel", "scriptminsize", "scriptsizemultiplier", "selection", "separator", "separators", "stretchy", "subscriptshift", "supscriptshift", "symmetric", "voffset", "width", "xmlns"]);
@@ -10197,9 +10197,9 @@ var init_purify_es = __esm({
   }
 });
 
-// ../../../node_modules/core-js/internals/global-this.js
+// node_modules/core-js/internals/global-this.js
 var require_global_this = __commonJS({
-  "../../../node_modules/core-js/internals/global-this.js"(exports, module2) {
+  "node_modules/core-js/internals/global-this.js"(exports, module2) {
     "use strict";
     var check = function(it2) {
       return it2 && it2.Math === Math && it2;
@@ -10213,9 +10213,9 @@ var require_global_this = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/fails.js
+// node_modules/core-js/internals/fails.js
 var require_fails = __commonJS({
-  "../../../node_modules/core-js/internals/fails.js"(exports, module2) {
+  "node_modules/core-js/internals/fails.js"(exports, module2) {
     "use strict";
     module2.exports = function(exec) {
       try {
@@ -10227,9 +10227,9 @@ var require_fails = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/descriptors.js
+// node_modules/core-js/internals/descriptors.js
 var require_descriptors = __commonJS({
-  "../../../node_modules/core-js/internals/descriptors.js"(exports, module2) {
+  "node_modules/core-js/internals/descriptors.js"(exports, module2) {
     "use strict";
     var fails = require_fails();
     module2.exports = !fails(function() {
@@ -10240,9 +10240,9 @@ var require_descriptors = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/function-bind-native.js
+// node_modules/core-js/internals/function-bind-native.js
 var require_function_bind_native = __commonJS({
-  "../../../node_modules/core-js/internals/function-bind-native.js"(exports, module2) {
+  "node_modules/core-js/internals/function-bind-native.js"(exports, module2) {
     "use strict";
     var fails = require_fails();
     module2.exports = !fails(function() {
@@ -10253,9 +10253,9 @@ var require_function_bind_native = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/function-call.js
+// node_modules/core-js/internals/function-call.js
 var require_function_call = __commonJS({
-  "../../../node_modules/core-js/internals/function-call.js"(exports, module2) {
+  "node_modules/core-js/internals/function-call.js"(exports, module2) {
     "use strict";
     var NATIVE_BIND = require_function_bind_native();
     var call = Function.prototype.call;
@@ -10265,9 +10265,9 @@ var require_function_call = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/object-property-is-enumerable.js
+// node_modules/core-js/internals/object-property-is-enumerable.js
 var require_object_property_is_enumerable = __commonJS({
-  "../../../node_modules/core-js/internals/object-property-is-enumerable.js"(exports) {
+  "node_modules/core-js/internals/object-property-is-enumerable.js"(exports) {
     "use strict";
     var $propertyIsEnumerable = {}.propertyIsEnumerable;
     var getOwnPropertyDescriptor2 = Object.getOwnPropertyDescriptor;
@@ -10279,9 +10279,9 @@ var require_object_property_is_enumerable = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/create-property-descriptor.js
+// node_modules/core-js/internals/create-property-descriptor.js
 var require_create_property_descriptor = __commonJS({
-  "../../../node_modules/core-js/internals/create-property-descriptor.js"(exports, module2) {
+  "node_modules/core-js/internals/create-property-descriptor.js"(exports, module2) {
     "use strict";
     module2.exports = function(bitmap, value) {
       return {
@@ -10294,9 +10294,9 @@ var require_create_property_descriptor = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/function-uncurry-this.js
+// node_modules/core-js/internals/function-uncurry-this.js
 var require_function_uncurry_this = __commonJS({
-  "../../../node_modules/core-js/internals/function-uncurry-this.js"(exports, module2) {
+  "node_modules/core-js/internals/function-uncurry-this.js"(exports, module2) {
     "use strict";
     var NATIVE_BIND = require_function_bind_native();
     var FunctionPrototype = Function.prototype;
@@ -10310,9 +10310,9 @@ var require_function_uncurry_this = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/classof-raw.js
+// node_modules/core-js/internals/classof-raw.js
 var require_classof_raw = __commonJS({
-  "../../../node_modules/core-js/internals/classof-raw.js"(exports, module2) {
+  "node_modules/core-js/internals/classof-raw.js"(exports, module2) {
     "use strict";
     var uncurryThis = require_function_uncurry_this();
     var toString2 = uncurryThis({}.toString);
@@ -10323,9 +10323,9 @@ var require_classof_raw = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/indexed-object.js
+// node_modules/core-js/internals/indexed-object.js
 var require_indexed_object = __commonJS({
-  "../../../node_modules/core-js/internals/indexed-object.js"(exports, module2) {
+  "node_modules/core-js/internals/indexed-object.js"(exports, module2) {
     "use strict";
     var uncurryThis = require_function_uncurry_this();
     var fails = require_fails();
@@ -10340,9 +10340,9 @@ var require_indexed_object = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/is-null-or-undefined.js
+// node_modules/core-js/internals/is-null-or-undefined.js
 var require_is_null_or_undefined = __commonJS({
-  "../../../node_modules/core-js/internals/is-null-or-undefined.js"(exports, module2) {
+  "node_modules/core-js/internals/is-null-or-undefined.js"(exports, module2) {
     "use strict";
     module2.exports = function(it2) {
       return it2 === null || it2 === void 0;
@@ -10350,9 +10350,9 @@ var require_is_null_or_undefined = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/require-object-coercible.js
+// node_modules/core-js/internals/require-object-coercible.js
 var require_require_object_coercible = __commonJS({
-  "../../../node_modules/core-js/internals/require-object-coercible.js"(exports, module2) {
+  "node_modules/core-js/internals/require-object-coercible.js"(exports, module2) {
     "use strict";
     var isNullOrUndefined = require_is_null_or_undefined();
     var $TypeError = TypeError;
@@ -10363,9 +10363,9 @@ var require_require_object_coercible = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/to-indexed-object.js
+// node_modules/core-js/internals/to-indexed-object.js
 var require_to_indexed_object = __commonJS({
-  "../../../node_modules/core-js/internals/to-indexed-object.js"(exports, module2) {
+  "node_modules/core-js/internals/to-indexed-object.js"(exports, module2) {
     "use strict";
     var IndexedObject = require_indexed_object();
     var requireObjectCoercible = require_require_object_coercible();
@@ -10375,9 +10375,9 @@ var require_to_indexed_object = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/is-callable.js
+// node_modules/core-js/internals/is-callable.js
 var require_is_callable = __commonJS({
-  "../../../node_modules/core-js/internals/is-callable.js"(exports, module2) {
+  "node_modules/core-js/internals/is-callable.js"(exports, module2) {
     "use strict";
     var documentAll = typeof document == "object" && document.all;
     module2.exports = typeof documentAll == "undefined" && documentAll !== void 0 ? function(argument) {
@@ -10388,9 +10388,9 @@ var require_is_callable = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/is-object.js
+// node_modules/core-js/internals/is-object.js
 var require_is_object = __commonJS({
-  "../../../node_modules/core-js/internals/is-object.js"(exports, module2) {
+  "node_modules/core-js/internals/is-object.js"(exports, module2) {
     "use strict";
     var isCallable = require_is_callable();
     module2.exports = function(it2) {
@@ -10399,9 +10399,9 @@ var require_is_object = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/get-built-in.js
+// node_modules/core-js/internals/get-built-in.js
 var require_get_built_in = __commonJS({
-  "../../../node_modules/core-js/internals/get-built-in.js"(exports, module2) {
+  "node_modules/core-js/internals/get-built-in.js"(exports, module2) {
     "use strict";
     var globalThis2 = require_global_this();
     var isCallable = require_is_callable();
@@ -10414,18 +10414,18 @@ var require_get_built_in = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/object-is-prototype-of.js
+// node_modules/core-js/internals/object-is-prototype-of.js
 var require_object_is_prototype_of = __commonJS({
-  "../../../node_modules/core-js/internals/object-is-prototype-of.js"(exports, module2) {
+  "node_modules/core-js/internals/object-is-prototype-of.js"(exports, module2) {
     "use strict";
     var uncurryThis = require_function_uncurry_this();
     module2.exports = uncurryThis({}.isPrototypeOf);
   }
 });
 
-// ../../../node_modules/core-js/internals/environment-user-agent.js
+// node_modules/core-js/internals/environment-user-agent.js
 var require_environment_user_agent = __commonJS({
-  "../../../node_modules/core-js/internals/environment-user-agent.js"(exports, module2) {
+  "node_modules/core-js/internals/environment-user-agent.js"(exports, module2) {
     "use strict";
     var globalThis2 = require_global_this();
     var navigator2 = globalThis2.navigator;
@@ -10434,9 +10434,9 @@ var require_environment_user_agent = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/environment-v8-version.js
+// node_modules/core-js/internals/environment-v8-version.js
 var require_environment_v8_version = __commonJS({
-  "../../../node_modules/core-js/internals/environment-v8-version.js"(exports, module2) {
+  "node_modules/core-js/internals/environment-v8-version.js"(exports, module2) {
     "use strict";
     var globalThis2 = require_global_this();
     var userAgent = require_environment_user_agent();
@@ -10461,9 +10461,9 @@ var require_environment_v8_version = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/symbol-constructor-detection.js
+// node_modules/core-js/internals/symbol-constructor-detection.js
 var require_symbol_constructor_detection = __commonJS({
-  "../../../node_modules/core-js/internals/symbol-constructor-detection.js"(exports, module2) {
+  "node_modules/core-js/internals/symbol-constructor-detection.js"(exports, module2) {
     "use strict";
     var V8_VERSION = require_environment_v8_version();
     var fails = require_fails();
@@ -10477,18 +10477,18 @@ var require_symbol_constructor_detection = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/use-symbol-as-uid.js
+// node_modules/core-js/internals/use-symbol-as-uid.js
 var require_use_symbol_as_uid = __commonJS({
-  "../../../node_modules/core-js/internals/use-symbol-as-uid.js"(exports, module2) {
+  "node_modules/core-js/internals/use-symbol-as-uid.js"(exports, module2) {
     "use strict";
     var NATIVE_SYMBOL = require_symbol_constructor_detection();
     module2.exports = NATIVE_SYMBOL && !Symbol.sham && typeof Symbol.iterator == "symbol";
   }
 });
 
-// ../../../node_modules/core-js/internals/is-symbol.js
+// node_modules/core-js/internals/is-symbol.js
 var require_is_symbol = __commonJS({
-  "../../../node_modules/core-js/internals/is-symbol.js"(exports, module2) {
+  "node_modules/core-js/internals/is-symbol.js"(exports, module2) {
     "use strict";
     var getBuiltIn = require_get_built_in();
     var isCallable = require_is_callable();
@@ -10504,9 +10504,9 @@ var require_is_symbol = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/try-to-string.js
+// node_modules/core-js/internals/try-to-string.js
 var require_try_to_string = __commonJS({
-  "../../../node_modules/core-js/internals/try-to-string.js"(exports, module2) {
+  "node_modules/core-js/internals/try-to-string.js"(exports, module2) {
     "use strict";
     var $String = String;
     module2.exports = function(argument) {
@@ -10519,9 +10519,9 @@ var require_try_to_string = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/a-callable.js
+// node_modules/core-js/internals/a-callable.js
 var require_a_callable = __commonJS({
-  "../../../node_modules/core-js/internals/a-callable.js"(exports, module2) {
+  "node_modules/core-js/internals/a-callable.js"(exports, module2) {
     "use strict";
     var isCallable = require_is_callable();
     var tryToString = require_try_to_string();
@@ -10533,9 +10533,9 @@ var require_a_callable = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/get-method.js
+// node_modules/core-js/internals/get-method.js
 var require_get_method = __commonJS({
-  "../../../node_modules/core-js/internals/get-method.js"(exports, module2) {
+  "node_modules/core-js/internals/get-method.js"(exports, module2) {
     "use strict";
     var aCallable = require_a_callable();
     var isNullOrUndefined = require_is_null_or_undefined();
@@ -10546,9 +10546,9 @@ var require_get_method = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/ordinary-to-primitive.js
+// node_modules/core-js/internals/ordinary-to-primitive.js
 var require_ordinary_to_primitive = __commonJS({
-  "../../../node_modules/core-js/internals/ordinary-to-primitive.js"(exports, module2) {
+  "node_modules/core-js/internals/ordinary-to-primitive.js"(exports, module2) {
     "use strict";
     var call = require_function_call();
     var isCallable = require_is_callable();
@@ -10564,17 +10564,17 @@ var require_ordinary_to_primitive = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/is-pure.js
+// node_modules/core-js/internals/is-pure.js
 var require_is_pure = __commonJS({
-  "../../../node_modules/core-js/internals/is-pure.js"(exports, module2) {
+  "node_modules/core-js/internals/is-pure.js"(exports, module2) {
     "use strict";
     module2.exports = false;
   }
 });
 
-// ../../../node_modules/core-js/internals/define-global-property.js
+// node_modules/core-js/internals/define-global-property.js
 var require_define_global_property = __commonJS({
-  "../../../node_modules/core-js/internals/define-global-property.js"(exports, module2) {
+  "node_modules/core-js/internals/define-global-property.js"(exports, module2) {
     "use strict";
     var globalThis2 = require_global_this();
     var defineProperty = Object.defineProperty;
@@ -10589,9 +10589,9 @@ var require_define_global_property = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/shared-store.js
+// node_modules/core-js/internals/shared-store.js
 var require_shared_store = __commonJS({
-  "../../../node_modules/core-js/internals/shared-store.js"(exports, module2) {
+  "node_modules/core-js/internals/shared-store.js"(exports, module2) {
     "use strict";
     var IS_PURE = require_is_pure();
     var globalThis2 = require_global_this();
@@ -10608,9 +10608,9 @@ var require_shared_store = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/shared.js
+// node_modules/core-js/internals/shared.js
 var require_shared = __commonJS({
-  "../../../node_modules/core-js/internals/shared.js"(exports, module2) {
+  "node_modules/core-js/internals/shared.js"(exports, module2) {
     "use strict";
     var store = require_shared_store();
     var create2 = Object.create || Object;
@@ -10620,9 +10620,9 @@ var require_shared = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/to-object.js
+// node_modules/core-js/internals/to-object.js
 var require_to_object = __commonJS({
-  "../../../node_modules/core-js/internals/to-object.js"(exports, module2) {
+  "node_modules/core-js/internals/to-object.js"(exports, module2) {
     "use strict";
     var requireObjectCoercible = require_require_object_coercible();
     var $Object = Object;
@@ -10632,9 +10632,9 @@ var require_to_object = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/has-own-property.js
+// node_modules/core-js/internals/has-own-property.js
 var require_has_own_property = __commonJS({
-  "../../../node_modules/core-js/internals/has-own-property.js"(exports, module2) {
+  "node_modules/core-js/internals/has-own-property.js"(exports, module2) {
     "use strict";
     var uncurryThis = require_function_uncurry_this();
     var toObject = require_to_object();
@@ -10645,9 +10645,9 @@ var require_has_own_property = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/uid.js
+// node_modules/core-js/internals/uid.js
 var require_uid = __commonJS({
-  "../../../node_modules/core-js/internals/uid.js"(exports, module2) {
+  "node_modules/core-js/internals/uid.js"(exports, module2) {
     "use strict";
     var uncurryThis = require_function_uncurry_this();
     var id = 0;
@@ -10659,9 +10659,9 @@ var require_uid = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/well-known-symbol.js
+// node_modules/core-js/internals/well-known-symbol.js
 var require_well_known_symbol = __commonJS({
-  "../../../node_modules/core-js/internals/well-known-symbol.js"(exports, module2) {
+  "node_modules/core-js/internals/well-known-symbol.js"(exports, module2) {
     "use strict";
     var globalThis2 = require_global_this();
     var shared = require_shared();
@@ -10681,9 +10681,9 @@ var require_well_known_symbol = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/to-primitive.js
+// node_modules/core-js/internals/to-primitive.js
 var require_to_primitive = __commonJS({
-  "../../../node_modules/core-js/internals/to-primitive.js"(exports, module2) {
+  "node_modules/core-js/internals/to-primitive.js"(exports, module2) {
     "use strict";
     var call = require_function_call();
     var isObject = require_is_object();
@@ -10709,9 +10709,9 @@ var require_to_primitive = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/to-property-key.js
+// node_modules/core-js/internals/to-property-key.js
 var require_to_property_key = __commonJS({
-  "../../../node_modules/core-js/internals/to-property-key.js"(exports, module2) {
+  "node_modules/core-js/internals/to-property-key.js"(exports, module2) {
     "use strict";
     var toPrimitive2 = require_to_primitive();
     var isSymbol = require_is_symbol();
@@ -10722,9 +10722,9 @@ var require_to_property_key = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/document-create-element.js
+// node_modules/core-js/internals/document-create-element.js
 var require_document_create_element = __commonJS({
-  "../../../node_modules/core-js/internals/document-create-element.js"(exports, module2) {
+  "node_modules/core-js/internals/document-create-element.js"(exports, module2) {
     "use strict";
     var globalThis2 = require_global_this();
     var isObject = require_is_object();
@@ -10736,9 +10736,9 @@ var require_document_create_element = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/ie8-dom-define.js
+// node_modules/core-js/internals/ie8-dom-define.js
 var require_ie8_dom_define = __commonJS({
-  "../../../node_modules/core-js/internals/ie8-dom-define.js"(exports, module2) {
+  "node_modules/core-js/internals/ie8-dom-define.js"(exports, module2) {
     "use strict";
     var DESCRIPTORS = require_descriptors();
     var fails = require_fails();
@@ -10753,9 +10753,9 @@ var require_ie8_dom_define = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/object-get-own-property-descriptor.js
+// node_modules/core-js/internals/object-get-own-property-descriptor.js
 var require_object_get_own_property_descriptor = __commonJS({
-  "../../../node_modules/core-js/internals/object-get-own-property-descriptor.js"(exports) {
+  "node_modules/core-js/internals/object-get-own-property-descriptor.js"(exports) {
     "use strict";
     var DESCRIPTORS = require_descriptors();
     var call = require_function_call();
@@ -10778,9 +10778,9 @@ var require_object_get_own_property_descriptor = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/v8-prototype-define-bug.js
+// node_modules/core-js/internals/v8-prototype-define-bug.js
 var require_v8_prototype_define_bug = __commonJS({
-  "../../../node_modules/core-js/internals/v8-prototype-define-bug.js"(exports, module2) {
+  "node_modules/core-js/internals/v8-prototype-define-bug.js"(exports, module2) {
     "use strict";
     var DESCRIPTORS = require_descriptors();
     var fails = require_fails();
@@ -10794,9 +10794,9 @@ var require_v8_prototype_define_bug = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/an-object.js
+// node_modules/core-js/internals/an-object.js
 var require_an_object = __commonJS({
-  "../../../node_modules/core-js/internals/an-object.js"(exports, module2) {
+  "node_modules/core-js/internals/an-object.js"(exports, module2) {
     "use strict";
     var isObject = require_is_object();
     var $String = String;
@@ -10808,9 +10808,9 @@ var require_an_object = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/object-define-property.js
+// node_modules/core-js/internals/object-define-property.js
 var require_object_define_property = __commonJS({
-  "../../../node_modules/core-js/internals/object-define-property.js"(exports) {
+  "node_modules/core-js/internals/object-define-property.js"(exports) {
     "use strict";
     var DESCRIPTORS = require_descriptors();
     var IE8_DOM_DEFINE = require_ie8_dom_define();
@@ -10854,9 +10854,9 @@ var require_object_define_property = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/create-non-enumerable-property.js
+// node_modules/core-js/internals/create-non-enumerable-property.js
 var require_create_non_enumerable_property = __commonJS({
-  "../../../node_modules/core-js/internals/create-non-enumerable-property.js"(exports, module2) {
+  "node_modules/core-js/internals/create-non-enumerable-property.js"(exports, module2) {
     "use strict";
     var DESCRIPTORS = require_descriptors();
     var definePropertyModule = require_object_define_property();
@@ -10870,9 +10870,9 @@ var require_create_non_enumerable_property = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/function-name.js
+// node_modules/core-js/internals/function-name.js
 var require_function_name = __commonJS({
-  "../../../node_modules/core-js/internals/function-name.js"(exports, module2) {
+  "node_modules/core-js/internals/function-name.js"(exports, module2) {
     "use strict";
     var DESCRIPTORS = require_descriptors();
     var hasOwn = require_has_own_property();
@@ -10890,9 +10890,9 @@ var require_function_name = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/inspect-source.js
+// node_modules/core-js/internals/inspect-source.js
 var require_inspect_source = __commonJS({
-  "../../../node_modules/core-js/internals/inspect-source.js"(exports, module2) {
+  "node_modules/core-js/internals/inspect-source.js"(exports, module2) {
     "use strict";
     var uncurryThis = require_function_uncurry_this();
     var isCallable = require_is_callable();
@@ -10907,9 +10907,9 @@ var require_inspect_source = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/weak-map-basic-detection.js
+// node_modules/core-js/internals/weak-map-basic-detection.js
 var require_weak_map_basic_detection = __commonJS({
-  "../../../node_modules/core-js/internals/weak-map-basic-detection.js"(exports, module2) {
+  "node_modules/core-js/internals/weak-map-basic-detection.js"(exports, module2) {
     "use strict";
     var globalThis2 = require_global_this();
     var isCallable = require_is_callable();
@@ -10918,9 +10918,9 @@ var require_weak_map_basic_detection = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/shared-key.js
+// node_modules/core-js/internals/shared-key.js
 var require_shared_key = __commonJS({
-  "../../../node_modules/core-js/internals/shared-key.js"(exports, module2) {
+  "node_modules/core-js/internals/shared-key.js"(exports, module2) {
     "use strict";
     var shared = require_shared();
     var uid = require_uid();
@@ -10931,17 +10931,17 @@ var require_shared_key = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/hidden-keys.js
+// node_modules/core-js/internals/hidden-keys.js
 var require_hidden_keys = __commonJS({
-  "../../../node_modules/core-js/internals/hidden-keys.js"(exports, module2) {
+  "node_modules/core-js/internals/hidden-keys.js"(exports, module2) {
     "use strict";
     module2.exports = {};
   }
 });
 
-// ../../../node_modules/core-js/internals/internal-state.js
+// node_modules/core-js/internals/internal-state.js
 var require_internal_state = __commonJS({
-  "../../../node_modules/core-js/internals/internal-state.js"(exports, module2) {
+  "node_modules/core-js/internals/internal-state.js"(exports, module2) {
     "use strict";
     var NATIVE_WEAK_MAP = require_weak_map_basic_detection();
     var globalThis2 = require_global_this();
@@ -11014,9 +11014,9 @@ var require_internal_state = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/make-built-in.js
+// node_modules/core-js/internals/make-built-in.js
 var require_make_built_in = __commonJS({
-  "../../../node_modules/core-js/internals/make-built-in.js"(exports, module2) {
+  "node_modules/core-js/internals/make-built-in.js"(exports, module2) {
     "use strict";
     var uncurryThis = require_function_uncurry_this();
     var fails = require_fails();
@@ -11069,9 +11069,9 @@ var require_make_built_in = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/define-built-in.js
+// node_modules/core-js/internals/define-built-in.js
 var require_define_built_in = __commonJS({
-  "../../../node_modules/core-js/internals/define-built-in.js"(exports, module2) {
+  "node_modules/core-js/internals/define-built-in.js"(exports, module2) {
     "use strict";
     var isCallable = require_is_callable();
     var definePropertyModule = require_object_define_property();
@@ -11104,9 +11104,9 @@ var require_define_built_in = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/math-trunc.js
+// node_modules/core-js/internals/math-trunc.js
 var require_math_trunc = __commonJS({
-  "../../../node_modules/core-js/internals/math-trunc.js"(exports, module2) {
+  "node_modules/core-js/internals/math-trunc.js"(exports, module2) {
     "use strict";
     var ceil = Math.ceil;
     var floor = Math.floor;
@@ -11117,9 +11117,9 @@ var require_math_trunc = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/to-integer-or-infinity.js
+// node_modules/core-js/internals/to-integer-or-infinity.js
 var require_to_integer_or_infinity = __commonJS({
-  "../../../node_modules/core-js/internals/to-integer-or-infinity.js"(exports, module2) {
+  "node_modules/core-js/internals/to-integer-or-infinity.js"(exports, module2) {
     "use strict";
     var trunc = require_math_trunc();
     module2.exports = function(argument) {
@@ -11129,9 +11129,9 @@ var require_to_integer_or_infinity = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/to-absolute-index.js
+// node_modules/core-js/internals/to-absolute-index.js
 var require_to_absolute_index = __commonJS({
-  "../../../node_modules/core-js/internals/to-absolute-index.js"(exports, module2) {
+  "node_modules/core-js/internals/to-absolute-index.js"(exports, module2) {
     "use strict";
     var toIntegerOrInfinity = require_to_integer_or_infinity();
     var max = Math.max;
@@ -11143,9 +11143,9 @@ var require_to_absolute_index = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/to-length.js
+// node_modules/core-js/internals/to-length.js
 var require_to_length = __commonJS({
-  "../../../node_modules/core-js/internals/to-length.js"(exports, module2) {
+  "node_modules/core-js/internals/to-length.js"(exports, module2) {
     "use strict";
     var toIntegerOrInfinity = require_to_integer_or_infinity();
     var min = Math.min;
@@ -11156,9 +11156,9 @@ var require_to_length = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/length-of-array-like.js
+// node_modules/core-js/internals/length-of-array-like.js
 var require_length_of_array_like = __commonJS({
-  "../../../node_modules/core-js/internals/length-of-array-like.js"(exports, module2) {
+  "node_modules/core-js/internals/length-of-array-like.js"(exports, module2) {
     "use strict";
     var toLength = require_to_length();
     module2.exports = function(obj) {
@@ -11167,9 +11167,9 @@ var require_length_of_array_like = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/array-includes.js
+// node_modules/core-js/internals/array-includes.js
 var require_array_includes = __commonJS({
-  "../../../node_modules/core-js/internals/array-includes.js"(exports, module2) {
+  "node_modules/core-js/internals/array-includes.js"(exports, module2) {
     "use strict";
     var toIndexedObject = require_to_indexed_object();
     var toAbsoluteIndex = require_to_absolute_index();
@@ -11202,9 +11202,9 @@ var require_array_includes = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/object-keys-internal.js
+// node_modules/core-js/internals/object-keys-internal.js
 var require_object_keys_internal = __commonJS({
-  "../../../node_modules/core-js/internals/object-keys-internal.js"(exports, module2) {
+  "node_modules/core-js/internals/object-keys-internal.js"(exports, module2) {
     "use strict";
     var uncurryThis = require_function_uncurry_this();
     var hasOwn = require_has_own_property();
@@ -11226,9 +11226,9 @@ var require_object_keys_internal = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/enum-bug-keys.js
+// node_modules/core-js/internals/enum-bug-keys.js
 var require_enum_bug_keys = __commonJS({
-  "../../../node_modules/core-js/internals/enum-bug-keys.js"(exports, module2) {
+  "node_modules/core-js/internals/enum-bug-keys.js"(exports, module2) {
     "use strict";
     module2.exports = [
       "constructor",
@@ -11242,9 +11242,9 @@ var require_enum_bug_keys = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/object-get-own-property-names.js
+// node_modules/core-js/internals/object-get-own-property-names.js
 var require_object_get_own_property_names = __commonJS({
-  "../../../node_modules/core-js/internals/object-get-own-property-names.js"(exports) {
+  "node_modules/core-js/internals/object-get-own-property-names.js"(exports) {
     "use strict";
     var internalObjectKeys = require_object_keys_internal();
     var enumBugKeys = require_enum_bug_keys();
@@ -11255,17 +11255,17 @@ var require_object_get_own_property_names = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/object-get-own-property-symbols.js
+// node_modules/core-js/internals/object-get-own-property-symbols.js
 var require_object_get_own_property_symbols = __commonJS({
-  "../../../node_modules/core-js/internals/object-get-own-property-symbols.js"(exports) {
+  "node_modules/core-js/internals/object-get-own-property-symbols.js"(exports) {
     "use strict";
     exports.f = Object.getOwnPropertySymbols;
   }
 });
 
-// ../../../node_modules/core-js/internals/own-keys.js
+// node_modules/core-js/internals/own-keys.js
 var require_own_keys = __commonJS({
-  "../../../node_modules/core-js/internals/own-keys.js"(exports, module2) {
+  "node_modules/core-js/internals/own-keys.js"(exports, module2) {
     "use strict";
     var getBuiltIn = require_get_built_in();
     var uncurryThis = require_function_uncurry_this();
@@ -11281,9 +11281,9 @@ var require_own_keys = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/copy-constructor-properties.js
+// node_modules/core-js/internals/copy-constructor-properties.js
 var require_copy_constructor_properties = __commonJS({
-  "../../../node_modules/core-js/internals/copy-constructor-properties.js"(exports, module2) {
+  "node_modules/core-js/internals/copy-constructor-properties.js"(exports, module2) {
     "use strict";
     var hasOwn = require_has_own_property();
     var ownKeys2 = require_own_keys();
@@ -11303,9 +11303,9 @@ var require_copy_constructor_properties = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/is-forced.js
+// node_modules/core-js/internals/is-forced.js
 var require_is_forced = __commonJS({
-  "../../../node_modules/core-js/internals/is-forced.js"(exports, module2) {
+  "node_modules/core-js/internals/is-forced.js"(exports, module2) {
     "use strict";
     var fails = require_fails();
     var isCallable = require_is_callable();
@@ -11324,9 +11324,9 @@ var require_is_forced = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/export.js
+// node_modules/core-js/internals/export.js
 var require_export = __commonJS({
-  "../../../node_modules/core-js/internals/export.js"(exports, module2) {
+  "node_modules/core-js/internals/export.js"(exports, module2) {
     "use strict";
     var globalThis2 = require_global_this();
     var getOwnPropertyDescriptor2 = require_object_get_own_property_descriptor().f;
@@ -11367,9 +11367,9 @@ var require_export = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/environment.js
+// node_modules/core-js/internals/environment.js
 var require_environment = __commonJS({
-  "../../../node_modules/core-js/internals/environment.js"(exports, module2) {
+  "node_modules/core-js/internals/environment.js"(exports, module2) {
     "use strict";
     var globalThis2 = require_global_this();
     var userAgent = require_environment_user_agent();
@@ -11391,27 +11391,27 @@ var require_environment = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/environment-is-node.js
+// node_modules/core-js/internals/environment-is-node.js
 var require_environment_is_node = __commonJS({
-  "../../../node_modules/core-js/internals/environment-is-node.js"(exports, module2) {
+  "node_modules/core-js/internals/environment-is-node.js"(exports, module2) {
     "use strict";
     var ENVIRONMENT = require_environment();
     module2.exports = ENVIRONMENT === "NODE";
   }
 });
 
-// ../../../node_modules/core-js/internals/path.js
+// node_modules/core-js/internals/path.js
 var require_path = __commonJS({
-  "../../../node_modules/core-js/internals/path.js"(exports, module2) {
+  "node_modules/core-js/internals/path.js"(exports, module2) {
     "use strict";
     var globalThis2 = require_global_this();
     module2.exports = globalThis2;
   }
 });
 
-// ../../../node_modules/core-js/internals/function-uncurry-this-accessor.js
+// node_modules/core-js/internals/function-uncurry-this-accessor.js
 var require_function_uncurry_this_accessor = __commonJS({
-  "../../../node_modules/core-js/internals/function-uncurry-this-accessor.js"(exports, module2) {
+  "node_modules/core-js/internals/function-uncurry-this-accessor.js"(exports, module2) {
     "use strict";
     var uncurryThis = require_function_uncurry_this();
     var aCallable = require_a_callable();
@@ -11424,9 +11424,9 @@ var require_function_uncurry_this_accessor = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/is-possible-prototype.js
+// node_modules/core-js/internals/is-possible-prototype.js
 var require_is_possible_prototype = __commonJS({
-  "../../../node_modules/core-js/internals/is-possible-prototype.js"(exports, module2) {
+  "node_modules/core-js/internals/is-possible-prototype.js"(exports, module2) {
     "use strict";
     var isObject = require_is_object();
     module2.exports = function(argument) {
@@ -11435,9 +11435,9 @@ var require_is_possible_prototype = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/a-possible-prototype.js
+// node_modules/core-js/internals/a-possible-prototype.js
 var require_a_possible_prototype = __commonJS({
-  "../../../node_modules/core-js/internals/a-possible-prototype.js"(exports, module2) {
+  "node_modules/core-js/internals/a-possible-prototype.js"(exports, module2) {
     "use strict";
     var isPossiblePrototype = require_is_possible_prototype();
     var $String = String;
@@ -11449,9 +11449,9 @@ var require_a_possible_prototype = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/object-set-prototype-of.js
+// node_modules/core-js/internals/object-set-prototype-of.js
 var require_object_set_prototype_of = __commonJS({
-  "../../../node_modules/core-js/internals/object-set-prototype-of.js"(exports, module2) {
+  "node_modules/core-js/internals/object-set-prototype-of.js"(exports, module2) {
     "use strict";
     var uncurryThisAccessor = require_function_uncurry_this_accessor();
     var isObject = require_is_object();
@@ -11479,9 +11479,9 @@ var require_object_set_prototype_of = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/set-to-string-tag.js
+// node_modules/core-js/internals/set-to-string-tag.js
 var require_set_to_string_tag = __commonJS({
-  "../../../node_modules/core-js/internals/set-to-string-tag.js"(exports, module2) {
+  "node_modules/core-js/internals/set-to-string-tag.js"(exports, module2) {
     "use strict";
     var defineProperty = require_object_define_property().f;
     var hasOwn = require_has_own_property();
@@ -11496,9 +11496,9 @@ var require_set_to_string_tag = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/define-built-in-accessor.js
+// node_modules/core-js/internals/define-built-in-accessor.js
 var require_define_built_in_accessor = __commonJS({
-  "../../../node_modules/core-js/internals/define-built-in-accessor.js"(exports, module2) {
+  "node_modules/core-js/internals/define-built-in-accessor.js"(exports, module2) {
     "use strict";
     var makeBuiltIn = require_make_built_in();
     var defineProperty = require_object_define_property();
@@ -11510,9 +11510,9 @@ var require_define_built_in_accessor = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/set-species.js
+// node_modules/core-js/internals/set-species.js
 var require_set_species = __commonJS({
-  "../../../node_modules/core-js/internals/set-species.js"(exports, module2) {
+  "node_modules/core-js/internals/set-species.js"(exports, module2) {
     "use strict";
     var getBuiltIn = require_get_built_in();
     var defineBuiltInAccessor = require_define_built_in_accessor();
@@ -11533,9 +11533,9 @@ var require_set_species = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/an-instance.js
+// node_modules/core-js/internals/an-instance.js
 var require_an_instance = __commonJS({
-  "../../../node_modules/core-js/internals/an-instance.js"(exports, module2) {
+  "node_modules/core-js/internals/an-instance.js"(exports, module2) {
     "use strict";
     var isPrototypeOf = require_object_is_prototype_of();
     var $TypeError = TypeError;
@@ -11546,9 +11546,9 @@ var require_an_instance = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/to-string-tag-support.js
+// node_modules/core-js/internals/to-string-tag-support.js
 var require_to_string_tag_support = __commonJS({
-  "../../../node_modules/core-js/internals/to-string-tag-support.js"(exports, module2) {
+  "node_modules/core-js/internals/to-string-tag-support.js"(exports, module2) {
     "use strict";
     var wellKnownSymbol = require_well_known_symbol();
     var TO_STRING_TAG = wellKnownSymbol("toStringTag");
@@ -11558,9 +11558,9 @@ var require_to_string_tag_support = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/classof.js
+// node_modules/core-js/internals/classof.js
 var require_classof = __commonJS({
-  "../../../node_modules/core-js/internals/classof.js"(exports, module2) {
+  "node_modules/core-js/internals/classof.js"(exports, module2) {
     "use strict";
     var TO_STRING_TAG_SUPPORT = require_to_string_tag_support();
     var isCallable = require_is_callable();
@@ -11584,9 +11584,9 @@ var require_classof = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/is-constructor.js
+// node_modules/core-js/internals/is-constructor.js
 var require_is_constructor = __commonJS({
-  "../../../node_modules/core-js/internals/is-constructor.js"(exports, module2) {
+  "node_modules/core-js/internals/is-constructor.js"(exports, module2) {
     "use strict";
     var uncurryThis = require_function_uncurry_this();
     var fails = require_fails();
@@ -11633,9 +11633,9 @@ var require_is_constructor = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/a-constructor.js
+// node_modules/core-js/internals/a-constructor.js
 var require_a_constructor = __commonJS({
-  "../../../node_modules/core-js/internals/a-constructor.js"(exports, module2) {
+  "node_modules/core-js/internals/a-constructor.js"(exports, module2) {
     "use strict";
     var isConstructor = require_is_constructor();
     var tryToString = require_try_to_string();
@@ -11647,9 +11647,9 @@ var require_a_constructor = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/species-constructor.js
+// node_modules/core-js/internals/species-constructor.js
 var require_species_constructor = __commonJS({
-  "../../../node_modules/core-js/internals/species-constructor.js"(exports, module2) {
+  "node_modules/core-js/internals/species-constructor.js"(exports, module2) {
     "use strict";
     var anObject = require_an_object();
     var aConstructor = require_a_constructor();
@@ -11664,9 +11664,9 @@ var require_species_constructor = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/function-apply.js
+// node_modules/core-js/internals/function-apply.js
 var require_function_apply = __commonJS({
-  "../../../node_modules/core-js/internals/function-apply.js"(exports, module2) {
+  "node_modules/core-js/internals/function-apply.js"(exports, module2) {
     "use strict";
     var NATIVE_BIND = require_function_bind_native();
     var FunctionPrototype = Function.prototype;
@@ -11678,9 +11678,9 @@ var require_function_apply = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/function-uncurry-this-clause.js
+// node_modules/core-js/internals/function-uncurry-this-clause.js
 var require_function_uncurry_this_clause = __commonJS({
-  "../../../node_modules/core-js/internals/function-uncurry-this-clause.js"(exports, module2) {
+  "node_modules/core-js/internals/function-uncurry-this-clause.js"(exports, module2) {
     "use strict";
     var classofRaw = require_classof_raw();
     var uncurryThis = require_function_uncurry_this();
@@ -11690,9 +11690,9 @@ var require_function_uncurry_this_clause = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/function-bind-context.js
+// node_modules/core-js/internals/function-bind-context.js
 var require_function_bind_context = __commonJS({
-  "../../../node_modules/core-js/internals/function-bind-context.js"(exports, module2) {
+  "node_modules/core-js/internals/function-bind-context.js"(exports, module2) {
     "use strict";
     var uncurryThis = require_function_uncurry_this_clause();
     var aCallable = require_a_callable();
@@ -11707,27 +11707,27 @@ var require_function_bind_context = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/html.js
+// node_modules/core-js/internals/html.js
 var require_html = __commonJS({
-  "../../../node_modules/core-js/internals/html.js"(exports, module2) {
+  "node_modules/core-js/internals/html.js"(exports, module2) {
     "use strict";
     var getBuiltIn = require_get_built_in();
     module2.exports = getBuiltIn("document", "documentElement");
   }
 });
 
-// ../../../node_modules/core-js/internals/array-slice.js
+// node_modules/core-js/internals/array-slice.js
 var require_array_slice = __commonJS({
-  "../../../node_modules/core-js/internals/array-slice.js"(exports, module2) {
+  "node_modules/core-js/internals/array-slice.js"(exports, module2) {
     "use strict";
     var uncurryThis = require_function_uncurry_this();
     module2.exports = uncurryThis([].slice);
   }
 });
 
-// ../../../node_modules/core-js/internals/validate-arguments-length.js
+// node_modules/core-js/internals/validate-arguments-length.js
 var require_validate_arguments_length = __commonJS({
-  "../../../node_modules/core-js/internals/validate-arguments-length.js"(exports, module2) {
+  "node_modules/core-js/internals/validate-arguments-length.js"(exports, module2) {
     "use strict";
     var $TypeError = TypeError;
     module2.exports = function(passed, required) {
@@ -11737,18 +11737,18 @@ var require_validate_arguments_length = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/environment-is-ios.js
+// node_modules/core-js/internals/environment-is-ios.js
 var require_environment_is_ios = __commonJS({
-  "../../../node_modules/core-js/internals/environment-is-ios.js"(exports, module2) {
+  "node_modules/core-js/internals/environment-is-ios.js"(exports, module2) {
     "use strict";
     var userAgent = require_environment_user_agent();
     module2.exports = /ipad|iphone|ipod/i.test(userAgent) && /applewebkit/i.test(userAgent);
   }
 });
 
-// ../../../node_modules/core-js/internals/task.js
+// node_modules/core-js/internals/task.js
 var require_task = __commonJS({
-  "../../../node_modules/core-js/internals/task.js"(exports, module2) {
+  "node_modules/core-js/internals/task.js"(exports, module2) {
     "use strict";
     var globalThis2 = require_global_this();
     var apply2 = require_function_apply();
@@ -11847,9 +11847,9 @@ var require_task = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/safe-get-built-in.js
+// node_modules/core-js/internals/safe-get-built-in.js
 var require_safe_get_built_in = __commonJS({
-  "../../../node_modules/core-js/internals/safe-get-built-in.js"(exports, module2) {
+  "node_modules/core-js/internals/safe-get-built-in.js"(exports, module2) {
     "use strict";
     var globalThis2 = require_global_this();
     var DESCRIPTORS = require_descriptors();
@@ -11862,9 +11862,9 @@ var require_safe_get_built_in = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/queue.js
+// node_modules/core-js/internals/queue.js
 var require_queue = __commonJS({
-  "../../../node_modules/core-js/internals/queue.js"(exports, module2) {
+  "node_modules/core-js/internals/queue.js"(exports, module2) {
     "use strict";
     var Queue = function() {
       this.head = null;
@@ -11891,27 +11891,27 @@ var require_queue = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/environment-is-ios-pebble.js
+// node_modules/core-js/internals/environment-is-ios-pebble.js
 var require_environment_is_ios_pebble = __commonJS({
-  "../../../node_modules/core-js/internals/environment-is-ios-pebble.js"(exports, module2) {
+  "node_modules/core-js/internals/environment-is-ios-pebble.js"(exports, module2) {
     "use strict";
     var userAgent = require_environment_user_agent();
     module2.exports = /ipad|iphone|ipod/i.test(userAgent) && typeof Pebble != "undefined";
   }
 });
 
-// ../../../node_modules/core-js/internals/environment-is-webos-webkit.js
+// node_modules/core-js/internals/environment-is-webos-webkit.js
 var require_environment_is_webos_webkit = __commonJS({
-  "../../../node_modules/core-js/internals/environment-is-webos-webkit.js"(exports, module2) {
+  "node_modules/core-js/internals/environment-is-webos-webkit.js"(exports, module2) {
     "use strict";
     var userAgent = require_environment_user_agent();
     module2.exports = /web0s(?!.*chrome)/i.test(userAgent);
   }
 });
 
-// ../../../node_modules/core-js/internals/microtask.js
+// node_modules/core-js/internals/microtask.js
 var require_microtask = __commonJS({
-  "../../../node_modules/core-js/internals/microtask.js"(exports, module2) {
+  "node_modules/core-js/internals/microtask.js"(exports, module2) {
     "use strict";
     var globalThis2 = require_global_this();
     var safeGetBuiltIn = require_safe_get_built_in();
@@ -11928,7 +11928,7 @@ var require_microtask = __commonJS({
     var Promise2 = globalThis2.Promise;
     var microtask = safeGetBuiltIn("queueMicrotask");
     var notify;
-    var toggle;
+    var toggle2;
     var node2;
     var promise;
     var then;
@@ -11946,11 +11946,11 @@ var require_microtask = __commonJS({
         if (parent) parent.enter();
       };
       if (!IS_IOS && !IS_NODE && !IS_WEBOS_WEBKIT && MutationObserver2 && document2) {
-        toggle = true;
+        toggle2 = true;
         node2 = document2.createTextNode("");
         new MutationObserver2(flush).observe(node2, { characterData: true });
         notify = function() {
-          node2.data = toggle = !toggle;
+          node2.data = toggle2 = !toggle2;
         };
       } else if (!IS_IOS_PEBBLE && Promise2 && Promise2.resolve) {
         promise = Promise2.resolve(void 0);
@@ -11980,9 +11980,9 @@ var require_microtask = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/host-report-errors.js
+// node_modules/core-js/internals/host-report-errors.js
 var require_host_report_errors = __commonJS({
-  "../../../node_modules/core-js/internals/host-report-errors.js"(exports, module2) {
+  "node_modules/core-js/internals/host-report-errors.js"(exports, module2) {
     "use strict";
     module2.exports = function(a3, b2) {
       try {
@@ -11993,9 +11993,9 @@ var require_host_report_errors = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/perform.js
+// node_modules/core-js/internals/perform.js
 var require_perform = __commonJS({
-  "../../../node_modules/core-js/internals/perform.js"(exports, module2) {
+  "node_modules/core-js/internals/perform.js"(exports, module2) {
     "use strict";
     module2.exports = function(exec) {
       try {
@@ -12007,18 +12007,18 @@ var require_perform = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/promise-native-constructor.js
+// node_modules/core-js/internals/promise-native-constructor.js
 var require_promise_native_constructor = __commonJS({
-  "../../../node_modules/core-js/internals/promise-native-constructor.js"(exports, module2) {
+  "node_modules/core-js/internals/promise-native-constructor.js"(exports, module2) {
     "use strict";
     var globalThis2 = require_global_this();
     module2.exports = globalThis2.Promise;
   }
 });
 
-// ../../../node_modules/core-js/internals/promise-constructor-detection.js
+// node_modules/core-js/internals/promise-constructor-detection.js
 var require_promise_constructor_detection = __commonJS({
-  "../../../node_modules/core-js/internals/promise-constructor-detection.js"(exports, module2) {
+  "node_modules/core-js/internals/promise-constructor-detection.js"(exports, module2) {
     "use strict";
     var globalThis2 = require_global_this();
     var NativePromiseConstructor = require_promise_native_constructor();
@@ -12063,9 +12063,9 @@ var require_promise_constructor_detection = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/new-promise-capability.js
+// node_modules/core-js/internals/new-promise-capability.js
 var require_new_promise_capability = __commonJS({
-  "../../../node_modules/core-js/internals/new-promise-capability.js"(exports, module2) {
+  "node_modules/core-js/internals/new-promise-capability.js"(exports, module2) {
     "use strict";
     var aCallable = require_a_callable();
     var $TypeError = TypeError;
@@ -12085,9 +12085,9 @@ var require_new_promise_capability = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.promise.constructor.js
+// node_modules/core-js/modules/es.promise.constructor.js
 var require_es_promise_constructor = __commonJS({
-  "../../../node_modules/core-js/modules/es.promise.constructor.js"() {
+  "node_modules/core-js/modules/es.promise.constructor.js"() {
     "use strict";
     var $2 = require_export();
     var IS_PURE = require_is_pure();
@@ -12349,17 +12349,17 @@ var require_es_promise_constructor = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/iterators.js
+// node_modules/core-js/internals/iterators.js
 var require_iterators = __commonJS({
-  "../../../node_modules/core-js/internals/iterators.js"(exports, module2) {
+  "node_modules/core-js/internals/iterators.js"(exports, module2) {
     "use strict";
     module2.exports = Object.create ? /* @__PURE__ */ Object.create(null) : {};
   }
 });
 
-// ../../../node_modules/core-js/internals/is-array-iterator-method.js
+// node_modules/core-js/internals/is-array-iterator-method.js
 var require_is_array_iterator_method = __commonJS({
-  "../../../node_modules/core-js/internals/is-array-iterator-method.js"(exports, module2) {
+  "node_modules/core-js/internals/is-array-iterator-method.js"(exports, module2) {
     "use strict";
     var wellKnownSymbol = require_well_known_symbol();
     var Iterators = require_iterators();
@@ -12371,9 +12371,9 @@ var require_is_array_iterator_method = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/get-iterator-method-internal.js
+// node_modules/core-js/internals/get-iterator-method-internal.js
 var require_get_iterator_method_internal = __commonJS({
-  "../../../node_modules/core-js/internals/get-iterator-method-internal.js"(exports, module2) {
+  "node_modules/core-js/internals/get-iterator-method-internal.js"(exports, module2) {
     "use strict";
     var classof = require_classof_raw();
     var isNullOrUndefined = require_is_null_or_undefined();
@@ -12387,9 +12387,9 @@ var require_get_iterator_method_internal = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/get-iterator-internal.js
+// node_modules/core-js/internals/get-iterator-internal.js
 var require_get_iterator_internal = __commonJS({
-  "../../../node_modules/core-js/internals/get-iterator-internal.js"(exports, module2) {
+  "node_modules/core-js/internals/get-iterator-internal.js"(exports, module2) {
     "use strict";
     var call = require_function_call();
     var isCallable = require_is_callable();
@@ -12405,9 +12405,9 @@ var require_get_iterator_internal = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/iterator-close.js
+// node_modules/core-js/internals/iterator-close.js
 var require_iterator_close = __commonJS({
-  "../../../node_modules/core-js/internals/iterator-close.js"(exports, module2) {
+  "node_modules/core-js/internals/iterator-close.js"(exports, module2) {
     "use strict";
     var call = require_function_call();
     var anObject = require_an_object();
@@ -12434,9 +12434,9 @@ var require_iterator_close = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/iterate.js
+// node_modules/core-js/internals/iterate.js
 var require_iterate = __commonJS({
-  "../../../node_modules/core-js/internals/iterate.js"(exports, module2) {
+  "node_modules/core-js/internals/iterate.js"(exports, module2) {
     "use strict";
     var bind2 = require_function_bind_context();
     var call = require_function_call();
@@ -12507,9 +12507,9 @@ var require_iterate = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/check-correctness-of-iteration.js
+// node_modules/core-js/internals/check-correctness-of-iteration.js
 var require_check_correctness_of_iteration = __commonJS({
-  "../../../node_modules/core-js/internals/check-correctness-of-iteration.js"(exports, module2) {
+  "node_modules/core-js/internals/check-correctness-of-iteration.js"(exports, module2) {
     "use strict";
     var wellKnownSymbol = require_well_known_symbol();
     var ITERATOR = wellKnownSymbol("iterator");
@@ -12558,9 +12558,9 @@ var require_check_correctness_of_iteration = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/promise-statics-incorrect-iteration.js
+// node_modules/core-js/internals/promise-statics-incorrect-iteration.js
 var require_promise_statics_incorrect_iteration = __commonJS({
-  "../../../node_modules/core-js/internals/promise-statics-incorrect-iteration.js"(exports, module2) {
+  "node_modules/core-js/internals/promise-statics-incorrect-iteration.js"(exports, module2) {
     "use strict";
     var NativePromiseConstructor = require_promise_native_constructor();
     var checkCorrectnessOfIteration = require_check_correctness_of_iteration();
@@ -12572,9 +12572,9 @@ var require_promise_statics_incorrect_iteration = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.promise.all.js
+// node_modules/core-js/modules/es.promise.all.js
 var require_es_promise_all = __commonJS({
-  "../../../node_modules/core-js/modules/es.promise.all.js"() {
+  "node_modules/core-js/modules/es.promise.all.js"() {
     "use strict";
     var $2 = require_export();
     var call = require_function_call();
@@ -12614,9 +12614,9 @@ var require_es_promise_all = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.promise.catch.js
+// node_modules/core-js/modules/es.promise.catch.js
 var require_es_promise_catch = __commonJS({
-  "../../../node_modules/core-js/modules/es.promise.catch.js"() {
+  "node_modules/core-js/modules/es.promise.catch.js"() {
     "use strict";
     var $2 = require_export();
     var IS_PURE = require_is_pure();
@@ -12641,9 +12641,9 @@ var require_es_promise_catch = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.promise.race.js
+// node_modules/core-js/modules/es.promise.race.js
 var require_es_promise_race = __commonJS({
-  "../../../node_modules/core-js/modules/es.promise.race.js"() {
+  "node_modules/core-js/modules/es.promise.race.js"() {
     "use strict";
     var $2 = require_export();
     var call = require_function_call();
@@ -12670,9 +12670,9 @@ var require_es_promise_race = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.promise.reject.js
+// node_modules/core-js/modules/es.promise.reject.js
 var require_es_promise_reject = __commonJS({
-  "../../../node_modules/core-js/modules/es.promise.reject.js"() {
+  "node_modules/core-js/modules/es.promise.reject.js"() {
     "use strict";
     var $2 = require_export();
     var newPromiseCapabilityModule = require_new_promise_capability();
@@ -12688,9 +12688,9 @@ var require_es_promise_reject = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/promise-resolve.js
+// node_modules/core-js/internals/promise-resolve.js
 var require_promise_resolve = __commonJS({
-  "../../../node_modules/core-js/internals/promise-resolve.js"(exports, module2) {
+  "node_modules/core-js/internals/promise-resolve.js"(exports, module2) {
     "use strict";
     var anObject = require_an_object();
     var isObject = require_is_object();
@@ -12706,9 +12706,9 @@ var require_promise_resolve = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.promise.resolve.js
+// node_modules/core-js/modules/es.promise.resolve.js
 var require_es_promise_resolve = __commonJS({
-  "../../../node_modules/core-js/modules/es.promise.resolve.js"() {
+  "node_modules/core-js/modules/es.promise.resolve.js"() {
     "use strict";
     var $2 = require_export();
     var getBuiltIn = require_get_built_in();
@@ -12726,9 +12726,9 @@ var require_es_promise_resolve = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.promise.js
+// node_modules/core-js/modules/es.promise.js
 var require_es_promise = __commonJS({
-  "../../../node_modules/core-js/modules/es.promise.js"() {
+  "node_modules/core-js/modules/es.promise.js"() {
     "use strict";
     require_es_promise_constructor();
     require_es_promise_all();
@@ -12739,7 +12739,7 @@ var require_es_promise = __commonJS({
   }
 });
 
-// ../../../node_modules/@babel/runtime/helpers/esm/asyncToGenerator.js
+// node_modules/@babel/runtime/helpers/esm/asyncToGenerator.js
 function asyncGeneratorStep(n2, t3, e2, r2, o3, a3, c4) {
   try {
     var i4 = n2[a3](c4), u3 = i4.value;
@@ -12764,13 +12764,13 @@ function _asyncToGenerator(n2) {
   };
 }
 var init_asyncToGenerator = __esm({
-  "../../../node_modules/@babel/runtime/helpers/esm/asyncToGenerator.js"() {
+  "node_modules/@babel/runtime/helpers/esm/asyncToGenerator.js"() {
   }
 });
 
-// ../../../node_modules/core-js/internals/to-string.js
+// node_modules/core-js/internals/to-string.js
 var require_to_string = __commonJS({
-  "../../../node_modules/core-js/internals/to-string.js"(exports, module2) {
+  "node_modules/core-js/internals/to-string.js"(exports, module2) {
     "use strict";
     var classof = require_classof();
     var $String = String;
@@ -12781,9 +12781,9 @@ var require_to_string = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/regexp-flags.js
+// node_modules/core-js/internals/regexp-flags.js
 var require_regexp_flags = __commonJS({
-  "../../../node_modules/core-js/internals/regexp-flags.js"(exports, module2) {
+  "node_modules/core-js/internals/regexp-flags.js"(exports, module2) {
     "use strict";
     var anObject = require_an_object();
     module2.exports = function() {
@@ -12802,9 +12802,9 @@ var require_regexp_flags = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/regexp-sticky-helpers.js
+// node_modules/core-js/internals/regexp-sticky-helpers.js
 var require_regexp_sticky_helpers = __commonJS({
-  "../../../node_modules/core-js/internals/regexp-sticky-helpers.js"(exports, module2) {
+  "node_modules/core-js/internals/regexp-sticky-helpers.js"(exports, module2) {
     "use strict";
     var fails = require_fails();
     var globalThis2 = require_global_this();
@@ -12830,9 +12830,9 @@ var require_regexp_sticky_helpers = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/object-keys.js
+// node_modules/core-js/internals/object-keys.js
 var require_object_keys = __commonJS({
-  "../../../node_modules/core-js/internals/object-keys.js"(exports, module2) {
+  "node_modules/core-js/internals/object-keys.js"(exports, module2) {
     "use strict";
     var internalObjectKeys = require_object_keys_internal();
     var enumBugKeys = require_enum_bug_keys();
@@ -12842,9 +12842,9 @@ var require_object_keys = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/object-define-properties.js
+// node_modules/core-js/internals/object-define-properties.js
 var require_object_define_properties = __commonJS({
-  "../../../node_modules/core-js/internals/object-define-properties.js"(exports) {
+  "node_modules/core-js/internals/object-define-properties.js"(exports) {
     "use strict";
     var DESCRIPTORS = require_descriptors();
     var V8_PROTOTYPE_DEFINE_BUG = require_v8_prototype_define_bug();
@@ -12865,9 +12865,9 @@ var require_object_define_properties = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/object-create.js
+// node_modules/core-js/internals/object-create.js
 var require_object_create = __commonJS({
-  "../../../node_modules/core-js/internals/object-create.js"(exports, module2) {
+  "node_modules/core-js/internals/object-create.js"(exports, module2) {
     "use strict";
     var anObject = require_an_object();
     var definePropertiesModule = require_object_define_properties();
@@ -12931,9 +12931,9 @@ var require_object_create = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/regexp-unsupported-dot-all.js
+// node_modules/core-js/internals/regexp-unsupported-dot-all.js
 var require_regexp_unsupported_dot_all = __commonJS({
-  "../../../node_modules/core-js/internals/regexp-unsupported-dot-all.js"(exports, module2) {
+  "node_modules/core-js/internals/regexp-unsupported-dot-all.js"(exports, module2) {
     "use strict";
     var fails = require_fails();
     var globalThis2 = require_global_this();
@@ -12945,9 +12945,9 @@ var require_regexp_unsupported_dot_all = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/regexp-unsupported-ncg.js
+// node_modules/core-js/internals/regexp-unsupported-ncg.js
 var require_regexp_unsupported_ncg = __commonJS({
-  "../../../node_modules/core-js/internals/regexp-unsupported-ncg.js"(exports, module2) {
+  "node_modules/core-js/internals/regexp-unsupported-ncg.js"(exports, module2) {
     "use strict";
     var fails = require_fails();
     var globalThis2 = require_global_this();
@@ -12959,9 +12959,9 @@ var require_regexp_unsupported_ncg = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/regexp-exec.js
+// node_modules/core-js/internals/regexp-exec.js
 var require_regexp_exec = __commonJS({
-  "../../../node_modules/core-js/internals/regexp-exec.js"(exports, module2) {
+  "node_modules/core-js/internals/regexp-exec.js"(exports, module2) {
     "use strict";
     var call = require_function_call();
     var uncurryThis = require_function_uncurry_this();
@@ -13061,9 +13061,9 @@ var require_regexp_exec = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.regexp.exec.js
+// node_modules/core-js/modules/es.regexp.exec.js
 var require_es_regexp_exec = __commonJS({
-  "../../../node_modules/core-js/modules/es.regexp.exec.js"() {
+  "node_modules/core-js/modules/es.regexp.exec.js"() {
     "use strict";
     var $2 = require_export();
     var exec = require_regexp_exec();
@@ -13073,9 +13073,9 @@ var require_es_regexp_exec = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/fix-regexp-well-known-symbol-logic.js
+// node_modules/core-js/internals/fix-regexp-well-known-symbol-logic.js
 var require_fix_regexp_well_known_symbol_logic = __commonJS({
-  "../../../node_modules/core-js/internals/fix-regexp-well-known-symbol-logic.js"(exports, module2) {
+  "node_modules/core-js/internals/fix-regexp-well-known-symbol-logic.js"(exports, module2) {
     "use strict";
     require_es_regexp_exec();
     var call = require_function_call();
@@ -13133,9 +13133,9 @@ var require_fix_regexp_well_known_symbol_logic = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/string-multibyte.js
+// node_modules/core-js/internals/string-multibyte.js
 var require_string_multibyte = __commonJS({
-  "../../../node_modules/core-js/internals/string-multibyte.js"(exports, module2) {
+  "node_modules/core-js/internals/string-multibyte.js"(exports, module2) {
     "use strict";
     var uncurryThis = require_function_uncurry_this();
     var toIntegerOrInfinity = require_to_integer_or_infinity();
@@ -13166,9 +13166,9 @@ var require_string_multibyte = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/advance-string-index.js
+// node_modules/core-js/internals/advance-string-index.js
 var require_advance_string_index = __commonJS({
-  "../../../node_modules/core-js/internals/advance-string-index.js"(exports, module2) {
+  "node_modules/core-js/internals/advance-string-index.js"(exports, module2) {
     "use strict";
     var charAt = require_string_multibyte().charAt;
     module2.exports = function(S2, index2, unicode) {
@@ -13177,9 +13177,9 @@ var require_advance_string_index = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/regexp-flags-detection.js
+// node_modules/core-js/internals/regexp-flags-detection.js
 var require_regexp_flags_detection = __commonJS({
-  "../../../node_modules/core-js/internals/regexp-flags-detection.js"(exports, module2) {
+  "node_modules/core-js/internals/regexp-flags-detection.js"(exports, module2) {
     "use strict";
     var globalThis2 = require_global_this();
     var fails = require_fails();
@@ -13216,9 +13216,9 @@ var require_regexp_flags_detection = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/regexp-get-flags.js
+// node_modules/core-js/internals/regexp-get-flags.js
 var require_regexp_get_flags = __commonJS({
-  "../../../node_modules/core-js/internals/regexp-get-flags.js"(exports, module2) {
+  "node_modules/core-js/internals/regexp-get-flags.js"(exports, module2) {
     "use strict";
     var call = require_function_call();
     var hasOwn = require_has_own_property();
@@ -13234,9 +13234,9 @@ var require_regexp_get_flags = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/regexp-exec-abstract.js
+// node_modules/core-js/internals/regexp-exec-abstract.js
 var require_regexp_exec_abstract = __commonJS({
-  "../../../node_modules/core-js/internals/regexp-exec-abstract.js"(exports, module2) {
+  "node_modules/core-js/internals/regexp-exec-abstract.js"(exports, module2) {
     "use strict";
     var call = require_function_call();
     var anObject = require_an_object();
@@ -13257,9 +13257,9 @@ var require_regexp_exec_abstract = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.string.match.js
+// node_modules/core-js/modules/es.string.match.js
 var require_es_string_match = __commonJS({
-  "../../../node_modules/core-js/modules/es.string.match.js"() {
+  "node_modules/core-js/modules/es.string.match.js"() {
     "use strict";
     var call = require_function_call();
     var uncurryThis = require_function_uncurry_this();
@@ -13312,9 +13312,9 @@ var require_es_string_match = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/get-substitution.js
+// node_modules/core-js/internals/get-substitution.js
 var require_get_substitution = __commonJS({
-  "../../../node_modules/core-js/internals/get-substitution.js"(exports, module2) {
+  "node_modules/core-js/internals/get-substitution.js"(exports, module2) {
     "use strict";
     var uncurryThis = require_function_uncurry_this();
     var toObject = require_to_object();
@@ -13333,7 +13333,7 @@ var require_get_substitution = __commonJS({
         symbols = SUBSTITUTION_SYMBOLS;
       }
       return replace(replacement, symbols, function(match, ch) {
-        var capture;
+        var capture2;
         switch (charAt(ch, 0)) {
           case "$":
             return "$";
@@ -13344,7 +13344,7 @@ var require_get_substitution = __commonJS({
           case "'":
             return stringSlice(str, tailPos);
           case "<":
-            capture = namedCaptures[stringSlice(ch, 1, -1)];
+            capture2 = namedCaptures[stringSlice(ch, 1, -1)];
             break;
           default:
             var n2 = +ch;
@@ -13355,17 +13355,17 @@ var require_get_substitution = __commonJS({
               if (f3 <= m4) return captures[f3 - 1] === void 0 ? charAt(ch, 1) : captures[f3 - 1] + charAt(ch, 1);
               return match;
             }
-            capture = captures[n2 - 1];
+            capture2 = captures[n2 - 1];
         }
-        return capture === void 0 ? "" : capture;
+        return capture2 === void 0 ? "" : capture2;
       });
     };
   }
 });
 
-// ../../../node_modules/core-js/modules/es.string.replace.js
+// node_modules/core-js/modules/es.string.replace.js
 var require_es_string_replace = __commonJS({
-  "../../../node_modules/core-js/modules/es.string.replace.js"() {
+  "node_modules/core-js/modules/es.string.replace.js"() {
     "use strict";
     var apply2 = require_function_apply();
     var call = require_function_call();
@@ -13480,9 +13480,9 @@ var require_es_string_replace = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/is-regexp.js
+// node_modules/core-js/internals/is-regexp.js
 var require_is_regexp = __commonJS({
-  "../../../node_modules/core-js/internals/is-regexp.js"(exports, module2) {
+  "node_modules/core-js/internals/is-regexp.js"(exports, module2) {
     "use strict";
     var isObject = require_is_object();
     var classof = require_classof_raw();
@@ -13495,9 +13495,9 @@ var require_is_regexp = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/not-a-regexp.js
+// node_modules/core-js/internals/not-a-regexp.js
 var require_not_a_regexp = __commonJS({
-  "../../../node_modules/core-js/internals/not-a-regexp.js"(exports, module2) {
+  "node_modules/core-js/internals/not-a-regexp.js"(exports, module2) {
     "use strict";
     var isRegExp = require_is_regexp();
     var $TypeError = TypeError;
@@ -13510,9 +13510,9 @@ var require_not_a_regexp = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/correct-is-regexp-logic.js
+// node_modules/core-js/internals/correct-is-regexp-logic.js
 var require_correct_is_regexp_logic = __commonJS({
-  "../../../node_modules/core-js/internals/correct-is-regexp-logic.js"(exports, module2) {
+  "node_modules/core-js/internals/correct-is-regexp-logic.js"(exports, module2) {
     "use strict";
     var wellKnownSymbol = require_well_known_symbol();
     var MATCH2 = wellKnownSymbol("match");
@@ -13532,9 +13532,9 @@ var require_correct_is_regexp_logic = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.string.starts-with.js
+// node_modules/core-js/modules/es.string.starts-with.js
 var require_es_string_starts_with = __commonJS({
-  "../../../node_modules/core-js/modules/es.string.starts-with.js"() {
+  "node_modules/core-js/modules/es.string.starts-with.js"() {
     "use strict";
     var $2 = require_export();
     var uncurryThis = require_function_uncurry_this_clause();
@@ -13564,9 +13564,9 @@ var require_es_string_starts_with = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/add-to-unscopables.js
+// node_modules/core-js/internals/add-to-unscopables.js
 var require_add_to_unscopables = __commonJS({
-  "../../../node_modules/core-js/internals/add-to-unscopables.js"(exports, module2) {
+  "node_modules/core-js/internals/add-to-unscopables.js"(exports, module2) {
     "use strict";
     var wellKnownSymbol = require_well_known_symbol();
     var create2 = require_object_create();
@@ -13585,9 +13585,9 @@ var require_add_to_unscopables = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/correct-prototype-getter.js
+// node_modules/core-js/internals/correct-prototype-getter.js
 var require_correct_prototype_getter = __commonJS({
-  "../../../node_modules/core-js/internals/correct-prototype-getter.js"(exports, module2) {
+  "node_modules/core-js/internals/correct-prototype-getter.js"(exports, module2) {
     "use strict";
     var fails = require_fails();
     module2.exports = !fails(function() {
@@ -13599,9 +13599,9 @@ var require_correct_prototype_getter = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/object-get-prototype-of.js
+// node_modules/core-js/internals/object-get-prototype-of.js
 var require_object_get_prototype_of = __commonJS({
-  "../../../node_modules/core-js/internals/object-get-prototype-of.js"(exports, module2) {
+  "node_modules/core-js/internals/object-get-prototype-of.js"(exports, module2) {
     "use strict";
     var hasOwn = require_has_own_property();
     var isCallable = require_is_callable();
@@ -13623,9 +13623,9 @@ var require_object_get_prototype_of = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/iterators-core.js
+// node_modules/core-js/internals/iterators-core.js
 var require_iterators_core = __commonJS({
-  "../../../node_modules/core-js/internals/iterators-core.js"(exports, module2) {
+  "node_modules/core-js/internals/iterators-core.js"(exports, module2) {
     "use strict";
     var fails = require_fails();
     var isCallable = require_is_callable();
@@ -13666,9 +13666,9 @@ var require_iterators_core = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/iterator-create-constructor.js
+// node_modules/core-js/internals/iterator-create-constructor.js
 var require_iterator_create_constructor = __commonJS({
-  "../../../node_modules/core-js/internals/iterator-create-constructor.js"(exports, module2) {
+  "node_modules/core-js/internals/iterator-create-constructor.js"(exports, module2) {
     "use strict";
     var IteratorPrototype = require_iterators_core().IteratorPrototype;
     var create2 = require_object_create();
@@ -13688,9 +13688,9 @@ var require_iterator_create_constructor = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/iterator-define.js
+// node_modules/core-js/internals/iterator-define.js
 var require_iterator_define = __commonJS({
-  "../../../node_modules/core-js/internals/iterator-define.js"(exports, module2) {
+  "node_modules/core-js/internals/iterator-define.js"(exports, module2) {
     "use strict";
     var $2 = require_export();
     var call = require_function_call();
@@ -13793,9 +13793,9 @@ var require_iterator_define = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/create-iter-result-object.js
+// node_modules/core-js/internals/create-iter-result-object.js
 var require_create_iter_result_object = __commonJS({
-  "../../../node_modules/core-js/internals/create-iter-result-object.js"(exports, module2) {
+  "node_modules/core-js/internals/create-iter-result-object.js"(exports, module2) {
     "use strict";
     module2.exports = function(value, done) {
       return { value, done };
@@ -13803,9 +13803,9 @@ var require_create_iter_result_object = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.array.iterator.js
+// node_modules/core-js/modules/es.array.iterator.js
 var require_es_array_iterator = __commonJS({
-  "../../../node_modules/core-js/modules/es.array.iterator.js"(exports, module2) {
+  "node_modules/core-js/modules/es.array.iterator.js"(exports, module2) {
     "use strict";
     var toIndexedObject = require_to_indexed_object();
     var addToUnscopables = require_add_to_unscopables();
@@ -13856,9 +13856,9 @@ var require_es_array_iterator = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/dom-iterables.js
+// node_modules/core-js/internals/dom-iterables.js
 var require_dom_iterables = __commonJS({
-  "../../../node_modules/core-js/internals/dom-iterables.js"(exports, module2) {
+  "node_modules/core-js/internals/dom-iterables.js"(exports, module2) {
     "use strict";
     module2.exports = {
       CSSRuleList: 0,
@@ -13896,9 +13896,9 @@ var require_dom_iterables = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/dom-token-list-prototype.js
+// node_modules/core-js/internals/dom-token-list-prototype.js
 var require_dom_token_list_prototype = __commonJS({
-  "../../../node_modules/core-js/internals/dom-token-list-prototype.js"(exports, module2) {
+  "node_modules/core-js/internals/dom-token-list-prototype.js"(exports, module2) {
     "use strict";
     var documentCreateElement = require_document_create_element();
     var classList = documentCreateElement("span").classList;
@@ -13907,9 +13907,9 @@ var require_dom_token_list_prototype = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/web.dom-collections.iterator.js
+// node_modules/core-js/modules/web.dom-collections.iterator.js
 var require_web_dom_collections_iterator = __commonJS({
-  "../../../node_modules/core-js/modules/web.dom-collections.iterator.js"() {
+  "node_modules/core-js/modules/web.dom-collections.iterator.js"() {
     "use strict";
     var globalThis2 = require_global_this();
     var DOMIterables = require_dom_iterables();
@@ -13945,7 +13945,7 @@ var require_web_dom_collections_iterator = __commonJS({
   }
 });
 
-// ../../../node_modules/@babel/runtime/helpers/esm/toPrimitive.js
+// node_modules/@babel/runtime/helpers/esm/toPrimitive.js
 function toPrimitive(t3, r2) {
   if ("object" != _typeof(t3) || !t3) return t3;
   var e2 = t3[Symbol.toPrimitive];
@@ -13957,24 +13957,24 @@ function toPrimitive(t3, r2) {
   return ("string" === r2 ? String : Number)(t3);
 }
 var init_toPrimitive = __esm({
-  "../../../node_modules/@babel/runtime/helpers/esm/toPrimitive.js"() {
+  "node_modules/@babel/runtime/helpers/esm/toPrimitive.js"() {
     init_typeof();
   }
 });
 
-// ../../../node_modules/@babel/runtime/helpers/esm/toPropertyKey.js
+// node_modules/@babel/runtime/helpers/esm/toPropertyKey.js
 function toPropertyKey(t3) {
   var i4 = toPrimitive(t3, "string");
   return "symbol" == _typeof(i4) ? i4 : i4 + "";
 }
 var init_toPropertyKey = __esm({
-  "../../../node_modules/@babel/runtime/helpers/esm/toPropertyKey.js"() {
+  "node_modules/@babel/runtime/helpers/esm/toPropertyKey.js"() {
     init_typeof();
     init_toPrimitive();
   }
 });
 
-// ../../../node_modules/@babel/runtime/helpers/esm/defineProperty.js
+// node_modules/@babel/runtime/helpers/esm/defineProperty.js
 function _defineProperty(e2, r2, t3) {
   return (r2 = toPropertyKey(r2)) in e2 ? Object.defineProperty(e2, r2, {
     value: t3,
@@ -13984,14 +13984,14 @@ function _defineProperty(e2, r2, t3) {
   }) : e2[r2] = t3, e2;
 }
 var init_defineProperty = __esm({
-  "../../../node_modules/@babel/runtime/helpers/esm/defineProperty.js"() {
+  "node_modules/@babel/runtime/helpers/esm/defineProperty.js"() {
     init_toPropertyKey();
   }
 });
 
-// ../../../node_modules/core-js/internals/array-reduce.js
+// node_modules/core-js/internals/array-reduce.js
 var require_array_reduce = __commonJS({
-  "../../../node_modules/core-js/internals/array-reduce.js"(exports, module2) {
+  "node_modules/core-js/internals/array-reduce.js"(exports, module2) {
     "use strict";
     var aCallable = require_a_callable();
     var toObject = require_to_object();
@@ -14036,9 +14036,9 @@ var require_array_reduce = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/array-method-is-strict.js
+// node_modules/core-js/internals/array-method-is-strict.js
 var require_array_method_is_strict = __commonJS({
-  "../../../node_modules/core-js/internals/array-method-is-strict.js"(exports, module2) {
+  "node_modules/core-js/internals/array-method-is-strict.js"(exports, module2) {
     "use strict";
     var fails = require_fails();
     module2.exports = function(METHOD_NAME, argument) {
@@ -14052,9 +14052,9 @@ var require_array_method_is_strict = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.array.reduce.js
+// node_modules/core-js/modules/es.array.reduce.js
 var require_es_array_reduce = __commonJS({
-  "../../../node_modules/core-js/modules/es.array.reduce.js"() {
+  "node_modules/core-js/modules/es.array.reduce.js"() {
     "use strict";
     var $2 = require_export();
     var $reduce = require_array_reduce().left;
@@ -14072,9 +14072,9 @@ var require_es_array_reduce = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.string.ends-with.js
+// node_modules/core-js/modules/es.string.ends-with.js
 var require_es_string_ends_with = __commonJS({
-  "../../../node_modules/core-js/modules/es.string.ends-with.js"() {
+  "node_modules/core-js/modules/es.string.ends-with.js"() {
     "use strict";
     var $2 = require_export();
     var uncurryThis = require_function_uncurry_this_clause();
@@ -14106,9 +14106,9 @@ var require_es_string_ends_with = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.string.split.js
+// node_modules/core-js/modules/es.string.split.js
 var require_es_string_split = __commonJS({
-  "../../../node_modules/core-js/modules/es.string.split.js"() {
+  "node_modules/core-js/modules/es.string.split.js"() {
     "use strict";
     var call = require_function_call();
     var uncurryThis = require_function_uncurry_this();
@@ -14204,9 +14204,9 @@ var require_es_string_split = __commonJS({
   }
 });
 
-// ../../../node_modules/performance-now/lib/performance-now.js
+// node_modules/performance-now/lib/performance-now.js
 var require_performance_now = __commonJS({
-  "../../../node_modules/performance-now/lib/performance-now.js"(exports, module2) {
+  "node_modules/performance-now/lib/performance-now.js"(exports, module2) {
     (function() {
       var getNanoSeconds, hrtime, loadTime, moduleLoadTime, nodeLoadTime, upTime;
       if (typeof performance !== "undefined" && performance !== null && performance.now) {
@@ -14241,9 +14241,9 @@ var require_performance_now = __commonJS({
   }
 });
 
-// ../../../node_modules/raf/index.js
+// node_modules/raf/index.js
 var require_raf = __commonJS({
-  "../../../node_modules/raf/index.js"(exports, module2) {
+  "node_modules/raf/index.js"(exports, module2) {
     var now = require_performance_now();
     var root = typeof window === "undefined" ? global : window;
     var vendors = ["moz", "webkit"];
@@ -14312,17 +14312,17 @@ var require_raf = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/whitespaces.js
+// node_modules/core-js/internals/whitespaces.js
 var require_whitespaces = __commonJS({
-  "../../../node_modules/core-js/internals/whitespaces.js"(exports, module2) {
+  "node_modules/core-js/internals/whitespaces.js"(exports, module2) {
     "use strict";
     module2.exports = "	\n\v\f\r \xA0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000\u2028\u2029\uFEFF";
   }
 });
 
-// ../../../node_modules/core-js/internals/string-trim.js
+// node_modules/core-js/internals/string-trim.js
 var require_string_trim = __commonJS({
-  "../../../node_modules/core-js/internals/string-trim.js"(exports, module2) {
+  "node_modules/core-js/internals/string-trim.js"(exports, module2) {
     "use strict";
     var uncurryThis = require_function_uncurry_this();
     var requireObjectCoercible = require_require_object_coercible();
@@ -14353,9 +14353,9 @@ var require_string_trim = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/string-trim-forced.js
+// node_modules/core-js/internals/string-trim-forced.js
 var require_string_trim_forced = __commonJS({
-  "../../../node_modules/core-js/internals/string-trim-forced.js"(exports, module2) {
+  "node_modules/core-js/internals/string-trim-forced.js"(exports, module2) {
     "use strict";
     var PROPER_FUNCTION_NAME = require_function_name().PROPER;
     var fails = require_fails();
@@ -14369,9 +14369,9 @@ var require_string_trim_forced = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.string.trim.js
+// node_modules/core-js/modules/es.string.trim.js
 var require_es_string_trim = __commonJS({
-  "../../../node_modules/core-js/modules/es.string.trim.js"() {
+  "node_modules/core-js/modules/es.string.trim.js"() {
     "use strict";
     var $2 = require_export();
     var $trim = require_string_trim().trim;
@@ -14384,9 +14384,9 @@ var require_es_string_trim = __commonJS({
   }
 });
 
-// ../../../node_modules/rgbcolor/index.js
+// node_modules/rgbcolor/index.js
 var require_rgbcolor = __commonJS({
-  "../../../node_modules/rgbcolor/index.js"(exports, module2) {
+  "node_modules/rgbcolor/index.js"(exports, module2) {
     module2.exports = function(color_string) {
       this.ok = false;
       this.alpha = 1;
@@ -14658,9 +14658,9 @@ var require_rgbcolor = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.array.index-of.js
+// node_modules/core-js/modules/es.array.index-of.js
 var require_es_array_index_of = __commonJS({
-  "../../../node_modules/core-js/modules/es.array.index-of.js"() {
+  "node_modules/core-js/modules/es.array.index-of.js"() {
     "use strict";
     var $2 = require_export();
     var uncurryThis = require_function_uncurry_this_clause();
@@ -14678,9 +14678,9 @@ var require_es_array_index_of = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.string.includes.js
+// node_modules/core-js/modules/es.string.includes.js
 var require_es_string_includes = __commonJS({
-  "../../../node_modules/core-js/modules/es.string.includes.js"() {
+  "node_modules/core-js/modules/es.string.includes.js"() {
     "use strict";
     var $2 = require_export();
     var uncurryThis = require_function_uncurry_this();
@@ -14701,9 +14701,9 @@ var require_es_string_includes = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/internals/is-array.js
+// node_modules/core-js/internals/is-array.js
 var require_is_array = __commonJS({
-  "../../../node_modules/core-js/internals/is-array.js"(exports, module2) {
+  "node_modules/core-js/internals/is-array.js"(exports, module2) {
     "use strict";
     var classof = require_classof_raw();
     module2.exports = Array.isArray || function isArray(argument) {
@@ -14712,9 +14712,9 @@ var require_is_array = __commonJS({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.array.reverse.js
+// node_modules/core-js/modules/es.array.reverse.js
 var require_es_array_reverse = __commonJS({
-  "../../../node_modules/core-js/modules/es.array.reverse.js"() {
+  "node_modules/core-js/modules/es.array.reverse.js"() {
     "use strict";
     var $2 = require_export();
     var uncurryThis = require_function_uncurry_this();
@@ -14730,7 +14730,7 @@ var require_es_array_reverse = __commonJS({
   }
 });
 
-// ../../../node_modules/svg-pathdata/lib/SVGPathData.module.js
+// node_modules/svg-pathdata/lib/SVGPathData.module.js
 function r(r2, e2) {
   if ("function" != typeof e2 && null !== e2) throw new TypeError("Class extends value " + String(e2) + " is not a constructor or null");
   function i4() {
@@ -14808,7 +14808,7 @@ function m(t3, r2, e2, i4, a3) {
 }
 var t, n, u, h, O, l, T, v, f, _, N;
 var init_SVGPathData_module = __esm({
-  "../../../node_modules/svg-pathdata/lib/SVGPathData.module.js"() {
+  "node_modules/svg-pathdata/lib/SVGPathData.module.js"() {
     t = function(r2, e2) {
       return (t = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(t3, r3) {
         t3.__proto__ = r3;
@@ -15113,9 +15113,9 @@ var init_SVGPathData_module = __esm({
   }
 });
 
-// ../../../node_modules/core-js/modules/es.regexp.to-string.js
+// node_modules/core-js/modules/es.regexp.to-string.js
 var require_es_regexp_to_string = __commonJS({
-  "../../../node_modules/core-js/modules/es.regexp.to-string.js"() {
+  "node_modules/core-js/modules/es.regexp.to-string.js"() {
     "use strict";
     var PROPER_FUNCTION_NAME = require_function_name().PROPER;
     var defineBuiltIn = require_define_built_in();
@@ -15141,7 +15141,7 @@ var require_es_regexp_to_string = __commonJS({
   }
 });
 
-// ../../../node_modules/stackblur-canvas/dist/stackblur-es.js
+// node_modules/stackblur-canvas/dist/stackblur-es.js
 function _typeof2(obj) {
   "@babel/helpers - typeof";
   if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
@@ -15184,8 +15184,8 @@ function processCanvasRGBA(canvas, topX, topY, width, height, radius) {
   canvas.getContext("2d").putImageData(imageData, topX, topY);
 }
 function processImageDataRGBA(imageData, topX, topY, width, height, radius) {
-  var pixels = imageData.data;
-  var div = 2 * radius + 1;
+  var pixels2 = imageData.data;
+  var div2 = 2 * radius + 1;
   var widthMinus1 = width - 1;
   var heightMinus1 = height - 1;
   var radiusPlus1 = radius + 1;
@@ -15193,7 +15193,7 @@ function processImageDataRGBA(imageData, topX, topY, width, height, radius) {
   var stackStart = new BlurStack();
   var stack = stackStart;
   var stackEnd;
-  for (var i4 = 1; i4 < div; i4++) {
+  for (var i4 = 1; i4 < div2; i4++) {
     stack = stack.next = new BlurStack();
     if (i4 === radiusPlus1) {
       stackEnd = stack;
@@ -15205,7 +15205,7 @@ function processImageDataRGBA(imageData, topX, topY, width, height, radius) {
   var shgSum = shgTable[radius];
   for (var y3 = 0; y3 < height; y3++) {
     stack = stackStart;
-    var pr = pixels[yi], pg = pixels[yi + 1], pb = pixels[yi + 2], pa = pixels[yi + 3];
+    var pr = pixels2[yi], pg = pixels2[yi + 1], pb = pixels2[yi + 2], pa = pixels2[yi + 3];
     for (var _i = 0; _i < radiusPlus1; _i++) {
       stack.r = pr;
       stack.g = pg;
@@ -15216,7 +15216,7 @@ function processImageDataRGBA(imageData, topX, topY, width, height, radius) {
     var rInSum = 0, gInSum = 0, bInSum = 0, aInSum = 0, rOutSum = radiusPlus1 * pr, gOutSum = radiusPlus1 * pg, bOutSum = radiusPlus1 * pb, aOutSum = radiusPlus1 * pa, rSum = sumFactor * pr, gSum = sumFactor * pg, bSum = sumFactor * pb, aSum = sumFactor * pa;
     for (var _i2 = 1; _i2 < radiusPlus1; _i2++) {
       var p3 = yi + ((widthMinus1 < _i2 ? widthMinus1 : _i2) << 2);
-      var r2 = pixels[p3], g2 = pixels[p3 + 1], b2 = pixels[p3 + 2], a3 = pixels[p3 + 3];
+      var r2 = pixels2[p3], g2 = pixels2[p3 + 1], b2 = pixels2[p3 + 2], a3 = pixels2[p3 + 3];
       var rbs = radiusPlus1 - _i2;
       rSum += (stack.r = r2) * rbs;
       gSum += (stack.g = g2) * rbs;
@@ -15232,14 +15232,14 @@ function processImageDataRGBA(imageData, topX, topY, width, height, radius) {
     stackOut = stackEnd;
     for (var x3 = 0; x3 < width; x3++) {
       var paInitial = aSum * mulSum >>> shgSum;
-      pixels[yi + 3] = paInitial;
+      pixels2[yi + 3] = paInitial;
       if (paInitial !== 0) {
         var _a2 = 255 / paInitial;
-        pixels[yi] = (rSum * mulSum >>> shgSum) * _a2;
-        pixels[yi + 1] = (gSum * mulSum >>> shgSum) * _a2;
-        pixels[yi + 2] = (bSum * mulSum >>> shgSum) * _a2;
+        pixels2[yi] = (rSum * mulSum >>> shgSum) * _a2;
+        pixels2[yi + 1] = (gSum * mulSum >>> shgSum) * _a2;
+        pixels2[yi + 2] = (bSum * mulSum >>> shgSum) * _a2;
       } else {
-        pixels[yi] = pixels[yi + 1] = pixels[yi + 2] = 0;
+        pixels2[yi] = pixels2[yi + 1] = pixels2[yi + 2] = 0;
       }
       rSum -= rOutSum;
       gSum -= gOutSum;
@@ -15251,10 +15251,10 @@ function processImageDataRGBA(imageData, topX, topY, width, height, radius) {
       aOutSum -= stackIn.a;
       var _p = x3 + radius + 1;
       _p = yw + (_p < widthMinus1 ? _p : widthMinus1) << 2;
-      rInSum += stackIn.r = pixels[_p];
-      gInSum += stackIn.g = pixels[_p + 1];
-      bInSum += stackIn.b = pixels[_p + 2];
-      aInSum += stackIn.a = pixels[_p + 3];
+      rInSum += stackIn.r = pixels2[_p];
+      gInSum += stackIn.g = pixels2[_p + 1];
+      bInSum += stackIn.b = pixels2[_p + 2];
+      aInSum += stackIn.a = pixels2[_p + 3];
       rSum += rInSum;
       gSum += gInSum;
       bSum += bInSum;
@@ -15276,7 +15276,7 @@ function processImageDataRGBA(imageData, topX, topY, width, height, radius) {
   }
   for (var _x = 0; _x < width; _x++) {
     yi = _x << 2;
-    var _pr = pixels[yi], _pg = pixels[yi + 1], _pb = pixels[yi + 2], _pa = pixels[yi + 3], _rOutSum = radiusPlus1 * _pr, _gOutSum = radiusPlus1 * _pg, _bOutSum = radiusPlus1 * _pb, _aOutSum = radiusPlus1 * _pa, _rSum = sumFactor * _pr, _gSum = sumFactor * _pg, _bSum = sumFactor * _pb, _aSum = sumFactor * _pa;
+    var _pr = pixels2[yi], _pg = pixels2[yi + 1], _pb = pixels2[yi + 2], _pa = pixels2[yi + 3], _rOutSum = radiusPlus1 * _pr, _gOutSum = radiusPlus1 * _pg, _bOutSum = radiusPlus1 * _pb, _aOutSum = radiusPlus1 * _pa, _rSum = sumFactor * _pr, _gSum = sumFactor * _pg, _bSum = sumFactor * _pb, _aSum = sumFactor * _pa;
     stack = stackStart;
     for (var _i3 = 0; _i3 < radiusPlus1; _i3++) {
       stack.r = _pr;
@@ -15290,10 +15290,10 @@ function processImageDataRGBA(imageData, topX, topY, width, height, radius) {
     for (var _i4 = 1; _i4 <= radius; _i4++) {
       yi = yp + _x << 2;
       var _rbs = radiusPlus1 - _i4;
-      _rSum += (stack.r = _pr = pixels[yi]) * _rbs;
-      _gSum += (stack.g = _pg = pixels[yi + 1]) * _rbs;
-      _bSum += (stack.b = _pb = pixels[yi + 2]) * _rbs;
-      _aSum += (stack.a = _pa = pixels[yi + 3]) * _rbs;
+      _rSum += (stack.r = _pr = pixels2[yi]) * _rbs;
+      _gSum += (stack.g = _pg = pixels2[yi + 1]) * _rbs;
+      _bSum += (stack.b = _pb = pixels2[yi + 2]) * _rbs;
+      _aSum += (stack.a = _pa = pixels2[yi + 3]) * _rbs;
       _rInSum += _pr;
       _gInSum += _pg;
       _bInSum += _pb;
@@ -15308,14 +15308,14 @@ function processImageDataRGBA(imageData, topX, topY, width, height, radius) {
     stackOut = stackEnd;
     for (var _y = 0; _y < height; _y++) {
       var _p2 = yi << 2;
-      pixels[_p2 + 3] = _pa = _aSum * mulSum >>> shgSum;
+      pixels2[_p2 + 3] = _pa = _aSum * mulSum >>> shgSum;
       if (_pa > 0) {
         _pa = 255 / _pa;
-        pixels[_p2] = (_rSum * mulSum >>> shgSum) * _pa;
-        pixels[_p2 + 1] = (_gSum * mulSum >>> shgSum) * _pa;
-        pixels[_p2 + 2] = (_bSum * mulSum >>> shgSum) * _pa;
+        pixels2[_p2] = (_rSum * mulSum >>> shgSum) * _pa;
+        pixels2[_p2 + 1] = (_gSum * mulSum >>> shgSum) * _pa;
+        pixels2[_p2 + 2] = (_bSum * mulSum >>> shgSum) * _pa;
       } else {
-        pixels[_p2] = pixels[_p2 + 1] = pixels[_p2 + 2] = 0;
+        pixels2[_p2] = pixels2[_p2 + 1] = pixels2[_p2 + 2] = 0;
       }
       _rSum -= _rOutSum;
       _gSum -= _gOutSum;
@@ -15326,10 +15326,10 @@ function processImageDataRGBA(imageData, topX, topY, width, height, radius) {
       _bOutSum -= stackIn.b;
       _aOutSum -= stackIn.a;
       _p2 = _x + ((_p2 = _y + radiusPlus1) < heightMinus1 ? _p2 : heightMinus1) * width << 2;
-      _rSum += _rInSum += stackIn.r = pixels[_p2];
-      _gSum += _gInSum += stackIn.g = pixels[_p2 + 1];
-      _bSum += _bInSum += stackIn.b = pixels[_p2 + 2];
-      _aSum += _aInSum += stackIn.a = pixels[_p2 + 3];
+      _rSum += _rInSum += stackIn.r = pixels2[_p2];
+      _gSum += _gInSum += stackIn.g = pixels2[_p2 + 1];
+      _bSum += _bInSum += stackIn.b = pixels2[_p2 + 2];
+      _aSum += _aInSum += stackIn.a = pixels2[_p2 + 3];
       stackIn = stackIn.next;
       _rOutSum += _pr = stackOut.r;
       _gOutSum += _pg = stackOut.g;
@@ -15347,7 +15347,7 @@ function processImageDataRGBA(imageData, topX, topY, width, height, radius) {
 }
 var mulTable, shgTable, BlurStack;
 var init_stackblur_es = __esm({
-  "../../../node_modules/stackblur-canvas/dist/stackblur-es.js"() {
+  "node_modules/stackblur-canvas/dist/stackblur-es.js"() {
     mulTable = [512, 512, 456, 512, 328, 456, 335, 512, 405, 328, 271, 456, 388, 335, 292, 512, 454, 405, 364, 328, 298, 271, 496, 456, 420, 388, 360, 335, 312, 292, 273, 512, 482, 454, 428, 405, 383, 364, 345, 328, 312, 298, 284, 271, 259, 496, 475, 456, 437, 420, 404, 388, 374, 360, 347, 335, 323, 312, 302, 292, 282, 273, 265, 512, 497, 482, 468, 454, 441, 428, 417, 405, 394, 383, 373, 364, 354, 345, 337, 328, 320, 312, 305, 298, 291, 284, 278, 271, 265, 259, 507, 496, 485, 475, 465, 456, 446, 437, 428, 420, 412, 404, 396, 388, 381, 374, 367, 360, 354, 347, 341, 335, 329, 323, 318, 312, 307, 302, 297, 292, 287, 282, 278, 273, 269, 265, 261, 512, 505, 497, 489, 482, 475, 468, 461, 454, 447, 441, 435, 428, 422, 417, 411, 405, 399, 394, 389, 383, 378, 373, 368, 364, 359, 354, 350, 345, 341, 337, 332, 328, 324, 320, 316, 312, 309, 305, 301, 298, 294, 291, 287, 284, 281, 278, 274, 271, 268, 265, 262, 259, 257, 507, 501, 496, 491, 485, 480, 475, 470, 465, 460, 456, 451, 446, 442, 437, 433, 428, 424, 420, 416, 412, 408, 404, 400, 396, 392, 388, 385, 381, 377, 374, 370, 367, 363, 360, 357, 354, 350, 347, 344, 341, 338, 335, 332, 329, 326, 323, 320, 318, 315, 312, 310, 307, 304, 302, 299, 297, 294, 292, 289, 287, 285, 282, 280, 278, 275, 273, 271, 269, 267, 265, 263, 261, 259];
     shgTable = [9, 11, 12, 13, 13, 14, 14, 15, 15, 15, 15, 16, 16, 16, 16, 17, 17, 17, 17, 17, 17, 17, 18, 18, 18, 18, 18, 18, 18, 18, 18, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24];
     BlurStack = /**
@@ -15364,7 +15364,7 @@ var init_stackblur_es = __esm({
   }
 });
 
-// ../../../node_modules/canvg/lib/index.es.js
+// node_modules/canvg/lib/index.es.js
 var index_es_exports = {};
 __export(index_es_exports, {
   AElement: () => AElement,
@@ -15519,12 +15519,12 @@ function parseExternalUrl(url) {
   var urlMatch = /url\(('([^']+)'|"([^"]+)"|([^'")]+))\)/.exec(url) || [];
   return urlMatch[2] || urlMatch[3] || urlMatch[4];
 }
-function normalizeColor(color) {
-  if (!color.startsWith("rgb")) {
-    return color;
+function normalizeColor(color2) {
+  if (!color2.startsWith("rgb")) {
+    return color2;
   }
   var rgbParts = 3;
-  var normalizedColor = color.replace(/\d+(\.\d+)?/g, (num, isFloat) => rgbParts-- && isFloat ? String(Math.round(parseFloat(num))) : num);
+  var normalizedColor = color2.replace(/\d+(\.\d+)?/g, (num, isFloat) => rgbParts-- && isFloat ? String(Math.round(parseFloat(num))) : num);
   return normalizedColor;
 }
 function findSelectorMatch(selector, regex) {
@@ -15773,7 +15773,7 @@ function _objectSpread(target) {
 }
 var import_es_promise, import_es_string_match, import_es_string_replace, import_es_string_starts_with, import_es_array_iterator, import_web_dom_collections_iterator, import_es_array_reduce, import_es_string_ends_with, import_es_string_split, import_raf, import_es_string_trim, import_rgbcolor, import_es_array_index_of, import_es_string_includes, import_es_array_reverse, import_es_regexp_to_string, index, allUppercase, attributeRegex, idRegex, classRegex, pseudoElementRegex, pseudoClassWithBracketsRegex, pseudoClassRegex, elementRegex, PSEUDO_ZERO, Property, ViewPort, Point, Mouse, defaultWindow, defaultFetch$1, Screen, defaultFetch, DefaultDOMParser, Parser, Translate, Rotate, Scale, Matrix, Skew, SkewX, SkewY, Transform, Element, UnknownElement, Font, BoundingBox, PathParser, RenderedElement, PathElement, GlyphElement, TextElement, TSpanElement, TextNode, SVGElement, RectElement, CircleElement, EllipseElement, LineElement, PolylineElement, PolygonElement, PatternElement, MarkerElement, DefsElement, GElement, GradientElement, LinearGradientElement, RadialGradientElement, StopElement, AnimateElement, AnimateColorElement, AnimateTransformElement, FontElement, FontFaceElement, MissingGlyphElement, TRefElement, AElement, TextPathElement, dataUriRegex, ImageElement, SymbolElement, SVGFontLoader, StyleElement, UseElement, FeColorMatrixElement, MaskElement, noop, ClipPathElement, FilterElement, FeDropShadowElement, FeMorphologyElement, FeCompositeElement, FeGaussianBlurElement, TitleElement, DescElement, elements, Document, Canvg;
 var init_index_es = __esm({
-  "../../../node_modules/canvg/lib/index.es.js"() {
+  "node_modules/canvg/lib/index.es.js"() {
     import_es_promise = __toESM(require_es_promise(), 1);
     init_asyncToGenerator();
     import_es_string_match = __toESM(require_es_string_match(), 1);
@@ -15891,14 +15891,14 @@ var init_index_es = __esm({
         return String(def);
       }
       getColor(def) {
-        var color = this.getString(def);
+        var color2 = this.getString(def);
         if (this.isNormalizedColor) {
-          return color;
+          return color2;
         }
         this.isNormalizedColor = true;
-        color = normalizeColor(color);
-        this.value = color;
-        return color;
+        color2 = normalizeColor(color2);
+        this.value = color2;
+        return color2;
       }
       getDpi() {
         return 96;
@@ -16035,10 +16035,10 @@ var init_index_es = __esm({
           }
         }
         if (opacity.hasValue() && this.isString() && commas !== 3) {
-          var color = new import_rgbcolor.default(value);
-          if (color.ok) {
-            color.alpha = opacity.getNumber();
-            value = color.toRGBA();
+          var color2 = new import_rgbcolor.default(value);
+          if (color2.ok) {
+            color2.alpha = opacity.getNumber();
+            value = color2.toRGBA();
           }
         }
         return new _Property(this.document, this.name, value);
@@ -18090,13 +18090,13 @@ var init_index_es = __esm({
         var fontSize = this.getFontSize();
         return new BoundingBox(this.x, this.y - fontSize, this.x + this.measureText(ctx), this.y);
       }
-      getGlyph(font, text4, i4) {
-        var char = text4[i4];
+      getGlyph(font, text6, i4) {
+        var char = text6[i4];
         var glyph = null;
         if (font.isArabic) {
-          var len = text4.length;
-          var prevChar = text4[i4 - 1];
-          var nextChar = text4[i4 + 1];
+          var len = text6.length;
+          var prevChar = text6[i4 - 1];
+          var nextChar = text6[i4 + 1];
           var arabicForm = "isolated";
           if ((i4 === 0 || prevChar === " ") && i4 < len - 1 && nextChar !== " ") {
             arabicForm = "terminal";
@@ -18127,18 +18127,18 @@ var init_index_es = __esm({
         var childNodes = Array.from(textNode.parentNode.childNodes);
         var index2 = childNodes.indexOf(textNode);
         var lastIndex = childNodes.length - 1;
-        var text4 = compressSpaces(
+        var text6 = compressSpaces(
           // textNode.value
           // || textNode.text
           textNode.textContent || ""
         );
         if (index2 === 0) {
-          text4 = trimLeft(text4);
+          text6 = trimLeft(text6);
         }
         if (index2 === lastIndex) {
-          text4 = trimRight(text4);
+          text6 = trimRight(text6);
         }
-        return text4;
+        return text6;
       }
       renderChildren(ctx) {
         if (this.type !== "text") {
@@ -18172,11 +18172,11 @@ var init_index_es = __esm({
           var fontSize = parent.getStyle("font-size").getNumber(ctxFont.fontSize);
           var fontStyle = parent.getStyle("font-style").getString(ctxFont.fontStyle);
           var scale = fontSize / unitsPerEm;
-          var text4 = customFont.isRTL ? renderText.split("").reverse().join("") : renderText;
+          var text6 = customFont.isRTL ? renderText.split("").reverse().join("") : renderText;
           var dx = toNumbers(parent.getAttribute("dx").getString());
-          var len = text4.length;
+          var len = text6.length;
           for (var i4 = 0; i4 < len; i4++) {
-            var glyph = this.getGlyph(customFont, text4, i4);
+            var glyph = this.getGlyph(customFont, text6, i4);
             ctx.translate(this.x, this.y);
             ctx.scale(scale, -scale);
             var lw = ctx.lineWidth;
@@ -18357,12 +18357,12 @@ var init_index_es = __esm({
         var customFont = parent.getStyle("font-family").getDefinition();
         if (customFont) {
           var fontSize = this.getFontSize();
-          var text4 = customFont.isRTL ? targetText.split("").reverse().join("") : targetText;
+          var text6 = customFont.isRTL ? targetText.split("").reverse().join("") : targetText;
           var dx = toNumbers(parent.getAttribute("dx").getString());
-          var len = text4.length;
+          var len = text6.length;
           var _measure = 0;
           for (var i4 = 0; i4 < len; i4++) {
-            var glyph = this.getGlyph(customFont, text4, i4);
+            var glyph = this.getGlyph(customFont, text6, i4);
             _measure += (glyph.horizAdvX || customFont.horizAdvX) * fontSize / customFont.fontFace.unitsPerEm;
             if (typeof dx[i4] !== "undefined" && !isNaN(dx[i4])) {
               _measure += dx[i4];
@@ -18923,12 +18923,12 @@ var init_index_es = __esm({
           }
         });
       }
-      addParentOpacity(parentOpacityProp, color) {
+      addParentOpacity(parentOpacityProp, color2) {
         if (parentOpacityProp.hasValue()) {
-          var colorProp = new Property(this.document, "color", color);
+          var colorProp = new Property(this.document, "color", color2);
           return colorProp.addOpacity(parentOpacityProp).getColor();
         }
-        return color;
+        return color2;
       }
     };
     LinearGradientElement = class extends GradientElement {
@@ -19442,11 +19442,11 @@ var init_index_es = __esm({
           rotation
         };
       }
-      measureText(ctx, text4) {
+      measureText(ctx, text6) {
         var {
           measuresCache
         } = this;
-        var targetText = text4 || this.getText();
+        var targetText = text6 || this.getText();
         if (measuresCache.has(targetText)) {
           return measuresCache.get(targetText);
         }
@@ -20720,10 +20720,10 @@ __export(main_exports, {
   default: () => ZiminosPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian55 = require("obsidian");
+var import_obsidian59 = require("obsidian");
 
-// src/core/codeblock.ts
-var import_obsidian3 = require("obsidian");
+// src/core/time.ts
+var import_obsidian = require("obsidian");
 
 // src/core/constants.ts
 var FOLDERS = {
@@ -21016,12 +21016,109 @@ var ETERNAL_INDEX_FILE = `${ETERNAL_FOLDERS.wiki}/\u7D22\u5F15.md`;
 var ETERNAL_LOG_FILE = `${ETERNAL_FOLDERS.system}/\u8D26\u672C.md`;
 var ETERNAL_LOG_INGEST_MARKS = ["\u6D88\u5316", "ingest"];
 
+// src/core/time.ts
+var momentFactory = import_obsidian.moment;
+function normalizeDateTimeFormat(value) {
+  const candidate = typeof value === "string" ? value.trim() : "";
+  return candidate || DEFAULT_DATETIME_FORMAT;
+}
+function nowStamp(format) {
+  return momentFactory().format(normalizeDateTimeFormat(format));
+}
+function nowStampAndUid(format) {
+  const now = momentFactory();
+  return {
+    stamp: now.format(normalizeDateTimeFormat(format)),
+    uid: Number(now.format(UID_FORMAT))
+  };
+}
+function nowLocalDateTimeParts(format) {
+  const now = momentFactory();
+  return {
+    date: now.format(DAY_FORMAT),
+    time: now.format("HH:mm"),
+    datetime: now.format(normalizeDateTimeFormat(format))
+  };
+}
+function today() {
+  return momentFactory().format(DAY_FORMAT);
+}
+function dayText(value) {
+  var _a2;
+  if (value === null || value === void 0) return null;
+  if (value instanceof Date) {
+    const time = value.getTime();
+    const parsed = momentFactory(time);
+    return Number.isNaN(time) || !parsed.isValid() ? null : parsed.format(DAY_FORMAT);
+  }
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return null;
+    const parsed = momentFactory(value);
+    return parsed.isValid() ? parsed.format(DAY_FORMAT) : null;
+  }
+  const text6 = String(value).trim();
+  const day = (_a2 = /^\d{4}-\d{2}-\d{2}/.exec(text6)) == null ? void 0 : _a2[0];
+  if (!day) return null;
+  return momentFactory(day, DAY_FORMAT, true).isValid() ? day : null;
+}
+function dayOfMillis(millis) {
+  return momentFactory(millis).format(DAY_FORMAT);
+}
+function dayOfTitle(title) {
+  return momentFactory(title, DAY_FORMAT, true).isValid() ? title : null;
+}
+function shiftDay(day, amount, unit) {
+  const parsed = momentFactory(day, DAY_FORMAT, true);
+  if (!parsed.isValid()) return day;
+  return parsed.add(amount, unit).format(DAY_FORMAT);
+}
+function daysBetween(from, to) {
+  if (!from || !to) return null;
+  const start = momentFactory(from, DAY_FORMAT, true);
+  const end = momentFactory(to, DAY_FORMAT, true);
+  if (!start.isValid() || !end.isValid()) return null;
+  return Math.round(end.diff(start, "days"));
+}
+function currentPeriodTitle(period) {
+  return momentFactory().format(period.titleFormat);
+}
+function periodOfTitle(title) {
+  for (const period of Object.values(PERIODS)) {
+    if (periodStartOf(period, title) !== null) return period;
+  }
+  return null;
+}
+function periodStartOf(period, title) {
+  const parsed = momentFactory(title, period.titleFormat, true);
+  if (!parsed.isValid()) return null;
+  return parsed.startOf(period.startOfUnit).format(DAY_FORMAT);
+}
+function periodNeighbours(period, title, parentPeriod) {
+  const parsed = momentFactory(title, period.titleFormat, true);
+  if (!parsed.isValid()) return null;
+  const prev = parsed.clone().subtract(1, period.stepUnit).format(period.titleFormat);
+  const next = parsed.clone().add(1, period.stepUnit).format(period.titleFormat);
+  if (!parentPeriod) return { prev, next, parent: null };
+  const anchor = parsed.clone().startOf(period.startOfUnit);
+  const parent = (period.key === "weekly" ? anchor.add(3, "days") : anchor).format(
+    parentPeriod.titleFormat
+  );
+  return { prev, next, parent };
+}
+function titleOfDay(day, period) {
+  const parsed = momentFactory(day, DAY_FORMAT, true);
+  return parsed.isValid() ? parsed.format(period.titleFormat) : null;
+}
+
+// src/core/codeblock.ts
+var import_obsidian4 = require("obsidian");
+
 // src/core/table.ts
 function noteLink(file, display) {
   return { path: file.path, display: display != null ? display : file.basename };
 }
-function richText(text4, fromPath) {
-  return { text: text4, from: fromPath };
+function richText(text6, fromPath) {
+  return { text: text6, from: fromPath };
 }
 function isObjectCell(cell) {
   return typeof cell === "object" && cell !== null && !(cell instanceof HTMLElement);
@@ -21041,9 +21138,9 @@ function renderTable(app, el, sourcePath, headers, rows, grow) {
     });
   });
   const body = table.createEl("tbody");
-  for (const row of rows) {
+  for (const row2 of rows) {
     const tr = body.createEl("tr");
-    row.forEach((cell, index2) => {
+    row2.forEach((cell, index2) => {
       renderCell(app, tr.createEl("td", { cls: classOf(index2) }), sourcePath, cell);
     });
   }
@@ -21080,20 +21177,20 @@ function renderNoteLink(app, parent, sourcePath, link) {
   });
 }
 var WIKILINK = /\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\\?\|([^\]]*))?\]\]/g;
-function renderTextWithLinks(app, parent, text4, fromPath) {
+function renderTextWithLinks(app, parent, text6, fromPath) {
   var _a2;
   WIKILINK.lastIndex = 0;
   let cursor = 0;
-  let match = WIKILINK.exec(text4);
+  let match = WIKILINK.exec(text6);
   while (match) {
-    if (match.index > cursor) parent.appendText(text4.slice(cursor, match.index));
+    if (match.index > cursor) parent.appendText(text6.slice(cursor, match.index));
     const target = match[1].trim();
     const display = ((_a2 = match[2]) != null ? _a2 : "").trim() || target;
     renderNoteLink(app, parent, fromPath, { path: target, display });
     cursor = match.index + match[0].length;
-    match = WIKILINK.exec(text4);
+    match = WIKILINK.exec(text6);
   }
-  if (cursor < text4.length) parent.appendText(text4.slice(cursor));
+  if (cursor < text6.length) parent.appendText(text6.slice(cursor));
 }
 function renderTaskList(app, el, sourcePath, tasks, onToggle) {
   const ordered = [...tasks].sort((left, right) => right.day.localeCompare(left.day));
@@ -21124,37 +21221,37 @@ function renderEmpty(el, message2) {
 function renderNote(el, message2) {
   renderRichText(el.createEl("p", { cls: "ziminos-note" }), message2);
 }
-function renderHeading(el, level, text4) {
-  el.createEl(level === 3 ? "h3" : "h4", { cls: "ziminos-heading", text: text4 });
+function renderHeading(el, level, text6) {
+  el.createEl(level === 3 ? "h3" : "h4", { cls: "ziminos-heading", text: text6 });
 }
-function renderSummary(el, text4) {
-  renderRichText(el.createEl("p", { cls: "ziminos-summary" }), text4);
+function renderSummary(el, text6) {
+  renderRichText(el.createEl("p", { cls: "ziminos-summary" }), text6);
 }
 var RICH_MARKUP = /`([^`]+)`|\*\*([^*]+)\*\*/g;
-function renderRichText(parent, text4) {
+function renderRichText(parent, text6) {
   RICH_MARKUP.lastIndex = 0;
   let cursor = 0;
-  let match = RICH_MARKUP.exec(text4);
+  let match = RICH_MARKUP.exec(text6);
   while (match) {
-    if (match.index > cursor) parent.appendText(text4.slice(cursor, match.index));
+    if (match.index > cursor) parent.appendText(text6.slice(cursor, match.index));
     if (match[1] !== void 0) parent.createEl("code", { text: match[1] });
     else parent.createEl("strong", { text: match[2] });
     cursor = match.index + match[0].length;
-    match = RICH_MARKUP.exec(text4);
+    match = RICH_MARKUP.exec(text6);
   }
-  if (cursor < text4.length) parent.appendText(text4.slice(cursor));
+  if (cursor < text6.length) parent.appendText(text6.slice(cursor));
 }
 
 // src/core/vaultIndex.ts
-var import_obsidian2 = require("obsidian");
+var import_obsidian3 = require("obsidian");
 
 // src/core/folders.ts
-var import_obsidian = require("obsidian");
+var import_obsidian2 = require("obsidian");
 function isSystemPath(path) {
   return path === FOLDERS.system || path.startsWith(`${FOLDERS.system}/`);
 }
 async function ensureFolderPath(app, folderPath) {
-  const normalizedFolderPath = (0, import_obsidian.normalizePath)(folderPath);
+  const normalizedFolderPath = (0, import_obsidian2.normalizePath)(folderPath);
   const pathParts = normalizedFolderPath.split("/").filter(Boolean);
   let currentPath = "";
   for (const pathPart of pathParts) {
@@ -21164,7 +21261,7 @@ async function ensureFolderPath(app, folderPath) {
       await app.vault.createFolder(currentPath);
       continue;
     }
-    if (!(existingEntry instanceof import_obsidian.TFolder)) {
+    if (!(existingEntry instanceof import_obsidian2.TFolder)) {
       throw new Error(`\u65E0\u6CD5\u521B\u5EFA\u6587\u4EF6\u5939\uFF0C\u56E0\u4E3A\u540C\u4E00\u8DEF\u5F84\u4E0B\u5DF2\u7ECF\u5B58\u5728\u6587\u4EF6\uFF1A${currentPath}`);
     }
   }
@@ -21172,7 +21269,7 @@ async function ensureFolderPath(app, folderPath) {
 function normalizeFolderPath(value, fallback) {
   const candidate = typeof value === "string" ? value.trim() : "";
   const path = (candidate || fallback).replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
-  return (0, import_obsidian.normalizePath)(path);
+  return (0, import_obsidian2.normalizePath)(path);
 }
 function isInFolder(path, folder) {
   const base = folder.replace(/\/+$/, "");
@@ -21263,7 +21360,7 @@ var VaultIndex = class {
       for (const sourcePath of Object.keys(resolved)) {
         if (isSystemPath(sourcePath)) continue;
         const source = this.app.vault.getAbstractFileByPath(sourcePath);
-        if (!(source instanceof import_obsidian2.TFile)) continue;
+        if (!(source instanceof import_obsidian3.TFile)) continue;
         for (const targetPath of Object.keys(resolved[sourcePath])) {
           const bucket = map.get(targetPath);
           if (bucket) bucket.push(source);
@@ -21325,26 +21422,26 @@ function parseListLines(content, items) {
   for (const item of items) {
     const raw = content.slice(item.position.start.offset, item.position.end.offset);
     const marker = LIST_MARKER.exec(raw);
-    const text4 = raw.slice((_a2 = marker == null ? void 0 : marker[0].length) != null ? _a2 : 0).replace(/\s*\n\s*/g, " ").trim();
+    const text6 = raw.slice((_a2 = marker == null ? void 0 : marker[0].length) != null ? _a2 : 0).replace(/\s*\n\s*/g, " ").trim();
     const box = typeof item.task === "string" ? item.task : marker == null ? void 0 : marker[1];
     parsed.push({
-      text: text4,
+      text: text6,
       isTask: typeof box === "string",
       checked: typeof box === "string" && box.trim().toLowerCase() === "x",
-      links: extractLinks(text4),
+      links: extractLinks(text6),
       line: item.position.start.line
     });
   }
   return parsed;
 }
-function extractLinks(text4) {
+function extractLinks(text6) {
   const links = [];
   WIKILINK2.lastIndex = 0;
-  let match = WIKILINK2.exec(text4);
+  let match = WIKILINK2.exec(text6);
   while (match) {
     const linktext = match[1].split("|")[0].replace(/\\$/, "").trim();
     if (linktext) links.push(linktext);
-    match = WIKILINK2.exec(text4);
+    match = WIKILINK2.exec(text6);
   }
   return links;
 }
@@ -21353,8 +21450,8 @@ function toStringList(value) {
   if (Array.isArray(value)) {
     return value.map((item) => String(item != null ? item : "").trim()).filter((item) => item.length > 0);
   }
-  const text4 = String(value).trim();
-  return text4 ? [text4] : [];
+  const text6 = String(value).trim();
+  return text6 ? [text6] : [];
 }
 function toText(value) {
   if (value === null || value === void 0) return "";
@@ -21362,8 +21459,8 @@ function toText(value) {
 }
 function toBoolean(value) {
   if (typeof value === "boolean") return value;
-  const text4 = toText(value).toLowerCase();
-  return text4 === "true" || text4 === "yes" || text4 === "\u662F";
+  const text6 = toText(value).toLowerCase();
+  return text6 === "true" || text6 === "yes" || text6 === "\u662F";
 }
 
 // src/core/codeblock.ts
@@ -21394,7 +21491,7 @@ var ViewHost = class {
     return {
       el,
       sourcePath,
-      host: found instanceof import_obsidian3.TFile ? found : null,
+      host: found instanceof import_obsidian4.TFile ? found : null,
       params,
       index: this.index,
       ctx: this.ctx
@@ -21425,7 +21522,7 @@ var ViewHost = class {
     this.blocks.clear();
   }
 };
-var ViewBlock = class extends import_obsidian3.MarkdownRenderChild {
+var ViewBlock = class extends import_obsidian4.MarkdownRenderChild {
   constructor(el, host, request, sourcePath) {
     super(el);
     /** 每次重画递增；异步返回时只有最新一代有权提交 DOM */
@@ -21934,11 +22031,11 @@ function interpret(parsed) {
 function interpretLayout(value) {
   if (typeof value !== "object" || value === null) return null;
   const raw = value;
-  const capture = folderName(raw.capture);
+  const capture2 = folderName(raw.capture);
   const human = folderName(raw.human);
   const eternal = folderName(raw.eternal);
-  if (capture === null || human === null || eternal === null) return null;
-  return { capture, human, eternal };
+  if (capture2 === null || human === null || eternal === null) return null;
+  return { capture: capture2, human, eternal };
 }
 function folderName(value) {
   if (typeof value !== "string") return null;
@@ -22040,7 +22137,7 @@ var FORMAT_RULES = [
     desc: "\u6587\u4EF6\u7ED3\u5C3E\u6070\u597D\u4E00\u4E2A\u6362\u884C\u7B26\uFF0C\u4E0D\u591A\u4E0D\u5C11\u3002\u5B83\u4E0D\u5F71\u54CD\u9605\u8BFB\uFF0C\u4F46\u80FD\u8BA9\u6BCF\u6B21 Git \u5DEE\u5F02\u53EA\u663E\u793A\u4F60\u771F\u6B63\u6539\u8FC7\u7684\u90A3\u51E0\u884C\u3002"
   }
 ];
-var DEFAULT_FORMAT_RULES = FORMAT_RULES.map((rule) => rule.key);
+var DEFAULT_FORMAT_RULES = FORMAT_RULES.map((rule2) => rule2.key);
 function normalizeFormatRules(value) {
   if (!Array.isArray(value)) return DEFAULT_FORMAT_RULES;
   return value.filter((item) => typeof item === "string");
@@ -22078,8 +22175,8 @@ function addCjkSpaces(line) {
   }
   return join(result, spacePlainText(line.slice(cursor)));
 }
-function spacePlainText(text4) {
-  return text4.replace(CJK_THEN_LATIN, "$1 $2").replace(LATIN_THEN_CJK, "$1 $2");
+function spacePlainText(text6) {
+  return text6.replace(CJK_THEN_LATIN, "$1 $2").replace(LATIN_THEN_CJK, "$1 $2");
 }
 var IS_CJK = new RegExp(`[${CJK}]`);
 var IS_ASCII_GRAPH = /[!-~]/;
@@ -22144,8 +22241,8 @@ var ISOLATING_RULE = {
   table: "table-blank",
   code: "code-blank"
 };
-function formatMarkdown(content, enabled) {
-  const on = new Set(enabled);
+function formatMarkdown(content, enabled2) {
+  const on = new Set(enabled2);
   if (on.size === 0) return content;
   const lineEnding = lineEndingOf(content);
   const normalized = content.replace(/\r\n|\r/g, "\n");
@@ -22178,7 +22275,7 @@ function formatMarkdown(content, enabled) {
 function needsBlankBetween(before, after, on) {
   if (before === after && after !== "heading") return false;
   const rules = [ISOLATING_RULE[before], ISOLATING_RULE[after]];
-  return rules.some((rule) => rule !== void 0 && on.has(rule));
+  return rules.some((rule2) => rule2 !== void 0 && on.has(rule2));
 }
 function splitFrontmatter(content) {
   if (content.indexOf("---\n") !== 0) return { frontmatter: "", body: content };
@@ -22193,16 +22290,16 @@ function splitFrontmatter(content) {
   return { frontmatter: "", body: content };
 }
 function assemble(frontmatter, body, on) {
-  let text4 = body;
+  let text6 = body;
   if (frontmatter) {
-    text4 = on.has("yaml-blank") ? `${frontmatter}
+    text6 = on.has("yaml-blank") ? `${frontmatter}
 
-${text4.replace(/^\n+/, "")}` : `${frontmatter}
-${text4}`;
+${text6.replace(/^\n+/, "")}` : `${frontmatter}
+${text6}`;
   }
-  if (on.has("final-newline")) text4 = `${text4.replace(/\s*$/, "")}
+  if (on.has("final-newline")) text6 = `${text6.replace(/\s*$/, "")}
 `;
-  return text4;
+  return text6;
 }
 
 // src/core/device.ts
@@ -22218,6 +22315,325 @@ var EAGLE_PORT_RANGE = {
   min: 1024,
   max: 65535
 };
+
+// src/core/exportStyle.ts
+var EXPORT_THEME_LABELS = {
+  auto: "\u8DDF\u968F",
+  light: "\u4EAE\u8272",
+  dark: "\u6697\u8272"
+};
+var PAGE_SIZE_MODE_LABELS = {
+  auto: "\u81EA\u9002\u5E94",
+  fixed: "\u81EA\u5B9A"
+};
+var PAPER_PRESET_LABELS = {
+  free: "\u81EA\u7531",
+  a4: "A4",
+  a3: "A3"
+};
+var PAPER_PRESET_SIZES = {
+  free: null,
+  a4: { width: 794, height: 1123 },
+  a3: { width: 1123, height: 1587 }
+};
+var EXPORT_FORMAT_LABELS = {
+  png: "PNG \u957F\u56FE",
+  pdf: "PDF \u5355\u9875"
+};
+var EXPORT_ALIGN_LABELS = {
+  left: "\u9760\u5DE6",
+  center: "\u5C45\u4E2D",
+  right: "\u9760\u53F3"
+};
+var WATERMARK_MODE_LABELS = {
+  tile: "\u5E73\u94FA\u6574\u7BC7",
+  single: "\u5355\u4E2A\u843D\u6B3E"
+};
+var WATERMARK_ANCHOR_GRID = [
+  ["top-left", "top-center", "top-right"],
+  ["middle-left", "middle-center", "middle-right"],
+  ["bottom-left", "bottom-center", "bottom-right"]
+];
+var WATERMARK_ANCHOR_LABELS = {
+  "top-left": "\u5DE6\u4E0A",
+  "top-center": "\u6B63\u4E0A",
+  "top-right": "\u53F3\u4E0A",
+  "middle-left": "\u5DE6\u4E2D",
+  "middle-center": "\u6B63\u4E2D",
+  "middle-right": "\u53F3\u4E2D",
+  "bottom-left": "\u5DE6\u4E0B",
+  "bottom-center": "\u6B63\u4E0B",
+  "bottom-right": "\u53F3\u4E0B"
+};
+var DEFAULT_EXPORT_STYLE = {
+  format: "png",
+  // 默认跟着走：升级之后不选任何东西的人，导出的那张图与升级前逐像素相同
+  pageMode: "auto",
+  pageWidth: 800,
+  pageHeight: 1200,
+  paperPreset: "free",
+  // 跟随：升级之后不选任何东西的人，导出的底色与升级前一模一样
+  theme: "auto",
+  header: "",
+  headerAlign: "center",
+  headerGap: 24,
+  footer: "",
+  footerAlign: "center",
+  footerGap: 32,
+  watermark: "",
+  watermarkMode: "tile",
+  watermarkAnchor: "bottom-right",
+  watermarkSize: 18,
+  watermarkGapX: 140,
+  watermarkGapY: 100,
+  watermarkAngle: -28,
+  watermarkOpacity: 14,
+  // 三处颜色默认空串＝跟随正文色，也就是升级之前唯一的行为
+  headerColor: "",
+  headerLink: "",
+  footerColor: "",
+  footerLink: "",
+  watermarkColor: "",
+  // 三个开关的默认值只在「全新的库」这一种情况下用得上；
+  // 老库升级走的是 normalizeExportStyle 里那条「有东西就是开着」的推导
+  headerEnabled: false,
+  footerEnabled: false,
+  watermarkEnabled: false,
+  logo: "",
+  // 三个尺寸默认 0：老库升级之后，没选过标志的人导出的那张图与升级前逐像素相同。
+  // 新功能的默认值应当是「不发生」，而不是「替他做了个决定」。
+  headerLogoSize: 0,
+  footerLogoSize: 0,
+  watermarkLogoSize: 0
+};
+var EXPORT_SLIDERS = [
+  {
+    key: "pageWidth",
+    section: "page",
+    name: "\u5BBD",
+    desc: "\u6574\u5F20\u7EB8\u591A\u5BBD\uFF08\u542B\u5DE6\u53F3\u9875\u8FB9\uFF09\u3002\u6B63\u6587\u680F\uFF1D\u7EB8\u5BBD\u51CF\u53BB\u4E24\u4FA7\u9875\u8FB9\u3002",
+    min: 320,
+    max: 2400,
+    step: 10,
+    unit: "px",
+    requires: "switch"
+  },
+  {
+    key: "pageHeight",
+    section: "page",
+    name: "\u9AD8",
+    desc: "\u5185\u5BB9\u4E0D\u8DB3\u65F6\u8865\u5230\u8FD9\u4E48\u9AD8\uFF1B\u5185\u5BB9\u66F4\u9AD8\u65F6\u7167\u6837\u5F80\u4E0B\u957F\uFF0C\u7EDD\u4E0D\u88C1\u6389\u3002",
+    min: 200,
+    max: 4e3,
+    step: 10,
+    unit: "px",
+    requires: "switch"
+  },
+  {
+    key: "headerLogoSize",
+    section: "header",
+    name: "\u6807\u5FD7",
+    desc: "\u9875\u7709\u91CC\u90A3\u679A\u6807\u5FD7\u591A\u9AD8\u30020 \u5C31\u662F\u9875\u7709\u4E0D\u653E\u6807\u5FD7\u3002",
+    min: 0,
+    max: 160,
+    step: 2,
+    unit: "px",
+    requires: "logo"
+  },
+  {
+    key: "headerGap",
+    section: "header",
+    name: "\u95F4\u8DDD",
+    desc: "\u9875\u7709\u79BB\u6807\u9898\u591A\u8FDC\u30020 \u5C31\u662F\u7D27\u8D34\u7740\u6807\u9898\u3002",
+    min: 0,
+    max: 120,
+    step: 2,
+    unit: "px",
+    requires: "mark"
+  },
+  {
+    key: "footerLogoSize",
+    section: "footer",
+    name: "\u6807\u5FD7",
+    desc: "\u9875\u811A\u91CC\u90A3\u679A\u6807\u5FD7\u591A\u9AD8\u30020 \u5C31\u662F\u9875\u811A\u4E0D\u653E\u6807\u5FD7\u3002",
+    min: 0,
+    max: 160,
+    step: 2,
+    unit: "px",
+    requires: "logo"
+  },
+  {
+    key: "footerGap",
+    section: "footer",
+    name: "\u95F4\u8DDD",
+    desc: "\u9875\u811A\u79BB\u6700\u540E\u4E00\u884C\u591A\u8FDC\u3002",
+    min: 0,
+    max: 120,
+    step: 2,
+    unit: "px",
+    requires: "mark"
+  },
+  {
+    key: "watermarkLogoSize",
+    section: "watermark",
+    name: "\u6807\u5FD7",
+    desc: "\u6C34\u5370\u91CC\u90A3\u679A\u6807\u5FD7\u591A\u9AD8\u30020 \u5C31\u662F\u6C34\u5370\u53EA\u6709\u6587\u5B57\u3002",
+    min: 0,
+    max: 320,
+    step: 4,
+    unit: "px",
+    requires: "logo"
+  },
+  {
+    key: "watermarkSize",
+    section: "watermark",
+    name: "\u5B57\u53F7",
+    desc: "\u6C34\u5370\u6587\u5B57\u672C\u8EAB\u591A\u5927\u3002",
+    min: 10,
+    max: 120,
+    step: 1,
+    unit: "px",
+    requires: "text"
+  },
+  {
+    key: "watermarkGapX",
+    section: "watermark",
+    name: "\u6A2A\u5411",
+    desc: "\u5E73\u94FA\u65F6\u662F\u5DE6\u53F3\u4E24\u4E2A\u6C34\u5370\u4E4B\u95F4\u7684\u8DDD\u79BB\uFF1B\u5355\u4E2A\u65F6\u662F\u79BB\u5DE6\u53F3\u7EB8\u8FB9\u7684\u8DDD\u79BB\u3002",
+    min: 0,
+    max: 480,
+    step: 4,
+    unit: "px",
+    requires: "mark"
+  },
+  {
+    key: "watermarkGapY",
+    section: "watermark",
+    name: "\u7EB5\u5411",
+    desc: "\u5E73\u94FA\u65F6\u662F\u4E0A\u4E0B\u4E24\u4E2A\u6C34\u5370\u4E4B\u95F4\u7684\u8DDD\u79BB\uFF1B\u5355\u4E2A\u65F6\u662F\u79BB\u4E0A\u4E0B\u7EB8\u8FB9\u7684\u8DDD\u79BB\u3002",
+    min: 0,
+    max: 480,
+    step: 4,
+    unit: "px",
+    requires: "mark"
+  },
+  {
+    key: "watermarkAngle",
+    section: "watermark",
+    name: "\u89D2\u5EA6",
+    desc: "\u8D1F\u6570\u5F80\u5DE6\u5012\uFF0C\u6B63\u6570\u5F80\u53F3\u5012\uFF0C0 \u662F\u6C34\u5E73\u3002\u6807\u5FD7\u4E0E\u6587\u5B57\u4E00\u8D77\u8F6C\u3002",
+    min: -90,
+    max: 90,
+    step: 1,
+    unit: "\xB0",
+    requires: "mark"
+  },
+  {
+    key: "watermarkOpacity",
+    section: "watermark",
+    name: "\u900F\u660E",
+    desc: "\u8D8A\u4F4E\u8D8A\u50CF\u7EB8\u7EB9\uFF0C\u8D8A\u9AD8\u8D8A\u96BE\u88AB\u88C1\u6389\u2014\u2014\u4F46\u4E5F\u8D8A\u6321\u5B57\u3002\u6807\u5FD7\u4E0E\u6587\u5B57\u540C\u4E00\u4E2A\u6570\u3002",
+    min: 1,
+    max: 100,
+    step: 1,
+    unit: "%",
+    requires: "mark"
+  }
+];
+function normalizeExportStyle(input) {
+  const stored = isRecord(input) ? input : {};
+  const numbers = {
+    headerGap: DEFAULT_EXPORT_STYLE.headerGap,
+    footerGap: DEFAULT_EXPORT_STYLE.footerGap,
+    watermarkSize: DEFAULT_EXPORT_STYLE.watermarkSize,
+    watermarkGapX: DEFAULT_EXPORT_STYLE.watermarkGapX,
+    watermarkGapY: DEFAULT_EXPORT_STYLE.watermarkGapY,
+    watermarkAngle: DEFAULT_EXPORT_STYLE.watermarkAngle,
+    watermarkOpacity: DEFAULT_EXPORT_STYLE.watermarkOpacity,
+    pageWidth: DEFAULT_EXPORT_STYLE.pageWidth,
+    pageHeight: DEFAULT_EXPORT_STYLE.pageHeight,
+    headerLogoSize: DEFAULT_EXPORT_STYLE.headerLogoSize,
+    footerLogoSize: DEFAULT_EXPORT_STYLE.footerLogoSize,
+    watermarkLogoSize: DEFAULT_EXPORT_STYLE.watermarkLogoSize
+  };
+  for (const spec of EXPORT_SLIDERS) {
+    numbers[spec.key] = clampSlider(stored[spec.key], spec, numbers[spec.key]);
+  }
+  return {
+    format: isFormat(stored.format) ? stored.format : DEFAULT_EXPORT_STYLE.format,
+    pageMode: isPageSizeMode(stored.pageMode) ? stored.pageMode : DEFAULT_EXPORT_STYLE.pageMode,
+    pageWidth: numbers.pageWidth,
+    pageHeight: numbers.pageHeight,
+    paperPreset: isPaperPreset(stored.paperPreset) ? stored.paperPreset : DEFAULT_EXPORT_STYLE.paperPreset,
+    theme: isExportTheme(stored.theme) ? stored.theme : DEFAULT_EXPORT_STYLE.theme,
+    header: text(stored.header, DEFAULT_EXPORT_STYLE.header),
+    headerAlign: isAlign(stored.headerAlign) ? stored.headerAlign : DEFAULT_EXPORT_STYLE.headerAlign,
+    headerGap: numbers.headerGap,
+    footer: text(stored.footer, DEFAULT_EXPORT_STYLE.footer),
+    footerAlign: isAlign(stored.footerAlign) ? stored.footerAlign : DEFAULT_EXPORT_STYLE.footerAlign,
+    footerGap: numbers.footerGap,
+    watermark: text(stored.watermark, DEFAULT_EXPORT_STYLE.watermark),
+    watermarkMode: isMode(stored.watermarkMode) ? stored.watermarkMode : DEFAULT_EXPORT_STYLE.watermarkMode,
+    watermarkAnchor: isAnchor(stored.watermarkAnchor) ? stored.watermarkAnchor : DEFAULT_EXPORT_STYLE.watermarkAnchor,
+    watermarkSize: numbers.watermarkSize,
+    watermarkGapX: numbers.watermarkGapX,
+    watermarkGapY: numbers.watermarkGapY,
+    watermarkAngle: numbers.watermarkAngle,
+    watermarkOpacity: numbers.watermarkOpacity,
+    headerColor: color(stored.headerColor),
+    headerLink: text(stored.headerLink, DEFAULT_EXPORT_STYLE.headerLink),
+    footerColor: color(stored.footerColor),
+    footerLink: text(stored.footerLink, DEFAULT_EXPORT_STYLE.footerLink),
+    watermarkColor: color(stored.watermarkColor),
+    headerEnabled: enabled(stored.headerEnabled, stored.header, stored.headerLogoSize),
+    footerEnabled: enabled(stored.footerEnabled, stored.footer, stored.footerLogoSize),
+    watermarkEnabled: enabled(stored.watermarkEnabled, stored.watermark, stored.watermarkLogoSize),
+    logo: text(stored.logo, DEFAULT_EXPORT_STYLE.logo),
+    headerLogoSize: numbers.headerLogoSize,
+    footerLogoSize: numbers.footerLogoSize,
+    watermarkLogoSize: numbers.watermarkLogoSize
+  };
+}
+function clampSlider(value, spec, fallback) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  return Math.min(spec.max, Math.max(spec.min, Math.round(value)));
+}
+function text(value, fallback) {
+  return typeof value === "string" ? value : fallback;
+}
+function color(value) {
+  return typeof value === "string" && /^#[0-9a-f]{3,8}$/i.test(value.trim()) ? value.trim().toLowerCase() : "";
+}
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function isExportTheme(value) {
+  return value === "auto" || value === "light" || value === "dark";
+}
+function enabled(flag, text6, logoSize) {
+  if (typeof flag === "boolean") return flag;
+  const hasText = typeof text6 === "string" && text6.trim() !== "";
+  const hasLogo = typeof logoSize === "number" && logoSize > 0;
+  return hasText || hasLogo;
+}
+function isPaperPreset(value) {
+  return value === "free" || value === "a4" || value === "a3";
+}
+function isPageSizeMode(value) {
+  return value === "auto" || value === "fixed";
+}
+function isFormat(value) {
+  return value === "png" || value === "pdf";
+}
+function isAlign(value) {
+  return value === "left" || value === "center" || value === "right";
+}
+function isMode(value) {
+  return value === "tile" || value === "single";
+}
+function isAnchor(value) {
+  return typeof value === "string" && WATERMARK_ANCHOR_GRID.some((row2) => row2.some((anchor) => anchor === value));
+}
 
 // src/core/types.ts
 var DEFAULT_SETTINGS = {
@@ -22257,10 +22673,11 @@ var DEFAULT_SETTINGS = {
   eaglePort: EAGLE_DEFAULTS.port,
   eagleFolderId: EAGLE_DEFAULTS.folderId,
   rememberCursor: true,
+  exportStyle: DEFAULT_EXPORT_STYLE,
   initializedAt: ""
 };
 function normalizeSettings(input) {
-  const stored = isRecord(input) ? input : {};
+  const stored = isRecord2(input) ? input : {};
   const stringValue = (key) => typeof stored[key] === "string" ? stored[key] : String(DEFAULT_SETTINGS[key]);
   const booleanValue = (key) => typeof stored[key] === "boolean" ? stored[key] : Boolean(DEFAULT_SETTINGS[key]);
   const insertPosition = isInspirationInsertPosition(stored.inspirationInsertPosition) ? stored.inspirationInsertPosition : DEFAULT_SETTINGS.inspirationInsertPosition;
@@ -22307,13 +22724,14 @@ function normalizeSettings(input) {
     eaglePort,
     eagleFolderId: stringValue("eagleFolderId"),
     rememberCursor: booleanValue("rememberCursor"),
+    exportStyle: normalizeExportStyle(stored.exportStyle),
     initializedAt: stringValue("initializedAt")
   };
 }
 function currentInspirationFormat(stored) {
   return LEGACY_INSPIRATION_FORMATS.includes(stored) ? INSPIRATION_DEFAULTS.format : stored;
 }
-function isRecord(value) {
+function isRecord2(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 function isInspirationInsertPosition(value) {
@@ -22497,8 +22915,8 @@ function renderEduLogo(el) {
   svg2.createSvg("circle", { attr: { cx: "15", cy: "12", r: "2.4", fill: "#E8503A" } });
   svg2.createSvg("circle", { attr: { cx: "20", cy: "5", r: "2", fill: "#F5F3EE" } });
 }
-function renderSite(row, site) {
-  const tile = row.createDiv({ cls: "ziminos-about-tile" });
+function renderSite(row2, site) {
+  const tile = row2.createDiv({ cls: "ziminos-about-tile" });
   const head = tile.createDiv({ cls: "ziminos-about-tile-head" });
   if (site.logo === "avatar") {
     const avatar = head.createDiv({ cls: "ziminos-about-logo-round" });
@@ -22506,9 +22924,9 @@ function renderSite(row, site) {
   } else {
     renderEduLogo(head);
   }
-  const text4 = head.createDiv({ cls: "ziminos-about-tile-text" });
-  text4.createDiv({ cls: "ziminos-about-tile-name", text: site.name });
-  text4.createDiv({ cls: "ziminos-about-tile-sub", text: site.sub });
+  const text6 = head.createDiv({ cls: "ziminos-about-tile-text" });
+  text6.createDiv({ cls: "ziminos-about-tile-name", text: site.name });
+  text6.createDiv({ cls: "ziminos-about-tile-sub", text: site.sub });
   const list = tile.createDiv({ cls: "ziminos-about-domains" });
   for (const entry of site.domains) {
     const link = list.createEl("a", {
@@ -22520,8 +22938,8 @@ function renderSite(row, site) {
     link.createSpan({ cls: "ziminos-about-domain-region", text: entry.region });
   }
 }
-function renderChannel(row, channel) {
-  const pill = row.createEl("a", {
+function renderChannel(row2, channel) {
+  const pill = row2.createEl("a", {
     cls: "ziminos-about-pill",
     href: channel.url,
     attr: { "aria-label": channel.name, title: channel.name, rel: "noopener" }
@@ -22590,29 +23008,29 @@ var aboutViews = [
 ];
 
 // src/modules/appearance/statusBar.ts
-var import_obsidian6 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 
 // src/modules/appearance/reveal.ts
-var import_obsidian5 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 
 // src/core/localPath.ts
-var import_obsidian4 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 var WINDOWS_SEPARATOR = "\\";
 function vaultBasePath(app) {
   const adapter = app.vault.adapter;
-  return adapter instanceof import_obsidian4.FileSystemAdapter ? adapter.getBasePath() : null;
+  return adapter instanceof import_obsidian5.FileSystemAdapter ? adapter.getBasePath() : null;
 }
 function localPath(app, relative) {
   const base = vaultBasePath(app);
   if (base === null) return null;
-  return import_obsidian4.Platform.isWin ? `${base}${WINDOWS_SEPARATOR}${relative.split("/").join(WINDOWS_SEPARATOR)}` : `${base}/${relative}`;
+  return import_obsidian5.Platform.isWin ? `${base}${WINDOWS_SEPARATOR}${relative.split("/").join(WINDOWS_SEPARATOR)}` : `${base}/${relative}`;
 }
 
 // src/modules/appearance/reveal.ts
 var NO_SHELL = "\u8FD9\u4E2A\u73AF\u5883\u6CA1\u6709\u7ED9\u51FA\u300C\u4EA4\u7ED9\u64CD\u4F5C\u7CFB\u7EDF\u6253\u5F00\u300D\u7684\u5165\u53E3\uFF08\u624B\u673A\u7AEF\u6CA1\u6709\uFF0C\u684C\u9762\u7AEF\u6362\u4E86\u8FD0\u884C\u65F6\u4E5F\u53EF\u80FD\u6CA1\u6709\uFF09\u3002ziminOS \u63A2\u4E0D\u5230\u5C31\u4E0D\u786C\u6765\u2014\u2014\u4F60\u53EF\u4EE5\u81EA\u5DF1\u6253\u5F00\u7B14\u8BB0\u5E93\u6587\u4EF6\u5939\u91CC\u7684 .obsidian/snippets/\u3002";
 var NO_LOCAL_PATH = "\u8FD9\u4E2A\u7B14\u8BB0\u5E93\u4E0D\u5728\u672C\u673A\u6587\u4EF6\u7CFB\u7EDF\u4E0A\uFF0C\u6CA1\u6709\u53EF\u4EE5\u4EA4\u7ED9\u64CD\u4F5C\u7CFB\u7EDF\u7684\u8DEF\u5F84\u3002";
 function canReveal(app) {
-  return import_obsidian5.Platform.isDesktopApp && vaultBasePath(app) !== null;
+  return import_obsidian6.Platform.isDesktopApp && vaultBasePath(app) !== null;
 }
 async function openSnippetFolder(app) {
   const shell = requireShell();
@@ -22635,7 +23053,7 @@ function requireShell() {
   return shell;
 }
 function resolveShell() {
-  if (!import_obsidian5.Platform.isDesktopApp) return null;
+  if (!import_obsidian6.Platform.isDesktopApp) return null;
   try {
     const electron = require("electron");
     const shell = electron == null ? void 0 : electron.shell;
@@ -22657,13 +23075,13 @@ async function readSnippets(app) {
   const folder = `${app.vault.configDir}/${SNIPPET_FOLDER_NAME}`;
   if (!await app.vault.adapter.exists(folder)) return [];
   const listed = await app.vault.adapter.list(folder);
-  const enabled = await readEnabledNames(app);
+  const enabled2 = await readEnabledNames(app);
   const states = [];
   for (const path of listed.files) {
     if (!path.endsWith(SNIPPET_EXTENSION)) continue;
     const base = path.slice(path.lastIndexOf("/") + 1, -SNIPPET_EXTENSION.length);
     if (!base) continue;
-    states.push({ ...splitGroup(base), name: base, enabled: enabled.has(base) });
+    states.push({ ...splitGroup(base), name: base, enabled: enabled2.has(base) });
   }
   return states.sort(compareSnippets);
 }
@@ -22681,13 +23099,13 @@ function compareSnippets(a3, b2) {
   }
   return a3.label.localeCompare(b2.label, "zh");
 }
-async function setSnippetEnabled(app, name, enabled) {
+async function setSnippetEnabled(app, name, enabled2) {
   const customCss = app.customCss;
   if (typeof (customCss == null ? void 0 : customCss.setCssEnabledStatus) === "function") {
-    customCss.setCssEnabledStatus(name, enabled);
+    customCss.setCssEnabledStatus(name, enabled2);
     return true;
   }
-  await writeEnabledNames(app, name, enabled);
+  await writeEnabledNames(app, name, enabled2);
   return false;
 }
 function appearancePath(app) {
@@ -22701,10 +23119,10 @@ function extractEnabledNames(config) {
   if (!Array.isArray(listed)) return /* @__PURE__ */ new Set();
   return new Set(listed.filter((item) => typeof item === "string"));
 }
-async function writeEnabledNames(app, name, enabled) {
+async function writeEnabledNames(app, name, enabled2) {
   const config = await readAppearanceConfig(app);
   const names = extractEnabledNames(config);
-  if (enabled) names.add(name);
+  if (enabled2) names.add(name);
   else names.delete(name);
   config[ENABLED_SNIPPETS_KEY] = [...names];
   await app.vault.adapter.write(appearancePath(app), `${JSON.stringify(config, null, 2)}
@@ -22780,7 +23198,7 @@ var AppearanceSwitch = class {
     this.statusEl = ctx.plugin.addStatusBarItem();
     this.statusEl.addClass("ziminos-appearance-switch");
     this.statusEl.addClass("mod-clickable");
-    (0, import_obsidian6.setTooltip)(this.statusEl, TEXTS.tooltip, { placement: "top" });
+    (0, import_obsidian7.setTooltip)(this.statusEl, TEXTS.tooltip, { placement: "top" });
     this.paintIcon();
     this.syncVisibility();
     this.statusEl.addEventListener("click", () => this.toggle());
@@ -22917,7 +23335,7 @@ var AppearanceSwitch = class {
     const button = footer.createDiv({ cls: "ziminos-appearance-folder" });
     paintIcon(button.createSpan(), TEXTS.folderIcon, TEXTS.folderFallback);
     button.createSpan({ text: TEXTS.folderLabel });
-    (0, import_obsidian6.setTooltip)(button, TEXTS.folderTooltip, { placement: "top" });
+    (0, import_obsidian7.setTooltip)(button, TEXTS.folderTooltip, { placement: "top" });
     button.addEventListener("click", () => void this.openFolder());
   }
   /**
@@ -22929,16 +23347,16 @@ var AppearanceSwitch = class {
    * 不该由我们来赌。
    */
   renderRow(list, snippet, revealable) {
-    const row = list.createDiv({ cls: "ziminos-appearance-row" });
-    row.createSpan({ cls: "ziminos-appearance-name", text: snippet.label });
-    if (revealable) this.renderOpenButton(row, snippet);
-    const toggle = new import_obsidian6.ToggleComponent(row);
+    const row2 = list.createDiv({ cls: "ziminos-appearance-row" });
+    row2.createSpan({ cls: "ziminos-appearance-name", text: snippet.label });
+    if (revealable) this.renderOpenButton(row2, snippet);
+    const toggle2 = new import_obsidian7.ToggleComponent(row2);
     let rollingBack = false;
-    toggle.setValue(snippet.enabled).onChange((value) => {
+    toggle2.setValue(snippet.enabled).onChange((value) => {
       if (rollingBack) return;
       void this.applyToggle(snippet, value, () => {
         rollingBack = true;
-        toggle.setValue(!value);
+        toggle2.setValue(!value);
         rollingBack = false;
       });
     });
@@ -22950,10 +23368,10 @@ var AppearanceSwitch = class {
    * 借它省下的几行样式，换来的是「主题改了这个类名，按钮就变成一坨没有边界的图形」。
    * 样式全部写在 styles.css 里自己那两条选择器上，与外观开关面板的其余部分同源。
    */
-  renderOpenButton(row, snippet) {
-    const button = row.createDiv({ cls: "ziminos-appearance-open" });
+  renderOpenButton(row2, snippet) {
+    const button = row2.createDiv({ cls: "ziminos-appearance-open" });
     paintIcon(button, TEXTS.openIcon, TEXTS.openFallback);
-    (0, import_obsidian6.setTooltip)(button, TEXTS.openTooltip, { placement: "top" });
+    (0, import_obsidian7.setTooltip)(button, TEXTS.openTooltip, { placement: "top" });
     button.addEventListener("click", () => void this.openFile(snippet));
   }
   // ============================================================
@@ -22969,10 +23387,10 @@ var AppearanceSwitch = class {
   async openFile(snippet) {
     try {
       if (!await openSnippetFile(this.ctx.app, snippet.name)) {
-        new import_obsidian6.Notice(TEXTS.openedInFolder);
+        new import_obsidian7.Notice(TEXTS.openedInFolder);
       }
     } catch (error) {
-      new import_obsidian6.Notice(TEXTS.openFailedPrefix + describe(error));
+      new import_obsidian7.Notice(TEXTS.openFailedPrefix + describe(error));
     }
   }
   /** 打开片段目录。成功就闭嘴——文件管理器自己跳到最前面，就是最好的反馈 */
@@ -22980,22 +23398,22 @@ var AppearanceSwitch = class {
     try {
       await openSnippetFolder(this.ctx.app);
     } catch (error) {
-      new import_obsidian6.Notice(TEXTS.folderFailedPrefix + describe(error));
+      new import_obsidian7.Notice(TEXTS.folderFailedPrefix + describe(error));
     }
   }
   /** 落一次开关：即刻生效就闭嘴，只落了盘就提醒重载，失败就回拨并说明原因 */
   async applyToggle(snippet, value, rollback) {
     try {
       const applied = await setSnippetEnabled(this.ctx.app, snippet.name, value);
-      if (!applied) new import_obsidian6.Notice(TEXTS.pendingReload);
+      if (!applied) new import_obsidian7.Notice(TEXTS.pendingReload);
     } catch (error) {
       rollback();
-      new import_obsidian6.Notice(TEXTS.failedPrefix + describe(error));
+      new import_obsidian7.Notice(TEXTS.failedPrefix + describe(error));
     }
   }
 };
 function paintIcon(el, name, fallback) {
-  (0, import_obsidian6.setIcon)(el, name);
+  (0, import_obsidian7.setIcon)(el, name);
   if (!el.querySelector("svg")) el.setText(fallback);
 }
 function describe(error) {
@@ -23003,11 +23421,11 @@ function describe(error) {
 }
 
 // src/modules/books/createBook.ts
-var import_obsidian8 = require("obsidian");
+var import_obsidian9 = require("obsidian");
 
 // src/core/modals.ts
-var import_obsidian7 = require("obsidian");
-var TextInputModal = class extends import_obsidian7.Modal {
+var import_obsidian8 = require("obsidian");
+var TextInputModal = class extends import_obsidian8.Modal {
   constructor(app, options) {
     super(app);
     /** Promise 的 resolve 句柄；结算后置空，避免重复结算与引用滞留 */
@@ -23043,8 +23461,8 @@ var TextInputModal = class extends import_obsidian7.Modal {
     buttonBar.style.justifyContent = "flex-end";
     buttonBar.style.gap = "8px";
     buttonBar.style.marginTop = "16px";
-    new import_obsidian7.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.close());
-    new import_obsidian7.ButtonComponent(buttonBar).setButtonText("\u786E\u8BA4").setCta().onClick(() => this.submit(inputEl.value));
+    new import_obsidian8.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.close());
+    new import_obsidian8.ButtonComponent(buttonBar).setButtonText("\u786E\u8BA4").setCta().onClick(() => this.submit(inputEl.value));
     inputEl.focus();
     inputEl.select();
   }
@@ -23066,7 +23484,7 @@ var TextInputModal = class extends import_obsidian7.Modal {
     if (resolve) resolve(value);
   }
 };
-var TextAreaModal = class extends import_obsidian7.Modal {
+var TextAreaModal = class extends import_obsidian8.Modal {
   constructor(app, options) {
     super(app);
     /** Promise 的 resolve 句柄；结算后置空，避免重复结算与引用滞留 */
@@ -23109,8 +23527,8 @@ var TextAreaModal = class extends import_obsidian7.Modal {
     buttonBar.style.justifyContent = "flex-end";
     buttonBar.style.gap = "8px";
     buttonBar.style.marginTop = "16px";
-    new import_obsidian7.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.close());
-    new import_obsidian7.ButtonComponent(buttonBar).setButtonText("\u786E\u8BA4").setCta().onClick(() => this.submit(textareaEl.value));
+    new import_obsidian8.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.close());
+    new import_obsidian8.ButtonComponent(buttonBar).setButtonText("\u786E\u8BA4").setCta().onClick(() => this.submit(textareaEl.value));
     textareaEl.focus();
   }
   onClose() {
@@ -23131,7 +23549,7 @@ var TextAreaModal = class extends import_obsidian7.Modal {
     if (resolve) resolve(value);
   }
 };
-var ChoiceModal = class extends import_obsidian7.FuzzySuggestModal {
+var ChoiceModal = class extends import_obsidian8.FuzzySuggestModal {
   constructor(app, options) {
     super(app);
     this.resolver = null;
@@ -23192,7 +23610,7 @@ async function createBook(ctx, create2) {
     placeholder: MESSAGES.namePlaceholder
   }).openAndGetValue();
   if (nameInput === null || !nameInput.trim()) {
-    new import_obsidian8.Notice(MESSAGES.nameMissing);
+    new import_obsidian9.Notice(MESSAGES.nameMissing);
     return null;
   }
   const name = wrapBookTitle(nameInput.trim());
@@ -23218,101 +23636,6 @@ function wrapBookTitle(input) {
 
 // src/modules/books/extractCard.ts
 var import_obsidian10 = require("obsidian");
-
-// src/core/time.ts
-var import_obsidian9 = require("obsidian");
-var momentFactory = import_obsidian9.moment;
-function normalizeDateTimeFormat(value) {
-  const candidate = typeof value === "string" ? value.trim() : "";
-  return candidate || DEFAULT_DATETIME_FORMAT;
-}
-function nowStamp(format) {
-  return momentFactory().format(normalizeDateTimeFormat(format));
-}
-function nowStampAndUid(format) {
-  const now = momentFactory();
-  return {
-    stamp: now.format(normalizeDateTimeFormat(format)),
-    uid: Number(now.format(UID_FORMAT))
-  };
-}
-function nowLocalDateTimeParts(format) {
-  const now = momentFactory();
-  return {
-    date: now.format(DAY_FORMAT),
-    time: now.format("HH:mm"),
-    datetime: now.format(normalizeDateTimeFormat(format))
-  };
-}
-function today() {
-  return momentFactory().format(DAY_FORMAT);
-}
-function dayText(value) {
-  var _a2;
-  if (value === null || value === void 0) return null;
-  if (value instanceof Date) {
-    const time = value.getTime();
-    const parsed = momentFactory(time);
-    return Number.isNaN(time) || !parsed.isValid() ? null : parsed.format(DAY_FORMAT);
-  }
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) return null;
-    const parsed = momentFactory(value);
-    return parsed.isValid() ? parsed.format(DAY_FORMAT) : null;
-  }
-  const text4 = String(value).trim();
-  const day = (_a2 = /^\d{4}-\d{2}-\d{2}/.exec(text4)) == null ? void 0 : _a2[0];
-  if (!day) return null;
-  return momentFactory(day, DAY_FORMAT, true).isValid() ? day : null;
-}
-function dayOfMillis(millis) {
-  return momentFactory(millis).format(DAY_FORMAT);
-}
-function dayOfTitle(title) {
-  return momentFactory(title, DAY_FORMAT, true).isValid() ? title : null;
-}
-function shiftDay(day, amount, unit) {
-  const parsed = momentFactory(day, DAY_FORMAT, true);
-  if (!parsed.isValid()) return day;
-  return parsed.add(amount, unit).format(DAY_FORMAT);
-}
-function daysBetween(from, to) {
-  if (!from || !to) return null;
-  const start = momentFactory(from, DAY_FORMAT, true);
-  const end = momentFactory(to, DAY_FORMAT, true);
-  if (!start.isValid() || !end.isValid()) return null;
-  return Math.round(end.diff(start, "days"));
-}
-function currentPeriodTitle(period) {
-  return momentFactory().format(period.titleFormat);
-}
-function periodOfTitle(title) {
-  for (const period of Object.values(PERIODS)) {
-    if (periodStartOf(period, title) !== null) return period;
-  }
-  return null;
-}
-function periodStartOf(period, title) {
-  const parsed = momentFactory(title, period.titleFormat, true);
-  if (!parsed.isValid()) return null;
-  return parsed.startOf(period.startOfUnit).format(DAY_FORMAT);
-}
-function periodNeighbours(period, title, parentPeriod) {
-  const parsed = momentFactory(title, period.titleFormat, true);
-  if (!parsed.isValid()) return null;
-  const prev = parsed.clone().subtract(1, period.stepUnit).format(period.titleFormat);
-  const next = parsed.clone().add(1, period.stepUnit).format(period.titleFormat);
-  if (!parentPeriod) return { prev, next, parent: null };
-  const anchor = parsed.clone().startOf(period.startOfUnit);
-  const parent = (period.key === "weekly" ? anchor.add(3, "days") : anchor).format(
-    parentPeriod.titleFormat
-  );
-  return { prev, next, parent };
-}
-function titleOfDay(day, period) {
-  const parsed = momentFactory(day, DAY_FORMAT, true);
-  return parsed.isValid() ? parsed.format(period.titleFormat) : null;
-}
 
 // src/modules/books/identity.ts
 function isBookMoc(ctx, file) {
@@ -23493,8 +23816,8 @@ function flattenHighlight(highlight) {
     thoughts: highlight.thoughts.map((thought) => thought.replace(/\s+/g, " ").trim()).filter(Boolean)
   };
 }
-function normalizedHighlightKey(text4) {
-  let normalized = text4;
+function normalizedHighlightKey(text6) {
+  let normalized = text6;
   let previous = "";
   while (normalized !== previous) {
     previous = normalized;
@@ -23542,8 +23865,8 @@ function coalesceHighlights(incoming) {
 var KINDLE_SEPARATOR = /^={6,}\s*$/;
 var APPLE_MARKER = /^(?:摘录来自|Excerpt From)[:：]?\s*(.*)$/;
 function parseHighlightExport(raw) {
-  const text4 = raw.replace(/[﻿￼]/g, "").replace(/\r\n?/g, "\n");
-  const lines = text4.split("\n");
+  const text6 = raw.replace(/[﻿￼]/g, "").replace(/\r\n?/g, "\n");
+  const lines = text6.split("\n");
   if (lines.some((line) => KINDLE_SEPARATOR.test(line.trim()))) {
     return {
       source: "kindle",
@@ -23787,8 +24110,8 @@ function parseKindleBlock(block) {
   const authorMatch = /^(.*?)[（(]([^（()）]*)[)）]\s*$/.exec(titleLine);
   const title = (authorMatch ? authorMatch[1] : titleLine).trim();
   const author = (authorMatch ? authorMatch[2] : "").trim();
-  const text4 = content.join(" ").trim();
-  if (KINDLE_CLIP_LIMIT.test(text4)) return null;
+  const text6 = content.join(" ").trim();
+  if (KINDLE_CLIP_LIMIT.test(text6)) return null;
   return {
     title,
     author,
@@ -23797,7 +24120,7 @@ function parseKindleBlock(block) {
     location: spanOf(/(?:位置\s*#?\s*|location\s+)(\d+)(?:\s*-\s*(\d+))?/i, metaLine),
     // 「第 25 页」「on page ix」「page 14-14」；罗马数字页码取不到数值，按「没有页码」处理
     page: spanOf(/(?:第\s*(\d+)(?:\s*-\s*(\d+))?\s*页|page\s+(\d+)(?:\s*-\s*(\d+))?)/i, metaLine),
-    text: text4
+    text: text6
   };
 }
 function spanOf(pattern, metaLine) {
@@ -23896,14 +24219,14 @@ function parseApple(lines) {
       }
       break;
     }
-    const text4 = stripQuotes(pending2.join(" ").trim());
+    const text6 = stripQuotes(pending2.join(" ").trim());
     pending2 = [];
-    if (!text4) continue;
+    if (!text6) continue;
     const key = stripBookBraces(title);
     const bucket = (_a2 = books.get(key)) != null ? _a2 : { author, highlights: [] };
     if (!books.has(key)) books.set(key, bucket);
     if (!bucket.author && author) bucket.author = author;
-    bucket.highlights.push({ chapter: "", text: text4, thoughts: [] });
+    bucket.highlights.push({ chapter: "", text: text6, thoughts: [] });
   }
   return [...books.entries()].map(([title, bucket]) => ({
     title,
@@ -23911,8 +24234,8 @@ function parseApple(lines) {
     highlights: bucket.highlights
   }));
 }
-function stripQuotes(text4) {
-  return text4.replace(/^[“”"'「『]+/, "").replace(/[“”"'」』]+$/, "").trim();
+function stripQuotes(text6) {
+  return text6.replace(/^[“”"'「『]+/, "").replace(/[“”"'」』]+$/, "").trim();
 }
 function stripBookBraces(title) {
   const inner = /^《(.+)》$/.exec(title.trim());
@@ -24322,14 +24645,14 @@ var ImportConfirmModal = class extends import_obsidian11.Modal {
   }
   /** 一行「标签 + 值」 */
   renderRow(parent, label, value, emphasize = false) {
-    const row = parent.createDiv();
-    row.style.display = "grid";
-    row.style.gridTemplateColumns = "4em minmax(0, 1fr)";
-    row.style.gap = "10px";
-    row.style.padding = "5px 0";
-    const labelEl = row.createDiv({ text: label });
+    const row2 = parent.createDiv();
+    row2.style.display = "grid";
+    row2.style.gridTemplateColumns = "4em minmax(0, 1fr)";
+    row2.style.gap = "10px";
+    row2.style.padding = "5px 0";
+    const labelEl = row2.createDiv({ text: label });
     labelEl.style.color = "var(--text-muted)";
-    const valueEl = row.createDiv({ text: value });
+    const valueEl = row2.createDiv({ text: value });
     valueEl.style.overflowWrap = "anywhere";
     valueEl.style.lineHeight = "1.5";
     if (emphasize) {
@@ -24408,15 +24731,15 @@ function parseSearchResults(html2) {
   const candidates = [];
   for (const raw of (_a2 = payload.items) != null ? _a2 : []) {
     const item = raw;
-    const title = text(item.title);
-    const id = text(item.id);
+    const title = text2(item.title);
+    const id = text2(item.id);
     if (!title || !id) continue;
     if (NOT_A_SINGLE_BOOK.test(title)) continue;
     candidates.push({
       id,
       title,
-      abstract: text(item.abstract),
-      cover: text(item.cover_url)
+      abstract: text2(item.abstract),
+      cover: text2(item.cover_url)
     });
   }
   return candidates;
@@ -24518,7 +24841,7 @@ function attr(html2, pattern) {
 function clean(value) {
   return value.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
 }
-function text(value) {
+function text2(value) {
   if (value === null || value === void 0) return "";
   return String(value).trim();
 }
@@ -24689,7 +25012,7 @@ async function api(ctx, path) {
   const errCode = Number((_b2 = payload.errCode) != null ? _b2 : 0);
   if (errCode) {
     throw new Error(
-      errCode === -2012 || errCode === -2010 ? EXPIRED : `\u5FAE\u4FE1\u8BFB\u4E66\u62D2\u7EDD\u4E86\u8FD9\u6B21\u8BF7\u6C42\uFF1A${text2(payload.errMsg) || errCode}`
+      errCode === -2012 || errCode === -2010 ? EXPIRED : `\u5FAE\u4FE1\u8BFB\u4E66\u62D2\u7EDD\u4E86\u8FD9\u6B21\u8BF7\u6C42\uFF1A${text3(payload.errMsg) || errCode}`
     );
   }
   return payload;
@@ -24710,7 +25033,7 @@ async function apiKey(ctx) {
   if (cachedKey) return cachedKey;
   try {
     const payload = await api(ctx, API_KEY_PATH);
-    cachedKey = text2(payload.apikey);
+    cachedKey = text3(payload.apikey);
   } catch (e2) {
     cachedKey = "";
   }
@@ -24735,7 +25058,7 @@ async function gateway(ctx, apiName, key, params) {
   if (response.status >= 400) throw new Error(`\u5FAE\u4FE1\u8BFB\u4E66\u7F51\u5173\u8FD4\u56DE ${response.status}`);
   const payload = (_a2 = response.json) != null ? _a2 : {};
   if (Number((_b2 = payload.errcode) != null ? _b2 : 0)) {
-    throw new Error(`\u5FAE\u4FE1\u8BFB\u4E66\u62D2\u7EDD\u4E86\u8FD9\u6B21\u8BF7\u6C42\uFF1A${text2(payload.errmsg) || payload.errcode}`);
+    throw new Error(`\u5FAE\u4FE1\u8BFB\u4E66\u62D2\u7EDD\u4E86\u8FD9\u6B21\u8BF7\u6C42\uFF1A${text3(payload.errmsg) || payload.errcode}`);
   }
   return payload;
 }
@@ -24746,13 +25069,13 @@ async function listWereadBooks(ctx) {
     const entry = raw;
     const book = entry.book;
     if (!book) continue;
-    const id = text2(book.bookId);
-    const title = text2(book.title);
+    const id = text3(book.bookId);
+    const title = text3(book.title);
     if (id && title) {
       books.push({
         id,
         title,
-        author: text2(book.author)
+        author: text3(book.author)
       });
     }
   }
@@ -24767,10 +25090,10 @@ async function readWereadBookHighlights(ctx, book) {
   const highlights = [];
   for (const raw of asArray(marks.updated)) {
     const mark = raw;
-    const content = text2(mark.markText);
+    const content = text3(mark.markText);
     if (!content) continue;
     highlights.push({
-      chapter: (_a2 = chapterNames.get(text2(mark.chapterUid))) != null ? _a2 : "",
+      chapter: (_a2 = chapterNames.get(text3(mark.chapterUid))) != null ? _a2 : "",
       text: content,
       thoughts: []
     });
@@ -24806,9 +25129,9 @@ function mergeReviews(highlights, payload, chapterNames) {
   for (const raw of asArray(payload.reviews)) {
     const wrapper = raw;
     const review = (_a2 = wrapper.review) != null ? _a2 : wrapper;
-    const written = text2(review.content);
+    const written = text3(review.content);
     if (!written) continue;
-    const quoted = text2(review.abstract);
+    const quoted = text3(review.abstract);
     const hostIndex = quoted ? highlights.findIndex(
       (item) => item.text.replace(/\s+/g, "") === quoted.replace(/\s+/g, "")
     ) : -1;
@@ -24820,7 +25143,7 @@ function mergeReviews(highlights, payload, chapterNames) {
         // 想法自带 chapterName，优先用它：一本书可能一条纯划线都没有
         // （只有「划一段再写句话」的想法），那时章节表是空的，
         // 靠 chapterUid 去查只会查到空字符串，整章信息白白丢掉
-        chapter: text2(review.chapterName) || chapterNames.get(text2(review.chapterUid)) || "",
+        chapter: text3(review.chapterName) || chapterNames.get(text3(review.chapterUid)) || "",
         text: quoted,
         thoughts: [written]
       });
@@ -24831,8 +25154,8 @@ function chapterMapOf(payload) {
   const names = /* @__PURE__ */ new Map();
   for (const raw of asArray(payload.chapters)) {
     const chapter = raw;
-    const uid = text2(chapter.chapterUid);
-    const title = text2(chapter.title);
+    const uid = text3(chapter.chapterUid);
+    const title = text3(chapter.title);
     if (uid && title) names.set(uid, title);
   }
   return names;
@@ -24840,7 +25163,7 @@ function chapterMapOf(payload) {
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
-function text2(value) {
+function text3(value) {
   if (value === null || value === void 0) return "";
   return String(value).trim();
 }
@@ -24956,9 +25279,9 @@ async function listAppleBooks() {
     `SELECT DISTINCT ZANNOTATIONASSETID AS id FROM ZAEANNOTATION
          WHERE ZANNOTATIONSELECTEDTEXT IS NOT NULL AND ZANNOTATIONDELETED = 0`
   );
-  const ids = withHighlights.map((row) => {
+  const ids = withHighlights.map((row2) => {
     var _a2;
-    return String((_a2 = row.id) != null ? _a2 : "").trim();
+    return String((_a2 = row2.id) != null ? _a2 : "").trim();
   }).filter(Boolean);
   if (!ids.length) return [];
   const books = await query(
@@ -24966,12 +25289,12 @@ async function listAppleBooks() {
     `SELECT ZASSETID AS id, ZTITLE AS title, ZAUTHOR AS author FROM ZBKLIBRARYASSET
          WHERE ZASSETID IN (${ids.map(quote).join(",")})`
   );
-  return books.map((row) => {
+  return books.map((row2) => {
     var _a2, _b2, _c;
     return {
-      id: String((_a2 = row.id) != null ? _a2 : "").trim(),
-      title: String((_b2 = row.title) != null ? _b2 : "").trim(),
-      author: String((_c = row.author) != null ? _c : "").trim()
+      id: String((_a2 = row2.id) != null ? _a2 : "").trim(),
+      title: String((_b2 = row2.title) != null ? _b2 : "").trim(),
+      author: String((_c = row2.author) != null ? _c : "").trim()
     };
   }).filter((book) => book.id && book.title);
 }
@@ -24988,12 +25311,12 @@ async function readAppleBookHighlights(assetId) {
            AND ZANNOTATIONDELETED = 0
          ORDER BY ZANNOTATIONCREATIONDATE`
   );
-  return rows.map((row) => {
+  return rows.map((row2) => {
     var _a2, _b2, _c;
-    const note = String((_a2 = row.note) != null ? _a2 : "").trim();
+    const note = String((_a2 = row2.note) != null ? _a2 : "").trim();
     return {
-      chapter: String((_b2 = row.chapter) != null ? _b2 : "").trim(),
-      text: String((_c = row.text) != null ? _c : "").trim(),
+      chapter: String((_b2 = row2.chapter) != null ? _b2 : "").trim(),
+      text: String((_c = row2.text) != null ? _c : "").trim(),
       thoughts: note ? [note] : []
     };
   }).filter((highlight) => highlight.text);
@@ -25580,8 +25903,8 @@ function registerPasteLink(ctx) {
 }
 function readUrl(data) {
   var _a2, _b2;
-  const text4 = (_b2 = (_a2 = data == null ? void 0 : data.getData("text/plain")) == null ? void 0 : _a2.trim()) != null ? _b2 : "";
-  return URL_PATTERN.test(text4) ? text4 : null;
+  const text6 = (_b2 = (_a2 = data == null ? void 0 : data.getData("text/plain")) == null ? void 0 : _a2.trim()) != null ? _b2 : "";
+  return URL_PATTERN.test(text6) ? text6 : null;
 }
 function buildLink(selection, url) {
   if (!url) return null;
@@ -25821,7 +26144,7 @@ var EagleBridgeClient = class {
   }
   async requestJson(param, authenticated = true) {
     const response = await this.request(param, authenticated);
-    const data = isRecord2(response.json) ? response.json : {};
+    const data = isRecord3(response.json) ? response.json : {};
     if (response.status < 200 || response.status >= 300 || data.ok !== true) {
       throw responseError(response, data);
     }
@@ -25911,7 +26234,7 @@ function statusFrom(data) {
   };
 }
 function responseError(response, data) {
-  const parsed = data != null ? data : isRecord2(response.json) ? response.json : {};
+  const parsed = data != null ? data : isRecord3(response.json) ? response.json : {};
   const message2 = stringField(parsed, "error") || stringField(parsed, "message");
   return new EagleBridgeResponseError(response.status, message2 || `Eagle \u4F34\u4FA3\u8FD4\u56DE ${response.status}`);
 }
@@ -25923,7 +26246,7 @@ function header(headers, name) {
 function stringField(record, key) {
   return typeof record[key] === "string" ? record[key].trim() : "";
 }
-function isRecord2(value) {
+function isRecord3(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 function errorMessage(error) {
@@ -25966,9 +26289,9 @@ function eagleReferenceFromTarget(target) {
   let element = target && "nodeType" in target && target.nodeType === 1 ? target : null;
   for (let depth = 0; element && depth < 4; depth += 1, element = element.parentElement) {
     if (element.classList.contains("cm-editor")) break;
-    const text4 = controlText(element);
-    if (text4.length <= 512) {
-      const reference = singleEagleReferenceInText(text4);
+    const text6 = controlText(element);
+    if (text6.length <= 512) {
+      const reference = singleEagleReferenceInText(text6);
       if (reference) return reference;
     }
   }
@@ -26562,8 +26885,8 @@ var FolderCountBadges = class {
       return;
     }
     const badge = (_b2 = badgeOf(titleEl)) != null ? _b2 : titleEl.createSpan({ cls: BADGE_CLASS });
-    const text4 = String(count);
-    if (badge.textContent !== text4) badge.setText(text4);
+    const text6 = String(count);
+    if (badge.textContent !== text6) badge.setText(text6);
     (0, import_obsidian25.setTooltip)(badge, describe3(tally, recursive));
   }
   /** 撤掉全部痕迹。开关关掉与插件卸载共用它，因此「关掉」与「卸载」的结果一字不差 */
@@ -26906,9 +27229,9 @@ var RecentFilesView = class extends import_obsidian27.ItemView {
    * 点一下用 openLinkText 打开——它认路径也认别名，与库里所有双链走同一条解析。
    */
   renderRow(list, file) {
-    const row = list.createDiv({ cls: "ziminos-recent-row", text: file.basename });
-    (0, import_obsidian27.setTooltip)(row, file.path, { placement: "top" });
-    row.addEventListener("click", () => {
+    const row2 = list.createDiv({ cls: "ziminos-recent-row", text: file.basename });
+    (0, import_obsidian27.setTooltip)(row2, file.path, { placement: "top" });
+    row2.addEventListener("click", () => {
       void this.ctx.app.workspace.openLinkText(file.path, "", false);
     });
   }
@@ -26931,10 +27254,10 @@ function readEntries(raw) {
 // src/modules/export/exporter.ts
 var import_dom_to_image_more = __toESM(require_dom_to_image_more_min(), 1);
 
-// ../../../node_modules/jspdf/dist/jspdf.es.min.js
+// node_modules/jspdf/dist/jspdf.es.min.js
 init_typeof();
 
-// ../../../node_modules/fflate/esm/browser.js
+// node_modules/fflate/esm/browser.js
 var u8 = Uint8Array;
 var u16 = Uint16Array;
 var i32 = Int32Array;
@@ -27469,12 +27792,12 @@ try {
 } catch (e2) {
 }
 
-// ../../../node_modules/@babel/runtime/helpers/esm/arrayWithHoles.js
+// node_modules/@babel/runtime/helpers/esm/arrayWithHoles.js
 function _arrayWithHoles(r2) {
   if (Array.isArray(r2)) return r2;
 }
 
-// ../../../node_modules/@babel/runtime/helpers/esm/iterableToArrayLimit.js
+// node_modules/@babel/runtime/helpers/esm/iterableToArrayLimit.js
 function _iterableToArrayLimit(r2, l3) {
   var t3 = null == r2 ? null : "undefined" != typeof Symbol && r2[Symbol.iterator] || r2["@@iterator"];
   if (null != t3) {
@@ -27497,14 +27820,14 @@ function _iterableToArrayLimit(r2, l3) {
   }
 }
 
-// ../../../node_modules/@babel/runtime/helpers/esm/arrayLikeToArray.js
+// node_modules/@babel/runtime/helpers/esm/arrayLikeToArray.js
 function _arrayLikeToArray(r2, a3) {
   (null == a3 || a3 > r2.length) && (a3 = r2.length);
   for (var e2 = 0, n2 = Array(a3); e2 < a3; e2++) n2[e2] = r2[e2];
   return n2;
 }
 
-// ../../../node_modules/@babel/runtime/helpers/esm/unsupportedIterableToArray.js
+// node_modules/@babel/runtime/helpers/esm/unsupportedIterableToArray.js
 function _unsupportedIterableToArray(r2, a3) {
   if (r2) {
     if ("string" == typeof r2) return _arrayLikeToArray(r2, a3);
@@ -27513,17 +27836,17 @@ function _unsupportedIterableToArray(r2, a3) {
   }
 }
 
-// ../../../node_modules/@babel/runtime/helpers/esm/nonIterableRest.js
+// node_modules/@babel/runtime/helpers/esm/nonIterableRest.js
 function _nonIterableRest() {
   throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
 }
 
-// ../../../node_modules/@babel/runtime/helpers/esm/slicedToArray.js
+// node_modules/@babel/runtime/helpers/esm/slicedToArray.js
 function _slicedToArray(r2, e2) {
   return _arrayWithHoles(r2) || _iterableToArrayLimit(r2, e2) || _unsupportedIterableToArray(r2, e2) || _nonIterableRest();
 }
 
-// ../../../node_modules/iobuffer/lib-esm/text.js
+// node_modules/iobuffer/lib-esm/text.js
 function decode(bytes, encoding = "utf8") {
   const decoder = new TextDecoder(encoding);
   return decoder.decode(bytes);
@@ -27533,7 +27856,7 @@ function encode(str) {
   return encoder.encode(str);
 }
 
-// ../../../node_modules/iobuffer/lib-esm/IOBuffer.js
+// node_modules/iobuffer/lib-esm/IOBuffer.js
 var defaultByteLength = 1024 * 8;
 var hostBigEndian = (() => {
   const array = new Uint8Array(4);
@@ -28144,7 +28467,7 @@ var IOBuffer = class _IOBuffer {
   }
 };
 
-// ../../../node_modules/pako/dist/pako.esm.mjs
+// node_modules/pako/dist/pako.esm.mjs
 var Z_FIXED$1 = 4;
 var Z_BINARY = 0;
 var Z_TEXT = 1;
@@ -32355,7 +32678,7 @@ var { Inflate, inflate, inflateRaw, ungzip } = inflate_1$1;
 var Inflate_1 = Inflate;
 var inflate_1 = inflate;
 
-// ../../../node_modules/fast-png/lib-esm/helpers/crc.js
+// node_modules/fast-png/lib-esm/helpers/crc.js
 var crcTable2 = [];
 for (let n2 = 0; n2 < 256; n2++) {
   let c4 = n2;
@@ -32387,7 +32710,7 @@ function checkCrc(buffer, crcLength, chunkName) {
   }
 }
 
-// ../../../node_modules/fast-png/lib-esm/helpers/unfilter.js
+// node_modules/fast-png/lib-esm/helpers/unfilter.js
 function unfilterNone(currentLine, newLine, bytesPerLine) {
   for (let i4 = 0; i4 < bytesPerLine; i4++) {
     newLine[i4] = currentLine[i4];
@@ -32463,7 +32786,7 @@ function paethPredictor(a3, b2, c4) {
     return c4;
 }
 
-// ../../../node_modules/fast-png/lib-esm/helpers/applyUnfilter.js
+// node_modules/fast-png/lib-esm/helpers/applyUnfilter.js
 function applyUnfilter(filterType, currentLine, newLine, prevLine, passLineBytes, bytesPerPixel) {
   switch (filterType) {
     case 0:
@@ -32486,7 +32809,7 @@ function applyUnfilter(filterType, currentLine, newLine, prevLine, passLineBytes
   }
 }
 
-// ../../../node_modules/fast-png/lib-esm/helpers/decodeInterlaceAdam7.js
+// node_modules/fast-png/lib-esm/helpers/decodeInterlaceAdam7.js
 var uint16 = new Uint16Array([255]);
 var uint8 = new Uint8Array(uint16.buffer);
 var osIsLittleEndian = uint8[0] === 255;
@@ -32553,7 +32876,7 @@ function swap16(val) {
   return (val & 255) << 8 | val >> 8 & 255;
 }
 
-// ../../../node_modules/fast-png/lib-esm/helpers/decodeInterlaceNull.js
+// node_modules/fast-png/lib-esm/helpers/decodeInterlaceNull.js
 var uint162 = new Uint16Array([255]);
 var uint82 = new Uint8Array(uint162.buffer);
 var osIsLittleEndian2 = uint82[0] === 255;
@@ -32608,7 +32931,7 @@ function swap162(val) {
   return (val & 255) << 8 | val >> 8 & 255;
 }
 
-// ../../../node_modules/fast-png/lib-esm/helpers/signature.js
+// node_modules/fast-png/lib-esm/helpers/signature.js
 var pngSignature = Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10);
 function checkSignature(buffer) {
   if (!hasPngSignature(buffer.readBytes(pngSignature.length))) {
@@ -32627,7 +32950,7 @@ function hasPngSignature(array) {
   return true;
 }
 
-// ../../../node_modules/fast-png/lib-esm/helpers/text.js
+// node_modules/fast-png/lib-esm/helpers/text.js
 var textChunkName = "tEXt";
 var NULL = 0;
 var latin1Decoder = new TextDecoder("latin1");
@@ -32638,14 +32961,14 @@ function validateKeyword(keyword) {
   }
 }
 var latin1Regex = /^[\u0000-\u00FF]*$/;
-function validateLatin1(text4) {
-  if (!latin1Regex.test(text4)) {
+function validateLatin1(text6) {
+  if (!latin1Regex.test(text6)) {
     throw new Error("invalid latin1 text");
   }
 }
-function decodetEXt(text4, buffer, length) {
+function decodetEXt(text6, buffer, length) {
   const keyword = readKeyword(buffer);
-  text4[keyword] = readLatin1(buffer, length - keyword.length - 1);
+  text6[keyword] = readLatin1(buffer, length - keyword.length - 1);
 }
 function readKeyword(buffer) {
   buffer.mark();
@@ -32662,7 +32985,7 @@ function readLatin1(buffer, length) {
   return latin1Decoder.decode(buffer.readBytes(length));
 }
 
-// ../../../node_modules/fast-png/lib-esm/internalTypes.js
+// node_modules/fast-png/lib-esm/internalTypes.js
 var ColorType = {
   UNKNOWN: -1,
   GREYSCALE: 0,
@@ -32694,7 +33017,7 @@ var BlendOpType = {
   OVER: 1
 };
 
-// ../../../node_modules/fast-png/lib-esm/PngDecoder.js
+// node_modules/fast-png/lib-esm/PngDecoder.js
 var PngDecoder = class extends IOBuffer {
   constructor(data, options = {}) {
     super(data);
@@ -33050,9 +33373,9 @@ var PngDecoder = class extends IOBuffer {
       case DisposeOpType.NONE:
         break;
       case DisposeOpType.BACKGROUND:
-        for (let row = 0; row < this._png.height; row++) {
+        for (let row2 = 0; row2 < this._png.height; row2++) {
           for (let col = 0; col < this._png.width; col++) {
-            const index2 = (row * frame.width + col) * this._png.channels;
+            const index2 = (row2 * frame.width + col) * this._png.channels;
             for (let channel = 0; channel < this._png.channels; channel++) {
               imageFrame.data[index2 + channel] = 0;
             }
@@ -33068,16 +33391,16 @@ var PngDecoder = class extends IOBuffer {
   }
   addFrameDataToCanvas(imageFrame, frame) {
     const maxValue = 1 << this._png.depth;
-    const calculatePixelIndices = (row, col) => {
-      const index2 = ((row + frame.yOffset) * this._png.width + frame.xOffset + col) * this._png.channels;
-      const frameIndex = (row * frame.width + col) * this._png.channels;
+    const calculatePixelIndices = (row2, col) => {
+      const index2 = ((row2 + frame.yOffset) * this._png.width + frame.xOffset + col) * this._png.channels;
+      const frameIndex = (row2 * frame.width + col) * this._png.channels;
       return { index: index2, frameIndex };
     };
     switch (frame.blendOp) {
       case BlendOpType.SOURCE:
-        for (let row = 0; row < frame.height; row++) {
+        for (let row2 = 0; row2 < frame.height; row2++) {
           for (let col = 0; col < frame.width; col++) {
-            const { index: index2, frameIndex } = calculatePixelIndices(row, col);
+            const { index: index2, frameIndex } = calculatePixelIndices(row2, col);
             for (let channel = 0; channel < this._png.channels; channel++) {
               imageFrame.data[index2 + channel] = frame.data[frameIndex + channel];
             }
@@ -33086,9 +33409,9 @@ var PngDecoder = class extends IOBuffer {
         break;
       // https://www.w3.org/TR/png-3/#13Alpha-channel-processing
       case BlendOpType.OVER:
-        for (let row = 0; row < frame.height; row++) {
+        for (let row2 = 0; row2 < frame.height; row2++) {
           for (let col = 0; col < frame.width; col++) {
-            const { index: index2, frameIndex } = calculatePixelIndices(row, col);
+            const { index: index2, frameIndex } = calculatePixelIndices(row2, col);
             for (let channel = 0; channel < this._png.channels; channel++) {
               const sourceAlpha = frame.data[frameIndex + this._png.channels - 1] / maxValue;
               const foregroundValue = channel % (this._png.channels - 1) === 0 ? 1 : frame.data[frameIndex + channel];
@@ -33167,20 +33490,20 @@ function checkBitDepth(value) {
   return value;
 }
 
-// ../../../node_modules/fast-png/lib-esm/types.js
+// node_modules/fast-png/lib-esm/types.js
 var ResolutionUnitSpecifier;
 (function(ResolutionUnitSpecifier2) {
   ResolutionUnitSpecifier2[ResolutionUnitSpecifier2["UNKNOWN"] = 0] = "UNKNOWN";
   ResolutionUnitSpecifier2[ResolutionUnitSpecifier2["METRE"] = 1] = "METRE";
 })(ResolutionUnitSpecifier || (ResolutionUnitSpecifier = {}));
 
-// ../../../node_modules/fast-png/lib-esm/index.js
+// node_modules/fast-png/lib-esm/index.js
 function decodePng(data, options) {
   const decoder = new PngDecoder(data, options);
   return decoder.decode();
 }
 
-// ../../../node_modules/jspdf/dist/jspdf.es.min.js
+// node_modules/jspdf/dist/jspdf.es.min.js
 var i3 = /* @__PURE__ */ (function() {
   return "undefined" != typeof window ? window : "undefined" != typeof global ? global : "undefined" != typeof self ? self : this;
 })();
@@ -40419,20 +40742,15 @@ E.API.PDFObject = (function() {
 })();
 
 // src/modules/export/exporter.ts
-var import_obsidian29 = require("obsidian");
+var import_obsidian33 = require("obsidian");
 
 // src/modules/export/layout.ts
-var DEFAULT_EXPORT_OPTIONS = {
-  format: "png",
-  header: "",
-  footer: "",
-  watermark: ""
-};
 var MAX_CANVAS_SIDE = 32e3;
 var MAX_CANVAS_PIXELS = 192e6;
 var PREFERRED_SCALE = 2;
 var MAX_PDF_POINTS = 14400;
 var POINTS_PER_CSS_PIXEL = 72 / 96;
+var LINE_BOX_RATIO = 1.32;
 function resolveExportText(template, context) {
   const values = {
     title: context.title,
@@ -40461,15 +40779,686 @@ function pdfPageSize(width, height) {
     height: pointHeight * scale
   };
 }
+var LOGO_TEXT_GAP_RATIO = 0.45;
+function watermarkMark(input) {
+  const textWidth = Math.max(0, input.textWidth);
+  const logoWidth = Math.max(0, input.logoWidth);
+  const logoHeight = Math.max(0, input.logoHeight);
+  const textHeight = textWidth > 0 ? input.fontSize * LINE_BOX_RATIO : 0;
+  const gap = textWidth > 0 && logoWidth > 0 ? Math.round(input.fontSize * LOGO_TEXT_GAP_RATIO) : 0;
+  const width = Math.max(1, Math.ceil(logoWidth + gap + textWidth));
+  const height = Math.max(1, Math.ceil(Math.max(logoHeight, textHeight)));
+  return {
+    width,
+    height,
+    logoX: 0,
+    logoY: (height - logoHeight) / 2,
+    logoWidth,
+    logoHeight,
+    textX: logoWidth + gap + textWidth / 2,
+    textY: height / 2
+  };
+}
+function watermarkTile(mark, angle, gapX, gapY) {
+  const radians = angle * Math.PI / 180;
+  const sin = Math.abs(Math.sin(radians));
+  const cos = Math.abs(Math.cos(radians));
+  return {
+    width: Math.max(1, Math.ceil(mark.width * cos + mark.height * sin + Math.max(0, gapX))),
+    height: Math.max(1, Math.ceil(mark.width * sin + mark.height * cos + Math.max(0, gapY)))
+  };
+}
+function watermarkSvg(input) {
+  const centerX = input.tile.width / 2;
+  const centerY = input.tile.height / 2;
+  const offsetX = (input.tile.width - input.mark.width) / 2;
+  const offsetY = (input.tile.height - input.mark.height) / 2;
+  const opacity = Math.min(1, Math.max(0, input.opacity / 100));
+  const logo = input.logoDataUrl && input.mark.logoWidth > 0 ? `<image x="${input.mark.logoX}" y="${round(input.mark.logoY)}" width="${round(input.mark.logoWidth)}" height="${round(input.mark.logoHeight)}" href="${escapeXml(input.logoDataUrl)}"/>` : "";
+  const text6 = input.text ? `<text x="${round(input.mark.textX)}" y="${round(input.mark.textY)}" text-anchor="middle" dominant-baseline="central" fill="${escapeXml(input.color)}" font-family="${escapeXml(input.fontFamily)}" font-size="${input.fontSize}">${escapeXml(input.text)}</text>` : "";
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${input.tile.width}" height="${input.tile.height}"><g opacity="${opacity}" transform="rotate(${input.angle} ${centerX} ${centerY}) translate(${round(offsetX)} ${round(offsetY)})">${logo}${text6}</g></svg>`;
+}
+function round(value) {
+  return Math.round(value * 100) / 100;
+}
+function watermarkPosition(anchor, gapX, gapY) {
+  const [vertical, horizontal] = anchor.split("-");
+  const x3 = horizontal === "left" ? `${Math.max(0, gapX)}px` : horizontal === "right" ? `calc(100% - ${Math.max(0, gapX)}px)` : "50%";
+  const y3 = vertical === "top" ? `${Math.max(0, gapY)}px` : vertical === "bottom" ? `calc(100% - ${Math.max(0, gapY)}px)` : "50%";
+  return `${x3} ${y3}`;
+}
+function exportLinkUrl(raw) {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  const candidate = /^[a-z][a-z0-9+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const url = new URL(candidate);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return "";
+    return url.href;
+  } catch (e2) {
+    return "";
+  }
+}
+function pageWidthOf(style) {
+  return style.pageMode === "fixed" ? Math.max(1, Math.round(style.pageWidth)) : null;
+}
+function pageMinHeightOf(style) {
+  return style.pageMode === "fixed" ? Math.max(1, Math.round(style.pageHeight)) : null;
+}
+function escapeXml(text6) {
+  return text6.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+
+// src/modules/export/decorate.ts
+var DECORATION_SELECTOR = ".ziminos-export-header, .ziminos-export-footer, .ziminos-export-watermark";
+var JUSTIFY = {
+  left: "flex-start",
+  center: "center",
+  right: "flex-end"
+};
+var ruler = null;
+function applyDecorations(article, style, context, logo) {
+  const content = article.querySelector(".markdown-preview-sizer");
+  if (!content) return;
+  article.querySelectorAll(DECORATION_SELECTOR).forEach((node2) => node2.remove());
+  article.addClass("ziminos-export-guides");
+  const header2 = buildLine(content, "ziminos-export-header", {
+    enabled: style.headerEnabled,
+    text: resolveExportText(style.header.trim(), context),
+    align: style.headerAlign,
+    color: style.headerColor,
+    link: style.headerLink,
+    format: style.format,
+    logo,
+    logoSize: style.headerLogoSize
+  });
+  if (header2) {
+    header2.style.marginBottom = `${style.headerGap}px`;
+    content.prepend(header2);
+  }
+  const footer = buildLine(content, "ziminos-export-footer", {
+    enabled: style.footerEnabled,
+    text: resolveExportText(style.footer.trim(), context),
+    align: style.footerAlign,
+    color: style.footerColor,
+    link: style.footerLink,
+    format: style.format,
+    logo,
+    logoSize: style.footerLogoSize
+  });
+  if (footer) footer.style.marginTop = `${style.footerGap}px`;
+  applyWatermark(article, style, context, logo);
+}
+function buildLine(host, cls, input) {
+  const showLogo = Boolean(input.logo) && input.logoSize > 0;
+  const url = exportLinkUrl(input.link);
+  const text6 = input.text || (url ? input.link.trim() : "");
+  if (!input.enabled || !text6 && !showLogo) return null;
+  const line = host.createDiv({ cls });
+  Object.assign(line.style, {
+    display: "flex",
+    alignItems: "center",
+    // 用 em 而不是 px：这一行的字号随主题与用户选的阅读字体走，
+    // 图字之间那点空得跟着走，写死 px 会让换过字体的人看见图贴着字
+    gap: "0.55em",
+    justifyContent: JUSTIFY[input.align]
+  });
+  if (input.color) line.style.color = input.color;
+  if (showLogo && input.logo) {
+    const image = line.createEl("img", { attr: { src: input.logo.dataUrl, alt: "" } });
+    Object.assign(image.style, {
+      height: `${input.logoSize}px`,
+      width: "auto",
+      display: "block",
+      flex: "0 0 auto"
+    });
+  }
+  if (text6) {
+    const span = line.createSpan({ text: text6 });
+    if (url && input.format === "pdf") {
+      span.style.textDecoration = "underline";
+      span.style.textUnderlineOffset = "0.22em";
+    }
+  }
+  return line;
+}
+function applyWatermark(article, style, context, logo) {
+  const text6 = resolveExportText(style.watermark.trim(), context);
+  const showLogo = Boolean(logo) && style.watermarkLogoSize > 0;
+  if (!style.watermarkEnabled || !text6 && !showLogo) return;
+  const computed = getComputedStyle(article);
+  const fontFamily = computed.fontFamily || "sans-serif";
+  const tiled = style.watermarkMode === "tile";
+  const logoHeight = showLogo ? style.watermarkLogoSize : 0;
+  const logoWidth = showLogo && logo ? Math.max(1, Math.round(logoHeight * logo.width / logo.height)) : 0;
+  const mark = watermarkMark({
+    textWidth: text6 ? measureTextWidth(text6, style.watermarkSize, fontFamily) : 0,
+    fontSize: style.watermarkSize,
+    logoWidth,
+    logoHeight
+  });
+  const tile = watermarkTile(
+    mark,
+    style.watermarkAngle,
+    // 单个落款的间距量的是「离纸边多远」，砖本身不留白，否则那份留白会被算进偏移里两次
+    tiled ? style.watermarkGapX : 0,
+    tiled ? style.watermarkGapY : 0
+  );
+  const svg2 = watermarkSvg({
+    text: text6,
+    logoDataUrl: showLogo && logo ? logo.dataUrl : "",
+    mark,
+    tile,
+    fontSize: style.watermarkSize,
+    angle: style.watermarkAngle,
+    // 用户挑了色就用他的；没挑（空串）才跟随正文色。
+    // 默认必须是后者：「跟随主题」在明暗两套配色下各自成立，
+    // 而任何一个写死的色号只在其中一套里成立。标志自带颜色，不受这条影响。
+    color: style.watermarkColor || computed.color || "#6b7280",
+    fontFamily,
+    opacity: style.watermarkOpacity
+  });
+  const layer = article.createDiv({ cls: "ziminos-export-watermark" });
+  Object.assign(layer.style, {
+    position: "absolute",
+    left: "0",
+    top: "0",
+    // 高度按此刻的真实纸高写死而不是 inset:0：纸的盒子高度与它的 scrollHeight
+    // 在内容溢出时并不相等，而截图取的正是后者，水印必须盖满被拍下来的那一块。
+    width: `${Math.ceil(Math.max(1, article.scrollWidth))}px`,
+    height: `${Math.ceil(Math.max(1, article.scrollHeight))}px`,
+    zIndex: "20",
+    pointerEvents: "none",
+    backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(svg2)}")`,
+    backgroundRepeat: tiled ? "repeat" : "no-repeat",
+    backgroundPosition: tiled ? "0 0" : watermarkPosition(style.watermarkAnchor, style.watermarkGapX, style.watermarkGapY)
+  });
+}
+function measureTextWidth(text6, fontSize, fontFamily) {
+  ruler != null ? ruler : ruler = document.createElement("canvas");
+  const context = ruler.getContext("2d");
+  if (!context) return text6.length * fontSize * 0.9;
+  context.font = `${fontSize}px ${fontFamily}`;
+  return context.measureText(text6).width || text6.length * fontSize * 0.9;
+}
+function linkRegions(article, style) {
+  const regions = [];
+  const frame = frameOf(article);
+  const collect = (selector, raw) => {
+    var _a2;
+    const url = exportLinkUrl(raw);
+    if (!url) return;
+    const line = article.querySelector(selector);
+    for (const child of (_a2 = line == null ? void 0 : line.children) != null ? _a2 : []) {
+      if (child instanceof HTMLElement) pushRects(regions, url, child, frame);
+    }
+  };
+  collect(".ziminos-export-header", style.headerLink);
+  collect(".ziminos-export-footer", style.footerLink);
+  for (const anchor of article.querySelectorAll("a[href]")) {
+    const url = bodyLinkUrl(anchor);
+    if (url) pushRects(regions, url, anchor, frame);
+  }
+  return regions;
+}
+function frameOf(article) {
+  const base = article.getBoundingClientRect();
+  return {
+    left: base.left,
+    top: base.top,
+    scale: base.width > 0 && article.offsetWidth > 0 ? base.width / article.offsetWidth : 1
+  };
+}
+function pushRects(out, url, element, frame) {
+  for (const rect of element.getClientRects()) {
+    if (rect.width < 1 || rect.height < 1) continue;
+    out.push({
+      url,
+      x: (rect.left - frame.left) / frame.scale,
+      y: (rect.top - frame.top) / frame.scale,
+      width: rect.width / frame.scale,
+      height: rect.height / frame.scale
+    });
+  }
+}
+function bodyLinkUrl(anchor) {
+  var _a2;
+  const raw = ((_a2 = anchor.getAttribute("href")) != null ? _a2 : "").trim();
+  return /^https?:\/\//i.test(raw) ? exportLinkUrl(raw) : "";
+}
+
+// src/modules/export/logo.ts
+var import_obsidian28 = require("obsidian");
+var LOGO_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "gif", "svg", "avif"];
+var MIME_BY_EXTENSION = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  gif: "image/gif",
+  svg: "image/svg+xml",
+  avif: "image/avif"
+};
+var MAX_LOGO_SIDE = 768;
+var cache = /* @__PURE__ */ new Map();
+function isLogoFile(file) {
+  return LOGO_EXTENSIONS.includes(file.extension.toLowerCase());
+}
+async function resolveLogo(app, path) {
+  var _a2;
+  const trimmed = path.trim();
+  if (!trimmed) return null;
+  const file = app.vault.getAbstractFileByPath(trimmed);
+  if (!(file instanceof import_obsidian28.TFile) || !isLogoFile(file)) return null;
+  const key = `${file.path}@${file.stat.mtime}`;
+  const cached = cache.get(key);
+  if (cached) return cached;
+  try {
+    const bytes = await app.vault.readBinary(file);
+    const mime = (_a2 = MIME_BY_EXTENSION[file.extension.toLowerCase()]) != null ? _a2 : "image/png";
+    const image = await decodeImage(`data:${mime};base64,${base64Of(bytes)}`);
+    const resolved = shrink(image, file.path);
+    cache.set(key, resolved);
+    return resolved;
+  } catch (e2) {
+    return null;
+  }
+}
+function decodeImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("\u56FE\u7247\u65E0\u6CD5\u89E3\u7801"));
+    image.src = dataUrl;
+  });
+}
+function shrink(image, path) {
+  const naturalWidth = Math.max(1, image.naturalWidth || image.width);
+  const naturalHeight = Math.max(1, image.naturalHeight || image.height);
+  const scale = Math.min(1, MAX_LOGO_SIDE / Math.max(naturalWidth, naturalHeight));
+  const width = Math.max(1, Math.round(naturalWidth * scale));
+  const height = Math.max(1, Math.round(naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("\u6D4F\u89C8\u5668\u6CA1\u6709\u7ED9\u51FA\u753B\u5E03\u4E0A\u4E0B\u6587");
+  context.drawImage(image, 0, 0, width, height);
+  return { path, dataUrl: canvas.toDataURL("image/png"), width, height };
+}
+function base64Of(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let start = 0; start < bytes.length; start += 32768) {
+    binary += String.fromCharCode(...bytes.subarray(start, start + 32768));
+  }
+  return btoa(binary);
+}
 
 // src/modules/export/modal.ts
-var import_obsidian28 = require("obsidian");
-var ExportOptionsModal = class extends import_obsidian28.Modal {
-  constructor(app, initial) {
+var import_obsidian30 = require("obsidian");
+
+// src/modules/export/logoImport.ts
+var import_obsidian29 = require("obsidian");
+var LOGO_HOME = `${FOLDERS.system}/\u5BFC\u51FA\u6807\u5FD7`;
+function canImportLogo() {
+  return import_obsidian29.Platform.isDesktopApp && resolveOpenDialog() !== null;
+}
+async function importLogoFromDisk(app) {
+  var _a2;
+  const dialog = resolveOpenDialog();
+  if (!dialog) throw new Error("\u8FD9\u53F0\u8BBE\u5907\u6253\u4E0D\u5F00\u7CFB\u7EDF\u6587\u4EF6\u9009\u62E9\u6846\uFF0C\u8BF7\u6539\u7528\u300C\u4ECE\u5E93\u91CC\u9009\u300D\u3002");
+  const result = await dialog.showOpenDialog({
+    title: "\u9009\u4E00\u5F20\u56FE\u7247\u5F53\u54C1\u724C\u6807\u5FD7",
+    properties: ["openFile"],
+    filters: [{ name: "\u56FE\u7247", extensions: LOGO_EXTENSIONS }]
+  });
+  if (result.canceled || !((_a2 = result.filePaths) == null ? void 0 : _a2.length)) return null;
+  const source = result.filePaths[0];
+  const name = baseNameOf(source);
+  const extension = extensionOf(name);
+  if (!LOGO_EXTENSIONS.includes(extension)) {
+    throw new Error(`\u4E0D\u8BA4\u8BC6\u7684\u56FE\u7247\u683C\u5F0F\uFF1A.${extension || "\uFF08\u6CA1\u6709\u6269\u5C55\u540D\uFF09"}`);
+  }
+  const fs = require("node:fs/promises");
+  const bytes = await fs.readFile(source);
+  await ensureFolderPath(app, LOGO_HOME);
+  const existing = await findIdentical(app, bytes);
+  if (existing) return existing;
+  const path = freePath(app, name);
+  await app.vault.createBinary(path, bytes.slice().buffer);
+  return path;
+}
+async function findIdentical(app, bytes) {
+  const candidates = app.vault.getFiles().filter((file) => {
+    var _a2;
+    return ((_a2 = file.parent) == null ? void 0 : _a2.path) === LOGO_HOME && LOGO_EXTENSIONS.includes(file.extension.toLowerCase());
+  });
+  for (const file of candidates) {
+    if (file.stat.size !== bytes.byteLength) continue;
+    const stored = new Uint8Array(await app.vault.readBinary(file));
+    if (sameBytes(stored, bytes)) return file.path;
+  }
+  return null;
+}
+function sameBytes(left, right) {
+  if (left.length !== right.length) return false;
+  for (let index2 = 0; index2 < left.length; index2 += 1) {
+    if (left[index2] !== right[index2]) return false;
+  }
+  return true;
+}
+function freePath(app, name) {
+  const extension = extensionOf(name);
+  const stem = extension ? name.slice(0, -(extension.length + 1)) : name;
+  const safeStem = stem.replace(/[\\/:*?"<>|]/g, "\uFF0D").trim() || "\u6807\u5FD7";
+  let candidate = `${LOGO_HOME}/${safeStem}.${extension}`;
+  let serial = 1;
+  while (app.vault.getAbstractFileByPath(candidate) instanceof import_obsidian29.TFile) {
+    candidate = `${LOGO_HOME}/${safeStem}-${serial}.${extension}`;
+    serial += 1;
+  }
+  return candidate;
+}
+function baseNameOf(path) {
+  const parts = path.split(/[\\/]/);
+  return parts[parts.length - 1] || "\u6807\u5FD7.png";
+}
+function extensionOf(name) {
+  const dot = name.lastIndexOf(".");
+  return dot > 0 ? name.slice(dot + 1).toLowerCase() : "";
+}
+function resolveOpenDialog() {
+  var _a2, _b2;
+  if (!import_obsidian29.Platform.isDesktopApp) return null;
+  try {
+    const electron = require("electron");
+    if ((_a2 = electron.remote) == null ? void 0 : _a2.dialog) return electron.remote.dialog;
+  } catch (e2) {
+  }
+  try {
+    const remote = require("@electron/remote");
+    return (_b2 = remote.dialog) != null ? _b2 : null;
+  } catch (e2) {
+    return null;
+  }
+}
+
+// src/modules/export/panel.ts
+function buildExportPanel(host, panel) {
+  const refreshers = [];
+  const S2 = () => panel.value();
+  duo(
+    row(host, "\u683C\u5F0F", "PNG \u662F\u4E00\u6574\u5F20\u957F\u56FE\uFF1BPDF \u662F\u53EA\u542B\u4E00\u9875\u7684\u5B8C\u6574\u957F\u9875\u3002\u4E24\u8005\u62CD\u7684\u662F\u540C\u4E00\u5F20\u56FE").control,
+    ["png", EXPORT_FORMAT_LABELS.png],
+    ["pdf", EXPORT_FORMAT_LABELS.pdf],
+    () => S2().format,
+    (format) => panel.update({ format }),
+    refreshers
+  );
+  duo(
+    row(host, "\u7EB8\u5F20", "\u81EA\u9002\u5E94\uFF1D\u8DDF\u7740\u7F16\u8F91\u533A\u7684\u6B63\u6587\u680F\u8D70\uFF1B\u81EA\u5B9A\uFF1D\u9489\u6B7B\u5C3A\u5BF8\uFF0C\u6362\u53F0\u7535\u8111\u4E5F\u4E00\u6837").control,
+    ["auto", PAGE_SIZE_MODE_LABELS.auto],
+    ["fixed", PAGE_SIZE_MODE_LABELS.fixed],
+    () => S2().pageMode,
+    (pageMode) => panel.update({ pageMode }),
+    refreshers
+  );
+  const pageBody = host.createDiv({ cls: "ziminos-export-body" });
+  const presetRow = row(pageBody, "\u9884\u8BBE", "A4 / A3 \u6309 96dpi \u6362\u7B97\u6210\u50CF\u7D20\uFF1B\u9009\u4E2D\u5373\u628A\u4E0B\u9762\u4E24\u4E2A\u6570\u586B\u597D\uFF0C\u6B64\u540E\u7167\u6837\u80FD\u63A5\u7740\u62D6");
+  segmented(
+    presetRow.control,
+    ["free", "a4", "a3"].map((key) => [key, PAPER_PRESET_LABELS[key]]),
+    () => S2().paperPreset,
+    (preset) => {
+      const size = PAPER_PRESET_SIZES[preset];
+      panel.update(size ? { paperPreset: preset, ...size } : { paperPreset: preset });
+    },
+    refreshers
+  );
+  sliders(pageBody, "page", panel, refreshers);
+  segmented(
+    row(host, "\u660E\u6697", "\u5BFC\u51FA\u8FD9\u5F20\u7EB8\u7528\u54EA\u4E00\u5957\u914D\u8272\uFF0C\u4E0E Obsidian \u6B64\u523B\u662F\u4EC0\u4E48\u4E3B\u9898\u5206\u5F00\u3002\u5E38\u5E74\u7528\u6697\u8272\u5199\u4F5C\u3001\u5374\u8981\u4EA4\u4E00\u5F20\u767D\u5E95\u7ED9\u5BA2\u6237\uFF0C\u662F\u5F88\u5E38\u89C1\u7684\u4E00\u4EF6\u4E8B").control,
+    ["auto", "light", "dark"].map((key) => [key, EXPORT_THEME_LABELS[key]]),
+    () => S2().theme,
+    (theme) => panel.update({ theme }),
+    refreshers
+  );
+  buildLogoRow(host, panel, refreshers);
+  buildLine2(host, panel, "header", "\u9875\u7709", "\u663E\u793A\u5728\u6587\u7AE0\u6807\u9898\u4E0A\u65B9", refreshers);
+  buildLine2(host, panel, "footer", "\u9875\u811A", "\u663E\u793A\u5728\u6587\u7AE0\u6B63\u6587\u4E0B\u65B9", refreshers);
+  buildWatermark(host, panel, refreshers);
+  refreshers.push(() => {
+    pageBody.hidden = S2().pageMode !== "fixed";
+    presetRow.row.hidden = S2().format !== "pdf";
+  });
+  return () => {
+    for (const refresh of refreshers) refresh();
+  };
+}
+function buildLogoRow(host, panel, refreshers) {
+  const cell = row(host, "\u6807\u5FD7", "\u4E00\u5F20\u56FE\uFF0C\u9875\u7709\u9875\u811A\u6C34\u5370\u4E09\u5904\u5404\u81EA\u51B3\u5B9A\u653E\u591A\u5927\uFF1B0 \u5C31\u662F\u90A3\u4E00\u5904\u4E0D\u653E");
+  const box = cell.control.createDiv({ cls: "ziminos-export-logo" });
+  const thumb = box.createDiv({ cls: "ziminos-export-logo-thumb" });
+  const pick = box.createEl("button", { cls: "ziminos-export-mini", text: "\u9009\u56FE", attr: { type: "button" } });
+  const name = box.createDiv({ cls: "ziminos-export-logo-name" });
+  const clear = box.createEl("button", {
+    cls: "ziminos-export-reset",
+    text: "\u2715",
+    attr: { type: "button", title: "\u4E0D\u7528\u6807\u5FD7" }
+  });
+  pick.addEventListener("click", () => panel.pickLogo());
+  clear.addEventListener("click", () => panel.clearLogo());
+  refreshers.push(() => {
+    const url = panel.logoUrl();
+    thumb.style.backgroundImage = url ? `url("${url}")` : "";
+    name.setText(panel.logoName());
+  });
+}
+function buildLine2(host, panel, section, label, tip, refreshers) {
+  const isHeader = section === "header";
+  const onKey = isHeader ? "headerEnabled" : "footerEnabled";
+  const alignKey = isHeader ? "headerAlign" : "footerAlign";
+  const colorKey = isHeader ? "headerColor" : "footerColor";
+  const linkKey = isHeader ? "headerLink" : "footerLink";
+  const S2 = () => panel.value();
+  rule(host);
+  const head = row(host, label, tip);
+  head.row.addClass("ziminos-export-head");
+  swatch(head.control, colorKey, panel, refreshers);
+  toggle(head.control, () => S2()[onKey], (on) => panel.update({ [onKey]: on }), refreshers);
+  const body = host.createDiv({ cls: "ziminos-export-body" });
+  segmented(
+    row(body, "\u4F4D\u7F6E", "\u8FD9\u4E00\u884C\u9760\u7EB8\u7684\u54EA\u4E00\u8FB9").control,
+    ["left", "center", "right"].map((key) => [key, EXPORT_ALIGN_LABELS[key]]),
+    () => S2()[alignKey],
+    (align) => panel.update({ [alignKey]: align }),
+    refreshers
+  );
+  text5(
+    row(body, "\u6587\u5B57", "\u53EF\u7528 {title}\u3001{date}\u3001{time}\uFF1B\u7559\u7A7A\u5C31\u53EA\u653E\u6807\u5FD7\u6216\u94FE\u63A5").control,
+    section,
+    "\u7559\u7A7A\u5373\u4E0D\u52A0",
+    panel,
+    refreshers
+  );
+  buildLinkRow(body, panel, linkKey, refreshers);
+  sliders(body, section, panel, refreshers);
+  refreshers.push(() => {
+    body.hidden = !S2()[onKey];
+  });
+}
+function buildLinkRow(host, panel, key, refreshers) {
+  const cell = row(host, "\u94FE\u63A5", "");
+  text5(cell.control, key, "edu.example.com", panel, refreshers);
+  refreshers.push(() => {
+    const png = panel.value().format === "png";
+    cell.row.toggleClass("ziminos-export-warn", png);
+    cell.row.setAttribute("title", png ? "PNG \u662F\u56FE\u7247\uFF0C\u70B9\u4E0D\u4E86\u3002\u8981\u53EF\u70B9\u7684\u94FE\u63A5\uFF0C\u628A\u683C\u5F0F\u6362\u6210 PDF" : "\u586B\u4E00\u4E2A\u7F51\u5740\uFF0C\u8FD9\u4E00\u884C\u5728 PDF \u91CC\u6574\u6BB5\u53EF\u70B9\u5E76\u5E26\u4E0B\u5212\u7EBF\uFF08\u4E0D\u5E26 https:// \u4E5F\u8BA4\uFF09");
+  });
+}
+function buildWatermark(host, panel, refreshers) {
+  const S2 = () => panel.value();
+  rule(host);
+  const head = row(host, "\u6C34\u5370", "\u94FA\u5728\u6B63\u6587\u4E4B\u4E0A\u7684\u90A3\u4E00\u5C42");
+  head.row.addClass("ziminos-export-head");
+  swatch(head.control, "watermarkColor", panel, refreshers);
+  toggle(
+    head.control,
+    () => S2().watermarkEnabled,
+    (on) => panel.update({ watermarkEnabled: on }),
+    refreshers
+  );
+  const body = host.createDiv({ cls: "ziminos-export-body" });
+  segmented(
+    row(body, "\u5E03\u5C40", "\u5E73\u94FA\u88C1\u4E0D\u6389\uFF0C\u9002\u5408\u9632\u8F6C\u53D1\uFF1B\u5355\u4E2A\u5B89\u9759\uFF0C\u9002\u5408\u5F53\u843D\u6B3E").control,
+    ["tile", "single"].map((key) => [key, WATERMARK_MODE_LABELS[key]]),
+    () => S2().watermarkMode,
+    (mode) => panel.update({ watermarkMode: mode }),
+    refreshers
+  );
+  const anchorRow = row(body, "\u4F4D\u7F6E", "\u5355\u4E2A\u843D\u6B3E\u843D\u5728\u7EB8\u7684\u54EA\u4E00\u683C");
+  anchorRow.row.addClass("ziminos-export-anchor");
+  segmented(
+    anchorRow.control,
+    WATERMARK_ANCHOR_GRID.flat().map((key) => [key, WATERMARK_ANCHOR_LABELS[key]]),
+    () => S2().watermarkAnchor,
+    (anchor) => panel.update({ watermarkAnchor: anchor }),
+    refreshers,
+    "ziminos-export-grid"
+  );
+  text5(
+    row(body, "\u6587\u5B57", "\u53EF\u7528 {title}\u3001{date}\u3001{time}\uFF1B\u7559\u7A7A\u5C31\u53EA\u653E\u6807\u5FD7").control,
+    "watermark",
+    "\u7559\u7A7A\u5373\u4E0D\u52A0",
+    panel,
+    refreshers
+  );
+  sliders(body, "watermark", panel, refreshers);
+  refreshers.push(() => {
+    body.hidden = !S2().watermarkEnabled;
+    anchorRow.row.hidden = S2().watermarkMode !== "single";
+  });
+}
+function row(host, label, tip) {
+  const line = host.createDiv({ cls: "ziminos-export-row" });
+  const name = line.createDiv({ cls: "ziminos-export-label", text: label });
+  if (tip) name.setAttribute("title", tip);
+  return { row: line, control: line.createDiv({ cls: "ziminos-export-ctl" }) };
+}
+function rule(host) {
+  host.createDiv({ cls: "ziminos-export-rule" });
+}
+function duo(host, left, right, read, write, refreshers) {
+  const track = host.createDiv({ cls: "ziminos-export-duo" });
+  track.createEl("i", { cls: "ziminos-export-duo-thumb" });
+  const labels = [left, right].map((entry) => {
+    const span = track.createEl("span", { cls: "ziminos-export-duo-lab", text: entry[1] });
+    span.addEventListener("click", () => write(entry[0]));
+    return span;
+  });
+  refreshers.push(() => {
+    track.dataset.at = read() === left[0] ? "0" : "1";
+    void labels;
+  });
+}
+function toggle(host, read, write, refreshers) {
+  const button = host.createEl("button", {
+    cls: "ziminos-export-toggle",
+    attr: { type: "button", role: "switch" }
+  });
+  button.addEventListener("click", () => write(!read()));
+  refreshers.push(() => button.setAttribute("aria-checked", read() ? "true" : "false"));
+}
+function swatch(host, key, panel, refreshers) {
+  const box = host.createEl("button", {
+    cls: "ziminos-export-swatch",
+    attr: { type: "button", title: "\u6587\u5B57\u989C\u8272\uFF08A\uFF1D\u8DDF\u968F\u6B63\u6587\u8272\uFF09" }
+  });
+  const input = box.createEl("input", { attr: { type: "color" } });
+  const reset = host.createEl("button", {
+    cls: "ziminos-export-reset",
+    text: "\u21BA",
+    attr: { type: "button", title: "\u8DDF\u968F\u6B63\u6587\u8272" }
+  });
+  input.addEventListener("input", () => panel.update({ [key]: input.value }));
+  reset.addEventListener("click", () => panel.update({ [key]: "" }));
+  refreshers.push(() => {
+    const current = panel.value()[key];
+    box.toggleClass("is-auto", !current);
+    input.value = current || panel.inheritedColor();
+  });
+}
+function segmented(host, items, read, write, refreshers, extraClass) {
+  const group = host.createDiv({ cls: "ziminos-export-seg" });
+  if (extraClass) group.addClass(extraClass);
+  const buttons = items.map(([value, label]) => {
+    const button = group.createEl("button", { text: label, attr: { type: "button" } });
+    button.addEventListener("click", () => write(value));
+    return { value, button };
+  });
+  refreshers.push(() => {
+    const current = read();
+    for (const entry of buttons) entry.button.toggleClass("is-on", entry.value === current);
+  });
+}
+function text5(host, key, placeholder, panel, refreshers) {
+  const input = host.createEl("input", { attr: { type: "text", placeholder } });
+  input.addEventListener("input", () => panel.update({ [key]: input.value }));
+  refreshers.push(() => {
+    const current = panel.value()[key];
+    if (input.value !== current) input.value = current;
+  });
+}
+function sliders(host, section, panel, refreshers) {
+  for (const spec of EXPORT_SLIDERS.filter((entry) => entry.section === section)) {
+    const cell = row(host, spec.name, spec.desc);
+    const slider = cell.control.createEl("input", {
+      cls: "ziminos-export-slider",
+      attr: { type: "range", min: spec.min, max: spec.max, step: spec.step }
+    });
+    const readout = cell.control.createEl("input", {
+      cls: "ziminos-export-value",
+      attr: { type: "number", min: spec.min, max: spec.max, step: spec.step }
+    });
+    const put = (raw) => panel.update({
+      [spec.key]: Math.min(spec.max, Math.max(spec.min, Math.round(raw)))
+    });
+    slider.addEventListener("input", () => put(Number(slider.value)));
+    readout.addEventListener("input", () => {
+      const typed = Number.parseFloat(readout.value);
+      if (Number.isFinite(typed)) put(typed);
+    });
+    refreshers.push(() => {
+      const current = panel.value()[spec.key];
+      if (Number(slider.value) !== current) slider.value = String(current);
+      if (Number.parseFloat(readout.value) !== current) readout.value = String(current);
+    });
+  }
+}
+
+// src/modules/export/modal.ts
+var VIEWPORT_PADDING = 24;
+var ExportPreviewModal = class extends import_obsidian30.Modal {
+  constructor(app, paper, initial, context, confirm) {
     super(app);
     this.resolver = null;
+    this.refreshPanel = null;
+    this.canvasEl = null;
+    this.viewportEl = null;
+    this.metaEl = null;
+    this.observer = null;
+    this.frame = null;
+    this.logo = null;
+    /** 解析标志是异步的；只有最后一次请求有权写回结果，否则快速换两张图会画错那一张 */
+    this.logoToken = 0;
+    /** 正在问去处。挡住第二次点击——两个保存框叠在一起谁都说不清是哪一次导出 */
+    this.asking = false;
+    this.paper = paper;
     this.initial = initial;
-    this.value = { ...initial };
+    this.context = context;
+    this.value = initial;
+    this.confirm = confirm;
   }
   openAndGetValue() {
     this.open();
@@ -40478,39 +41467,184 @@ var ExportOptionsModal = class extends import_obsidian28.Modal {
     });
   }
   onOpen() {
-    this.value = { ...this.initial };
+    this.value = this.initial;
+    this.logo = null;
+    this.modalEl.addClass("ziminos-export-modal");
     this.titleEl.setText("\u5BFC\u51FA\u5F53\u524D\u7B14\u8BB0");
     this.contentEl.empty();
-    this.contentEl.createEl("p", {
-      text: "\u81EA\u52A8\u6309\u5F53\u524D\u6587\u7AE0\u7684\u5B8C\u6574\u5BBD\u5EA6\u4E0E\u9AD8\u5EA6\u8F93\u51FA\u3002\u9875\u7709\u3001\u9875\u811A\u3001\u6C34\u5370\u7559\u7A7A\u5373\u5173\u95ED\uFF1B\u53EF\u7528 {title}\u3001{date}\u3001{time}\u3002"
+    const layout = this.contentEl.createDiv({ cls: "ziminos-export-layout" });
+    this.buildPreview(layout.createDiv({ cls: "ziminos-export-preview" }));
+    this.refreshPanel = buildExportPanel(layout.createDiv({ cls: "ziminos-export-controls" }), {
+      value: () => this.value,
+      update: (patch) => this.update(patch),
+      logoUrl: () => {
+        var _a2, _b2;
+        return (_b2 = (_a2 = this.logo) == null ? void 0 : _a2.dataUrl) != null ? _b2 : "";
+      },
+      logoName: () => this.logoStatus(),
+      inheritedColor: () => hexOf(getComputedStyle(this.paper.article).color) || "#6b7280",
+      pickLogo: () => void this.pickLogo(),
+      clearLogo: () => this.update({ logo: "" })
     });
-    new import_obsidian28.Setting(this.contentEl).setName("\u683C\u5F0F").setDesc("PNG \u662F\u4E00\u6574\u5F20\u957F\u56FE\uFF1BPDF \u662F\u53EA\u542B\u4E00\u9875\u7684\u5B8C\u6574\u957F\u9875\u3002").addDropdown((dropdown) => {
-      dropdown.addOption("png", "PNG \u957F\u56FE").addOption("pdf", "PDF \u5355\u9875").setValue(this.value.format).onChange((format) => {
-        this.value = { ...this.value, format };
-      });
-    });
-    this.addTextSetting("\u9875\u7709", "\u663E\u793A\u5728\u6587\u7AE0\u6807\u9898\u4E0A\u65B9\u3002", "header");
-    this.addTextSetting("\u9875\u811A", "\u663E\u793A\u5728\u6587\u7AE0\u6B63\u6587\u4E0B\u65B9\u3002", "footer");
-    this.addTextSetting("\u6C34\u5370", "\u4EE5\u4F4E\u900F\u660E\u5EA6\u5728\u6574\u7BC7\u4E0A\u91CD\u590D\u94FA\u5F00\u3002", "watermark");
-    new import_obsidian28.Setting(this.contentEl).addButton((button) => {
-      button.setButtonText("\u53D6\u6D88").onClick(() => this.close());
-    }).addButton((button) => {
-      button.setButtonText("\u5BFC\u51FA").setCta().onClick(() => {
-        this.settle({ ...this.value });
-        this.close();
-      });
-    });
+    this.buildActions();
+    this.refreshPanel();
+    this.redraw();
+    void this.loadLogo();
   }
   onClose() {
+    var _a2;
+    if (this.frame !== null) cancelAnimationFrame(this.frame);
+    this.frame = null;
+    this.logoToken += 1;
+    (_a2 = this.observer) == null ? void 0 : _a2.disconnect();
+    this.observer = null;
+    this.paper.unmount();
+    this.refreshPanel = null;
+    this.canvasEl = null;
+    this.viewportEl = null;
+    this.metaEl = null;
     this.contentEl.empty();
     this.settle(null);
   }
-  addTextSetting(name, description, key) {
-    new import_obsidian28.Setting(this.contentEl).setName(name).setDesc(description).addText((text4) => {
-      text4.setPlaceholder("\u7559\u7A7A\u5373\u4E0D\u6DFB\u52A0").setValue(this.value[key]).onChange((value) => {
-        this.value = { ...this.value, [key]: value };
-      });
+  // ============================================================
+  // 预览
+  // ============================================================
+  buildPreview(host) {
+    this.metaEl = host.createDiv({ cls: "ziminos-export-meta" });
+    this.viewportEl = host.createDiv({ cls: "ziminos-export-viewport" });
+    this.canvasEl = this.viewportEl.createDiv({ cls: "ziminos-export-canvas" });
+    this.observer = new ResizeObserver(() => this.fitPreview());
+    this.observer.observe(this.viewportEl);
+  }
+  /**
+   * 先定明暗、再定尺寸、然后施装饰，最后重算预览缩放——四步的先后不能换。
+   *
+   * 明暗改的是配色变量，而装饰层要读正文色去定水印颜色；纸宽会让正文重新折行、纸变高，
+   * 而水印层要盖满**此刻**这张纸。内容一帧都不重渲：Markdown 早已是 DOM，改宽度只是重排一次。
+   */
+  redraw() {
+    this.paper.setTheme(this.value.theme);
+    this.paper.resize(pageWidthOf(this.value), pageMinHeightOf(this.value));
+    applyDecorations(this.paper.article, this.value, this.context, this.logo);
+    this.fitPreview();
+  }
+  schedule() {
+    if (this.frame !== null) return;
+    this.frame = requestAnimationFrame(() => {
+      this.frame = null;
+      this.redraw();
     });
+  }
+  fitPreview() {
+    var _a2;
+    const viewport = this.viewportEl;
+    const canvas = this.canvasEl;
+    if (!viewport || !canvas) return;
+    const paper = this.paper.measure();
+    const available = Math.max(1, viewport.clientWidth - VIEWPORT_PADDING);
+    const scale = Math.min(1, available / paper.width);
+    this.paper.mount(canvas, scale);
+    canvas.style.width = `${Math.ceil(paper.width * scale)}px`;
+    canvas.style.height = `${Math.ceil(paper.height * scale)}px`;
+    (_a2 = this.metaEl) == null ? void 0 : _a2.setText(
+      `\u7EB8\u9762 ${paper.width.toLocaleString("zh-CN")} \xD7 ${paper.height.toLocaleString("zh-CN")} px\u3000\xB7\u3000\u5BFC\u51FA\u6E05\u6670\u5EA6 ${captureScale(paper.width, paper.height).toFixed(1)}\xD7\u3000\xB7\u3000\u9884\u89C8 ${Math.round(scale * 100)}%`
+    );
+  }
+  // ============================================================
+  // 标志
+  // ============================================================
+  /** 三种状态各有各的话：没选过、选了但读不出、读出来了多大 */
+  logoStatus() {
+    const path = this.value.logo.trim();
+    if (!path) return "\u672A\u9009";
+    if (!this.logo) return `\u8BFB\u4E0D\u51FA\uFF1A${path}`;
+    return path;
+  }
+  /**
+   * 选标志只有一枚按钮，平台决定它开哪一种。
+   *
+   * 桌面端开系统文件框——用户的 logo 本来就在电脑上，逼他先拖进笔记库再回来选一遍，
+   * 是把实现细节当成他的工序；选完由插件复制进库，存的仍是库内路径。
+   * 手机上没有那个框，就退回库内图片清单（一个封闭集合，走 ChoiceModal 而不是手打路径）。
+   */
+  async pickLogo() {
+    if (canImportLogo()) {
+      try {
+        const path = await importLogoFromDisk(this.app);
+        if (!path) return;
+        this.update({ logo: path });
+        new import_obsidian30.Notice(`\u6807\u5FD7\u5DF2\u653E\u8FDB\u7B14\u8BB0\u5E93\uFF1A${path}`);
+      } catch (error) {
+        new import_obsidian30.Notice(`\u9009\u56FE\u5931\u8D25\uFF1A${error instanceof Error ? error.message : String(error)}`);
+      }
+      return;
+    }
+    const images = this.app.vault.getFiles().filter((file) => isLogoFile(file));
+    if (!images.length) {
+      new import_obsidian30.Notice("\u7B14\u8BB0\u5E93\u91CC\u8FD8\u6CA1\u6709\u56FE\u7247\u3002\u5148\u628A\u6807\u5FD7\u653E\u8FDB\u5E93\u91CC\uFF0C\u518D\u56DE\u6765\u9009\u3002");
+      return;
+    }
+    const picked = await new ChoiceModal(this.app, {
+      title: "\u9009\u4E00\u5F20\u56FE\u7247\u5F53\u54C1\u724C\u6807\u5FD7",
+      items: images,
+      labelOf: (file) => file.path
+    }).openAndGetChoice();
+    if (picked) this.update({ logo: picked.path });
+  }
+  /** 读盘是异步的，所以它自己排在预览之外；读完再同步一次控件与画面 */
+  async loadLogo() {
+    var _a2;
+    const token = ++this.logoToken;
+    const resolved = await resolveLogo(this.app, this.value.logo);
+    if (token !== this.logoToken) return;
+    this.logo = resolved;
+    (_a2 = this.refreshPanel) == null ? void 0 : _a2.call(this);
+    this.schedule();
+  }
+  // ============================================================
+  // 底部与状态
+  // ============================================================
+  buildActions() {
+    const bar = this.contentEl.createDiv({ cls: "ziminos-export-actions" });
+    const reset = bar.createEl("button", {
+      cls: "ziminos-export-reset",
+      text: "\u21BA",
+      attr: { type: "button", title: "\u6062\u590D\u9ED8\u8BA4\u98CE\u683C" }
+    });
+    const cancel = bar.createEl("button", { text: "\u53D6\u6D88", attr: { type: "button" } });
+    const confirm = bar.createEl("button", { cls: "mod-cta", text: "\u5BFC\u51FA", attr: { type: "button" } });
+    reset.addEventListener("click", () => this.update(DEFAULT_EXPORT_STYLE));
+    cancel.addEventListener("click", () => this.close());
+    confirm.addEventListener("click", () => void this.finish(confirm));
+  }
+  /**
+   * 按下导出：先问去处，问到了才关窗。
+   *
+   * 取消保存框与导出失败在这里是同一种结局——弹窗留着。它们对用户是同一件事：
+   * 「这次没导出成」，而他刚调了十分钟的那套风格不该因此消失。
+   */
+  async finish(button) {
+    if (this.asking) return;
+    this.asking = true;
+    button.disabled = true;
+    try {
+      if (!await this.confirm(this.value)) return;
+      this.settle(this.value);
+      this.close();
+    } catch (error) {
+      new import_obsidian30.Notice(`\u5BFC\u51FA\u5931\u8D25\uFF1A${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      this.asking = false;
+      button.disabled = false;
+    }
+  }
+  update(patch) {
+    var _a2;
+    const previous = this.value.logo;
+    this.value = { ...this.value, ...patch };
+    if (this.value.logo !== previous) void this.loadLogo();
+    (_a2 = this.refreshPanel) == null ? void 0 : _a2.call(this);
+    this.schedule();
   }
   settle(value) {
     const resolve = this.resolver;
@@ -40518,143 +41652,189 @@ var ExportOptionsModal = class extends import_obsidian28.Modal {
     resolve == null ? void 0 : resolve(value);
   }
 };
+function hexOf(color2) {
+  const match = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(color2.trim());
+  if (!match) return /^#[0-9a-f]{3,8}$/i.test(color2.trim()) ? color2.trim().toLowerCase() : "";
+  return `#${[match[1], match[2], match[3]].map((part) => Number(part).toString(16).padStart(2, "0")).join("")}`;
+}
 
-// src/modules/export/exporter.ts
-var ARTICLE_WIDTH_FALLBACK = 760;
-var ARTICLE_WIDTH_MIN = 480;
-var ARTICLE_WIDTH_MAX = 1600;
+// src/modules/export/paper.ts
+var import_obsidian31 = require("obsidian");
+var COLUMN_SELECTORS = [".markdown-preview-sizer", ".cm-content", ".cm-sizer"];
+var MIN_PAGE_MARGIN = 48;
+var FALLBACK_METRICS = {
+  width: 760,
+  paddingX: 56,
+  paddingY: 48,
+  fontSize: "",
+  fontFamily: "",
+  lineHeight: ""
+};
 var IMAGE_TIMEOUT_MS = 6e3;
 var LAYOUT_TIMEOUT_MS = 3e3;
-function registerExportCommand(ctx) {
-  let previous = DEFAULT_EXPORT_OPTIONS;
-  ctx.commands.register(EXPORT_COMMAND, () => {
-    void (async () => {
-      const options = await new ExportOptionsModal(ctx.app, previous).openAndGetValue();
-      if (!options) return;
-      previous = options;
-      await exportCurrentNote(ctx, options);
-    })();
-  });
-}
-async function exportCurrentNote(ctx, options) {
-  const file = ctx.app.workspace.getActiveFile();
-  if (!(file instanceof import_obsidian29.TFile) || file.extension !== "md") {
-    new import_obsidian29.Notice("\u8BF7\u5148\u6253\u5F00\u4E00\u7BC7 Markdown \u7B14\u8BB0\u3002");
-    return;
-  }
-  let article = null;
-  try {
-    new import_obsidian29.Notice("\u6B63\u5728\u751F\u6210\u5B8C\u6574\u957F\u9875\u2026");
-    article = await renderArticle(ctx, file, options);
-    const scale = captureScale(article.width, article.height);
-    const blob = await import_dom_to_image_more.default.toBlob(article.element, {
-      width: article.width,
-      height: article.height,
-      scale,
-      bgcolor: backgroundColorOf(article.element)
-    });
-    if (!blob) throw new Error("\u6D4F\u89C8\u5668\u6CA1\u6709\u751F\u6210\u56FE\u7247\u6570\u636E");
-    const bytes = options.format === "png" ? new Uint8Array(await blob.arrayBuffer()) : await pdfBytes(blob, article.width, article.height);
-    const saved = await saveExport(ctx, file, options.format, bytes);
-    if (saved) new import_obsidian29.Notice(`\u5DF2\u5BFC\u51FA\uFF1A${saved}`);
-  } catch (error) {
-    const message2 = error instanceof Error ? error.message : String(error);
-    new import_obsidian29.Notice(`\u5BFC\u51FA\u5931\u8D25\uFF1A${message2}`);
-  } finally {
-    article == null ? void 0 : article.release();
-  }
-}
-async function renderArticle(ctx, file, options) {
+async function renderPaper(ctx, file) {
   var _a2;
-  const component = new import_obsidian29.Component();
+  const component = new import_obsidian31.Component();
   const stage = document.body.createDiv({ cls: "ziminos-export-stage" });
-  const article = stage.createDiv({ cls: "markdown-preview-view markdown-rendered ziminos-export-article" });
+  const article = stage.createDiv({
+    cls: "markdown-preview-view markdown-rendered ziminos-export-article"
+  });
   const content = article.createDiv({ cls: "markdown-preview-sizer" });
-  const now = /* @__PURE__ */ new Date();
-  const context = {
-    title: file.basename,
-    date: localDay(now),
-    time: localTime(now)
-  };
-  const desiredWidth = articleWidthOf(ctx, file);
+  const metrics = measureSource(ctx, file);
+  let restoreTheme = null;
   component.load();
-  styleStage(stage);
-  styleArticle(article, content, desiredWidth);
-  if (options.header.trim()) {
-    content.createDiv({
-      cls: "ziminos-export-header",
-      text: resolveExportText(options.header.trim(), context)
-    });
-  }
+  parkStage(stage);
+  styleArticle(article, content, metrics);
   content.createDiv({ cls: "inline-title", text: file.basename });
   const markdown = content.createDiv({ cls: "ziminos-export-markdown" });
-  await import_obsidian29.MarkdownRenderer.render(ctx.app, await ctx.app.vault.cachedRead(file), markdown, file.path, component);
-  if (options.footer.trim()) {
-    content.createDiv({
-      cls: "ziminos-export-footer",
-      text: resolveExportText(options.footer.trim(), context)
-    });
-  }
+  await import_obsidian31.MarkdownRenderer.render(
+    ctx.app,
+    await ctx.app.vault.cachedRead(file),
+    markdown,
+    file.path,
+    component
+  );
   await inlineImages(markdown);
   await ((_a2 = document.fonts) == null ? void 0 : _a2.ready);
   await waitForStableLayout(article);
-  const naturalWidth = Math.ceil(Math.max(desiredWidth, article.scrollWidth));
-  article.style.width = `${naturalWidth}px`;
-  content.style.width = `${naturalWidth}px`;
-  await waitForStableLayout(article);
-  const width = Math.ceil(Math.max(1, article.scrollWidth));
-  const height = Math.ceil(Math.max(1, article.scrollHeight));
-  if (options.watermark.trim()) {
-    addWatermark(article, resolveExportText(options.watermark.trim(), context), width, height);
-  }
   return {
-    element: article,
-    width,
-    height,
+    article,
+    setTheme: (theme) => {
+      restoreTheme == null ? void 0 : restoreTheme();
+      restoreTheme = null;
+      stage.removeClass("theme-light");
+      stage.removeClass("theme-dark");
+      stage.style.colorScheme = "";
+      if (theme === "auto") return;
+      const wanted = theme === "light" ? "theme-light" : "theme-dark";
+      stage.addClass(wanted);
+      stage.style.colorScheme = theme;
+      restoreTheme = swapInterfaceTheme(wanted);
+    },
+    resize: (width, minHeight) => {
+      article.style.width = `${width != null ? width : metrics.width}px`;
+      article.style.minHeight = `${minHeight != null ? minHeight : 1}px`;
+    },
+    mount: (host, scale) => {
+      host.appendChild(stage);
+      Object.assign(stage.style, {
+        position: "absolute",
+        left: "0",
+        top: "0",
+        zIndex: "auto",
+        // 停靠时它是全透明的（见 parkStage），借给预览就得把这层隐藏收回来
+        opacity: "1",
+        transform: `scale(${scale})`,
+        transformOrigin: "top left"
+      });
+    },
+    unmount: () => {
+      document.body.appendChild(stage);
+      parkStage(stage);
+    },
+    // 宽取纸**自己**的宽，高取内容撑出来的高——两个方向刻意不对称，因为问题不一样。
+    //
+    // 宽度上，v0.25.0 已经定过：不因宽内容加宽，超宽表格与长代码行留在自己那个横向滚动的
+    // 盒子里。可这里一直问的是 scrollWidth，也就是「含溢出」的宽——那条决定只兑现了一半，
+    // 纸不加宽，拍下来的画布却加宽了，多出来的部分没有纸的底色，就是右边那条空带子。
+    // offsetWidth 还有一层好处：它不受 transform 影响，预览把舞台缩过之后问它照样是真值。
+    //
+    // 高度上没有这个问题：纸本来就该跟着内容往下长，那正是「长图」三个字的意思。
+    measure: () => ({
+      width: Math.ceil(Math.max(1, article.offsetWidth)),
+      height: Math.ceil(Math.max(1, article.scrollHeight))
+    }),
     release: () => {
+      restoreTheme == null ? void 0 : restoreTheme();
+      restoreTheme = null;
       component.unload();
       stage.remove();
     }
   };
 }
-function articleWidthOf(ctx, file) {
-  var _a2, _b2;
-  const view = ctx.app.workspace.getActiveViewOfType(import_obsidian29.MarkdownView);
-  if (!view || ((_a2 = view.file) == null ? void 0 : _a2.path) !== file.path) return ARTICLE_WIDTH_FALLBACK;
-  const element = view.contentEl.querySelector(".markdown-preview-sizer, .cm-sizer");
-  const measured = (_b2 = element == null ? void 0 : element.getBoundingClientRect().width) != null ? _b2 : 0;
-  return Math.round(Math.min(ARTICLE_WIDTH_MAX, Math.max(ARTICLE_WIDTH_MIN, measured || ARTICLE_WIDTH_FALLBACK)));
+var INTERFACE_THEMES = ["theme-light", "theme-dark"];
+function swapInterfaceTheme(wanted) {
+  const body = document.body;
+  const had = INTERFACE_THEMES.map((name) => ({ name, present: body.hasClass(name) }));
+  INTERFACE_THEMES.forEach((name) => body.removeClass(name));
+  body.addClass(wanted);
+  return () => {
+    INTERFACE_THEMES.forEach((name) => body.removeClass(name));
+    had.forEach((entry) => {
+      if (entry.present) body.addClass(entry.name);
+    });
+  };
 }
-function styleStage(stage) {
+function parkStage(stage) {
   Object.assign(stage.style, {
     position: "fixed",
-    left: "-100000px",
+    left: "0",
     top: "0",
+    opacity: "0",
     width: "max-content",
     height: "max-content",
     overflow: "visible",
     pointerEvents: "none",
-    zIndex: "-1"
+    zIndex: "-1",
+    transform: "none"
   });
 }
-function styleArticle(article, content, width) {
+function measureSource(ctx, file) {
+  var _a2;
+  const view = ctx.app.workspace.getActiveViewOfType(import_obsidian31.MarkdownView);
+  if (!view || ((_a2 = view.file) == null ? void 0 : _a2.path) !== file.path) return FALLBACK_METRICS;
+  const element = COLUMN_SELECTORS.map((selector) => view.contentEl.querySelector(selector)).find((found) => found !== null && found.getBoundingClientRect().width >= 1);
+  if (!element) return FALLBACK_METRICS;
+  const box = element.getBoundingClientRect();
+  const computed = getComputedStyle(element);
+  const width = Math.round(box.width);
+  if (!Number.isFinite(width) || width < 1) return FALLBACK_METRICS;
+  const paddingX = Math.max(
+    MIN_PAGE_MARGIN,
+    Math.round((pixels(computed.paddingLeft) + pixels(computed.paddingRight)) / 2)
+  );
+  const paddingTop = pixels(computed.paddingTop);
+  return {
+    width,
+    paddingX,
+    // 上下留白取真实值；真实值是 0 时跟左右一样宽——
+    // 那不是发明，是「这一栏的留白就这么宽」在另一个方向上的同一句话。
+    paddingY: Math.max(MIN_PAGE_MARGIN, paddingTop > 0 ? paddingTop : paddingX),
+    fontSize: computed.fontSize,
+    fontFamily: computed.fontFamily,
+    lineHeight: computed.lineHeight
+  };
+}
+function pixels(value) {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : 0;
+}
+function styleArticle(article, content, metrics) {
   Object.assign(article.style, {
     boxSizing: "border-box",
     position: "relative",
-    width: `${width}px`,
+    width: `${metrics.width}px`,
     minHeight: "1px",
     height: "auto",
+    // 页边只能有一个来源。这张纸挂着 `.markdown-preview-view`，主题会顺手再给它
+    // 一份左右内边距（真机实测 32px），而正文栏拿的是**整张纸的宽度**——
+    // 于是正文栏从这份内边距里整整溢出 32px，纸的右边多出一条没有底色的带子，
+    // 长度正好是那 32px。清零不是覆盖主题的排版，恰恰是让排版只由下面那一处说了算。
+    padding: "0",
     overflow: "visible",
     color: "var(--text-normal)",
     background: "var(--background-primary)"
   });
+  if (metrics.fontSize) article.style.fontSize = metrics.fontSize;
+  if (metrics.fontFamily) article.style.fontFamily = metrics.fontFamily;
+  if (metrics.lineHeight) article.style.lineHeight = metrics.lineHeight;
   Object.assign(content.style, {
     boxSizing: "border-box",
     position: "relative",
-    width: `${width}px`,
+    width: "100%",
     maxWidth: "none",
     minHeight: "1px",
-    padding: "48px 56px"
+    padding: `${metrics.paddingY}px ${metrics.paddingX}px`
   });
 }
 async function inlineImages(root) {
@@ -40676,16 +41856,16 @@ async function inlineImages(root) {
 }
 async function imageDataUrl(source) {
   if (/^https?:/i.test(source)) {
-    const response2 = await (0, import_obsidian29.requestUrl)({ url: source, method: "GET" });
+    const response2 = await (0, import_obsidian31.requestUrl)({ url: source, method: "GET" });
     const type = response2.headers["content-type"] || "application/octet-stream";
-    return `data:${type};base64,${base64Of(response2.arrayBuffer)}`;
+    return `data:${type};base64,${base64Of2(response2.arrayBuffer)}`;
   }
   const response = await fetch(source);
   if (!response.ok) throw new Error(`\u56FE\u7247\u8BFB\u53D6\u5931\u8D25\uFF1A${response.status}`);
   const blob = await response.blob();
-  return `data:${blob.type || "application/octet-stream"};base64,${base64Of(await blob.arrayBuffer())}`;
+  return `data:${blob.type || "application/octet-stream"};base64,${base64Of2(await blob.arrayBuffer())}`;
 }
-function base64Of(buffer) {
+function base64Of2(buffer) {
   const bytes = new Uint8Array(buffer);
   let binary = "";
   for (let start = 0; start < bytes.length; start += 32768) {
@@ -40722,32 +41902,191 @@ function withTimeout(promise, milliseconds) {
     );
   });
 }
-function addWatermark(article, text4, width, height) {
-  const escaped = escapeXml(text4);
-  const color = escapeXml(getComputedStyle(article).color || "#6b7280");
-  const tile = encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="280" height="180"><text x="140" y="90" text-anchor="middle" dominant-baseline="middle" transform="rotate(-28 140 90)" fill="${color}" fill-opacity="0.14" font-family="sans-serif" font-size="16">${escaped}</text></svg>`
-  );
-  const layer = article.createDiv({ cls: "ziminos-export-watermark" });
-  Object.assign(layer.style, {
-    position: "absolute",
-    left: "0",
-    top: "0",
-    width: `${width}px`,
-    height: `${height}px`,
-    zIndex: "20",
-    pointerEvents: "none",
-    backgroundImage: `url("data:image/svg+xml,${tile}")`,
-    backgroundRepeat: "repeat"
+
+// src/modules/export/progress.ts
+var import_obsidian32 = require("obsidian");
+
+// src/modules/export/progressBody.ts
+function createProgressBody(host, options) {
+  const total = Math.max(1, options.total);
+  const box = div(host, "ziminos-export-progress");
+  const head = div(box, "ziminos-export-progress-head");
+  const label = div(head, "ziminos-export-progress-label", "\u51C6\u5907\u4E2D\u2026");
+  const count = div(head, "ziminos-export-progress-count", `0 / ${total}`);
+  const fill = div(div(box, "ziminos-export-progress-track"), "ziminos-export-progress-fill");
+  let done = 0;
+  let settled = false;
+  fill.style.width = "0%";
+  return {
+    step: async (text6) => {
+      if (settled) return;
+      done = Math.min(total, done + 1);
+      label.textContent = text6;
+      count.textContent = `${done} / ${total}`;
+      fill.style.width = `${Math.round(done / total * 100)}%`;
+      await paint();
+    },
+    succeed: (message2) => {
+      if (settled) return;
+      settled = true;
+      options.onTitle("\u5BFC\u51FA\u6210\u529F");
+      label.textContent = message2;
+      count.textContent = `${total} / ${total}`;
+      fill.style.width = "100%";
+      box.classList.add("is-done");
+    },
+    fail: (message2, onDismiss) => {
+      if (settled) return;
+      settled = true;
+      options.onTitle("\u5BFC\u51FA\u5931\u8D25");
+      label.textContent = message2;
+      box.classList.add("is-failed");
+      const actions = div(host, "ziminos-export-progress-actions");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = "\u77E5\u9053\u4E86";
+      button.addEventListener("click", onDismiss);
+      actions.appendChild(button);
+    }
+  };
+}
+function div(host, cls, text6) {
+  const element = document.createElement("div");
+  element.className = cls;
+  if (text6 !== void 0) element.textContent = text6;
+  host.appendChild(element);
+  return element;
+}
+function paint() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
   });
 }
-function escapeXml(text4) {
-  return text4.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+
+// src/modules/export/progress.ts
+var SUCCESS_LINGER_MS = 1600;
+function openExportProgress(app, total) {
+  const modal = new ExportProgressModal(app, total);
+  modal.open();
+  return modal;
+}
+var ExportProgressModal = class extends import_obsidian32.Modal {
+  constructor(app, total) {
+    super(app);
+    this.body = null;
+    this.timer = null;
+    this.total = total;
+  }
+  onOpen() {
+    this.modalEl.addClass("ziminos-export-progress-modal");
+    this.titleEl.setText("\u6B63\u5728\u5BFC\u51FA");
+    this.contentEl.empty();
+    this.body = createProgressBody(this.contentEl, {
+      total: this.total,
+      onTitle: (text6) => this.titleEl.setText(text6)
+    });
+  }
+  onClose() {
+    if (this.timer !== null) window.clearTimeout(this.timer);
+    this.timer = null;
+    this.body = null;
+    this.contentEl.empty();
+  }
+  step(label) {
+    var _a2, _b2;
+    return (_b2 = (_a2 = this.body) == null ? void 0 : _a2.step(label)) != null ? _b2 : Promise.resolve();
+  }
+  succeed(message2) {
+    var _a2;
+    (_a2 = this.body) == null ? void 0 : _a2.succeed(message2);
+    this.timer = window.setTimeout(() => this.close(), SUCCESS_LINGER_MS);
+  }
+  fail(message2) {
+    var _a2;
+    (_a2 = this.body) == null ? void 0 : _a2.fail(message2, () => this.close());
+  }
+};
+
+// src/modules/export/exporter.ts
+function registerExportCommand(ctx) {
+  ctx.commands.register(EXPORT_COMMAND, () => {
+    void exportCurrentNote(ctx);
+  });
+}
+async function exportCurrentNote(ctx) {
+  const file = ctx.app.workspace.getActiveFile();
+  if (!(file instanceof import_obsidian33.TFile) || file.extension !== "md") {
+    new import_obsidian33.Notice("\u8BF7\u5148\u6253\u5F00\u4E00\u7BC7 Markdown \u7B14\u8BB0\u3002");
+    return;
+  }
+  let paper = null;
+  let progress = null;
+  try {
+    new import_obsidian33.Notice("\u6B63\u5728\u751F\u6210\u9884\u89C8\u2026");
+    paper = await renderPaper(ctx, file);
+    const context = templateContextOf(file);
+    const picked = { target: null };
+    const style = await new ExportPreviewModal(
+      ctx.app,
+      paper,
+      ctx.settings.exportStyle,
+      context,
+      async (candidate) => {
+        picked.target = await chooseTarget(ctx, file, candidate.format);
+        return picked.target !== null;
+      }
+    ).openAndGetValue();
+    const target = picked.target;
+    if (!style || !target) return;
+    await rememberStyle(ctx, style);
+    progress = openExportProgress(ctx.app, style.format === "pdf" ? 4 : 3);
+    const saved = await capture(ctx, file, paper, style, context, target, progress);
+    progress.succeed(`\u5DF2\u5BFC\u51FA\uFF1A${saved}`);
+  } catch (error) {
+    const message2 = error instanceof Error ? error.message : String(error);
+    if (progress) progress.fail(message2);
+    else new import_obsidian33.Notice(`\u5BFC\u51FA\u5931\u8D25\uFF1A${message2}`);
+  } finally {
+    paper == null ? void 0 : paper.release();
+  }
+}
+async function rememberStyle(ctx, style) {
+  ctx.settings.exportStyle = style;
+  await ctx.saveSettings();
+}
+async function capture(ctx, file, paper, style, context, target, progress) {
+  await progress.step("\u6392\u7248\u5B9A\u7A3F\u2026");
+  paper.setTheme(style.theme);
+  paper.resize(pageWidthOf(style), pageMinHeightOf(style));
+  applyDecorations(paper.article, style, context, await resolveLogo(ctx.app, style.logo));
+  const { width, height } = paper.measure();
+  await progress.step(`\u6B63\u5728\u6805\u683C\u5316 ${width.toLocaleString("zh-CN")} \xD7 ${height.toLocaleString("zh-CN")} px\u2026`);
+  const blob = await import_dom_to_image_more.default.toBlob(paper.article, {
+    width,
+    height,
+    scale: captureScale(width, height),
+    bgcolor: backgroundColorOf(paper.article)
+  });
+  if (!blob) throw new Error("\u6D4F\u89C8\u5668\u6CA1\u6709\u751F\u6210\u56FE\u7247\u6570\u636E");
+  const links = linkRegions(paper.article, style);
+  let bytes;
+  if (style.format === "png") {
+    bytes = new Uint8Array(await blob.arrayBuffer());
+  } else {
+    await progress.step("\u88C5\u8FDB\u5355\u9875 PDF\u2026");
+    bytes = await pdfBytes(blob, width, height, links);
+  }
+  await progress.step("\u5199\u5165\u6587\u4EF6\u2026");
+  const saved = await writeTarget(ctx, target, bytes);
+  if (style.format === "png" && links.length) {
+    new import_obsidian33.Notice("\u7B14\u8BB0\u91CC\u7684\u94FE\u63A5\u6CA1\u6709\u5199\u8FDB PNG\u2014\u2014\u56FE\u7247\u70B9\u4E0D\u4E86\u3002\u8981\u53EF\u70B9\u7684\u94FE\u63A5\uFF0C\u5BFC\u51FA\u6210 PDF\u3002");
+  }
+  return saved;
 }
 function backgroundColorOf(element) {
   return getComputedStyle(element).backgroundColor || "#ffffff";
 }
-async function pdfBytes(image, width, height) {
+async function pdfBytes(image, width, height, links) {
   const page = pdfPageSize(width, height);
   const pdf = new E({
     unit: "pt",
@@ -40765,11 +42104,17 @@ async function pdfBytes(image, width, height) {
     void 0,
     "FAST"
   );
+  const factor = page.width / Math.max(1, width);
+  for (const link of links) {
+    pdf.link(link.x * factor, link.y * factor, link.width * factor, link.height * factor, {
+      url: link.url
+    });
+  }
   return new Uint8Array(pdf.output("arraybuffer"));
 }
-async function saveExport(ctx, source, format, bytes) {
+async function chooseTarget(ctx, source, format) {
   const fileName = `${safeExportName(source.basename)}.${format}`;
-  if (import_obsidian29.Platform.isDesktopApp) {
+  if (import_obsidian33.Platform.isDesktopApp) {
     const dialog = resolveSaveDialog();
     if (dialog) {
       const result = await dialog.showSaveDialog({
@@ -40779,14 +42124,22 @@ async function saveExport(ctx, source, format, bytes) {
         properties: ["showOverwriteConfirmation", "createDirectory"]
       });
       if (result.canceled || !result.filePath) return null;
-      const fs = require("node:fs/promises");
-      await fs.writeFile(result.filePath, bytes);
-      return result.filePath;
+      return { kind: "system", path: result.filePath };
     }
   }
-  const path = await ctx.app.fileManager.getAvailablePathForAttachment(fileName, source.path);
-  await ctx.app.vault.createBinary(path, bytes.slice().buffer);
-  return path;
+  return {
+    kind: "vault",
+    path: await ctx.app.fileManager.getAvailablePathForAttachment(fileName, source.path)
+  };
+}
+async function writeTarget(ctx, target, bytes) {
+  if (target.kind === "system") {
+    const fs = require("node:fs/promises");
+    await fs.writeFile(target.path, bytes);
+    return target.path;
+  }
+  await ctx.app.vault.createBinary(target.path, bytes.slice().buffer);
+  return target.path;
 }
 function resolveSaveDialog() {
   var _a2, _b2;
@@ -40802,6 +42155,14 @@ function resolveSaveDialog() {
     return null;
   }
 }
+function templateContextOf(file) {
+  const now = /* @__PURE__ */ new Date();
+  return {
+    title: file.basename,
+    date: localDay(now),
+    time: localTime(now)
+  };
+}
 function localDay(value) {
   const year = value.getFullYear();
   const month = String(value.getMonth() + 1).padStart(2, "0");
@@ -40813,10 +42174,10 @@ function localTime(value) {
 }
 
 // src/modules/format/formatter.ts
-var import_obsidian31 = require("obsidian");
+var import_obsidian35 = require("obsidian");
 
 // src/core/markdownViewState.ts
-var import_obsidian30 = require("obsidian");
+var import_obsidian34 = require("obsidian");
 async function withPreservedMarkdownScroll(app, file, write) {
   const marks = captureMarkdownScroll(app, file.path);
   if (marks.length === 0) return write();
@@ -40831,7 +42192,7 @@ function captureMarkdownScroll(app, path) {
   const marks = [];
   app.workspace.iterateAllLeaves((leaf) => {
     var _a2;
-    if (!(leaf.view instanceof import_obsidian30.MarkdownView) || ((_a2 = leaf.view.file) == null ? void 0 : _a2.path) !== path) return;
+    if (!(leaf.view instanceof import_obsidian34.MarkdownView) || ((_a2 = leaf.view.file) == null ? void 0 : _a2.path) !== path) return;
     const mode = leaf.view.getMode();
     const scroll = leaf.view.currentMode.getScroll();
     if (!Number.isFinite(scroll) || scroll < 0) return;
@@ -40886,7 +42247,7 @@ function registerFormatter(ctx) {
   const formatPath = async (path) => {
     if (!ctx.settings.autoFormat) return;
     const file = ctx.app.vault.getAbstractFileByPath(path);
-    if (!(file instanceof import_obsidian31.TFile) || file.extension !== "md") return;
+    if (!(file instanceof import_obsidian35.TFile) || file.extension !== "md") return;
     const mayWrite = () => {
       var _a2;
       return ((_a2 = ctx.app.workspace.getActiveFile()) == null ? void 0 : _a2.path) !== path;
@@ -40931,7 +42292,7 @@ function registerFormatter(ctx) {
           dirtyWhileOpen.delete(file.path);
           return;
         }
-        if (!(file instanceof import_obsidian31.TFile) || file.extension !== "md") return;
+        if (!(file instanceof import_obsidian35.TFile) || file.extension !== "md") return;
         if (shouldSkip(file.path)) return;
         if (file.path === openPath) {
           dirtyWhileOpen.add(file.path);
@@ -40956,24 +42317,24 @@ function registerFormatter(ctx) {
   ctx.commands.register(FORMAT_COMMAND, () => {
     const file = ctx.app.workspace.getActiveFile();
     if (!file || file.extension !== "md") {
-      new import_obsidian31.Notice(TEXTS5.noFile);
+      new import_obsidian35.Notice(TEXTS5.noFile);
       return;
     }
     if (ctx.settings.formatRules.length === 0) {
-      new import_obsidian31.Notice(TEXTS5.noRules);
+      new import_obsidian35.Notice(TEXTS5.noRules);
       return;
     }
     void formatFile(file).then((changed) => {
       dirtyWhileOpen.delete(file.path);
-      new import_obsidian31.Notice(changed ? TEXTS5.formatted : TEXTS5.unchanged);
+      new import_obsidian35.Notice(changed ? TEXTS5.formatted : TEXTS5.unchanged);
     }).catch(() => {
-      new import_obsidian31.Notice(TEXTS5.failed);
+      new import_obsidian35.Notice(TEXTS5.failed);
     });
   });
 }
 
 // src/modules/legacy/vaultDock.ts
-var import_obsidian32 = require("obsidian");
+var import_obsidian36 = require("obsidian");
 var UNAVAILABLE_SUFFIX = "\uFF1A\u8FD9\u4E2A Obsidian \u7248\u672C\u6CA1\u6709\u7ED9\u51FA\u8FD9\u4E2A\u5165\u53E3\u3002\u5B83\u4E0D\u5C5E\u4E8E\u5B98\u65B9\u516C\u5F00 API\uFF0CziminOS \u63A2\u4E0D\u5230\u5C31\u4E0D\u786C\u6765\u3002\u4F60\u4ECD\u7136\u53EF\u4EE5\u7528 Obsidian \u81EA\u5DF1\u7684\u6309\u94AE\u505A\u540C\u4E00\u4EF6\u4E8B\u3002";
 function registerLegacyDock(ctx) {
   const { app } = ctx;
@@ -40994,17 +42355,17 @@ function bind(host, fn) {
 }
 function run(label, opener) {
   if (!opener) {
-    new import_obsidian32.Notice(label + UNAVAILABLE_SUFFIX);
+    new import_obsidian36.Notice(label + UNAVAILABLE_SUFFIX);
     return;
   }
   opener();
 }
 
 // src/modules/calendar/view.ts
-var import_obsidian34 = require("obsidian");
+var import_obsidian38 = require("obsidian");
 
 // src/modules/calendar/holidays.ts
-var import_obsidian33 = require("obsidian");
+var import_obsidian37 = require("obsidian");
 
 // src/modules/calendar/holidaySnapshot.ts
 var NOTICE_2026 = "https://www.gov.cn/zhengce/zhengceku/202511/content_7047091.htm";
@@ -41066,7 +42427,7 @@ var SOURCES = [
   (year) => `https://fastly.jsdelivr.net/gh/NateScarlet/holiday-cn@master/${year}.json`,
   (year) => `https://raw.githubusercontent.com/NateScarlet/holiday-cn/master/${year}.json`
 ];
-function isRecord3(value) {
+function isRecord4(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 function isIsoDate(value) {
@@ -41084,7 +42445,7 @@ function isGovernmentPaper(value) {
   }
 }
 function parseHolidayDataset(input, expectedYear) {
-  if (!isRecord3(input) || input.year !== expectedYear) return null;
+  if (!isRecord4(input) || input.year !== expectedYear) return null;
   if (!Array.isArray(input.papers) || !Array.isArray(input.days)) return null;
   const papers = [];
   for (const paper of input.papers) {
@@ -41094,7 +42455,7 @@ function parseHolidayDataset(input, expectedYear) {
   const days = [];
   const seen = /* @__PURE__ */ new Set();
   for (const item of input.days) {
-    if (!isRecord3(item)) return null;
+    if (!isRecord4(item)) return null;
     const name = typeof item.name === "string" ? item.name.trim() : "";
     const date = typeof item.date === "string" ? item.date : "";
     const dateYear = Number(date.slice(0, 4));
@@ -41184,7 +42545,7 @@ var HolidayService = class {
   async fetchDataset(year) {
     for (const source of SOURCES) {
       try {
-        const response = await (0, import_obsidian33.requestUrl)({ url: source(year), throw: false });
+        const response = await (0, import_obsidian37.requestUrl)({ url: source(year), throw: false });
         if (response.status !== 200) continue;
         const parsed = parseHolidayDataset(response.json, year);
         if (parsed) return parsed;
@@ -41208,14 +42569,14 @@ var HolidayService = class {
     try {
       if (!await adapter.exists(this.cachePath)) return;
       const raw = JSON.parse(await adapter.read(this.cachePath));
-      if (!isRecord3(raw) || raw.schemaVersion !== CACHE_SCHEMA_VERSION || !Array.isArray(raw.notices)) {
+      if (!isRecord4(raw) || raw.schemaVersion !== CACHE_SCHEMA_VERSION || !Array.isArray(raw.notices)) {
         return;
       }
       for (const item of raw.notices) {
-        if (!isRecord3(item) || typeof item.checkedAt !== "number" || !Number.isFinite(item.checkedAt)) {
+        if (!isRecord4(item) || typeof item.checkedAt !== "number" || !Number.isFinite(item.checkedAt)) {
           continue;
         }
-        if (!isRecord3(item.dataset)) continue;
+        if (!isRecord4(item.dataset)) continue;
         const year = item.dataset.year;
         if (typeof year !== "number" || !Number.isInteger(year)) continue;
         const dataset = parseHolidayDataset(item.dataset, year);
@@ -52603,11 +53964,11 @@ function monthGrid(year, month) {
 
 // src/modules/calendar/view.ts
 var CALENDAR_VIEW_TYPE = "ziminos-calendar";
-function registerCalendar(ctx, openPeriod) {
+function registerCalendar(ctx, openPeriod, hasNote) {
   const holidays = new HolidayService(ctx);
   ctx.plugin.registerView(
     CALENDAR_VIEW_TYPE,
-    (leaf) => new ZiminosCalendarView(leaf, holidays, openPeriod)
+    (leaf) => new ZiminosCalendarView(leaf, holidays, openPeriod, hasNote)
   );
   ctx.commands.register(OPEN_CALENDAR_COMMAND, () => {
     void revealCalendar(ctx.app, true).catch(() => void 0);
@@ -52623,13 +53984,16 @@ async function revealCalendar(app, active) {
     split: false
   });
 }
-var ZiminosCalendarView = class extends import_obsidian34.ItemView {
-  constructor(leaf, holidays, openPeriod) {
+var ZiminosCalendarView = class extends import_obsidian38.ItemView {
+  constructor(leaf, holidays, openPeriod, hasNote) {
     super(leaf);
     this.mode = "month";
     this.unsubscribe = null;
+    /** 笔记增删改名后重画的防抖句柄；无定时器、无轮询，只在真有事发生时排一次 */
+    this.repaint = null;
     this.holidays = holidays;
     this.openPeriod = openPeriod;
+    this.hasNote = hasNote;
     const today2 = /* @__PURE__ */ new Date();
     this.year = today2.getFullYear();
     this.month = today2.getMonth() + 1;
@@ -52646,6 +54010,12 @@ var ZiminosCalendarView = class extends import_obsidian34.ItemView {
   async onOpen() {
     this.contentEl.addClass("ziminos-calendar");
     this.unsubscribe = this.holidays.subscribe(() => this.renderCalendar());
+    const onChange = (file) => {
+      if (file instanceof import_obsidian38.TFile && file.extension === "md") this.scheduleRepaint();
+    };
+    this.registerEvent(this.app.vault.on("create", onChange));
+    this.registerEvent(this.app.vault.on("delete", onChange));
+    this.registerEvent(this.app.vault.on("rename", onChange));
     this.renderCalendar();
     void this.holidays.refreshCalendarYear(this.year);
   }
@@ -52653,7 +54023,36 @@ var ZiminosCalendarView = class extends import_obsidian34.ItemView {
     var _a2;
     (_a2 = this.unsubscribe) == null ? void 0 : _a2.call(this);
     this.unsubscribe = null;
+    if (this.repaint !== null) window.clearTimeout(this.repaint);
+    this.repaint = null;
     this.contentEl.empty();
+  }
+  /**
+   * 点一格＝写这一段复盘。写完立刻重画：那一格该当场变绿。
+   *
+   * 不靠上面那三个 vault 事件兜住这条路，是因为它们只在**新建**时触发；
+   * 点一格更常见的结果是「那篇已经在了，只是打开它」——那时没有任何事件，
+   * 而用户仍然期待看见自己刚点过的那一格是绿的（它本来就该是）。
+   *
+   * 名字里那三个多余的字是一次事故的赔款。它上一版就叫 `open`，而 `View.prototype`
+   * **自己有一个 `open`**——Obsidian 打开视图时调的正是它。我们的同名方法把它盖掉，
+   * 于是宿主调进来、拿到 undefined 的周期、在 `period.label` 上抛异常，
+   * 日历整个开不出来：右侧栏一片空白，编译期一个字都不报。
+   * 它不报是因为 `obsidian.d.ts`（8482 行）里根本没写这个成员——
+   * **声明文件是宿主答应支持的那一部分，不是它运行时真有的那一部分**。
+   * 继承宿主的类时，方法名只能取那些不可能是框架词汇的：
+   * `openAndRepaint` 同时说出了做什么与做完之后怎样，`open` 只是个通用动词。
+   */
+  async openAndRepaint(period, anchorDay) {
+    await this.openPeriod(period, anchorDay);
+    this.renderCalendar();
+  }
+  scheduleRepaint() {
+    if (this.repaint !== null) window.clearTimeout(this.repaint);
+    this.repaint = window.setTimeout(() => {
+      this.repaint = null;
+      this.renderCalendar();
+    }, 80);
   }
   renderCalendar() {
     this.contentEl.empty();
@@ -52771,9 +54170,10 @@ var ZiminosCalendarView = class extends import_obsidian34.ItemView {
         String(week.weekNumber),
         `\u521B\u5EFA\u6216\u6253\u5F00 ${week.weekYear} \u5E74\u7B2C ${week.weekNumber} \u5468\u590D\u76D8`,
         "ziminos-calendar-week",
-        () => void this.openPeriod("weekly", week.anchor)
+        () => void this.openAndRepaint("weekly", week.anchor)
       );
       weekButton.setAttribute("aria-label", `${week.weekYear} \u5E74\u7B2C ${week.weekNumber} \u5468`);
+      weekButton.toggleClass("has-note", this.hasNote("weekly", week.anchor));
       for (const day of week.days) this.renderDay(grid, day);
     }
   }
@@ -52785,10 +54185,11 @@ var ZiminosCalendarView = class extends import_obsidian34.ItemView {
       "",
       this.dayTitle(day, (_a2 = holiday == null ? void 0 : holiday.name) != null ? _a2 : "", (_b2 = holiday == null ? void 0 : holiday.isOffDay) != null ? _b2 : null),
       "ziminos-calendar-day",
-      () => void this.openPeriod("daily", day.date)
+      () => void this.openAndRepaint("daily", day.date)
     );
     button.toggleClass("is-other-month", !day.inMonth);
     button.toggleClass("is-today", day.isToday);
+    button.toggleClass("has-note", this.hasNote("daily", day.date));
     button.toggleClass("is-weekend", day.weekday >= 6 && !holiday);
     button.toggleClass("is-rest-day", (holiday == null ? void 0 : holiday.isOffDay) === true);
     button.toggleClass("is-work-day", (holiday == null ? void 0 : holiday.isOffDay) === false);
@@ -52836,16 +54237,16 @@ var ZiminosCalendarView = class extends import_obsidian34.ItemView {
     }
   }
   renderStatus(parent, status) {
-    const row = parent.createDiv({ cls: "ziminos-calendar-status" });
+    const row2 = parent.createDiv({ cls: "ziminos-calendar-status" });
     if (!status.hasSchedule) {
-      row.setText(`${this.year} \u5E74\u8C03\u4F11\u5B89\u6392\u5F85\u516C\u5E03\uFF0C\u8054\u7F51\u65F6\u81EA\u52A8\u8865\u9F50`);
+      row2.setText(`${this.year} \u5E74\u8C03\u4F11\u5B89\u6392\u5F85\u516C\u5E03\uFF0C\u8054\u7F51\u65F6\u81EA\u52A8\u8865\u9F50`);
       return;
     }
     if (status.lastCheckedAt) {
       const checked = new Date(status.lastCheckedAt).toLocaleDateString("zh-CN");
-      row.setText(`\u56FD\u52A1\u9662\u653E\u5047\u5B89\u6392\u5DF2\u4E8E ${checked} \u81EA\u52A8\u6838\u9A8C`);
+      row2.setText(`\u56FD\u52A1\u9662\u653E\u5047\u5B89\u6392\u5DF2\u4E8E ${checked} \u81EA\u52A8\u6838\u9A8C`);
     } else {
-      row.setText("\u6B63\u5728\u540E\u53F0\u6838\u9A8C\u56FD\u52A1\u9662\u653E\u5047\u5B89\u6392");
+      row2.setText("\u6B63\u5728\u540E\u53F0\u6838\u9A8C\u56FD\u52A1\u9662\u653E\u5047\u5B89\u6392");
     }
   }
   makePeriodButton(parent, label, period, anchor, title) {
@@ -52876,7 +54277,7 @@ var ZiminosCalendarView = class extends import_obsidian34.ItemView {
 };
 
 // src/modules/contacts/identity.ts
-var import_obsidian35 = require("obsidian");
+var import_obsidian39 = require("obsidian");
 function archiveFolderOf(ctx) {
   return normalizeFolderPath(ctx.settings.archiveFolder, FOLDERS.archives);
 }
@@ -52907,7 +54308,7 @@ async function pickPerson(ctx, title) {
     ...liveNotesOfType(ctx, NOTE_TYPES.client)
   ];
   if (!candidates.length) {
-    new import_obsidian35.Notice("\u8FD8\u6CA1\u6709\u4EFB\u4F55\u4EBA\u8109\u6216\u5BA2\u6237\u6863\u6848\u3002\u5148\u8FD0\u884C\u300C\u65B0\u5EFA\u4EBA\u8109\u300D\u5EFA\u4E00\u4E2A\uFF0C\u518D\u6765\u5173\u8054\u3002");
+    new import_obsidian39.Notice("\u8FD8\u6CA1\u6709\u4EFB\u4F55\u4EBA\u8109\u6216\u5BA2\u6237\u6863\u6848\u3002\u5148\u8FD0\u884C\u300C\u65B0\u5EFA\u4EBA\u8109\u300D\u5EFA\u4E00\u4E2A\uFF0C\u518D\u6765\u5173\u8054\u3002");
     return null;
   }
   return new ChoiceModal(ctx.app, {
@@ -52991,12 +54392,12 @@ var roster = {
     const circles = /* @__PURE__ */ new Map();
     let stale = 0;
     for (const person of people) {
-      const row = rosterRowOf(view, person);
-      if (row.overdue) stale += 1;
+      const row2 = rosterRowOf(view, person);
+      if (row2.overdue) stale += 1;
       const circle = circleOf(view, person);
       const bucket = circles.get(circle);
-      if (bucket) bucket.push(row);
-      else circles.set(circle, [row]);
+      if (bucket) bucket.push(row2);
+      else circles.set(circle, [row2]);
     }
     renderSummary(
       view.el,
@@ -53018,13 +54419,13 @@ var roster = {
         view.el,
         view.sourcePath,
         ["\u8C01", "\u4E00\u53E5\u8BDD", "\u5C42", "\u65B9\u5411", "\u4ED6\u80FD\u7ED9\u6211\u7684", "\u6700\u8FD1\u8054\u7CFB"],
-        rows.map((row) => [
-          noteLink(row.file),
-          toText(view.index.fieldOf(row.file, FIELDS.description)),
-          row.tier || "\u2014",
-          toText(view.index.fieldOf(row.file, FIELDS.direction)) || "\u2014",
-          toStringList(view.index.fieldOf(row.file, FIELDS.get)).join("\u3001") || "\u2014",
-          lastContactText(row)
+        rows.map((row2) => [
+          noteLink(row2.file),
+          toText(view.index.fieldOf(row2.file, FIELDS.description)),
+          row2.tier || "\u2014",
+          toText(view.index.fieldOf(row2.file, FIELDS.direction)) || "\u2014",
+          toStringList(view.index.fieldOf(row2.file, FIELDS.get)).join("\u3001") || "\u2014",
+          lastContactText(row2)
         ]),
         1
       );
@@ -53046,14 +54447,14 @@ function rosterRowOf(view, person) {
     overdue: days === null || days > limit
   };
 }
-function staleness(row) {
+function staleness(row2) {
   var _a2;
-  return (_a2 = row.days) != null ? _a2 : Number.MAX_SAFE_INTEGER;
+  return (_a2 = row2.days) != null ? _a2 : Number.MAX_SAFE_INTEGER;
 }
-function lastContactText(row) {
-  if (row.days === null) return "\u26A0\uFE0F \u4ECE\u672A";
-  const text4 = row.days === 0 ? "\u4ECA\u5929" : `${row.days} \u5929\u524D`;
-  return row.overdue ? `\u26A0\uFE0F ${text4}` : text4;
+function lastContactText(row2) {
+  if (row2.days === null) return "\u26A0\uFE0F \u4ECE\u672A";
+  const text6 = row2.days === 0 ? "\u4ECA\u5929" : `${row2.days} \u5929\u524D`;
+  return row2.overdue ? `\u26A0\uFE0F ${text6}` : text6;
 }
 function circleOf(view, person) {
   var _a2, _b2, _c, _d;
@@ -53149,11 +54550,11 @@ var balance = {
       view.el,
       view.sourcePath,
       ["\u8C01", "\u6211\u6B20\u4ED6", "\u4ED6\u6B20\u6211", "\u6700\u8FD1\u4E00\u7B14"],
-      rows.map((row) => [
-        noteLink(row.person),
-        row.owing || "\u2014",
-        row.owed || "\u2014",
-        row.last
+      rows.map((row2) => [
+        noteLink(row2.person),
+        row2.owing || "\u2014",
+        row2.owed || "\u2014",
+        row2.last
       ])
     );
   }
@@ -53197,11 +54598,11 @@ var clientRoster = {
       view.el,
       view.sourcePath,
       ["\u4EBA\u7269", "\u91D1\u989D", "\u4EA4\u4ED8", "\u521B\u5EFA\u65E5\u671F"],
-      rows.map((row) => [
-        noteLink(row.note),
-        row.paymentCount ? formatMoney(row.amount) : "\u2014",
-        clientDeliveryText(row),
-        row.created
+      rows.map((row2) => [
+        noteLink(row2.note),
+        row2.paymentCount ? formatMoney(row2.amount) : "\u2014",
+        clientDeliveryText(row2),
+        row2.created
       ])
     );
   }
@@ -53545,13 +54946,13 @@ async function paymentsOf(view, note) {
   }
   return payments;
 }
-function inlineFieldsOf(text4) {
+function inlineFieldsOf(text6) {
   const fields = {};
   INLINE_FIELD.lastIndex = 0;
-  let match = INLINE_FIELD.exec(text4);
+  let match = INLINE_FIELD.exec(text6);
   while (match) {
     fields[match[1].trim()] = match[2].trim();
-    match = INLINE_FIELD.exec(text4);
+    match = INLINE_FIELD.exec(text6);
   }
   return fields;
 }
@@ -53583,16 +54984,16 @@ function formatMoney(amount) {
   return `\xA5${amount.toLocaleString("zh-CN")}`;
 }
 function clientRosterSummary(rows) {
-  const paymentCount = rows.reduce((total, row) => total + row.paymentCount, 0);
+  const paymentCount = rows.reduce((total, row2) => total + row2.paymentCount, 0);
   if (!paymentCount) return `\u5171 **${rows.length}** \u4F4D\u5BA2\u6237\uFF0C\u8FD8\u6CA1\u6709\u4ED8\u8D39\u6D41\u6C34\u3002`;
-  const amount = rows.reduce((total, row) => total + row.amount, 0);
-  const pendingClients = rows.filter((row) => row.pendingCount > 0).length;
+  const amount = rows.reduce((total, row2) => total + row2.amount, 0);
+  const pendingClients = rows.filter((row2) => row2.pendingCount > 0).length;
   const delivery = pendingClients ? `\u5176\u4E2D **${pendingClients} \u4F4D**\u4ECD\u6709\u5F85\u4EA4\u4ED8\u3002` : "\u5168\u90E8\u4EA4\u4ED8\u5B8C\u6210\u3002";
   return `\u5171 **${rows.length}** \u4F4D\u5BA2\u6237\uFF0C\u7D2F\u8BA1 **${formatMoney(amount)}**\uFF1B${delivery}`;
 }
-function clientDeliveryText(row) {
-  if (!row.paymentCount) return "\u2014";
-  if (row.pendingCount) return `\u23F3 \u5F85\u4EA4\u4ED8 ${row.pendingCount} \u9879`;
+function clientDeliveryText(row2) {
+  if (!row2.paymentCount) return "\u2014";
+  if (row2.pendingCount) return `\u23F3 \u5F85\u4EA4\u4ED8 ${row2.pendingCount} \u9879`;
   return "\u2705 \u5DF2\u4EA4\u4ED8";
 }
 function formatDays(days) {
@@ -53612,7 +55013,7 @@ var clientViews = [
 ];
 
 // src/modules/contacts/client.ts
-var import_obsidian36 = require("obsidian");
+var import_obsidian40 = require("obsidian");
 
 // src/core/markdown.ts
 var VIEW_FENCE = "```" + VIEW_BLOCK_LANG;
@@ -53632,7 +55033,7 @@ function toggleTaskLine(content, line, expectedChecked) {
 }
 function insertIntoSection(content, heading, line) {
   const { lines, lineEnding } = splitTextLines(content);
-  const headingIndex = lines.findIndex((text4) => text4.trim() === heading);
+  const headingIndex = lines.findIndex((text6) => text6.trim() === heading);
   if (headingIndex < 0) {
     return [content.replace(/\s*$/, ""), "", heading, "", line, ""].join(lineEnding);
   }
@@ -54104,7 +55505,7 @@ async function backfillClientAnswerViews(ctx) {
       await ctx.app.vault.process(file, (current) => ensureClientAnswerView(current));
       updated += 1;
     }
-    new import_obsidian36.Notice(`${MESSAGES5.answersDone}\uFF1A${updated} \u4EFD\u6863\u6848\u3002`);
+    new import_obsidian40.Notice(`${MESSAGES5.answersDone}\uFF1A${updated} \u4EFD\u6863\u6848\u3002`);
   } catch (error) {
     notifyFailure(error);
   }
@@ -54114,7 +55515,7 @@ async function setupClients(ctx, applySeed2) {
     const folder = normalizeFolderPath(ctx.settings.clientFolder, CLIENT_FOLDER);
     const mocPath = resolveBuiltInMocPath(ctx.app, folder, CLIENT_MOC, LEGACY_CLIENT_MOC);
     await applySeed2(clientSeed(ctx));
-    new import_obsidian36.Notice(MESSAGES5.setupDone);
+    new import_obsidian40.Notice(MESSAGES5.setupDone);
     await ctx.app.workspace.openLinkText(mocPath, "", false);
   } catch (error) {
     notifyFailure(error);
@@ -54128,11 +55529,11 @@ async function createClient(ctx) {
     }).openAndGetValue();
     const name = (answer != null ? answer : "").trim();
     if (!name) {
-      new import_obsidian36.Notice(MESSAGES5.cancelled);
+      new import_obsidian40.Notice(MESSAGES5.cancelled);
       return;
     }
     if (ILLEGAL_NAME.test(name)) {
-      new import_obsidian36.Notice(MESSAGES5.illegalName);
+      new import_obsidian40.Notice(MESSAGES5.illegalName);
       return;
     }
     const source = await new ChoiceModal(ctx.app, {
@@ -54141,21 +55542,21 @@ async function createClient(ctx) {
       labelOf: (item) => item
     }).openAndGetChoice();
     if (!source) {
-      new import_obsidian36.Notice(MESSAGES5.cancelled);
+      new import_obsidian40.Notice(MESSAGES5.cancelled);
       return;
     }
     const contact = await new TextInputModal(ctx.app, {
       title: MESSAGES5.contactPrompt
     }).openAndGetValue();
     if (contact === null) {
-      new import_obsidian36.Notice(MESSAGES5.cancelled);
+      new import_obsidian40.Notice(MESSAGES5.cancelled);
       return;
     }
     const folder = normalizeFolderPath(ctx.settings.clientFolder, CLIENT_FOLDER);
     const path = `${folder}/${name}.md`;
     const existing = ctx.app.vault.getAbstractFileByPath(path);
-    if (existing instanceof import_obsidian36.TFile) {
-      new import_obsidian36.Notice(MESSAGES5.existsPrefix + name);
+    if (existing instanceof import_obsidian40.TFile) {
+      new import_obsidian40.Notice(MESSAGES5.existsPrefix + name);
       await ctx.app.workspace.getLeaf(false).openFile(existing);
       return;
     }
@@ -54170,7 +55571,7 @@ async function createClient(ctx) {
     await ensureFolderPath(ctx.app, folder);
     ctx.guard.mark(path);
     const file = await ctx.app.vault.create(path, content);
-    new import_obsidian36.Notice(MESSAGES5.createdPrefix + name);
+    new import_obsidian40.Notice(MESSAGES5.createdPrefix + name);
     await ctx.app.workspace.getLeaf(false).openFile(file);
   } catch (error) {
     notifyFailure(error);
@@ -54180,7 +55581,7 @@ async function addPayment(ctx) {
   try {
     const clients = liveNotesOfType(ctx, NOTE_TYPES.client);
     if (!clients.length) {
-      new import_obsidian36.Notice(MESSAGES5.noClients);
+      new import_obsidian40.Notice(MESSAGES5.noClients);
       return;
     }
     const client = await new ChoiceModal(ctx.app, {
@@ -54192,7 +55593,7 @@ async function addPayment(ctx) {
       }
     }).openAndGetChoice();
     if (!client) {
-      new import_obsidian36.Notice(MESSAGES5.cancelled);
+      new import_obsidian40.Notice(MESSAGES5.cancelled);
       return;
     }
     const product = await new ChoiceModal(ctx.app, {
@@ -54201,7 +55602,7 @@ async function addPayment(ctx) {
       labelOf: (item) => item
     }).openAndGetChoice();
     if (!product) {
-      new import_obsidian36.Notice(MESSAGES5.cancelled);
+      new import_obsidian40.Notice(MESSAGES5.cancelled);
       return;
     }
     const amount = await askAmount(ctx);
@@ -54212,7 +55613,7 @@ async function addPayment(ctx) {
       client,
       (content) => insertIntoSection(content, CLIENT_PAYMENT_HEADING, line)
     );
-    new import_obsidian36.Notice(`${MESSAGES5.paidPrefix}${client.basename} \xB7 ${product} \xB7 ${amount}`);
+    new import_obsidian40.Notice(`${MESSAGES5.paidPrefix}${client.basename} \xB7 ${product} \xB7 ${amount}`);
   } catch (error) {
     notifyFailure(error);
   }
@@ -54221,7 +55622,7 @@ async function recordReceipt(ctx) {
   try {
     const projects = clientProjects2(ctx);
     if (!projects.length) {
-      new import_obsidian36.Notice(MESSAGES5.noProjects);
+      new import_obsidian40.Notice(MESSAGES5.noProjects);
       return;
     }
     const project = await new ChoiceModal(ctx.app, {
@@ -54230,7 +55631,7 @@ async function recordReceipt(ctx) {
       labelOf: (file) => file.basename
     }).openAndGetChoice();
     if (!project) {
-      new import_obsidian36.Notice(MESSAGES5.cancelled);
+      new import_obsidian40.Notice(MESSAGES5.cancelled);
       return;
     }
     const amount = await askAmount(ctx);
@@ -54241,7 +55642,7 @@ async function recordReceipt(ctx) {
       project,
       (content) => insertIntoSection(content, PROJECT_PAYMENT_HEADING, line)
     );
-    new import_obsidian36.Notice(`${MESSAGES5.receiptPrefix}${project.basename} \xB7 ${amount}`);
+    new import_obsidian40.Notice(`${MESSAGES5.receiptPrefix}${project.basename} \xB7 ${amount}`);
   } catch (error) {
     notifyFailure(error);
   }
@@ -54264,12 +55665,12 @@ async function askAmount(ctx) {
     placeholder: "\u4F8B\u5982\uFF1A365"
   }).openAndGetValue();
   if (answer === null) {
-    new import_obsidian36.Notice(MESSAGES5.cancelled);
+    new import_obsidian40.Notice(MESSAGES5.cancelled);
     return null;
   }
   const amount = Number(answer.trim());
   if (!Number.isFinite(amount) || amount <= 0) {
-    new import_obsidian36.Notice(MESSAGES5.amountInvalid);
+    new import_obsidian40.Notice(MESSAGES5.amountInvalid);
     return null;
   }
   return amount;
@@ -54279,11 +55680,11 @@ function optionsOf(raw) {
 }
 function notifyFailure(error) {
   const message2 = error instanceof Error ? error.message : String(error);
-  new import_obsidian36.Notice(MESSAGES5.failedPrefix + message2);
+  new import_obsidian40.Notice(MESSAGES5.failedPrefix + message2);
 }
 
 // src/modules/contacts/createContact.ts
-var import_obsidian37 = require("obsidian");
+var import_obsidian41 = require("obsidian");
 var ILLEGAL_NAME2 = /[\\/:*?"<>|#^[\]]/;
 var MESSAGES6 = {
   namePrompt: "\u8FD9\u4E2A\u4EBA\u53EB\u4EC0\u4E48\uFF1F\uFF08\u771F\u540D\uFF0C\u6863\u6848\u5C31\u7528\u5B83\u547D\u540D\uFF09",
@@ -54320,11 +55721,11 @@ async function createContact(ctx) {
     }).openAndGetValue();
     const name = (answer != null ? answer : "").trim();
     if (!name) {
-      new import_obsidian37.Notice(MESSAGES6.cancelled);
+      new import_obsidian41.Notice(MESSAGES6.cancelled);
       return;
     }
     if (ILLEGAL_NAME2.test(name)) {
-      new import_obsidian37.Notice(MESSAGES6.illegalName);
+      new import_obsidian41.Notice(MESSAGES6.illegalName);
       return;
     }
     const tier = await new ChoiceModal(ctx.app, {
@@ -54336,7 +55737,7 @@ async function createContact(ctx) {
       }
     }).openAndGetChoice();
     if (!tier) {
-      new import_obsidian37.Notice(MESSAGES6.cancelled);
+      new import_obsidian41.Notice(MESSAGES6.cancelled);
       return;
     }
     const direction = await new ChoiceModal(ctx.app, {
@@ -54348,15 +55749,15 @@ async function createContact(ctx) {
       }
     }).openAndGetChoice();
     if (!direction) {
-      new import_obsidian37.Notice(MESSAGES6.cancelled);
+      new import_obsidian41.Notice(MESSAGES6.cancelled);
       return;
     }
     const folder = normalizeFolderPath(ctx.settings.contactFolder, CONTACT_FOLDER);
     const mocPath = resolveBuiltInMocPath(ctx.app, folder, CONTACT_MOC, LEGACY_CONTACT_MOC);
     const path = `${folder}/${name}.md`;
     const existing = ctx.app.vault.getAbstractFileByPath(path);
-    if (existing instanceof import_obsidian37.TFile) {
-      new import_obsidian37.Notice(MESSAGES6.existsPrefix + name);
+    if (existing instanceof import_obsidian41.TFile) {
+      new import_obsidian41.Notice(MESSAGES6.existsPrefix + name);
       await ctx.app.workspace.getLeaf(false).openFile(existing);
       return;
     }
@@ -54372,11 +55773,11 @@ async function createContact(ctx) {
     await ensureFolderPath(ctx.app, folder);
     ctx.guard.mark(path);
     const file = await ctx.app.vault.create(path, content);
-    new import_obsidian37.Notice(MESSAGES6.donePrefix + name);
+    new import_obsidian41.Notice(MESSAGES6.donePrefix + name);
     await ctx.app.workspace.getLeaf(false).openFile(file);
   } catch (error) {
     const message2 = error instanceof Error ? error.message : String(error);
-    new import_obsidian37.Notice(MESSAGES6.failedPrefix + message2);
+    new import_obsidian41.Notice(MESSAGES6.failedPrefix + message2);
   }
 }
 
@@ -54590,7 +55991,7 @@ var personViews = [
 ];
 
 // src/modules/contacts/recordFavor.ts
-var import_obsidian38 = require("obsidian");
+var import_obsidian42 = require("obsidian");
 var MESSAGES7 = {
   noContacts: "\u8FD8\u6CA1\u6709\u4EFB\u4F55\u6863\u6848\u3002\u5148\u8FD0\u884C\u300C\u65B0\u5EFA\u4EBA\u8109\u300D\u5EFA\u4E00\u4E2A\uFF0C\u518D\u6765\u8BB0\u8D26\u3002",
   personPrompt: "\u8FD9\u7B14\u4EBA\u60C5\uFF0C\u662F\u8DDF\u8C01\uFF1F",
@@ -54624,7 +56025,7 @@ async function recordFavor(ctx, openDaily) {
       ...liveNotesOfType(ctx, NOTE_TYPES.client)
     ];
     if (!candidates.length) {
-      new import_obsidian38.Notice(MESSAGES7.noContacts);
+      new import_obsidian42.Notice(MESSAGES7.noContacts);
       return;
     }
     const person = await new ChoiceModal(ctx.app, {
@@ -54636,7 +56037,7 @@ async function recordFavor(ctx, openDaily) {
       }
     }).openAndGetChoice();
     if (!person) {
-      new import_obsidian38.Notice(MESSAGES7.cancelled);
+      new import_obsidian42.Notice(MESSAGES7.cancelled);
       return;
     }
     const kind = await new ChoiceModal(ctx.app, {
@@ -54648,7 +56049,7 @@ async function recordFavor(ctx, openDaily) {
       }
     }).openAndGetChoice();
     if (!kind) {
-      new import_obsidian38.Notice(MESSAGES7.cancelled);
+      new import_obsidian42.Notice(MESSAGES7.cancelled);
       return;
     }
     const answer = await new TextInputModal(ctx.app, {
@@ -54657,7 +56058,7 @@ async function recordFavor(ctx, openDaily) {
     }).openAndGetValue();
     const item = cleanItem(answer != null ? answer : "");
     if (!item) {
-      new import_obsidian38.Notice(MESSAGES7.cancelled);
+      new import_obsidian42.Notice(MESSAGES7.cancelled);
       return;
     }
     const status = await new ChoiceModal(ctx.app, {
@@ -54669,12 +56070,12 @@ async function recordFavor(ctx, openDaily) {
       }
     }).openAndGetChoice();
     if (!status) {
-      new import_obsidian38.Notice(MESSAGES7.cancelled);
+      new import_obsidian42.Notice(MESSAGES7.cancelled);
       return;
     }
     const diary = await openDaily();
     if (!diary) {
-      new import_obsidian38.Notice(MESSAGES7.noDiary);
+      new import_obsidian42.Notice(MESSAGES7.noDiary);
       return;
     }
     const line = ledgerLine(personLink(person), kind, item, status);
@@ -54683,10 +56084,10 @@ async function recordFavor(ctx, openDaily) {
       diary,
       (content) => insertIntoSection(content, DIARY_LOG_HEADING, line)
     );
-    new import_obsidian38.Notice(MESSAGES7.donePrefix + line);
+    new import_obsidian42.Notice(MESSAGES7.donePrefix + line);
   } catch (error) {
     const message2 = error instanceof Error ? error.message : String(error);
-    new import_obsidian38.Notice(MESSAGES7.failedPrefix + message2);
+    new import_obsidian42.Notice(MESSAGES7.failedPrefix + message2);
   }
 }
 function cleanItem(raw) {
@@ -54731,7 +56132,7 @@ function contactsSeed(ctx) {
 }
 
 // src/modules/inspiration/capture.ts
-var import_obsidian39 = require("obsidian");
+var import_obsidian43 = require("obsidian");
 
 // src/modules/inspiration/templates.ts
 var TEMPLATE_TOKENS = {
@@ -54957,14 +56358,14 @@ async function captureInspiration(ctx) {
     }).openAndGetValue();
     const inspiration = normalizeInspiration(input);
     if (!inspiration) {
-      new import_obsidian39.Notice("\u672A\u8F93\u5165\u5185\u5BB9\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
+      new import_obsidian43.Notice("\u672A\u8F93\u5165\u5185\u5BB9\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
       return;
     }
     const target = resolveInspirationTarget(ctx);
     const timeParts = nowLocalDateTimeParts(ctx.settings.dateTimeFormat);
     const entry = renderInspirationEntry(target.format, inspiration, timeParts);
     let targetEntry = ctx.app.vault.getAbstractFileByPath(target.path);
-    if (targetEntry instanceof import_obsidian39.TFolder) {
+    if (targetEntry instanceof import_obsidian43.TFolder) {
       throw new Error(`\u76EE\u6807\u8DEF\u5F84\u662F\u6587\u4EF6\u5939\uFF0C\u65E0\u6CD5\u5199\u5165\uFF1A${target.path}`);
     }
     if (!targetEntry) {
@@ -54975,7 +56376,7 @@ async function captureInspiration(ctx) {
         buildInitialInspirationContent(entry, target.heading, target.path)
       );
     } else {
-      if (!(targetEntry instanceof import_obsidian39.TFile) || targetEntry.extension.toLowerCase() !== "md") {
+      if (!(targetEntry instanceof import_obsidian43.TFile) || targetEntry.extension.toLowerCase() !== "md") {
         throw new Error(`\u76EE\u6807\u8DEF\u5F84\u4E0D\u662F Markdown \u6587\u4EF6\uFF1A${target.path}`);
       }
       await ctx.app.vault.process(targetEntry, (content) => {
@@ -54990,16 +56391,16 @@ async function captureInspiration(ctx) {
         return updatedContent;
       });
     }
-    new import_obsidian39.Notice(`\u5DF2\u8BB0\u5F55\u7075\u611F\uFF1A${inspiration}`);
+    new import_obsidian43.Notice(`\u5DF2\u8BB0\u5F55\u7075\u611F\uFF1A${inspiration}`);
   } catch (error) {
     const message2 = error instanceof Error ? error.message : String(error);
-    new import_obsidian39.Notice(`\u8BB0\u5F55\u7075\u611F\u5931\u8D25\uFF1A${message2}`);
+    new import_obsidian43.Notice(`\u8BB0\u5F55\u7075\u611F\u5931\u8D25\uFF1A${message2}`);
   }
 }
 function resolveInspirationTarget(ctx) {
   const folder = normalizeFolderPath(ctx.settings.inspirationFolder, INSPIRATION_DEFAULTS.folder);
   const fileName = normalizeInspirationFileName(ctx.settings.inspirationFileName);
-  const path = (0, import_obsidian39.normalizePath)(folder ? `${folder}/${fileName}` : fileName);
+  const path = (0, import_obsidian43.normalizePath)(folder ? `${folder}/${fileName}` : fileName);
   if (folder.split("/").some((part) => part === "." || part === "..")) {
     throw new Error("\u7075\u611F\u6587\u4EF6\u5939\u4E0D\u80FD\u5305\u542B . \u6216 .. \u8DEF\u5F84\u6BB5\u3002");
   }
@@ -55025,7 +56426,7 @@ function normalizeInsertPosition(value) {
 }
 
 // src/modules/projects/cardInit.ts
-var import_obsidian41 = require("obsidian");
+var import_obsidian45 = require("obsidian");
 
 // src/core/frontmatter.ts
 function hasValue(value) {
@@ -55068,15 +56469,15 @@ function reorderFrontmatter(frontmatter, cardValues) {
 }
 
 // src/modules/projects/moc.ts
-var import_obsidian40 = require("obsidian");
+var import_obsidian44 = require("obsidian");
 function mocBasenameOf(containerName) {
   return `${MOC_PREFIX}${containerName}`;
 }
 function mocPathOf(folderPath, containerName) {
-  return (0, import_obsidian40.normalizePath)(`${folderPath}/${mocBasenameOf(containerName)}.md`);
+  return (0, import_obsidian44.normalizePath)(`${folderPath}/${mocBasenameOf(containerName)}.md`);
 }
 function legacyMocPathOf(folderPath, containerName) {
-  return (0, import_obsidian40.normalizePath)(`${folderPath}/${containerName}.md`);
+  return (0, import_obsidian44.normalizePath)(`${folderPath}/${containerName}.md`);
 }
 function resolveMocPath(app, folderPath, containerName) {
   const current = mocPathOf(folderPath, containerName);
@@ -55101,7 +56502,7 @@ function resolveRoots(settings) {
   );
 }
 function getCardContext(app, filePath, roots) {
-  const normalizedFilePath = (0, import_obsidian41.normalizePath)(filePath);
+  const normalizedFilePath = (0, import_obsidian45.normalizePath)(filePath);
   for (const root of roots) {
     const prefix = `${root.path}/`;
     if (!normalizedFilePath.startsWith(prefix)) continue;
@@ -55164,7 +56565,7 @@ async function initCard(ctx, file, opts) {
     });
   } catch (error) {
     const message2 = error instanceof Error ? error.message : String(error);
-    new import_obsidian41.Notice(`\u5361\u7247\u7B14\u8BB0\u521D\u59CB\u5316\u5931\u8D25\uFF1A${message2}`);
+    new import_obsidian45.Notice(`\u5361\u7247\u7B14\u8BB0\u521D\u59CB\u5316\u5931\u8D25\uFF1A${message2}`);
     throw error;
   }
 }
@@ -55181,7 +56582,7 @@ function registerCardAutoInit(ctx) {
     ctx.plugin.registerEvent(
       ctx.app.vault.on("create", (file) => {
         if (!ctx.settings.autoCardInit) return;
-        if (!(file instanceof import_obsidian41.TFile) || file.extension !== "md") return;
+        if (!(file instanceof import_obsidian45.TFile) || file.extension !== "md") return;
         if (ctx.guard.isRecent(file.path)) return;
         if (!getCardContext(ctx.app, file.path, resolveRoots(ctx.settings))) return;
         if (file.stat.size !== 0) return;
@@ -55193,7 +56594,7 @@ function registerCardAutoInit(ctx) {
 }
 
 // src/modules/projects/createContainer.ts
-var import_obsidian42 = require("obsidian");
+var import_obsidian46 = require("obsidian");
 
 // src/modules/projects/templates.ts
 var MOC_FIELDS = [
@@ -55447,12 +56848,12 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
       title: `\u8BF7\u8F93\u5165\u65B0\u5EFA${kind.label}\u7684\u540D\u79F0`
     }).openAndGetValue();
     if (nameInput === null || !nameInput.trim()) {
-      new import_obsidian42.Notice(`\u672A\u8F93\u5165${kind.label}\u540D\u79F0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
+      new import_obsidian46.Notice(`\u672A\u8F93\u5165${kind.label}\u540D\u79F0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
       return null;
     }
     const containerName = nameInput.trim();
     if (/[\\/]/.test(containerName)) {
-      new import_obsidian42.Notice(`${kind.label}\u540D\u79F0\u4E0D\u80FD\u5305\u542B\u659C\u6760\u6216\u53CD\u659C\u6760\u3002`);
+      new import_obsidian46.Notice(`${kind.label}\u540D\u79F0\u4E0D\u80FD\u5305\u542B\u659C\u6760\u6216\u53CD\u659C\u6760\u3002`);
       return null;
     }
     let relation;
@@ -55463,14 +56864,14 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
         labelOf: (item) => item.label
       }).openAndGetChoice();
       if (!ownership) {
-        new import_obsidian42.Notice(`\u672A\u9009\u62E9${kind.label}\u5F52\u5C5E\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
+        new import_obsidian46.Notice(`\u672A\u9009\u62E9${kind.label}\u5F52\u5C5E\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
         return null;
       }
       if (ownership.link && pickPerson2) {
         const { field: field2, ask, required } = ownership.link;
         const person = await pickPerson2(ask);
         if (required && !person) {
-          new import_obsidian42.Notice("\u672A\u9009\u62E9\u5BA2\u6237\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
+          new import_obsidian46.Notice("\u672A\u9009\u62E9\u5BA2\u6237\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002");
           return null;
         }
         if (person) {
@@ -55486,17 +56887,17 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
       title: `\u8BF7\u8F93\u5165${kind.label}\u6982\u8FF0`
     }).openAndGetValue();
     if (descriptionInput === null) {
-      new import_obsidian42.Notice(`\u5DF2\u53D6\u6D88\u8F93\u5165${kind.label}\u6982\u8FF0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
+      new import_obsidian46.Notice(`\u5DF2\u53D6\u6D88\u8F93\u5165${kind.label}\u6982\u8FF0\uFF0C\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002`);
       return null;
     }
     const description = descriptionInput.trim();
-    const containerFolderPath = (0, import_obsidian42.normalizePath)(`${baseFolder}/${containerName}`);
+    const containerFolderPath = (0, import_obsidian46.normalizePath)(`${baseFolder}/${containerName}`);
     const mocFilePath = mocPathOf(containerFolderPath, containerName);
     await ensureFolderPath(app, baseFolder);
     await ensureFolderPath(app, containerFolderPath);
     const existingMocFile = app.vault.getAbstractFileByPath(mocFilePath);
     if (existingMocFile) {
-      new import_obsidian42.Notice(`${kind.label} MOC \u7B14\u8BB0\u5DF2\u7ECF\u5B58\u5728\uFF0C\u672A\u6267\u884C\u8986\u76D6\uFF1A${mocFilePath}`);
+      new import_obsidian46.Notice(`${kind.label} MOC \u7B14\u8BB0\u5DF2\u7ECF\u5B58\u5728\uFF0C\u672A\u6267\u884C\u8986\u76D6\uFF1A${mocFilePath}`);
       return null;
     }
     const { stamp: created, uid } = nowStampAndUid(settings.dateTimeFormat);
@@ -55530,7 +56931,7 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
         mode: "source"
       }
     });
-    if (leaf.view instanceof import_obsidian42.MarkdownView) {
+    if (leaf.view instanceof import_obsidian46.MarkdownView) {
       const editor = leaf.view.editor;
       const secondBlankLine = frontmatter.split("\n").length + 1;
       const cursorPosition = {
@@ -55549,11 +56950,11 @@ async function createContainer(ctx, kind, preset, pickPerson2) {
         );
       }
     }
-    new import_obsidian42.Notice(`${kind.label}\u5DF2\u521B\u5EFA\uFF1A${containerName}`);
+    new import_obsidian46.Notice(`${kind.label}\u5DF2\u521B\u5EFA\uFF1A${containerName}`);
     return mocFile;
   } catch (error) {
     const message2 = error instanceof Error ? error.message : String(error);
-    new import_obsidian42.Notice(`\u521B\u5EFA${kind.label}\u5931\u8D25\uFF1A${message2}`);
+    new import_obsidian46.Notice(`\u521B\u5EFA${kind.label}\u5931\u8D25\uFF1A${message2}`);
     return null;
   }
 }
@@ -55569,7 +56970,7 @@ function registerCreateAreaCommand(ctx) {
 }
 
 // src/modules/eternal/export.ts
-var import_obsidian43 = require("obsidian");
+var import_obsidian47 = require("obsidian");
 
 // src/modules/eternal/manifest.ts
 var FENCE3 = "```";
@@ -55674,7 +57075,7 @@ async function recordExport(ctx, container) {
     const layout = ctx.edition.layout;
     if (ctx.edition.role !== "human" || !layout) return;
     if (!container.uid) {
-      new import_obsidian43.Notice(
+      new import_obsidian47.Notice(
         `\u300A${container.name}\u300B\u6CA1\u6709 UID\uFF0C\u6682\u65F6\u6CA1\u6CD5\u9001\u8FDB\u300A${layout.eternal}\u300B\u3002\u5728\u5B83\u7684 MOC \u91CC\u8865\u4E00\u4E2A UID \u518D\u5F52\u6863\u4E00\u6B21\u5373\u53EF\u3002`
       );
       return;
@@ -55691,21 +57092,21 @@ async function recordExport(ctx, container) {
     });
     const next = insertIntoSection(content, EXPORT_MANIFEST_HEADING, line);
     await writeManifest(ctx, next);
-    new import_obsidian43.Notice(`\u5DF2\u8BB0\u8FDB\u51FA\u5E93\u5355\uFF1A\u4E0B\u6B21\u548C\u667A\u80FD\u4F53\u8BF4\u8BDD\u65F6\uFF0C\u300A${container.name}\u300B\u4F1A\u642C\u8FDB\u300A${layout.eternal}\u300B\u3002`);
+    new import_obsidian47.Notice(`\u5DF2\u8BB0\u8FDB\u51FA\u5E93\u5355\uFF1A\u4E0B\u6B21\u548C\u667A\u80FD\u4F53\u8BF4\u8BDD\u65F6\uFF0C\u300A${container.name}\u300B\u4F1A\u642C\u8FDB\u300A${layout.eternal}\u300B\u3002`);
   } catch (error) {
-    new import_obsidian43.Notice(`\u51FA\u5E93\u5355\u6CA1\u8BB0\u6210\uFF08\u9879\u76EE\u5DF2\u7ECF\u6B63\u5E38\u5F52\u6863\uFF09\uFF1A${message(error)}`);
+    new import_obsidian47.Notice(`\u51FA\u5E93\u5355\u6CA1\u8BB0\u6210\uFF08\u9879\u76EE\u5DF2\u7ECF\u6B63\u5E38\u5F52\u6863\uFF09\uFF1A${message(error)}`);
   }
 }
 async function readOrCreateManifest(ctx, eternalVaultName) {
   const file = ctx.app.vault.getAbstractFileByPath(EXPORT_MANIFEST_FILE);
-  if (file instanceof import_obsidian43.TFile) return ctx.app.vault.read(file);
+  if (file instanceof import_obsidian47.TFile) return ctx.app.vault.read(file);
   await ensureFolderPath(ctx.app, FOLDERS.system);
   return manifestSkeleton(eternalVaultName);
 }
 async function writeManifest(ctx, content) {
   const file = ctx.app.vault.getAbstractFileByPath(EXPORT_MANIFEST_FILE);
   ctx.guard.mark(EXPORT_MANIFEST_FILE);
-  if (file instanceof import_obsidian43.TFile) {
+  if (file instanceof import_obsidian47.TFile) {
     await ctx.app.vault.modify(file, content);
     return;
   }
@@ -55722,7 +57123,7 @@ function message(error) {
 }
 
 // src/modules/eternal/views.ts
-var import_obsidian44 = require("obsidian");
+var import_obsidian48 = require("obsidian");
 var MAX_ROWS2 = 20;
 var FALLBACK_ETERNAL_NAME = "\u8D5B\u535A\u6C38\u751F";
 var pendingHandover = {
@@ -55840,7 +57241,7 @@ async function ingestedUids(view) {
 }
 async function readNote(view, path) {
   const file = view.ctx.app.vault.getAbstractFileByPath(path);
-  return file instanceof import_obsidian44.TFile ? view.ctx.app.vault.read(file) : null;
+  return file instanceof import_obsidian48.TFile ? view.ctx.app.vault.read(file) : null;
 }
 function linkTo(view, name) {
   const file = view.index.resolve(name, view.sourcePath);
@@ -55886,7 +57287,7 @@ function attachmentRouteOfNotePath(settings, notePath) {
 }
 
 // src/modules/projects/migrateBases.ts
-var import_obsidian45 = require("obsidian");
+var import_obsidian49 = require("obsidian");
 
 // src/modules/projects/baseMigration.ts
 var MigrationBatchError = class extends Error {
@@ -56194,7 +57595,7 @@ function registerBaseMigrationCommand(ctx) {
   let running = false;
   ctx.commands.register(PROJECT_COMMANDS.migrate, () => {
     if (running) {
-      new import_obsidian45.Notice("\u5B58\u91CF MOC \u6570\u636E\u5E93\u5347\u7EA7\u6B63\u5728\u8FDB\u884C\uFF0C\u8BF7\u5148\u5B8C\u6210\u5F53\u524D\u7A97\u53E3\u3002");
+      new import_obsidian49.Notice("\u5B58\u91CF MOC \u6570\u636E\u5E93\u5347\u7EA7\u6B63\u5728\u8FDB\u884C\uFF0C\u8BF7\u5148\u5B8C\u6210\u5F53\u524D\u7A97\u53E3\u3002");
       return;
     }
     running = true;
@@ -56206,7 +57607,7 @@ function registerBaseMigrationCommand(ctx) {
   });
 }
 async function runBaseMigration(ctx) {
-  const scanning = new import_obsidian45.Notice("\u6B63\u5728\u68C0\u67E5\u5BFC\u822A\u4E0E\u5B58\u91CF MOC \u6570\u636E\u5E93\u2026", 0);
+  const scanning = new import_obsidian49.Notice("\u6B63\u5728\u68C0\u67E5\u5BFC\u822A\u4E0E\u5B58\u91CF MOC \u6570\u636E\u5E93\u2026", 0);
   let preview;
   try {
     preview = await buildMigrationPreview(ctx);
@@ -56218,7 +57619,7 @@ async function runBaseMigration(ctx) {
   scanning.hide();
   const confirmed = await new BaseMigrationPreviewModal(ctx.app, preview).openAndConfirm();
   if (!confirmed || preview.changes.length === 0) return;
-  const migrating = new import_obsidian45.Notice(`\u6B63\u5728\u8FC1\u79FB ${preview.changes.length} \u4E2A\u6587\u4EF6\u2026`, 0);
+  const migrating = new import_obsidian49.Notice(`\u6B63\u5728\u8FC1\u79FB ${preview.changes.length} \u4E2A\u6587\u4EF6\u2026`, 0);
   try {
     await applyMigrationsWithRollback(ctx, preview.changes);
     migrating.hide();
@@ -56237,7 +57638,7 @@ async function buildMigrationPreview(ctx) {
   const conflicts = [];
   let unchangedCount = 0;
   const navigation = ctx.app.vault.getAbstractFileByPath(NAV_FILE);
-  if (navigation instanceof import_obsidian45.TFile) {
+  if (navigation instanceof import_obsidian49.TFile) {
     const content = await ctx.app.vault.read(navigation);
     const result = planNavigationBaseUpgrade(content);
     const counted = collectResult(navigation, content, result, changes, conflicts);
@@ -56300,7 +57701,7 @@ async function applyMigrationsWithRollback(ctx, changes) {
     changes,
     async (change) => {
       const currentFile = ctx.app.vault.getAbstractFileByPath(change.path);
-      if (!(currentFile instanceof import_obsidian45.TFile)) {
+      if (!(currentFile instanceof import_obsidian49.TFile)) {
         throw new Error(`${change.path} \u5728\u786E\u8BA4\u540E\u88AB\u79FB\u52A8\u6216\u5220\u9664`);
       }
       ctx.guard.mark(change.path);
@@ -56313,7 +57714,7 @@ async function applyMigrationsWithRollback(ctx, changes) {
     },
     async (change) => {
       const file = ctx.app.vault.getAbstractFileByPath(change.path);
-      if (!(file instanceof import_obsidian45.TFile)) throw new Error("\u6587\u4EF6\u5DF2\u88AB\u79FB\u52A8\u6216\u5220\u9664");
+      if (!(file instanceof import_obsidian49.TFile)) throw new Error("\u6587\u4EF6\u5DF2\u88AB\u79FB\u52A8\u6216\u5220\u9664");
       ctx.guard.mark(change.path);
       await ctx.app.vault.process(file, (current) => {
         if (current === change.before) return current;
@@ -56324,7 +57725,7 @@ async function applyMigrationsWithRollback(ctx, changes) {
     (change) => change.path
   );
 }
-var BaseMigrationPreviewModal = class extends import_obsidian45.Modal {
+var BaseMigrationPreviewModal = class extends import_obsidian49.Modal {
   constructor(app, preview) {
     super(app);
     this.resolver = null;
@@ -56392,9 +57793,9 @@ var BaseMigrationPreviewModal = class extends import_obsidian45.Modal {
     buttonBar.style.justifyContent = "flex-end";
     buttonBar.style.gap = "8px";
     buttonBar.style.marginTop = "16px";
-    new import_obsidian45.ButtonComponent(buttonBar).setButtonText(changes.length ? "\u53D6\u6D88" : "\u5173\u95ED").onClick(() => this.settle(false));
+    new import_obsidian49.ButtonComponent(buttonBar).setButtonText(changes.length ? "\u53D6\u6D88" : "\u5173\u95ED").onClick(() => this.settle(false));
     if (changes.length) {
-      new import_obsidian45.ButtonComponent(buttonBar).setButtonText(`\u786E\u8BA4\u8FC1\u79FB ${changes.length} \u4E2A\u6587\u4EF6`).setCta().onClick(() => this.settle(true));
+      new import_obsidian49.ButtonComponent(buttonBar).setButtonText(`\u786E\u8BA4\u8FC1\u79FB ${changes.length} \u4E2A\u6587\u4EF6`).setCta().onClick(() => this.settle(true));
     }
   }
   onClose() {
@@ -56410,7 +57811,7 @@ var BaseMigrationPreviewModal = class extends import_obsidian45.Modal {
     this.close();
   }
 };
-var MigrationReportModal = class extends import_obsidian45.Modal {
+var MigrationReportModal = class extends import_obsidian49.Modal {
   constructor(app, heading, lines) {
     super(app);
     this.heading = heading;
@@ -56426,7 +57827,7 @@ var MigrationReportModal = class extends import_obsidian45.Modal {
     const buttonBar = this.contentEl.createDiv();
     buttonBar.style.display = "flex";
     buttonBar.style.justifyContent = "flex-end";
-    new import_obsidian45.ButtonComponent(buttonBar).setButtonText("\u5173\u95ED").setCta().onClick(() => this.close());
+    new import_obsidian49.ButtonComponent(buttonBar).setButtonText("\u5173\u95ED").setCta().onClick(() => this.close());
   }
   onClose() {
     this.contentEl.empty();
@@ -56462,7 +57863,7 @@ function projectsSeed() {
 }
 
 // src/modules/projects/transitions.ts
-var import_obsidian46 = require("obsidian");
+var import_obsidian50 = require("obsidian");
 var MOVABLE_TYPES = CONTAINER_TYPES;
 var CONFIRM_MODAL_CLASS = "qa-project-transition-confirm";
 var ARCHIVE_HANDOVER_STATUS = TRANSITIONS.done.status;
@@ -56477,7 +57878,7 @@ async function runProjectTransition(ctx, action, onArchived) {
   try {
     const transition = TRANSITIONS[action];
     if (!transition) {
-      new import_obsidian46.Notice(`\u672A\u77E5\u7684\u9879\u76EE\u6D41\u8F6C\u52A8\u4F5C\uFF1A${action}`);
+      new import_obsidian50.Notice(`\u672A\u77E5\u7684\u9879\u76EE\u6D41\u8F6C\u52A8\u4F5C\uFF1A${action}`);
       return;
     }
     const plan = resolveTransitionPlan(ctx, transition);
@@ -56486,7 +57887,7 @@ async function runProjectTransition(ctx, action, onArchived) {
     if (!confirmed) return;
     await applyTransition(ctx, plan);
     await reopenMovedMoc(ctx, plan.targetMocPath);
-    new import_obsidian46.Notice(
+    new import_obsidian50.Notice(
       `\u9879\u76EE\u5DF2${transition.label}\uFF1A${plan.projectName} \u2192 ${formatStatusForDisplay(transition.status)}`
     );
     if (onArchived && transition.status === ARCHIVE_HANDOVER_STATUS) {
@@ -56499,7 +57900,7 @@ async function runProjectTransition(ctx, action, onArchived) {
       });
     }
   } catch (error) {
-    new import_obsidian46.Notice(`\u9879\u76EE\u72B6\u6001\u6D41\u8F6C\u5931\u8D25\uFF1A${getErrorMessage(error)}`);
+    new import_obsidian50.Notice(`\u9879\u76EE\u72B6\u6001\u6D41\u8F6C\u5931\u8D25\uFF1A${getErrorMessage(error)}`);
   }
 }
 function resolveTransitionPlan(ctx, transition) {
@@ -56508,46 +57909,46 @@ function resolveTransitionPlan(ctx, transition) {
   const activeFolder = normalizeFolderPath(settings.projectFolder, DEFAULT_SETTINGS.projectFolder);
   const archiveFolder = normalizeFolderPath(settings.archiveFolder, DEFAULT_SETTINGS.archiveFolder);
   if (activeFolder === archiveFolder) {
-    new import_obsidian46.Notice("\u9879\u76EE\u76EE\u5F55\u548C\u5F52\u6863\u76EE\u5F55\u4E0D\u80FD\u8BBE\u7F6E\u4E3A\u540C\u4E00\u8DEF\u5F84\u3002");
+    new import_obsidian50.Notice("\u9879\u76EE\u76EE\u5F55\u548C\u5F52\u6863\u76EE\u5F55\u4E0D\u80FD\u8BBE\u7F6E\u4E3A\u540C\u4E00\u8DEF\u5F84\u3002");
     return null;
   }
   const sourceRoot = transition.source === "active" ? activeFolder : archiveFolder;
   const targetRoot = transition.target === "active" ? activeFolder : archiveFolder;
   const mocFile = app.workspace.getActiveFile();
-  if (!(mocFile instanceof import_obsidian46.TFile) || mocFile.extension !== "md") {
-    new import_obsidian46.Notice("\u8BF7\u5148\u6253\u5F00\u9700\u8981\u8FDB\u884C\u72B6\u6001\u6D41\u8F6C\u7684\u9879\u76EE MOC\u3002");
+  if (!(mocFile instanceof import_obsidian50.TFile) || mocFile.extension !== "md") {
+    new import_obsidian50.Notice("\u8BF7\u5148\u6253\u5F00\u9700\u8981\u8FDB\u884C\u72B6\u6001\u6D41\u8F6C\u7684\u9879\u76EE MOC\u3002");
     return null;
   }
   const projectFolder = mocFile.parent;
-  if (!(projectFolder instanceof import_obsidian46.TFolder)) {
-    new import_obsidian46.Notice("\u65E0\u6CD5\u8BC6\u522B\u5F53\u524D\u9879\u76EE\u6587\u4EF6\u5939\u3002");
+  if (!(projectFolder instanceof import_obsidian50.TFolder)) {
+    new import_obsidian50.Notice("\u65E0\u6CD5\u8BC6\u522B\u5F53\u524D\u9879\u76EE\u6587\u4EF6\u5939\u3002");
     return null;
   }
   const projectName = projectFolder.name;
-  const sourceProjectPath = (0, import_obsidian46.normalizePath)(`${sourceRoot}/${projectName}`);
+  const sourceProjectPath = (0, import_obsidian50.normalizePath)(`${sourceRoot}/${projectName}`);
   const expectedMocPath = resolveMocPath(app, sourceProjectPath, projectName);
-  if ((0, import_obsidian46.normalizePath)(mocFile.path) !== expectedMocPath) {
-    new import_obsidian46.Notice(`\u5F53\u524D\u547D\u4EE4\u53EA\u80FD\u5728\u4EE5\u4E0B\u9879\u76EE MOC \u4E2D\u6267\u884C\uFF1A${expectedMocPath}`);
+  if ((0, import_obsidian50.normalizePath)(mocFile.path) !== expectedMocPath) {
+    new import_obsidian50.Notice(`\u5F53\u524D\u547D\u4EE4\u53EA\u80FD\u5728\u4EE5\u4E0B\u9879\u76EE MOC \u4E2D\u6267\u884C\uFF1A${expectedMocPath}`);
     return null;
   }
   const frontmatter = (_a2 = app.metadataCache.getFileCache(mocFile)) == null ? void 0 : _a2.frontmatter;
   const type = normalizeText(frontmatter == null ? void 0 : frontmatter.type);
   const currentStatus = normalizeText(frontmatter == null ? void 0 : frontmatter.status);
   if (!MOVABLE_TYPES.includes(type)) {
-    new import_obsidian46.Notice("\u5F53\u524D\u7B14\u8BB0\u4E0D\u662F\u9879\u76EE\u6216\u8BFB\u4E66\u7B14\u8BB0 MOC\uFF1A\u7F3A\u5C11 type: project\uFF08\u9879\u76EE\uFF09\u6216 type: book\uFF08\u4E66\uFF09\u3002");
+    new import_obsidian50.Notice("\u5F53\u524D\u7B14\u8BB0\u4E0D\u662F\u9879\u76EE\u6216\u8BFB\u4E66\u7B14\u8BB0 MOC\uFF1A\u7F3A\u5C11 type: project\uFF08\u9879\u76EE\uFF09\u6216 type: book\uFF08\u4E66\uFF09\u3002");
     return null;
   }
   if (!transition.allowedStatuses.includes(currentStatus)) {
-    new import_obsidian46.Notice(
+    new import_obsidian50.Notice(
       `\u9879\u76EE\u5F53\u524D\u72B6\u6001\u4E3A\u201C${formatStatusForDisplay(currentStatus)}\u201D\uFF0C\u4E0D\u80FD\u6267\u884C\u201C${transition.label}\u201D\u64CD\u4F5C\u3002`
     );
     return null;
   }
-  const targetProjectPath = (0, import_obsidian46.normalizePath)(`${targetRoot}/${projectName}`);
-  const targetMocPath = (0, import_obsidian46.normalizePath)(`${targetProjectPath}/${mocFile.name}`);
+  const targetProjectPath = (0, import_obsidian50.normalizePath)(`${targetRoot}/${projectName}`);
+  const targetMocPath = (0, import_obsidian50.normalizePath)(`${targetProjectPath}/${mocFile.name}`);
   const existingTarget = app.vault.getAbstractFileByPath(targetProjectPath);
   if (existingTarget) {
-    new import_obsidian46.Notice(`\u76EE\u6807\u4F4D\u7F6E\u5DF2\u7ECF\u5B58\u5728\u540C\u540D\u9879\u76EE\uFF0C\u64CD\u4F5C\u5DF2\u505C\u6B62\uFF1A${targetProjectPath}`);
+    new import_obsidian50.Notice(`\u76EE\u6807\u4F4D\u7F6E\u5DF2\u7ECF\u5B58\u5728\u540C\u540D\u9879\u76EE\uFF0C\u64CD\u4F5C\u5DF2\u505C\u6B62\uFF1A${targetProjectPath}`);
     return null;
   }
   return {
@@ -56577,7 +57978,7 @@ async function applyTransition(ctx, plan) {
     markFolderTree(ctx, plan.projectFolder, plan.targetProjectPath);
     await app.fileManager.renameFile(plan.projectFolder, plan.targetProjectPath);
     const movedMoc = app.vault.getAbstractFileByPath(plan.targetMocPath);
-    if (!(movedMoc instanceof import_obsidian46.TFile)) {
+    if (!(movedMoc instanceof import_obsidian50.TFile)) {
       throw new Error(`\u79FB\u52A8\u540E\u6CA1\u6709\u627E\u5230\u9879\u76EE MOC\uFF1A${plan.targetMocPath}`);
     }
     guard.mark(movedMoc.path);
@@ -56615,16 +58016,16 @@ function markFolderTree(ctx, folder, targetPath) {
   const sourcePath = folder.path;
   guard.mark(sourcePath);
   guard.mark(targetPath);
-  import_obsidian46.Vault.recurseChildren(folder, (child) => {
-    if (!(child instanceof import_obsidian46.TFile)) return;
+  import_obsidian50.Vault.recurseChildren(folder, (child) => {
+    if (!(child instanceof import_obsidian50.TFile)) return;
     const relativePath = child.path.slice(sourcePath.length + 1);
     guard.mark(child.path);
-    guard.mark((0, import_obsidian46.normalizePath)(`${targetPath}/${relativePath}`));
+    guard.mark((0, import_obsidian50.normalizePath)(`${targetPath}/${relativePath}`));
   });
 }
 async function reopenMovedMoc(ctx, targetMocPath) {
   const movedMoc = ctx.app.vault.getAbstractFileByPath(targetMocPath);
-  if (!(movedMoc instanceof import_obsidian46.TFile)) return;
+  if (!(movedMoc instanceof import_obsidian50.TFile)) return;
   try {
     await ctx.app.workspace.getLeaf(false).openFile(movedMoc, { active: true });
   } catch (e2) {
@@ -56641,11 +58042,11 @@ async function rollbackTransition(ctx, plan, original, frontmatterVisited) {
     if (!sourceEntry && !targetEntry) {
       throw new Error("\u56DE\u6EDA\u65F6\u539F\u4F4D\u7F6E\u4E0E\u76EE\u6807\u4F4D\u7F6E\u90FD\u4E0D\u5B58\u5728\uFF0C\u65E0\u6CD5\u5B9A\u4F4D\u9879\u76EE\u76EE\u5F55");
     }
-    if (sourceEntry && !(sourceEntry instanceof import_obsidian46.TFolder)) {
+    if (sourceEntry && !(sourceEntry instanceof import_obsidian50.TFolder)) {
       throw new Error(`\u56DE\u6EDA\u65F6\u539F\u4F4D\u7F6E\u4E0D\u662F\u9879\u76EE\u76EE\u5F55\uFF1A${plan.sourceProjectPath}`);
     }
     if (targetEntry) {
-      if (!(targetEntry instanceof import_obsidian46.TFolder)) {
+      if (!(targetEntry instanceof import_obsidian50.TFolder)) {
         throw new Error(`\u56DE\u6EDA\u65F6\u76EE\u6807\u4F4D\u7F6E\u4E0D\u662F\u9879\u76EE\u76EE\u5F55\uFF1A${plan.targetProjectPath}`);
       }
       markFolderTree(ctx, targetEntry, plan.sourceProjectPath);
@@ -56654,12 +58055,12 @@ async function rollbackTransition(ctx, plan, original, frontmatterVisited) {
       } catch (renameError) {
         const restored = app.vault.getAbstractFileByPath(plan.sourceProjectPath);
         const remains = app.vault.getAbstractFileByPath(plan.targetProjectPath);
-        if (!(restored instanceof import_obsidian46.TFolder) || remains) throw renameError;
+        if (!(restored instanceof import_obsidian50.TFolder) || remains) throw renameError;
       }
     }
     if (!frontmatterVisited) return null;
     const restoredMoc = app.vault.getAbstractFileByPath(plan.expectedMocPath);
-    if (!(restoredMoc instanceof import_obsidian46.TFile)) {
+    if (!(restoredMoc instanceof import_obsidian50.TFile)) {
       throw new Error(`\u56DE\u6EDA\u540E\u6CA1\u6709\u627E\u5230\u9879\u76EE MOC\uFF1A${plan.expectedMocPath}`);
     }
     guard.mark(restoredMoc.path);
@@ -56678,7 +58079,7 @@ async function showProjectTransitionConfirm(app, plan) {
     new ProjectTransitionConfirmModal(app, plan, resolve).open();
   });
 }
-var ProjectTransitionConfirmModal = class extends import_obsidian46.Modal {
+var ProjectTransitionConfirmModal = class extends import_obsidian50.Modal {
   constructor(app, plan, resolver) {
     super(app);
     /** 按钮结算与关闭结算都会走到 settle，用它保证只生效一次 */
@@ -56729,8 +58130,8 @@ var ProjectTransitionConfirmModal = class extends import_obsidian46.Modal {
     buttonBar.style.justifyContent = "flex-end";
     buttonBar.style.gap = "8px";
     buttonBar.style.marginTop = "18px";
-    new import_obsidian46.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.settle(false));
-    const confirmButton = new import_obsidian46.ButtonComponent(buttonBar).setButtonText(`\u786E\u8BA4${transition.label}`).setCta().onClick(() => this.settle(true));
+    new import_obsidian50.ButtonComponent(buttonBar).setButtonText("\u53D6\u6D88").onClick(() => this.settle(false));
+    const confirmButton = new import_obsidian50.ButtonComponent(buttonBar).setButtonText(`\u786E\u8BA4${transition.label}`).setCta().onClick(() => this.settle(true));
     confirmButton.buttonEl.focus();
   }
   onClose() {
@@ -56748,15 +58149,15 @@ var ProjectTransitionConfirmModal = class extends import_obsidian46.Modal {
   }
 };
 function createModalInfoRow(parent, label, value, emphasize = false) {
-  const row = parent.createDiv();
-  row.style.display = "grid";
-  row.style.gridTemplateColumns = "4em minmax(0, 1fr)";
-  row.style.gap = "10px";
-  row.style.alignItems = "start";
-  row.style.padding = "5px 0";
-  const labelElement = row.createDiv({ text: label });
+  const row2 = parent.createDiv();
+  row2.style.display = "grid";
+  row2.style.gridTemplateColumns = "4em minmax(0, 1fr)";
+  row2.style.gap = "10px";
+  row2.style.alignItems = "start";
+  row2.style.padding = "5px 0";
+  const labelElement = row2.createDiv({ text: label });
   labelElement.style.color = "var(--text-muted)";
-  const valueElement = row.createDiv({ text: value });
+  const valueElement = row2.createDiv({ text: value });
   valueElement.style.minWidth = "0";
   valueElement.style.overflowWrap = "anywhere";
   valueElement.style.lineHeight = "1.5";
@@ -56781,7 +58182,7 @@ function getErrorMessage(error) {
 }
 
 // src/modules/projects/updatedMaintainer.ts
-var import_obsidian47 = require("obsidian");
+var import_obsidian51 = require("obsidian");
 var UPDATED_DEBOUNCE_MS = 2e3;
 var SYSTEM_PREFIX = `${FOLDERS.system}/`;
 function registerUpdatedMaintainer(ctx) {
@@ -56791,7 +58192,7 @@ function registerUpdatedMaintainer(ctx) {
     if (!ctx.settings.autoUpdated) return;
     if (path.startsWith(SYSTEM_PREFIX)) return;
     const file = ctx.app.vault.getAbstractFileByPath(path);
-    if (!(file instanceof import_obsidian47.TFile)) return;
+    if (!(file instanceof import_obsidian51.TFile)) return;
     if (!((_a2 = ctx.app.metadataCache.getFileCache(file)) == null ? void 0 : _a2.frontmatter)) return;
     ctx.guard.mark(path);
     await withPreservedMarkdownScroll(
@@ -56832,7 +58233,7 @@ function registerUpdatedMaintainer(ctx) {
           cancelUpdate(file.path);
           return;
         }
-        if (!(file instanceof import_obsidian47.TFile) || file.extension !== "md") return;
+        if (!(file instanceof import_obsidian51.TFile) || file.extension !== "md") return;
         if (file.path.startsWith(SYSTEM_PREFIX)) {
           cancelUpdate(file.path);
           return;
@@ -56849,7 +58250,7 @@ function registerUpdatedMaintainer(ctx) {
 }
 
 // src/modules/review/periodic.ts
-var import_obsidian48 = require("obsidian");
+var import_obsidian52 = require("obsidian");
 function periodFolderOf(ctx, period) {
   const root = normalizeFolderPath(ctx.settings.diaryFolder, FOLDERS.diary);
   const leaf = period.folder.slice(FOLDERS.diary.length + 1);
@@ -56902,14 +58303,14 @@ async function openPeriodNote(ctx, period, options) {
   try {
     const title = (options == null ? void 0 : options.day) ? titleOfDay(options.day, period) : currentPeriodTitle(period);
     if (!title) {
-      new import_obsidian48.Notice(`\u65E0\u6CD5\u4ECE\u65E5\u671F ${(_a2 = options == null ? void 0 : options.day) != null ? _a2 : ""} \u5B9A\u4F4D${period.label}`);
+      new import_obsidian52.Notice(`\u65E0\u6CD5\u4ECE\u65E5\u671F ${(_a2 = options == null ? void 0 : options.day) != null ? _a2 : ""} \u5B9A\u4F4D${period.label}`);
       return null;
     }
     const folder = periodFolderOf(ctx, period);
     const path = `${folder}/${title}.md`;
     const existing = ctx.app.vault.getAbstractFileByPath(path);
-    if (existing && !(existing instanceof import_obsidian48.TFile)) {
-      new import_obsidian48.Notice(`\u540C\u540D\u7684\u4E0D\u662F\u7B14\u8BB0\u800C\u662F\u6587\u4EF6\u5939\uFF1A${path}`);
+    if (existing && !(existing instanceof import_obsidian52.TFile)) {
+      new import_obsidian52.Notice(`\u540C\u540D\u7684\u4E0D\u662F\u7B14\u8BB0\u800C\u662F\u6587\u4EF6\u5939\uFF1A${path}`);
       return null;
     }
     let file = existing;
@@ -56927,7 +58328,7 @@ async function openPeriodNote(ctx, period, options) {
     return file;
   } catch (error) {
     const message2 = error instanceof Error ? error.message : String(error);
-    new import_obsidian48.Notice(`\u6253\u5F00${period.label}\u5931\u8D25\uFF1A${message2}`);
+    new import_obsidian52.Notice(`\u6253\u5F00${period.label}\u5931\u8D25\uFF1A${message2}`);
     return null;
   }
 }
@@ -56960,7 +58361,7 @@ async function adoptPeriodNote(ctx, file) {
   if (file.path !== path) {
     const occupant = ctx.app.vault.getAbstractFileByPath(path);
     if (occupant) {
-      new import_obsidian48.Notice(`${period.label} ${title} \u5DF2\u7ECF\u5728 ${path}\uFF0C\u8FD9\u4E00\u7BC7\u6CA1\u6709\u642C\u8FC7\u53BB`);
+      new import_obsidian52.Notice(`${period.label} ${title} \u5DF2\u7ECF\u5728 ${path}\uFF0C\u8FD9\u4E00\u7BC7\u6CA1\u6709\u642C\u8FC7\u53BB`);
       return;
     }
     await ensureFolderPath(ctx.app, path.slice(0, path.lastIndexOf("/")));
@@ -56972,11 +58373,11 @@ async function adoptPeriodNote(ctx, file) {
 }
 function registerPeriodAutoInit(ctx) {
   const handle = (file) => {
-    if (!(file instanceof import_obsidian48.TFile) || ctx.guard.isRecent(file.path)) return;
+    if (!(file instanceof import_obsidian52.TFile) || ctx.guard.isRecent(file.path)) return;
     if (file.stat.size !== 0) return;
     void adoptPeriodNote(ctx, file).catch((error) => {
       const message2 = error instanceof Error ? error.message : String(error);
-      new import_obsidian48.Notice(`\u5957\u7528\u590D\u76D8\u6A21\u677F\u5931\u8D25\uFF1A${message2}`);
+      new import_obsidian52.Notice(`\u5957\u7528\u590D\u76D8\u6A21\u677F\u5931\u8D25\uFF1A${message2}`);
     });
   };
   ctx.app.workspace.onLayoutReady(() => {
@@ -57177,9 +58578,9 @@ function renderMonthlyBars(view, monthlyBorn, monthlyDone) {
   }
   renderNote(view.el, `\u5DE6\u67F1\uFF1D\u65B0\u5F00\u3000\u53F3\u67F1\uFF1D\u5B8C\u6210\u3000\u7EB5\u8F74\u5CF0\u503C ${peak}\u3000\u6A2A\u8F74\u4E3A\u6708\u4EFD`);
 }
-function addBar(parent, count, peak, color, label) {
+function addBar(parent, count, peak, color2, label) {
   const bar = parent.createDiv();
-  bar.style.cssText = `width:42%;height:${Math.round(count / peak * 100)}%;min-height:${count > 0 ? 3 : 0}px;background:${color};border-radius:2px 2px 0 0`;
+  bar.style.cssText = `width:42%;height:${Math.round(count / peak * 100)}%;min-height:${count > 0 ? 3 : 0}px;background:${color2};border-radius:2px 2px 0 0`;
   if (count > 0) bar.setAttribute("aria-label", `${label}\uFF1A${count}`);
 }
 function renderClosedGroup(view, title, list) {
@@ -57274,7 +58675,7 @@ function reviewSeed(ctx) {
 }
 
 // src/modules/review/theme.ts
-var import_obsidian49 = require("obsidian");
+var import_obsidian53 = require("obsidian");
 var MESSAGES8 = {
   unchanged: "\u4E3B\u9898\u6CA1\u6709\u53D8\u5316\uFF08\u7559\u7A7A\u4E0D\u4F1A\u6E05\u6389\u5DF2\u7ECF\u5199\u597D\u7684\u4E3B\u9898\uFF09",
   donePrefix: "\u5DF2\u5199\u5165",
@@ -57313,14 +58714,14 @@ async function promptAndWriteTheme(ctx, file, period, current) {
   if (answer === null) return;
   const theme = answer.trim();
   if (!theme) {
-    new import_obsidian49.Notice(MESSAGES8.unchanged);
+    new import_obsidian53.Notice(MESSAGES8.unchanged);
     return;
   }
   ctx.guard.mark(file.path);
   await ctx.app.fileManager.processFrontMatter(file, (frontmatter) => {
     frontmatter[FIELDS.theme] = theme;
   });
-  new import_obsidian49.Notice(`${MESSAGES8.donePrefix}${period.label}\u4E3B\u9898\uFF1A${theme}`);
+  new import_obsidian53.Notice(`${MESSAGES8.donePrefix}${period.label}\u4E3B\u9898\uFF1A${theme}`);
 }
 function themeOf(ctx, file) {
   var _a2, _b2, _c;
@@ -57330,7 +58731,7 @@ function themeOf(ctx, file) {
 }
 function reportFailure(error) {
   const message2 = error instanceof Error ? error.message : String(error);
-  new import_obsidian49.Notice(MESSAGES8.failedPrefix + message2);
+  new import_obsidian53.Notice(MESSAGES8.failedPrefix + message2);
 }
 async function resolveTarget(ctx) {
   const active = ctx.app.workspace.getActiveFile();
@@ -57520,10 +58921,10 @@ function themeCell(view, note, missing) {
 var reviewThemeViews = [dailyOutput, themeChain];
 
 // src/modules/ribbon/dock.ts
-var import_obsidian51 = require("obsidian");
+var import_obsidian55 = require("obsidian");
 
 // src/modules/ribbon/icons.ts
-var import_obsidian50 = require("obsidian");
+var import_obsidian54 = require("obsidian");
 var GRID = 24;
 var BOX = 100;
 var STROKE = "var(--icon-stroke, 2)";
@@ -57816,8 +59217,8 @@ var ARTWORK = {
 };
 function registerZiminosIcons(plugin) {
   for (const [name, paths] of Object.entries(ARTWORK)) {
-    (0, import_obsidian50.addIcon)(name, wrap(paths));
-    plugin.register(() => (0, import_obsidian50.removeIcon)(name));
+    (0, import_obsidian54.addIcon)(name, wrap(paths));
+    plugin.register(() => (0, import_obsidian54.removeIcon)(name));
   }
 }
 function wrap(paths) {
@@ -57863,14 +59264,14 @@ var RibbonDock = class {
    * 手机上则完全看不出变化，那一句 Notice 就是为它准备的。
    */
   syncVisibility() {
-    const enabled = new Set(this.ctx.settings.ribbonCommands);
+    const enabled2 = new Set(this.ctx.settings.ribbonCommands);
     for (const command of this.ctx.commands.list()) {
       const id = command.spec.id;
       const existing = this.buttons.get(id);
-      if (!enabled.has(id)) {
+      if (!enabled2.has(id)) {
         if (existing && !existing.hasClass(HIDDEN_CLASS)) {
           existing.addClass(HIDDEN_CLASS);
-          if (import_obsidian51.Platform.isPhone) new import_obsidian51.Notice(MOBILE_PENDING);
+          if (import_obsidian55.Platform.isPhone) new import_obsidian55.Notice(MOBILE_PENDING);
         }
         continue;
       }
@@ -57889,7 +59290,7 @@ var RibbonDock = class {
 };
 
 // src/modules/setup/init.ts
-var import_obsidian52 = require("obsidian");
+var import_obsidian56 = require("obsidian");
 
 // src/modules/setup/celebrate.ts
 var PIECES_PER_SIDE = 36;
@@ -58107,7 +59508,7 @@ async function initializeVault(ctx, seeds) {
   try {
     const isFirstRun = ctx.settings.initializedAt === "";
     if (isFirstRun && hasUserNotes(ctx, seeds)) {
-      new import_obsidian52.Notice(MESSAGES9.notEmpty);
+      new import_obsidian56.Notice(MESSAGES9.notEmpty);
       return;
     }
     for (const folder of INIT_FOLDERS) {
@@ -58122,13 +59523,13 @@ async function initializeVault(ctx, seeds) {
       ctx.settings.initializedAt = nowStamp(ctx.settings.dateTimeFormat);
       await ctx.saveSettings();
     }
-    new import_obsidian52.Notice(MESSAGES9.done);
+    new import_obsidian56.Notice(MESSAGES9.done);
     celebrate(ctx);
     const landing = ctx.app.vault.getAbstractFileByPath(README_FILE) ? README_FILE : NAV_FILE;
     await ctx.app.workspace.openLinkText(landing, "", false);
   } catch (error) {
     const message2 = error instanceof Error ? error.message : String(error);
-    new import_obsidian52.Notice(MESSAGES9.failedPrefix + message2);
+    new import_obsidian56.Notice(MESSAGES9.failedPrefix + message2);
   }
 }
 async function applySeed(ctx, seed) {
@@ -58155,7 +59556,7 @@ async function createFileIfMissing(ctx, path, content) {
 }
 
 // src/settings.ts
-var import_obsidian54 = require("obsidian");
+var import_obsidian58 = require("obsidian");
 
 // src/settingsModel.ts
 var TABS = [
@@ -58323,7 +59724,7 @@ var BOOK_TAG_PREFIX_FIELD = {
 };
 
 // src/settingsPanels.ts
-var import_obsidian53 = require("obsidian");
+var import_obsidian57 = require("obsidian");
 var FIELDS_ONLY = () => {
 };
 var SettingsPanels = class {
@@ -58365,7 +59766,7 @@ var SettingsPanels = class {
    * 状态说明随之从「尚未初始化」翻面成「已就绪」——停留的页不变，重建的是内容。
    */
   renderInitButton(containerEl) {
-    new import_obsidian53.Setting(containerEl).setName(TEXTS6.initName).setDesc(this.describeInitState()).addButton((button) => {
+    new import_obsidian57.Setting(containerEl).setName(TEXTS6.initName).setDesc(this.describeInitState()).addButton((button) => {
       button.setButtonText(TEXTS6.initButton).setCta().onClick(async () => {
         button.setDisabled(true);
         try {
@@ -58399,9 +59800,9 @@ var SettingsPanels = class {
    * 因为它们没有口味可言——豆瓣怎么写就怎么落，让人去配等于让人去改事实。
    */
   renderBooksSection(containerEl) {
-    new import_obsidian53.Setting(containerEl).setName(TEXTS6.booksHeading).setDesc(TEXTS6.booksIntro).setHeading();
+    new import_obsidian57.Setting(containerEl).setName(TEXTS6.booksHeading).setDesc(TEXTS6.booksIntro).setHeading();
     this.host.renderTextField(containerEl, BOOK_TAG_PREFIX_FIELD);
-    new import_obsidian53.Setting(containerEl).setName(TEXTS6.bookTagCountName).setDesc(TEXTS6.bookTagCountDesc).addDropdown((dropdown) => {
+    new import_obsidian57.Setting(containerEl).setName(TEXTS6.bookTagCountName).setDesc(TEXTS6.bookTagCountDesc).addDropdown((dropdown) => {
       for (const count of BOOK_TAG_COUNTS) {
         dropdown.addOption(String(count), count === 0 ? "\u4E0D\u5199\u6807\u7B7E" : `\u524D ${count} \u4E2A`);
       }
@@ -58427,10 +59828,10 @@ var SettingsPanels = class {
    */
   renderWereadRow(containerEl) {
     const connected = !!this.ctx.settings.wereadCookie.trim();
-    new import_obsidian53.Setting(containerEl).setName(TEXTS6.wereadName).setDesc(
-      import_obsidian53.Platform.isDesktopApp ? connected ? TEXTS6.wereadConnected : TEXTS6.wereadDisconnected : TEXTS6.wereadMobile
+    new import_obsidian57.Setting(containerEl).setName(TEXTS6.wereadName).setDesc(
+      import_obsidian57.Platform.isDesktopApp ? connected ? TEXTS6.wereadConnected : TEXTS6.wereadDisconnected : TEXTS6.wereadMobile
     ).addButton((button) => {
-      button.setButtonText(connected ? "\u65AD\u5F00" : "\u626B\u7801\u8FDE\u63A5").setDisabled(!import_obsidian53.Platform.isDesktopApp);
+      button.setButtonText(connected ? "\u65AD\u5F00" : "\u626B\u7801\u8FDE\u63A5").setDisabled(!import_obsidian57.Platform.isDesktopApp);
       if (!connected) button.setCta();
       button.onClick(async () => {
         button.setDisabled(true);
@@ -58454,14 +59855,14 @@ var SettingsPanels = class {
    * 落点那三个文本框已由骨架照字段表画在上方，这里只补两个非文本控件。
    */
   renderInspirationPanel(containerEl) {
-    new import_obsidian53.Setting(containerEl).setName(TEXTS6.inspirationPositionName).setDesc(TEXTS6.inspirationPositionDesc).addDropdown((dropdown) => {
+    new import_obsidian57.Setting(containerEl).setName(TEXTS6.inspirationPositionName).setDesc(TEXTS6.inspirationPositionDesc).addDropdown((dropdown) => {
       dropdown.addOption("heading-top", "\u6807\u9898\u4E0B\u65B9\uFF08\u65B0\u5185\u5BB9\u5728\u524D\uFF09").addOption("heading-bottom", "\u6807\u9898\u533A\u672B\u5C3E\uFF08\u65B0\u5185\u5BB9\u5728\u540E\uFF09").addOption("file-top", "\u6B63\u6587\u9876\u90E8").addOption("file-bottom", "\u6B63\u6587\u5E95\u90E8").setValue(this.normalizeInspirationPosition(this.ctx.settings.inspirationInsertPosition)).onChange(async (value) => {
         const position = this.normalizeInspirationPosition(value);
         this.ctx.settings.inspirationInsertPosition = position;
         await this.ctx.saveSettings();
       });
     });
-    new import_obsidian53.Setting(containerEl).setName(TEXTS6.inspirationFormatName).setDesc(TEXTS6.inspirationFormatDesc).addTextArea((textArea) => {
+    new import_obsidian57.Setting(containerEl).setName(TEXTS6.inspirationFormatName).setDesc(TEXTS6.inspirationFormatDesc).addTextArea((textArea) => {
       textArea.setPlaceholder(INSPIRATION_DEFAULTS.format).setValue(this.ctx.settings.inspirationFormat).onChange(async (value) => {
         this.ctx.settings.inspirationFormat = value;
         await this.ctx.saveSettings();
@@ -58496,9 +59897,9 @@ var SettingsPanels = class {
       TEXTS6.autoFormatName,
       TEXTS6.autoFormatDesc
     );
-    new import_obsidian53.Setting(containerEl).setName(TEXTS6.formatRulesHeading).setDesc(TEXTS6.formatRulesIntro).setHeading();
-    for (const rule of FORMAT_RULES) {
-      this.renderRuleRow(containerEl, rule.key, rule.name, rule.desc);
+    new import_obsidian57.Setting(containerEl).setName(TEXTS6.formatRulesHeading).setDesc(TEXTS6.formatRulesIntro).setHeading();
+    for (const rule2 of FORMAT_RULES) {
+      this.renderRuleRow(containerEl, rule2.key, rule2.name, rule2.desc);
     }
   }
   /**
@@ -58509,8 +59910,8 @@ var SettingsPanels = class {
    * 老库升级时那条新规则不在清单里，于是默认不开，这与「不替用户改他没选过的东西」同源。
    */
   renderRuleRow(containerEl, key, name, desc) {
-    new import_obsidian53.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
-      toggle.setValue(this.ctx.settings.formatRules.includes(key)).onChange(async (value) => {
+    new import_obsidian57.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle2) => {
+      toggle2.setValue(this.ctx.settings.formatRules.includes(key)).onChange(async (value) => {
         this.ctx.settings.formatRules = this.nextFormatRules(key, value);
         await this.ctx.saveSettings();
       });
@@ -58523,11 +59924,11 @@ var SettingsPanels = class {
    * 于是顺序永远等于规则表的顺序，data.json 里混进的不认识的 id 也在第一次勾选时被扫掉。
    * 返回新数组，绝不原地改——它在用户没调过时与 DEFAULT_SETTINGS 共用引用。
    */
-  nextFormatRules(key, enabled) {
+  nextFormatRules(key, enabled2) {
     const chosen = new Set(this.ctx.settings.formatRules);
-    if (enabled) chosen.add(key);
+    if (enabled2) chosen.add(key);
     else chosen.delete(key);
-    return FORMAT_RULES.map((rule) => rule.key).filter((candidate) => chosen.has(candidate));
+    return FORMAT_RULES.map((rule2) => rule2.key).filter((candidate) => chosen.has(candidate));
   }
   // ============================================================
   // 五、外观开关：一个开关，随开荒页交付
@@ -58553,7 +59954,7 @@ var SettingsPanels = class {
    * 分组顺序不需要另一张表，它就是命令的注册顺序。
    */
   renderRibbonPanel(containerEl) {
-    const summary = new import_obsidian53.Setting(containerEl).setName(this.describeRibbonCount()).setDesc(TEXTS6.ribbonIntro);
+    const summary = new import_obsidian57.Setting(containerEl).setName(this.describeRibbonCount()).setDesc(TEXTS6.ribbonIntro);
     this.ribbonCountEl = summary.nameEl;
     let currentGroup = "";
     for (const command of this.ctx.commands.list()) {
@@ -58581,12 +59982,12 @@ var SettingsPanels = class {
     const { id, icon, name } = spec;
     const label = createFragment((frag) => {
       const iconEl = frag.createSpan({ cls: "ziminos-ribbon-icon" });
-      (0, import_obsidian53.setIcon)(iconEl, icon);
+      (0, import_obsidian57.setIcon)(iconEl, icon);
       iconEl.style.color = GROUP_COLORS[spec.group];
       frag.createSpan({ text: name });
     });
-    new import_obsidian53.Setting(containerEl).setName(label).setClass("ziminos-ribbon-row").addToggle((toggle) => {
-      toggle.setValue(this.ctx.settings.ribbonCommands.includes(id)).onChange(async (value) => {
+    new import_obsidian57.Setting(containerEl).setName(label).setClass("ziminos-ribbon-row").addToggle((toggle2) => {
+      toggle2.setValue(this.ctx.settings.ribbonCommands.includes(id)).onChange(async (value) => {
         this.ctx.settings.ribbonCommands = this.nextRibbonCommands(id, value);
         await this.ctx.saveSettings();
         this.actions.syncRibbon();
@@ -58602,9 +60003,9 @@ var SettingsPanels = class {
    * 第一次勾选就顺手扫掉，不会留一条永远没人认领的记录。
    * 返回的是新数组，绝不原地改——ribbonCommands 在用户没调过时与 DEFAULT_SETTINGS 共用引用。
    */
-  nextRibbonCommands(id, enabled) {
+  nextRibbonCommands(id, enabled2) {
     const chosen = new Set(this.ctx.settings.ribbonCommands);
-    if (enabled) chosen.add(id);
+    if (enabled2) chosen.add(id);
     else chosen.delete(id);
     return this.ctx.commands.list().map((command) => command.spec.id).filter((candidate) => chosen.has(candidate));
   }
@@ -58630,7 +60031,7 @@ var SettingsPanels = class {
       TEXTS6.folderCountDesc,
       this.actions.syncExplorer
     );
-    new import_obsidian53.Setting(containerEl).setName(TEXTS6.folderCountTargetName).setDesc(TEXTS6.folderCountTargetDesc).addDropdown((dropdown) => {
+    new import_obsidian57.Setting(containerEl).setName(TEXTS6.folderCountTargetName).setDesc(TEXTS6.folderCountTargetDesc).addDropdown((dropdown) => {
       for (const target of FOLDER_COUNT_TARGETS) {
         dropdown.addOption(target, FOLDER_COUNT_LABELS[target]);
       }
@@ -58667,7 +60068,7 @@ var SettingsPanels = class {
       TEXTS6.filePathDesc,
       this.actions.syncExplorer
     );
-    new import_obsidian53.Setting(containerEl).setName(TEXTS6.filePathScopeName).setDesc(TEXTS6.filePathScopeDesc).addDropdown((dropdown) => {
+    new import_obsidian57.Setting(containerEl).setName(TEXTS6.filePathScopeName).setDesc(TEXTS6.filePathScopeDesc).addDropdown((dropdown) => {
       for (const scope of FILE_PATH_SCOPES) {
         dropdown.addOption(scope, FILE_PATH_SCOPE_LABELS[scope]);
       }
@@ -58680,8 +60081,8 @@ var SettingsPanels = class {
   }
   /** 最近文件那一段：一句说明，加「显示几条」与「怎么排」两个下拉框 */
   renderRecentSection(containerEl) {
-    new import_obsidian53.Setting(containerEl).setName(TEXTS6.recentHeading).setDesc(TEXTS6.recentIntro).setHeading();
-    new import_obsidian53.Setting(containerEl).setName(TEXTS6.recentLimitName).setDesc(TEXTS6.recentLimitDesc).addDropdown((dropdown) => {
+    new import_obsidian57.Setting(containerEl).setName(TEXTS6.recentHeading).setDesc(TEXTS6.recentIntro).setHeading();
+    new import_obsidian57.Setting(containerEl).setName(TEXTS6.recentLimitName).setDesc(TEXTS6.recentLimitDesc).addDropdown((dropdown) => {
       for (const limit of RECENT_FILES_LIMITS) {
         dropdown.addOption(String(limit), `${limit} \u6761`);
       }
@@ -58691,7 +60092,7 @@ var SettingsPanels = class {
         this.actions.syncExplorer();
       });
     });
-    new import_obsidian53.Setting(containerEl).setName(TEXTS6.recentSortName).setDesc(TEXTS6.recentSortDesc).addDropdown((dropdown) => {
+    new import_obsidian57.Setting(containerEl).setName(TEXTS6.recentSortName).setDesc(TEXTS6.recentSortDesc).addDropdown((dropdown) => {
       for (const sort of RECENT_FILES_SORTS) {
         dropdown.addOption(sort, RECENT_SORT_LABELS[sort]);
       }
@@ -58734,12 +60135,12 @@ var SettingsPanels = class {
       TEXTS6.rememberCursorName,
       TEXTS6.rememberCursorDesc
     );
-    new import_obsidian53.Setting(containerEl).setName(TEXTS6.formatHeading).setDesc(TEXTS6.formatIntro).setHeading();
+    new import_obsidian57.Setting(containerEl).setName(TEXTS6.formatHeading).setDesc(TEXTS6.formatIntro).setHeading();
     this.renderFormatSection(containerEl);
   }
   /** Eagle 是编辑页的附件支线：行为/图片分流、项目归档、本机连接与设备参数收在同一段 */
   renderEaglePanel(containerEl) {
-    new import_obsidian53.Setting(containerEl).setName(TEXTS6.eagleHeading).setDesc(TEXTS6.eagleIntro).setHeading();
+    new import_obsidian57.Setting(containerEl).setName(TEXTS6.eagleHeading).setDesc(TEXTS6.eagleIntro).setHeading();
     this.host.renderToggle(containerEl, "eagleEnabled", TEXTS6.eagleEnabledName, TEXTS6.eagleEnabledDesc);
     this.host.renderToggle(
       containerEl,
@@ -58747,8 +60148,8 @@ var SettingsPanels = class {
       TEXTS6.eagleExcludeImagesName,
       TEXTS6.eagleExcludeImagesDesc
     );
-    new import_obsidian53.Setting(containerEl).setName(TEXTS6.eaglePackageName).setDesc(TEXTS6.eaglePackageDesc).addButton((button) => button.setButtonText("\u663E\u793A\u5B89\u88C5\u5305").onClick(() => void this.actions.revealEaglePackage()));
-    const connection = new import_obsidian53.Setting(containerEl).setName(TEXTS6.eagleStatusName).setDesc(TEXTS6.eagleStatusChecking).addButton((button) => button.setButtonText("\u914D\u5BF9").setCta().onClick(async () => {
+    new import_obsidian57.Setting(containerEl).setName(TEXTS6.eaglePackageName).setDesc(TEXTS6.eaglePackageDesc).addButton((button) => button.setButtonText("\u663E\u793A\u5B89\u88C5\u5305").onClick(() => void this.actions.revealEaglePackage()));
+    const connection = new import_obsidian57.Setting(containerEl).setName(TEXTS6.eagleStatusName).setDesc(TEXTS6.eagleStatusChecking).addButton((button) => button.setButtonText("\u914D\u5BF9").setCta().onClick(async () => {
       button.setDisabled(true);
       await this.actions.pairEagle();
       this.host.rebuild();
@@ -58759,13 +60160,13 @@ var SettingsPanels = class {
     void this.actions.describeEagleStatus().then((status) => {
       if (connection.descEl.isConnected) connection.setDesc(status);
     });
-    new import_obsidian53.Setting(containerEl).setName(TEXTS6.eaglePortName).setDesc(TEXTS6.eaglePortDesc).addText((text4) => text4.setPlaceholder(String(EAGLE_DEFAULTS.port)).setValue(String(this.ctx.settings.eaglePort)).onChange(async (value) => {
+    new import_obsidian57.Setting(containerEl).setName(TEXTS6.eaglePortName).setDesc(TEXTS6.eaglePortDesc).addText((text6) => text6.setPlaceholder(String(EAGLE_DEFAULTS.port)).setValue(String(this.ctx.settings.eaglePort)).onChange(async (value) => {
       const candidate = Number(value);
       if (!Number.isInteger(candidate) || candidate < EAGLE_PORT_RANGE.min || candidate > EAGLE_PORT_RANGE.max) return;
       this.ctx.settings.eaglePort = candidate;
       await this.ctx.saveSettings();
     }));
-    new import_obsidian53.Setting(containerEl).setName(TEXTS6.eagleFolderName).setDesc(TEXTS6.eagleFolderDesc).addText((text4) => text4.setPlaceholder("\u9879\u76EE\u5916\u7559\u7A7A\uFF1A\u672A\u5F52\u7C7B").setValue(this.ctx.settings.eagleFolderId).onChange(async (value) => {
+    new import_obsidian57.Setting(containerEl).setName(TEXTS6.eagleFolderName).setDesc(TEXTS6.eagleFolderDesc).addText((text6) => text6.setPlaceholder("\u9879\u76EE\u5916\u7559\u7A7A\uFF1A\u672A\u5F52\u7C7B").setValue(this.ctx.settings.eagleFolderId).onChange(async (value) => {
       this.ctx.settings.eagleFolderId = value.trim();
       await this.ctx.saveSettings();
     }));
@@ -58791,7 +60192,7 @@ var SettingsPanels = class {
 };
 
 // src/settings.ts
-var ZiminosSettingTab = class extends import_obsidian54.PluginSettingTab {
+var ZiminosSettingTab = class extends import_obsidian58.PluginSettingTab {
   constructor(ctx, actions) {
     super(ctx.app, ctx.plugin);
     /**
@@ -58840,7 +60241,7 @@ var ZiminosSettingTab = class extends import_obsidian54.PluginSettingTab {
         attr: { type: "button", "aria-pressed": String(active) }
       });
       if (active) button.addClass("is-active");
-      (0, import_obsidian54.setIcon)(button.createSpan({ cls: "ziminos-settings-tab-icon" }), tab.icon);
+      (0, import_obsidian58.setIcon)(button.createSpan({ cls: "ziminos-settings-tab-icon" }), tab.icon);
       button.createSpan({ text: tab.label });
       button.addEventListener("click", () => this.switchTo(tab));
     }
@@ -58865,9 +60266,9 @@ var ZiminosSettingTab = class extends import_obsidian54.PluginSettingTab {
    */
   renderPanel(body) {
     const tab = this.activeTab;
-    const header2 = new import_obsidian54.Setting(body).setDesc(tab.status).setHeading();
+    const header2 = new import_obsidian58.Setting(body).setDesc(tab.status).setHeading();
     const title = header2.nameEl.createSpan({ cls: "ziminos-settings-page-title" });
-    (0, import_obsidian54.setIcon)(title.createSpan({ cls: "ziminos-settings-page-icon" }), tab.icon);
+    (0, import_obsidian58.setIcon)(title.createSpan({ cls: "ziminos-settings-page-icon" }), tab.icon);
     title.createSpan({ text: tab.module });
     this.renderTextFields(body, tab.id, false);
     this.panels.render[tab.id](body);
@@ -58894,8 +60295,8 @@ var ZiminosSettingTab = class extends import_obsidian54.PluginSettingTab {
    * 天然看得见新值；只有已经画在屏幕上的东西（状态栏按钮）才需要有人去推它一把。
    */
   renderToggle(containerEl, key, name, desc, onApplied) {
-    new import_obsidian54.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle) => {
-      toggle.setValue(this.ctx.settings[key]).onChange(async (value) => {
+    new import_obsidian58.Setting(containerEl).setName(name).setDesc(desc).addToggle((toggle2) => {
+      toggle2.setValue(this.ctx.settings[key]).onChange(async (value) => {
         this.ctx.settings[key] = value;
         await this.ctx.saveSettings();
         onApplied == null ? void 0 : onApplied();
@@ -58916,7 +60317,7 @@ var ZiminosSettingTab = class extends import_obsidian54.PluginSettingTab {
     for (const field2 of fields) {
       const section = (_a2 = field2.section) != null ? _a2 : "";
       if (section && section !== currentSection) {
-        new import_obsidian54.Setting(containerEl).setName(section).setHeading();
+        new import_obsidian58.Setting(containerEl).setName(section).setHeading();
       }
       currentSection = section;
       this.renderTextField(containerEl, field2);
@@ -58941,8 +60342,8 @@ var ZiminosSettingTab = class extends import_obsidian54.PluginSettingTab {
   renderTextField(containerEl, field2) {
     const fallback = DEFAULT_SETTINGS[field2.key];
     const desc = field2.advanced ? `${field2.hint}${TEXTS6.advancedSuffixPrefix}${fallback}${TEXTS6.advancedSuffixTail}` : field2.hint;
-    new import_obsidian54.Setting(containerEl).setName(field2.name).setDesc(desc).addText((text4) => {
-      text4.setPlaceholder(fallback).setValue(this.ctx.settings[field2.key]).onChange(async (value) => {
+    new import_obsidian58.Setting(containerEl).setName(field2.name).setDesc(desc).addText((text6) => {
+      text6.setPlaceholder(fallback).setValue(this.ctx.settings[field2.key]).onChange(async (value) => {
         this.ctx.settings[field2.key] = value;
         await this.ctx.saveSettings();
       });
@@ -58951,7 +60352,7 @@ var ZiminosSettingTab = class extends import_obsidian54.PluginSettingTab {
 };
 
 // src/main.ts
-var ZiminosPlugin = class extends import_obsidian55.Plugin {
+var ZiminosPlugin = class extends import_obsidian59.Plugin {
   constructor() {
     super(...arguments);
     /**
@@ -59002,10 +60403,22 @@ var ZiminosPlugin = class extends import_obsidian55.Plugin {
     registerImportHighlightsCommand(ctx);
     registerExcerptCardCommand(ctx);
     registerInspirationCaptureCommand(ctx);
-    registerCalendar(ctx, async (periodKey, day) => {
-      const file = await openPeriodNote(ctx, PERIODS[periodKey], { day });
-      if (file && periodKey === "daily") await promptThemeIfMissing(ctx, file);
-    });
+    registerCalendar(
+      ctx,
+      async (periodKey, day) => {
+        const file = await openPeriodNote(ctx, PERIODS[periodKey], { day });
+        if (file && periodKey === "daily") await promptThemeIfMissing(ctx, file);
+      },
+      // 日历只想知道「这一格要不要涂绿」。目录规则、文件名格式与那个可改的根目录
+      // 全归 review，路径在这里拼一次即可——让日历自己学会一套，
+      // 就会有第二处对「日记住哪儿」的理解，而两处迟早不一致。
+      (periodKey, day) => {
+        const period = PERIODS[periodKey];
+        const title = titleOfDay(day, period);
+        if (!title) return false;
+        return ctx.app.vault.getAbstractFileByPath(`${periodFolderOf(ctx, period)}/${title}.md`) instanceof import_obsidian59.TFile;
+      }
+    );
     registerPeriodicCommands(ctx, (file) => promptThemeIfMissing(ctx, file));
     registerPeriodAutoInit(ctx);
     registerThemeCommand(ctx);
