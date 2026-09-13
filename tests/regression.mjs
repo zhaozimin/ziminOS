@@ -107,6 +107,20 @@ test('package 版本是唯一事实源，manifest 镜像已同步', () => {
     assert.equal(manifest.version, packageJson.version);
 });
 
+/**
+ * 入库的 main.js 与「在哪个目录构建」无关。
+ *
+ * esbuild 把依赖相对工作目录的路径写进来源注释与模块键：在 git worktree 里构建
+ * 得到 `../../../node_modules/…`，在主仓库里得到 `node_modules/…`，代码一字不差、
+ * 产物差出几百行。publish-v1.sh 的「构建后 main.js 不许再变」于是随构建地点时红时绿，
+ * 这条回归曾两次被这样绕过去（30bbfa9 修过一次，4bedbab 又带回来）。
+ */
+test('入库的 main.js 不带构建目录的相对位置', () => {
+    const bundle = readFileSync(path.join(ROOT, 'vault/.obsidian/plugins/ziminos/main.js'), 'utf8');
+
+    assert.doesNotMatch(bundle, /\.\.\/node_modules\//, 'main.js 里出现了 ../node_modules/，它是在别的目录层级下构建出来的');
+});
+
 test('README 与安装契约共同指向 Gitee 唯一部署源', () => {
     const readme = readFileSync(path.join(ROOT, 'README.md'), 'utf8');
     const skill = readFileSync(path.join(ROOT, 'skill/SKILL.md'), 'utf8');
@@ -1035,9 +1049,12 @@ if (existsSync(proContractPath)) {
 
         // 开发环境的产物与工具目录不进任何一个仓库，不需要分类
         const ignored = new Set(['.git', 'node_modules', '.claude', '.DS_Store', '.impeccable', '.publish-staging']);
+        // 两个打包脚本默认把 zip 与 .sha256 留在仓库根（.gitignore 的 /ziminOS-*.zip 挡着不进库）。
+        // 不跳过它们，打过一次包之后下一次 npm run check 就红——而打包脚本自己第一步就跑 check
+        const releaseArtifact = /^ziminOS-.+\.zip(\.sha256)?$/;
 
         for (const entry of readdirSync(ROOT)) {
-            if (ignored.has(entry)) continue;
+            if (ignored.has(entry) || releaseArtifact.test(entry)) continue;
 
             assert.ok(classified.has(entry), `仓库根的 ${entry} 没有出现在 publish-v1.sh 的任何一张清单里`);
         }
