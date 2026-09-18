@@ -7,8 +7,8 @@
  *           废弃正文/双链在编辑阅读两态的分层示警与三本库外观同构、五级周期的文件名反解、
  *           后台写入的分栏滚动保护（什么时候写、写到哪一篇、写什么值归 writes.mjs）、
  *           光标焦点切换、四类内容容器与日记附件路由，以及
- *           智能体路由完整性，并在专业版源码存在时额外覆盖出库单往返、《赛博永生》路径同构
- *           与第二版安装入口
+ *           智能体路由完整性、发布脚本的 Shell 变量边界，并在专业版源码存在时额外覆盖
+ *           出库单往返、《赛博永生》路径同构与第二版安装入口
  * [POS]: tests 的唯一可执行入口；只验证公开行为与关键平台边界，不复制业务实现
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -213,7 +213,7 @@ test('传统 CR 笔记整理后不被混成 LF', () => {
 
 test('小节写入与任务翻转都保留 CRLF', () => {
     const inserted = insertIntoSection('## 记录\r\n-\r\n', '## 记录', '- [ ] 跟进');
-    const toggled = toggleTaskLine(inserted, 1, false);
+    const toggled = toggleTaskLine(inserted, 1, false, '- [ ] 跟进');
 
     assert.equal(inserted.replaceAll('\r\n', '').includes('\n'), false);
     assert.equal(toggled, '## 记录\r\n- [x] 跟进\r\n');
@@ -867,6 +867,17 @@ if (existsSync(proContractPath)) {
     });
 
     /**
+     * Bash 在部分多字节 locale 下会把变量后的中文标点误吞进变量名。
+     * `set -u` 最终报的是 `version�: unbound variable`，而且发生在两边回归全绿之后；
+     * 变量与非 ASCII 字符相邻时必须用 `${name}` 明确划界。
+     */
+    test('publish-v1.sh 的 Shell 变量与中文相邻时显式划界', () => {
+        const script = readFileSync(path.join(ROOT, 'publish-v1.sh'), 'utf8');
+
+        assert.doesNotMatch(script, /\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7F]/u);
+    });
+
+    /**
      * 插件认的路径与模板、安装契约里实际写着的路径必须是同一批字符串。
      *
      * 常量改了而模板没改（或反过来）不会有任何东西报错，表现只是「待提炼」永远显示空——
@@ -1114,4 +1125,3 @@ test('ItemView 子类不占用宿主自己的成员名', () => {
 
     assert.equal(classesChecked, files.length);
 });
-

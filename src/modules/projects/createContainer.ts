@@ -3,7 +3,8 @@
  *          依赖 core/constants 的 FIELDS/FOLDERS/NOTE_TYPES、core/folders 的
  *          ensureFolderPath/normalizeFolderPath、core/modals 的 TextInputModal/ChoiceModal、
  *          core/time 的 nowStampAndUid、core/types 的 ZiminosContext/ZiminosSettings，
- *          依赖同目录 moc 的 mocPathOf 与 templates 的 mocContent/mocFrontmatter
+ *          依赖同目录 moc 的 mocPathOf、nameConflict 的四根目录同名检索/同流程更名，
+ *          以及 templates 的 mocContent/mocFrontmatter
  * [OUTPUT]: 对外提供 ContainerKind 契约、PROJECT_KIND/AREA_KIND/BOOK_KIND 三份规格、
  *           CreateContainerPreset 预设契约、PersonPicker 选人能力契约、createContainer
  * [POS]: 「一个文件夹 + 一篇 MOC」这件事的唯一实现，项目、领域与书籍共用它。
@@ -11,7 +12,7 @@
  *        写什么 type、问不问归属、带不带小节骨架。三者的 Base 必须同源且只读
  *        this.file 实时上下文，不得把命名或路径再塞回容器规格。除此之外它们连一个字的提示文案都不该分叉——
  *        分叉的代价不是重复代码，是「新建领域」某天悄悄少了一道防覆盖校验。
- *        名称合法性、防覆盖、光标落点这些规矩因此只在此处定义一次。
+ *        名称合法性、目标位置防覆盖、跨 PARA 同名提醒、光标落点这些规矩因此只在此处定义一次。
  *        问答顺序是设计过的：名称 → 归属 →（只有挂了人的归属才问）选人 → 概述。
  *        概述放最后，是因为前面全是点选，中途取消不至于让人白写一段话；
  *        归属必须在动土之前问完，客户委托却没选到人时中止，不留半个空文件夹。
@@ -28,6 +29,7 @@ import { ChoiceModal, TextInputModal } from '../../core/modals';
 import { nowStampAndUid } from '../../core/time';
 import type { ZiminosContext, ZiminosSettings } from '../../core/types';
 import { mocPathOf } from './moc';
+import { requestAvailableContainerName } from './nameConflict';
 import { mocContent, mocFrontmatter } from './templates';
 import type { Bibliography, ContainerSection, ProjectRelation } from './templates';
 
@@ -176,7 +178,7 @@ export interface CreateContainerPreset {
     description: string;
     /** 作者，只有书籍预设带；有值才落 YAML 行 */
     author?: string;
-    /** 别名（书籍的带副标题全名），只有书籍预设带 */
+    /** 别名（书籍的真实书名，有副标题时为全名），只有书籍预设带 */
     aliases?: readonly string[];
     /** 标签（书籍的豆瓣分类词），只有书籍预设带 */
     tags?: readonly string[];
@@ -232,16 +234,36 @@ export async function createContainer(
             return null;
         }
 
-        const containerName = nameInput.trim();
+        const requestedName = nameInput.trim();
 
-        // 防止名称意外生成嵌套目录
-        if (/[\\/]/.test(containerName)) {
-            new Notice(`${kind.label}名称不能包含斜杠或反斜杠。`);
+        // 防止名称意外生成嵌套目录或逃回父目录
+        if (/[\\/]/.test(requestedName) || requestedName === '.' || requestedName === '..') {
+            new Notice(`${kind.label}名称不能包含斜杠、反斜杠，也不能是 . 或 ..。`);
             return null;
         }
 
         // ============================================================
-        // 3. 归属与关联的人：领域不问，开荒的首个项目走预设也不问
+        // 3. 检查四个 PARA 根目录；重名时留在本次命令里改名
+        // ============================================================
+
+        const availableName = await requestAvailableContainerName(
+            app,
+            settings,
+            kind.label,
+            requestedName,
+        );
+
+        if (availableName === null) {
+            new Notice(`已取消创建${kind.label}“${requestedName}”。`);
+            return null;
+        }
+
+        let containerName = availableName;
+        let containerFolderPath = normalizePath(`${baseFolder}/${containerName}`);
+        let mocFilePath = mocPathOf(containerFolderPath, containerName);
+
+        // ============================================================
+        // 4. 归属与关联的人：领域不问，开荒的首个项目走预设也不问
         // ============================================================
 
         let relation: ProjectRelation | undefined;
@@ -283,7 +305,7 @@ export async function createContainer(
         }
 
         // ============================================================
-        // 4. 获取概述
+        // 5. 获取概述
         // ============================================================
 
         // 概述允许为空，因此只判断「是否取消」，不判断「是否填了字」
@@ -301,23 +323,33 @@ export async function createContainer(
         const description = descriptionInput.trim();
 
         // ============================================================
-        // 5. 生成文件夹与 MOC 笔记路径
-        // ============================================================
-
-        const containerFolderPath = normalizePath(`${baseFolder}/${containerName}`);
-        const mocFilePath = mocPathOf(containerFolderPath, containerName);
-
-        // ============================================================
         // 6. 逐级创建缺失的基础目录
         // ============================================================
 
         await ensureFolderPath(app, baseFolder);
 
         // ============================================================
-        // 7. 创建容器文件夹
+        // 7. 落盘前复核同名事实；期间撞名仍可在本次命令里改名
         // ============================================================
 
-        await ensureFolderPath(app, containerFolderPath);
+        const finalName = await requestAvailableContainerName(
+            app,
+            settings,
+            kind.label,
+            containerName,
+        );
+
+        if (finalName === null) {
+            new Notice(`已取消创建${kind.label}“${containerName}”。`);
+            return null;
+        }
+
+        containerName = finalName;
+        containerFolderPath = normalizePath(`${baseFolder}/${containerName}`);
+        mocFilePath = mocPathOf(containerFolderPath, containerName);
+
+        // 最后一层不走 ensureFolderPath：它的语义是“已有目录即复用”，而新容器绝不能复用同路径旧内容。
+        const createdContainerFolder = await app.vault.createFolder(containerFolderPath);
 
         // ============================================================
         // 8. 防止覆盖已经存在的 MOC
@@ -371,7 +403,36 @@ export async function createContainer(
         // 本次写入由插件发起，先登记再落盘，自动化监听据此放行
         ctx.guard.mark(mocFilePath);
 
-        const mocFile = await app.vault.create(mocFilePath, mocMarkdown);
+        let mocFile: TFile;
+
+        try {
+            mocFile = await app.vault.create(mocFilePath, mocMarkdown);
+        } catch (error) {
+            const currentContainer = app.vault.getAbstractFileByPath(containerFolderPath);
+            const currentMoc = app.vault.getAbstractFileByPath(mocFilePath);
+
+            // 只回收“本次亲手建且仍为空”的那个目录。若 create 实际已提交后才拒绝，
+            // 或同步/用户已经往里面放了东西，现场便不再属于我们，绝不删。
+            if (
+                currentContainer === createdContainerFolder &&
+                !currentMoc &&
+                createdContainerFolder.children.length === 0
+            ) {
+                try {
+                    await app.vault.delete(createdContainerFolder, true);
+                } catch (cleanupError) {
+                    const createMessage = error instanceof Error ? error.message : String(error);
+                    const cleanupMessage =
+                        cleanupError instanceof Error ? cleanupError.message : String(cleanupError);
+
+                    throw new Error(
+                        `${createMessage}；且未能清理空目录 ${containerFolderPath}：${cleanupMessage}`,
+                    );
+                }
+            }
+
+            throw error;
+        }
 
         const leaf = app.workspace.getLeaf(false);
 
