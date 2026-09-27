@@ -1,12 +1,12 @@
 /**
- * [INPUT]: 依赖 node:test/assert/fs/path/url 与 esbuild，直接编译并载入 src 中的纯 TypeScript 模块
+ * [INPUT]: 依赖 node:test/assert/fs/path/url/child_process 与 esbuild，直接编译并载入 src 中的纯 TypeScript 模块
  * [OUTPUT]: 提供 npm test 的审计回归集，覆盖版本镜像、ISBN 校验、日期严格性、
  *           划线身份与批次归并、设置验形、外观配置保护、换行符保真、桌面数据库选择、
  *           项目状态回滚、GitHub / Gitee 双镜像安装入口与作者名片同构、公开源码隐私边界、移动端 Node 边界、
  *           片段出境口的桌面端闸门、本机绝对路径的唯一算处、状态栏路径的看拿分离、
  *           废弃正文/双链在编辑阅读两态的分层示警与三本库外观同构、五级周期的文件名反解、
  *           后台写入的分栏滚动保护（什么时候写、写到哪一篇、写什么值归 writes.mjs）、
- *           光标焦点切换、四类内容容器与日记附件路由，以及
+ *           光标焦点切换、四类内容容器与日记附件路由、左侧功能区种子与默认清单的同构，以及
  *           智能体路由完整性、发布脚本的 Shell 变量边界，并在专业版源码存在时额外覆盖
  *           出库单往返、《赛博永生》路径同构与第二版安装入口
  * [POS]: tests 的唯一可执行入口；只验证公开行为与关键平台边界，不复制业务实现
@@ -14,6 +14,7 @@
  */
 
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
@@ -573,6 +574,71 @@ test('废弃内容与其中双链在编辑阅读两态分层示警，随库外�
     }
 });
 
+/**
+ * 左侧功能区那一列由两半拼出来，两半必须说同一件事：
+ * Obsidian 自带的那几个图标归 vault/.obsidian/workspace.json 的种子管，
+ * ziminOS 自己的按钮归 DEFAULT_RIBBON_COMMANDS 管。
+ *
+ * 这条回归守三件事，每一件都对应一种不会在任何一行报错的坏法：
+ * 其一，**种子确实被 git 跟踪**——`vault/.obsidian/.gitignore` 里那条 workspace*.json
+ * 是给学员的笔记库写的（布局与最近打开的文件是本机状态），仓库这边靠 `git add -f` 破例；
+ * 谁哪天 `git rm --cached` 一下，种子就静默留在工作区、再也出不了门。
+ * 其二，**种子里只准有 left-ribbon 一个键**——Obsidian 一打开就会往同一个文件里写面板布局
+ * 与最近打开的文件，把 vault/ 当笔记库开过一次的人会把开发机的状态一起提交出去。
+ * 其三，**两半的名字对得上**——种子里的键是 `插件id:界面文案`，而 ziminOS 那七条的文案
+ * 就是命令自己的 name；改了命令名却忘了改种子，图标不会消失，只是那条记录从此指着一个不存在的按钮。
+ */
+test('左侧功能区：种子与默认清单说同一件事，且种子出得了门', async () => {
+    const seedPath = 'vault/.obsidian/workspace.json';
+
+    execFileSync('git', ['ls-files', '--error-unmatch', seedPath], { cwd: ROOT, stdio: 'pipe' });
+
+    const seed = JSON.parse(readFileSync(path.join(ROOT, seedPath), 'utf8'));
+
+    assert.deepEqual(Object.keys(seed), ['left-ribbon'], '种子里混进了本机状态');
+    assert.deepEqual(Object.keys(seed['left-ribbon']), ['hiddenItems']);
+
+    const hidden = seed['left-ribbon'].hiddenItems;
+
+    // Obsidian 自带的六个收起、关系图谱留着——这是用户在真机上逐个拨出来的那份配置
+    assert.deepEqual(
+        Object.entries(hidden).filter(([, value]) => value === true).map(([key]) => key),
+        [
+            'switcher:打开快速切换',
+            'canvas:新建白板',
+            'daily-notes:打开/创建今天的日记',
+            'templates:插入模板',
+            'command-palette:打开命令面板',
+            'bases:新建数据库',
+        ],
+    );
+    assert.equal(hidden['graph:查看关系图谱'], false, '关系图谱是留下的那一个');
+
+    const commands = await loadTypeScript('src/core/commands.ts');
+    const names = new Map();
+
+    for (const exported of Object.values(commands)) {
+        if (!exported || typeof exported !== 'object') continue;
+
+        // 命令有两种导出形态：分组成 Record 的（PROJECT_COMMANDS）与单独一条的（INSPIRATION_COMMAND），
+        // 所以导出本身与它的每个值都要验一次形
+        for (const spec of [exported, ...Object.values(exported)]) {
+            if (spec && typeof spec.id === 'string' && typeof spec.name === 'string') names.set(spec.id, spec.name);
+        }
+    }
+
+    assert.deepEqual(
+        Object.keys(hidden).filter((key) => key.startsWith('ziminos:')),
+        commands.DEFAULT_RIBBON_COMMANDS.map((id) => `ziminos:${names.get(id)}`),
+        '种子里的 ziminOS 按钮与默认清单对不上了',
+    );
+
+    // 旧版那三条 v0.37.0 起不在默认清单里，判据写在 DEFAULT_RIBBON_COMMANDS 的注释上
+    for (const spec of Object.values(commands.LEGACY_COMMANDS)) {
+        assert.equal(commands.DEFAULT_RIBBON_COMMANDS.includes(spec.id), false, `${spec.name} 又回到默认边栏了`);
+    }
+});
+
 test('本机书源不在模块顶层静态引入 Node 内建模块', () => {
     for (const relativePath of [
         'src/modules/books/sourceAppleBooks.ts',
@@ -880,11 +946,40 @@ if (existsSync(proContractPath)) {
      * Bash 在部分多字节 locale 下会把变量后的中文标点误吞进变量名。
      * `set -u` 最终报的是 `version�: unbound variable`，而且发生在两边回归全绿之后；
      * 变量与非 ASCII 字符相邻时必须用 `${name}` 明确划界。
+     *
+     * 这条刻意扫**全部** Shell 脚本，而不是点名某一个文件。v0.35.1 在 publish-v1.sh 上
+     * 修过一次这个 bug，当时的回归却只钉住了那一个文件名，于是同样的写法在
+     * make-v1-package.sh 里安然活到了 v0.35.3——其中一处还落在每次打包必经的 heredoc 里：
+     * zip 打好了、SHA 算完了，最后一步生成发行说明时才中止，症状与当初一字不差。
+     * **缺陷属于一类写法，不属于一个文件**，断言的范围必须按缺陷的形状来定。
+     *
+     * 报出的是「哪个文件第几行、吞进去的是哪个变量」而不是一句「不该匹配」：
+     * 这条一旦变红，读的人要的是下一步动作，不是再去全仓库找一遍。
      */
-    test('publish-v1.sh 的 Shell 变量与中文相邻时显式划界', () => {
-        const script = readFileSync(path.join(ROOT, 'publish-v1.sh'), 'utf8');
+    test('Shell 脚本里的变量与中文相邻时一律显式划界', () => {
+        const scripts = [
+            ...readdirSync(ROOT).filter((name) => name.endsWith('.sh')),
+            ...readdirSync(path.join(ROOT, 'installer'))
+                .filter((name) => name.endsWith('.sh'))
+                .map((name) => path.join('installer', name)),
+        ].sort();
 
-        assert.doesNotMatch(script, /\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7F]/u);
+        // 脚本搬了家而扫描范围没跟着改时，这条会变成一条永远绿的测试
+        assert.ok(scripts.length >= 5, `只找到 ${scripts.length} 个 Shell 脚本，扫描范围已经失效`);
+
+        const offenders = [];
+
+        for (const script of scripts) {
+            readFileSync(path.join(ROOT, script), 'utf8')
+                .split('\n')
+                .forEach((line, index) => {
+                    const hit = /\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7F]/u.exec(line);
+
+                    if (hit) offenders.push(`${script}:${index + 1} \u2192 ${hit[0]}`);
+                });
+        }
+
+        assert.deepEqual(offenders, [], `这些变量紧挨着非 ASCII 字符，必须写成 \${name}：\n${offenders.join('\n')}`);
     });
 
     test('publish-v1.sh 把同一提交非强制推到 GitHub 与 Gitee', () => {

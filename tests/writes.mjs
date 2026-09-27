@@ -1,9 +1,10 @@
 /**
  * [INPUT]: 依赖 node:test/assert/fs/path/url、esbuild 与 moment，直接编译 updatedMaintainer、formatter、
  *          core/markdownStyle 事实源，并以一台最小的 Obsidian 替身按真机顺序喂事件
- * [OUTPUT]: 验证两个常驻编辑监听的后台写入——正开着的那一篇不写、走开（切走或关掉）才补、
+ * [OUTPUT]: 验证 updated/排版两个源笔记回写者共用的后台写入边界——正开着的那一篇不写、走开（切走或关掉）才补、
  *           改名之后那笔账跟着新路径走、退出之后下次启动补上且不拿旧时间盖掉别处的新修改、
- *           updated 记的是最后一次改完的时刻，以及自写守卫只登记机器的反应
+ *           updated 记的是最后一次改完的时刻，以及 updated/排版/日记历史的自写登记不误伤人的落笔。
+ *           dailyActivity 的可读记账行为另由 daily-activity.mjs 覆盖
  * [POS]: tests 的后台写入专项。它验的是「有没有写盘、写到哪一篇、写了什么值」而不是源码里有没有那几个字——
  *        这一类错在源码里长得完全正常，只在事件的先后顺序里现形
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -662,7 +663,7 @@ test('自动排版同样认「关掉标签页也算走开」，改名之后跟�
  * 自写守卫的唯一读者是那些「对变化作出反应」的监听者，而 updated 记账是其中之一：被登记过的写入不记账。
  * 于是登记与否就是一个语义决定——这一笔是机器的反应，还是替人落下的笔。
  *
- * 替人落笔的写入（记人情、记付费、记收款、记灵感、勾掉一条待办、导入划线、定主题）改的是用户自己的笔记，
+ * 替人落笔的写入（礼尚往来、记付费、记收款、记灵感、勾掉一条待办、导入划线、定主题）改的是用户自己的笔记，
  * 规格的验收清单写着「记一笔人情之后那篇日记的 updated 两秒内更新」，而它们一登记，这一条就不可能成立。
  * 所以清单反过来列：每一处登记都必须说清它是哪一种机器反应，新增一处而不归类，这条就红。
  */
@@ -678,7 +679,10 @@ test('自写守卫只登记机器的反应，替人落笔的写入不登记', ()
         'src/modules/contacts/createContact.ts': 1, // 人脉档案出生
         'src/modules/setup/init.ts': 1, // 开荒骨架
         'src/modules/books/extractCard.ts': 1, // 摘录卡片带着完整 YAML 出生
+        'src/modules/books/importLibrary.ts': 1, // 批量导入的账目报告是插件自己的账
         'src/modules/review/periodic.ts': 4, // 周期笔记出生、空笔记套骨架、归位搬家
+        'src/modules/review/dailyActivity.ts': 1, // 每日产出是插件自己的历史账本，不能被再记成用户编辑
+        'src/modules/projects/renameContainer.ts': 7, // 整棵改名及双链重写是一次机器反应，旧新路径均登记
         'src/modules/inspiration/capture.ts': 1, // 灵感集第一次出生
         'src/modules/eternal/export.ts': 1, // 出库单是插件自己的账
     };

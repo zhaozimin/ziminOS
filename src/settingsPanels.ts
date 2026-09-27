@@ -11,7 +11,7 @@
  * [POS]: 设置页八张页**各自的控件**。隔壁 settings.ts 是骨架：标签栏怎么画、
  *        一页分哪四段、开关与文本框长什么样、折叠区怎么收；这里是每一页在那副骨架里
  *        塞进去的东西——开荒的那颗按钮、项目页的读书一段、编辑页的 Eagle/排版两段、
- *        边栏那三十八行、文件页的三段。
+ *        边栏那四十三行、文件页的三段。
  *        v0.17.0 从 settings.ts 分出来，判据与 v0.14.0 分出 settingsModel.ts 时同一条：
  *        变更理由不同。加一个设置项、给一页多一段，动的是这个文件；
  *        改标签栏样式、改滚动行为、改一页的四段先后，动的是那个文件。
@@ -100,7 +100,7 @@ export class SettingsPanels {
      * 「已摆出 N / 38 条」那行字。
      *
      * 这是全文件唯一一处持有 DOM 引用的地方，理由很具体：勾选要即时更新这个数，
-     * 而重建整页会把滚动条弹回顶部——三十八行排下来，用户勾第二十行时页面一跳，
+     * 而重建整页会把滚动条弹回顶部——四十三行排下来，用户勾第二十行时页面一跳，
      * 他就得重新找回刚才那一行。持有的是一个渲染出来的节点，不是第二份状态：
      * 数字仍然现算自设置对象，每次重画也会把它换成新节点。
      */
@@ -181,7 +181,7 @@ export class SettingsPanels {
     // 二、项目页：两个自动行为，加读书笔记那一段
     // ============================================================
 
-    /** 插件仅有的两个常驻监听都住在 modules/projects，所以它们的开关也该在这一页 */
+    /** 这两个自动行为都在补齐项目/卡片的结构事实，所以开关同住项目页 */
     private renderProjectsPanel(containerEl: HTMLElement): void {
         this.host.renderToggle(containerEl, 'autoCardInit', TEXTS.autoCardName, TEXTS.autoCardDesc);
         this.host.renderToggle(containerEl, 'autoUpdated', TEXTS.autoUpdatedName, TEXTS.autoUpdatedDesc);
@@ -228,14 +228,17 @@ export class SettingsPanels {
     /**
      * 微信读书的连接状态，加一个按钮。
      *
-     * 它是设置而不只是命令，理由是「人主导」：这是全插件唯一一份存在 data.json 里的凭据，
+     * 它是设置而不只是命令，理由是「人主导」：这是全插件唯一一份持久凭据，
      * 那就必须有一处能看见它在不在、并且能当场撤掉。命令面板里那条「连接微信读书」
      * 只能连不能断——一条只往一个方向走的命令，不构成开关。
      * 断开只清掉本机存的那串 Cookie，不去动微信读书那边的任何东西：
      * 插件从来不代替用户管理他在别人家的账号。
+     *
+     * 状态经注入问出来而不是读设置对象：那串 Cookie 住在 SecretStorage 里，
+     * 而「凭据存在哪」是 books 模块自己的事，与断开走的是同一条纪律。
      */
     private renderWereadRow(containerEl: HTMLElement): void {
-        const connected = !!this.ctx.settings.wereadCookie.trim();
+        const connected = this.actions.isWereadConnected();
 
         new Setting(containerEl)
             .setName(TEXTS.wereadName)
@@ -256,7 +259,7 @@ export class SettingsPanels {
 
                     try {
                         if (connected) {
-                            // 只抹掉 data.json 里那串 Cookie 不算断开——同一会话的内存令牌还在。
+                            // 只抹掉存着的那串 Cookie 不算断开——同一会话的内存令牌还在。
                             // 「断开」的边界只有 books 模块自己知道，因此走注入（v0.16.0 审计结论）
                             await this.actions.disconnectWeread();
                         } else {
@@ -412,7 +415,7 @@ export class SettingsPanels {
     }
 
     // ============================================================
-    // 六、边栏页：三十八行
+    // 六、边栏页：四十三行
     // ============================================================
 
     /**

@@ -142,7 +142,7 @@ export const TABS: readonly SettingsTab[] = [
         icon: COMMAND_ICONS.contact,
         module: '人脉与客户 v1',
         status:
-            '运行中 · 新建人脉、记人情，档案与 MOC 共八个视图；' +
+            '运行中 · 新建人脉、礼尚往来，档案与 MOC 共八个视图；' +
             '客户 MOC 默认随开荒生成，以人物、金额、交付和创建日期汇总客户',
     },
     {
@@ -166,7 +166,7 @@ export const TABS: readonly SettingsTab[] = [
         label: '边栏',
         icon: COMMAND_ICONS.dock,
         module: '左侧边栏 v1',
-        status: '运行中 · 三十八条命令配 Pikaicons 图标，默认摆出十条',
+        status: '运行中 · 四十三条命令配 Pikaicons 图标，默认摆出七条',
     },
 ];
 
@@ -192,9 +192,17 @@ export interface SettingActions {
     readonly initialize: () => Promise<void>;
     /**
      * 开微信读书的扫码登录窗口。登录逻辑住在 books 模块，设置页因此不 import 它。
-     * 返回是否连上；设置页不看这个值——它连完就整页重建，状态现读设置对象。
+     * 返回是否连上；设置页不看这个值——它连完就整页重建，状态现问 isWereadConnected。
      */
     readonly connectWeread: () => Promise<boolean>;
+    /**
+     * 连上微信读书了没有。
+     *
+     * 它必须是个洞而不是读一眼设置对象：那串 Cookie 自本版起住在 Obsidian 的 SecretStorage 里，
+     * 不再随 data.json 走，而「凭据存在哪」是 books 模块自己的事。
+     * 设置页若自己去翻那个 key，凭据就有了第二个读法——搬家的时候必然只搬一处。
+     */
+    readonly isWereadConnected: () => boolean;
     /**
      * 断开微信读书：清掉持久 Cookie，也清掉同一会话里那份内存令牌。
      *

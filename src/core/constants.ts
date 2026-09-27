@@ -474,7 +474,7 @@ export const DIARY_FOLDERS: readonly string[] = [
  * 日记里那个「今天做了什么」小节的标题。
  *
  * 它是复盘模板与人脉记账之间唯一的书面约定：模板按这个标题生成小节，
- * 记人情命令把账本行追加到这个小节末尾。约定放在常量里而不是各写一遍，
+ * 礼尚往来命令把账本行追加到这个小节末尾。约定放在常量里而不是各写一遍，
  * 是因为一旦两边不一致，账本行会落到文件末尾（今日产出视图之后），
  * 既难看又让人以为命令坏了——而这种不一致没有任何报错。
  */
@@ -590,6 +590,25 @@ export const BOOK_CALLOUTS = {
  * 两处各写一份的话，手改 data.json 写进来的怪数会在一边被拍平、在另一边照单全收，
  * 于是下拉框显示「前 5 个」而笔记里落进四十条——这种分叉不报错。
  */
+/**
+ * 书目字段落进 YAML 时的键名。
+ *
+ * 两条路会写下这批键，而它们形态完全不同：建书时按行拼文本（projects/templates），
+ * 补齐书籍信息时用官方 processFrontMatter 写对象（books/enrichBook）。
+ * 各写各的话，某天新建的书写 `publisher`、补齐的书写 `press`，
+ * 而按出版社筛的那张表只会少掉一半的书——不报错，也没人会发现。
+ * 它住在这里而不是任何一个模块里，理由与 FIELDS 同源：字段名是全库共享的语言。
+ */
+export const BOOK_FIELDS = {
+    translators: 'translator',
+    publisher: 'publisher',
+    publishDate: 'published',
+    pages: 'pages',
+    cover: 'cover',
+    source: 'source',
+    author: 'author',
+} as const;
+
 export const BOOK_TAG_COUNTS: readonly number[] = [0, 3, 5, 8];
 
 /** 全新库的读书标签默认值；老库升级时由 DEFAULT_SETTINGS 自动补齐，也是读取侧的回落值 */
@@ -752,7 +771,7 @@ export const VIEW_REFRESH_DEBOUNCE_MS = 200;
  */
 export const EXPORT_MANIFEST_FILE = `${FOLDERS.system}/赛博永生出库单.md`;
 
-/** 出库单里那个装待办行的小节标题。新行追加到它末尾，与记人情写日记同一套画法 */
+/** 出库单里那个装待办行的小节标题。新行追加到它末尾，与礼尚往来写日记同一套画法 */
 export const EXPORT_MANIFEST_HEADING = '## 待搬运';
 
 /**

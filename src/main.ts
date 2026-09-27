@@ -2,7 +2,7 @@
  * [INPUT]: 依赖 obsidian 的 Plugin 基类；依赖 core 的 SelfWriteGuard、CommandRegistry、
  *          INIT_VAULT_COMMAND、DEFAULT_SETTINGS/normalizeSettings、
  *          ZiminosSettings/ZiminosContext/VaultSeed 契约、PERIODS 与 registerViewCodeBlock；
- *          依赖 modules/setup 的 initializeVault/applySeed，以及项目管理（含存量 Bases 迁移）、读书笔记、灵感收集、
+ *          依赖 modules/setup 的 initializeVault/applySeed，以及项目管理（含容器改名与存量 Bases 迁移）、读书笔记、灵感收集、
  *          日历、复盘、人脉与客户等业务模块各自的 seed、register 函数与视图数组，
  *          其中读书笔记那三条命令还要 modules/projects/createContainer 的 createContainer/BOOK_KIND
  *          来填「建一个书籍容器」那个洞，设置页那颗「扫码连接」还要 modules/books/sourceWeread
@@ -11,7 +11,7 @@
  *          registerPeriodAutoInit 则不需要任何注入——它只认名字与位置；
  *          再加 modules/format 的 registerFormatter、modules/appearance 的 registerAppearanceSwitch、
  *          modules/ribbon 的 registerRibbon、
- *          modules/eagle 的 registerEagleBridge（附件粘贴/呈现与 Eagle 配对），并由
+ *          modules/eagle 的 registerEagleBridge（附件粘贴/呈现、容器附件夹改名与 Eagle 配对），并由
  *          modules/projects/location 向它注入“当前笔记应归入哪个容器/日记”的唯一判定、
  *          modules/editing 的 registerPasteLink/registerCursorMemory、
  *          modules/export 的 registerExportCommand、
@@ -23,8 +23,9 @@
  *        把它连同 app/plugin/guard 装配成 ZiminosContext、把上下文分发给各模块去自行注册、
  *        再把彼此需要但不该互相认识的能力接上线。
  *        最后这件事是 V2 新增的，也是本文件最有分量的部分：
- *        记人情要往当天日记里写一行，客户模块的补齐命令要复用默认开荒能力，
+ *        礼尚往来要往当天日记里写一行，客户模块的补齐命令要复用默认开荒能力，
  *        建一本书要走项目模块那套「文件夹 + MOC」的流程，
+ *        项目/领域改名要让 Eagle 同步附件夹、再让复盘模块把语义事件记入当日日记，
  *        设置页要能开出读书模块那个扫码登录窗口，
  *        还要能让状态栏那两块、左侧边栏那列图标与文件模块画出来的三样东西按新设置重画——
  *        它们分别需要复盘模块、开荒模块、项目模块、读书模块、外观模块、ribbon 模块
@@ -50,6 +51,8 @@ import type { VaultSeed, ZiminosContext, ZiminosSettings } from './core/types';
 import { aboutViews, renderAboutPanel } from './modules/about/view';
 import { registerAppearanceSwitch } from './modules/appearance/statusBar';
 import { registerCreateBookCommand } from './modules/books/createBook';
+import { registerEnrichBookCommand } from './modules/books/enrichBook';
+import { registerLibraryImportCommands } from './modules/books/importLibrary';
 import { registerExcerptCardCommand } from './modules/books/extractCard';
 import { registerImportHighlightsCommand } from './modules/books/importHighlights';
 import {
@@ -57,7 +60,13 @@ import {
     registerReadBookCommand,
     registerSyncHighlightsCommand,
 } from './modules/books/readBook';
-import { disconnectWeread, disposeWereadSession, loginWeread } from './modules/books/sourceWeread';
+import {
+    disconnectWeread,
+    disposeWereadSession,
+    loginWeread,
+    migrateWereadCookie,
+    wereadCookie,
+} from './modules/books/sourceWeread';
 import { registerCursorMemory } from './modules/editing/cursorMemory';
 import { registerPasteLink } from './modules/editing/pasteLink';
 import { registerEagleBridge } from './modules/eagle';
@@ -88,6 +97,8 @@ import { registerBaseMigrationCommand } from './modules/projects/migrateBases';
 import { projectsSeed } from './modules/projects/seed';
 import { registerTransitionCommands } from './modules/projects/transitions';
 import { registerUpdatedMaintainer } from './modules/projects/updatedMaintainer';
+import { registerContainerRenameCommand } from './modules/projects/renameContainer';
+import type { EagleContainerRenamer } from './modules/projects/renameContainer';
 import {
     openPeriodNote,
     periodFolderOf,
@@ -96,6 +107,7 @@ import {
 } from './modules/review/periodic';
 import { reviewProjectViews } from './modules/review/projectViews';
 import { reviewSeed } from './modules/review/seed';
+import { recordContainerRenameActivity, registerDailyActivityRecorder } from './modules/review/dailyActivity';
 import { promptThemeIfMissing, registerThemeCommand } from './modules/review/theme';
 import { reviewThemeViews } from './modules/review/views';
 import { registerRibbon } from './modules/ribbon/dock';
@@ -141,6 +153,11 @@ export default class ZiminosPlugin extends Plugin {
         // 扫码窗口与内存令牌属于插件会话；卸载时必须一并收口
         this.register(disposeWereadSession);
 
+        // 老库那串留在 data.json 里的微信读书 Cookie 搬进 SecretStorage。
+        // 它必须早于任何读凭据的路径——命令、设置页与取数都只认新处，旧处只在这里被读最后一次。
+        // 不 await：它只是一次搬家，失败也只是让那串字继续待在原地，不该拖住插件加载
+        void migrateWereadCookie(ctx);
+
         // ============================================================
         // 开荒：各模块自报诉求，开荒模块只认这份契约，不认识任何模块
         // ============================================================
@@ -167,6 +184,11 @@ export default class ZiminosPlugin extends Plugin {
         // 建项目要问「这是谁委托的」，候选人住在人脉模块——用同一套注入把两者接上
         registerCreateProjectCommand(ctx, (title) => pickPerson(ctx, title));
         registerCreateAreaCommand(ctx);
+        let renameEagleContainer: EagleContainerRenamer | undefined;
+        registerContainerRenameCommand(ctx, (oldName, newName) =>
+            renameEagleContainer ? renameEagleContainer(oldName, newName) : Promise.resolve('skipped'),
+            (oldName, newName, newMocPath) => recordContainerRenameActivity(ctx, oldName, newName, newMocPath),
+        );
         registerCardInitCommand(ctx);
         registerBaseMigrationCommand(ctx);
         registerCardAutoInit(ctx);
@@ -178,6 +200,7 @@ export default class ZiminosPlugin extends Plugin {
             ctx.edition.role === 'human' ? createExportHook(ctx) : undefined,
         );
         registerUpdatedMaintainer(ctx);
+        registerDailyActivityRecorder(ctx);
 
         // 一本书就是一个项目：建书要的「一个文件夹 + 一篇 MOC」正是 createContainer 那套流程，
         // 而 books 模块不认识 projects——它只声明了一个「建一个书籍容器」的洞，由这里填上。
@@ -185,6 +208,11 @@ export default class ZiminosPlugin extends Plugin {
         // 「读一本书」是主干：一条命令走完「查书目 → 建档 → 把设备里的划线灌进来」，
         // 它与手动建书共用同一个容器洞，差别只在 preset 里的字段是查来的还是问来的
         registerReadBookCommand(ctx, (preset) => createContainer(ctx, BOOK_KIND, preset));
+        // 整架导入走同一个容器洞，只是 preset 里带 quiet：一次几十本，没有人在看其中任何一本。
+        // 三条命令（微信读书 / Kindle / 苹果图书）共用一个内核，差别只有「枚举哪一批书」
+        registerLibraryImportCommands(ctx, (preset) => createContainer(ctx, BOOK_KIND, preset));
+        // 豆瓣那条路整件收在这里：一次运行只查一本，批量导入一次都不碰它
+        registerEnrichBookCommand(ctx);
         registerSyncHighlightsCommand(ctx);
         registerConnectWereadCommand(ctx);
         registerCreateBookCommand(ctx, (preset) => createContainer(ctx, BOOK_KIND, preset));
@@ -226,7 +254,7 @@ export default class ZiminosPlugin extends Plugin {
         registerThemeCommand(ctx);
 
         registerCreateContactCommand(ctx);
-        // 记人情要往当天日记里写一行。它不认识复盘模块，只声明了一个「拿到今天的日记」的洞，
+        // 礼尚往来要往当天日记里写一行。它不认识复盘模块，只声明了一个「拿到今天的日记」的洞，
         // 由这里用复盘模块的能力填上；reveal 关掉，顺手记一笔不该顶掉学员正在读的笔记
         registerRecordFavorCommand(ctx, () => openPeriodNote(ctx, PERIODS.daily, { reveal: false }));
         // 客户产物已进默认开荒；这条旧命令仍是老库补齐与误删修复入口，
@@ -253,6 +281,7 @@ export default class ZiminosPlugin extends Plugin {
             ctx,
             (notePath) => attachmentRouteOfNotePath(ctx.settings, notePath),
         );
+        renameEagleContainer = eagleActions.renameEagleProjectFolder;
         // 下面两个不交回同步函数：监听与记忆每次触发都现读设置对象，天然看得见新值。
         // 需要有人去推一把的，永远只是「已经画在屏幕上」的东西
         registerPasteLink(ctx);
@@ -326,6 +355,8 @@ export default class ZiminosPlugin extends Plugin {
                 // 设置页不 import books 模块，因此这项能力也走注入
                 connectWeread: () => loginWeread(ctx),
                 disconnectWeread: () => disconnectWeread(ctx),
+                // 凭据存在哪是 books 模块自己的事，设置页只问「连上了没有」
+                isWereadConnected: () => wereadCookie(ctx).length > 0,
                 syncAppearanceSwitch,
                 syncRibbon,
                 syncExplorer,

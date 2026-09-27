@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 obsidian 的 Plugin 类型；依赖 ./constants 的 PeriodKey 与 TransitionAction 两个类型
  * [OUTPUT]: 对外提供命令身份契约 CommandSpec、分组名 COMMAND_GROUPS、图标名 COMMAND_ICONS，
- *           三十八条命令的规格 INIT_VAULT_COMMAND/PROJECT_COMMANDS/TRANSITION_COMMANDS（含类型
+ *           四十三条命令的规格 INIT_VAULT_COMMAND/PROJECT_COMMANDS/TRANSITION_COMMANDS（含类型
  *           TransitionCommand）/BOOK_COMMANDS/INSPIRATION_COMMAND/PERIOD_COMMANDS/THEME_COMMAND/
  *           OPEN_CALENDAR_COMMAND/CONTACT_COMMANDS/CLIENT_COMMANDS/APPEARANCE_COMMAND/FORMAT_COMMAND/
  *           RECENT_FILES_COMMAND/COPY_PATH_COMMAND/EXPORT_COMMAND/LEGACY_COMMANDS，
@@ -108,7 +108,11 @@ export const GROUP_COLORS: Readonly<Record<CommandGroup, string>> = {
 };
 
 /**
- * 四十一个图标名：三十八条命令各一枚，加设置页那三张没有命令与之对应的标签页（边栏、文件、编辑）。
+ * 四十三个图标名服务四十三条命令与设置页的三张非命令标签页（边栏、文件、编辑）。
+ *
+ * 不是一一对应：三条整架导入命令共用 importLibrary 一枚。它们做的是**同一件事**——
+ * 把一个来源里全部有划线的书端进来，只是来源不同，而那也正是它们共用同一个内核的原因。
+ * 容器改名则复用 project 旗帜：它改的仍是当前项目/领域的身份，新画一枚反而会虚构第二种容器。
  *
  * 一律带 `ziminos-` 前缀：图标名是 Obsidian 全局共享的命名空间，
  * 不加前缀就可能盖掉 lucide 里的同名图标，或者被后装的插件盖掉。
@@ -129,6 +133,8 @@ export const COMMAND_ICONS = {
     book: 'ziminos-book',
     readBook: 'ziminos-read-book',
     weread: 'ziminos-weread',
+    importLibrary: 'ziminos-import-library',
+    enrichBook: 'ziminos-enrich-book',
     syncHighlights: 'ziminos-sync-highlights',
     highlights: 'ziminos-highlights',
     excerpt: 'ziminos-excerpt',
@@ -171,12 +177,12 @@ export const COMMAND_ICONS = {
 } as const;
 
 // ============================================================
-// 三十八条命令：顺序即它们在左侧边栏里的先后
+// 四十三条命令：顺序即它们在左侧边栏里的先后
 // ============================================================
 
 /**
  * 开荒命令。它是唯一不属于任何功能模块的命令——开荒横跨全库骨架并要收齐各模块的诉求，
- * 因此由 main.ts 直接注册；其余二十条都由各自模块自行注册。
+ * 因此由 main.ts 直接注册；其余四十二条都由各自模块自行注册。
  */
 export const INIT_VAULT_COMMAND: CommandSpec = {
     id: 'init-vault',
@@ -185,8 +191,8 @@ export const INIT_VAULT_COMMAND: CommandSpec = {
     group: COMMAND_GROUPS.setup,
 };
 
-/** 项目模块的四个入口（含一次性迁移）；四条状态流转另见 TRANSITION_COMMANDS */
-export const PROJECT_COMMANDS: Readonly<Record<'create' | 'area' | 'card' | 'migrate', CommandSpec>> = {
+/** 项目模块的五个入口（含改名与一次性迁移）；四条状态流转另见 TRANSITION_COMMANDS */
+export const PROJECT_COMMANDS: Readonly<Record<'create' | 'area' | 'rename' | 'card' | 'migrate', CommandSpec>> = {
     create: {
         id: 'create-project',
         name: '新建项目',
@@ -201,6 +207,12 @@ export const PROJECT_COMMANDS: Readonly<Record<'create' | 'area' | 'card' | 'mig
         id: 'create-area',
         name: '新建领域',
         icon: COMMAND_ICONS.area,
+        group: COMMAND_GROUPS.projects,
+    },
+    rename: {
+        id: 'rename-container',
+        name: '修改当前项目或领域名称',
+        icon: COMMAND_ICONS.project,
         group: COMMAND_GROUPS.projects,
     },
     card: {
@@ -268,7 +280,19 @@ export const TRANSITION_COMMANDS: readonly TransitionCommand[] = [
  * 混进项目组会让「新建项目」与「新建读书笔记」在边栏上看起来是同一类事的两个按钮。
  */
 export const BOOK_COMMANDS: Readonly<
-    Record<'read' | 'sync' | 'connectWeread' | 'create' | 'importNotes' | 'excerpt', CommandSpec>
+    Record<
+        | 'read'
+        | 'importWeread'
+        | 'importKindle'
+        | 'importApple'
+        | 'enrich'
+        | 'sync'
+        | 'connectWeread'
+        | 'create'
+        | 'importNotes'
+        | 'excerpt',
+        CommandSpec
+    >
 > = {
     /**
      * 主干命令：一步读一本书。
@@ -281,6 +305,49 @@ export const BOOK_COMMANDS: Readonly<
         id: 'read-book',
         name: '读一本书',
         icon: COMMAND_ICONS.readBook,
+        group: COMMAND_GROUPS.books,
+    },
+    /**
+     * 整架端走：把一个来源里全部有划线或有笔记的书一次导进来。
+     *
+     * 三条命令而不是一条带来源选择的命令，判据是**用户会到哪里找它**：
+     * 他插上 Kindle 的那一刻，心里想的是「我的 Kindle 里有东西要进来」，
+     * 而不是「我要导入读书笔记，来源是 Kindle」。三条共用同一个内核，
+     * 差别只有「枚举哪一批书」——所以它们也共用同一枚图标。
+     *
+     * 这三条**一次都不联网查豆瓣**：八十本书就是一百六十次豆瓣请求，
+     * 几十次之后必被拦，而那时候一半的书有封面、一半没有，谁也说不清是哪一半。
+     * 书目交给「补齐书籍信息」一本一本补。
+     */
+    importWeread: {
+        id: 'import-weread-library',
+        name: '导入微信读书全部笔记',
+        icon: COMMAND_ICONS.importLibrary,
+        group: COMMAND_GROUPS.books,
+    },
+    importKindle: {
+        id: 'import-kindle-library',
+        name: '导入 Kindle 全部笔记',
+        icon: COMMAND_ICONS.importLibrary,
+        group: COMMAND_GROUPS.books,
+    },
+    importApple: {
+        id: 'import-apple-books-library',
+        name: '导入苹果图书全部笔记',
+        icon: COMMAND_ICONS.importLibrary,
+        group: COMMAND_GROUPS.books,
+    },
+    /**
+     * 给一本书补上豆瓣那套书目（封面、出版社、ISBN、分类词）。
+     *
+     * 它一次只查一本：**这是整个读书模块里唯一一条与豆瓣打交道的批量安全阀**。
+     * 它同时是认错之后的纠正入口——已经查过一次的书再运行它，一定弹候选让人指认，
+     * 因为这时候他按下它的唯一理由就是「上次那本不对」。
+     */
+    enrich: {
+        id: 'enrich-book-info',
+        name: '补齐书籍信息',
+        icon: COMMAND_ICONS.enrichBook,
         group: COMMAND_GROUPS.books,
     },
     /** 读到一半再拉一次划线。与建书共用同一套取数与合并，只是不再建档 */
@@ -391,9 +458,11 @@ export const CONTACT_COMMANDS: Readonly<Record<'create' | 'favor', CommandSpec>>
         icon: COMMAND_ICONS.contact,
         group: COMMAND_GROUPS.contacts,
     },
+    // 名字 v0.38.0 起由「记人情」改为「礼尚往来」；id 刻意不跟着改——快捷键与边栏勾选都按 id 记，
+    // 改 id 等于让用户绑过的键与勾过的格子一起失效。边栏图标在 Obsidian 那边却是按名字认的，见规格 §71
     favor: {
         id: 'record-favor',
-        name: '记人情',
+        name: '礼尚往来',
         icon: COMMAND_ICONS.favor,
         group: COMMAND_GROUPS.contacts,
     },
@@ -409,9 +478,11 @@ export const CLIENT_COMMANDS: Readonly<
         icon: COMMAND_ICONS.clients,
         group: COMMAND_GROUPS.clients,
     },
+    // v0.38.0 起它补的不止答疑，还有相关项目，名字随之改为「补齐客户档案检索」；
+    // id 不跟着改，理由与「礼尚往来」同一条：勾过、绑过的都认 id
     answers: {
         id: 'backfill-client-answer-views',
-        name: '补齐客户答疑检索',
+        name: '补齐客户档案检索',
         icon: COMMAND_ICONS.qa,
         group: COMMAND_GROUPS.clients,
     },
@@ -521,12 +592,12 @@ export const LEGACY_COMMANDS: Readonly<Record<'vault' | 'help' | 'settings', Com
 // ============================================================
 
 /**
- * 全新库默认摆进左侧边栏的十条命令。
+ * 全新库默认摆进左侧边栏的七条命令。
  *
  * 全部命令都摆上去等于把选择的负担丢回给学员——那条边栏会长成一根谁也不看的图标柱。
  * 这七条的判据是「一天里可能按不止一次」：记灵感、开日记、写主题是每天的动作，
- * 新建项目与新建人脉是每周的动作，记人情发生在关系推进的当下，外观开关是刚上手时天天在调的。
- * 其余命令要么一辈子只按一次（初始化笔记库、旧库补齐客户模块、补齐客户答疑检索、升级存量 MOC 数据库），
+ * 新建项目与新建人脉是每周的动作，礼尚往来发生在关系推进的当下，外观开关是刚上手时天天在调的。
+ * 其余命令要么一辈子只按一次（初始化笔记库、旧库补齐客户模块、补齐客户档案检索、升级存量 MOC 数据库），
  * 要么发生在某个具体场景里（新建领域、初始化当前卡片、四条流转、读书三条、
  * 客户建档与流水、导出当前笔记、周月季年四级复盘）——
  * 那些场景里用户本来就停在对的笔记上，命令面板比一根图标柱更快。
@@ -534,9 +605,18 @@ export const LEGACY_COMMANDS: Readonly<Record<'vault' | 'help' | 'settings', Com
  * 「整理当前笔记格式」默认开着自动整理，它是那条留给例外情况的手动路，
  * 常按不上它反而说明自动那条跑得好。
  *
+ * **旧版那三条 v0.37.0 起不在这份清单里，这是对 v0.17.0 的一次纠正。**
+ * 当时写的理由是「一个需要先去设置页勾选才回来的按钮，等于没有回来」——它把两件事说成了一件：
+ * 「切换笔记库这个功能必须够得着」与「它默认就该占着边栏那一列的一格」。
+ * 前者由模块存在、命令注册与设置页「边栏」那张清单共同保证，一条都没少；
+ * 后者则该和其余四十一条服从同一把尺子，而按那把尺子，切换笔记库、帮助、设置一天按不到一次。
+ * 同版把 Obsidian 自己那六个核心图标也藏了起来（vault/.obsidian/workspace.json 那份种子），
+ * 两件事是同一个判断：边栏是每天都在看的那一列，它的长度就是它的可读性。
+ *
  * 老库升级正是它生效的场景：0.4.0 升上来的库 data.json 里没有 ribbonCommands 这个键，
  * 于是以这份清单打底，一次性长出这七个图标；而已经调过侧边栏的人以存档为准，
- * 一条都不会被覆盖。两种情况都由 main.ts 那句「默认值打底、存档覆盖」的合并顺序保证。
+ * 一条都不会被覆盖——包括当年摆出过旧版那三个的人，这次纠正不会把他的按钮撤走。
+ * 两种情况都由 main.ts 那句「默认值打底、存档覆盖」的合并顺序保证。
  */
 export const DEFAULT_RIBBON_COMMANDS: readonly string[] = [
     PROJECT_COMMANDS.create.id,
@@ -546,12 +626,6 @@ export const DEFAULT_RIBBON_COMMANDS: readonly string[] = [
     CONTACT_COMMANDS.create.id,
     CONTACT_COMMANDS.favor.id,
     APPEARANCE_COMMAND.id,
-    // 旧版那三个默认就摆出来：它们存在的全部理由就是「回到 ribbon 上」，
-    // 一个需要先去设置页勾选才回来的按钮，等于没有回来。
-    // 顺序归用户——摆出来之后拖到哪儿由 Obsidian 自己记
-    LEGACY_COMMANDS.vault.id,
-    LEGACY_COMMANDS.help.id,
-    LEGACY_COMMANDS.settings.id,
 ];
 
 /**

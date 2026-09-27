@@ -67,7 +67,7 @@ curl -fsSL https://gitee.com/ziminzhao/zimin-os-v1/raw/main/installer/install.sh
 | `ok` | 装好了，而且每个文件都与安装包逐字节核对过 | 删掉这个结果文件，直接按第六节交付给用户，并把结果里的 `version` 报给他 |
 | `upgrade` | 这里已经装过 ziminOS | 删掉结果文件，按第三节的「升级」分支执行（从第二节取得施工源开始） |
 | `refused` | 文件夹不安全或不是空的，`message` 写着原因 | 把 `message` 原话告诉用户，停下来，不要换办法绕过去 |
-| `failed` | 取包、校验或自检没过，`error` 或 `problems` 写着卡在哪 | 脚本已经撤掉了它写进文件夹的东西。删掉结果文件，从第二节起逐条执行；把 `error` 一并告诉用户 |
+| `failed` | 取包、校验或自检没过，`error` 或 `problems` 写着卡在哪 | 先看 `rolled_back`：`true` 表示它写进文件夹的东西已经撤干净，删掉结果文件、从第二节起逐条执行即可；`false` 时 `rollback_leftovers` 列着撤不掉的那几个，**先请用户手动删掉它们再继续**——留着它们，下一次运行会把这里当成「已经装过」而去走升级。两种情况都把 `error` 告诉用户 |
 
 命令本身报错、没有生成结果文件时，按 `failed` 处理。
 
@@ -220,6 +220,7 @@ git clone --depth 1 "https://gitee.com/ziminzhao/zimin-os-v1.git" "$install_stag
 施工源/vault/.obsidian/templates.json
 施工源/vault/.obsidian/community-plugins.json
 施工源/vault/.obsidian/appearance.json
+施工源/vault/.obsidian/workspace.json
 施工源/fonts/lxgw-wenkai-gb-screen/LXGWWenKaiGBScreen.ttf
 施工源/fonts/lxgw-wenkai-gb-screen/OFL.txt
 施工源/fonts/source-han-serif-cn/SourceHanSerifCN-Regular.otf
@@ -234,7 +235,7 @@ git clone --depth 1 "https://gitee.com/ziminzhao/zimin-os-v1.git" "$install_stag
 
 这十三个片段的文件名带【】与中文，复制时一律用引号包住路径；扩展名必须是小写 `.css`，大写的 `.CSS` Obsidian 的片段加载器认不出来。
 
-`.obsidian/.gitignore` 是随库落地的隐私护栏：即使学员以后在笔记库里初始化 Git，也不会把微信读书 Cookie、工作区状态和本机运行缓存提交出去。最后四份则是笔记库的开箱设置，别当成可有可无的杂项：`app.json` 定下附件落在 `./附件`、粘链接用 wiki 语法并自动跟着改名；`templates.json` 把模板目录指向 `90-system/Template`，缺了它学员打开核心「模板」插件后得自己去翻路径；`community-plugins.json` 决定三个系统插件是否启用；`appearance.json` 决定主题与十一个默认启用的片段。
+`.obsidian/.gitignore` 是随库落地的隐私护栏：即使学员以后在笔记库里初始化 Git，也不会把微信读书 Cookie、工作区状态和本机运行缓存提交出去。最后五份则是笔记库的开箱设置，别当成可有可无的杂项：`app.json` 定下附件落在 `./附件`、粘链接用 wiki 语法并自动跟着改名；`templates.json` 把模板目录指向 `90-system/Template`，缺了它学员打开核心「模板」插件后得自己去翻路径；`community-plugins.json` 决定三个系统插件是否启用；`appearance.json` 决定主题与十一个默认启用的片段；`workspace.json` 只含一个 `left-ribbon` 键，决定学员第一次打开这本库时左侧功能区上摆着谁——Obsidian 自带的快速切换、白板、日记、模板、命令面板、数据库六个图标默认收起，只留关系图谱与 ziminOS 自己那七个按钮，键的先后同时决定图标的先后。它是**种子**不是状态：Obsidian 一打开就会往同一个文件里继续写面板布局与最近打开的文件，那些是学员自己的，所以升级分支一个字都不碰它。
 
 取法一的安装包在打包时已经按这份清单逐项核对过；改完名之后 `repo/fonts/` 下是平铺的五个字体文件，许可证留在包里的 `许可证/`，不参与安装。因此取法一核对 `repo/vault/` 下的每一项与五个字体文件名即可，取法二逐项核对全部条目。
 
@@ -448,7 +449,7 @@ PowerShell 的 `Remove-Item -LiteralPath $install_staging_dir -Recurse -Force` �
 > 1. Obsidian 询问信任时，点「信任仓库作者并启用插件」。Dataview、Minimal 主题、Style Settings 和默认配色已就位。
 > 2. 打开设置，在左边找到 ziminOS，顶上第一张标签「开荒」里点「初始化」。设置按系统模块分成八张标签页，「记录灵感」那一套在「灵感」页。
 > 3. 看到「开荒完成 ✅」后，跟着笔记库里的 README 使用。
-> 4. 看**最左边一条竖栏**，七个常用命令已经摆好了：新建项目、记录灵感、今天的日记、写复盘主题、新建人脉、记人情、外观开关。点一下就走，不用背快捷键。还有二十六条命令在设置 → ziminOS → 左侧边栏里勾一下就能摆出来，摆出来之后顺序可以直接拖。
+> 4. 看**最左边一条竖栏**，七个常用命令已经摆好了：新建项目、记录灵感、今天的日记、写复盘主题、新建人脉、礼尚往来、外观开关。点一下就走，不用背快捷键。还有二十六条命令在设置 → ziminOS → 左侧边栏里勾一下就能摆出来，摆出来之后顺序可以直接拖。
 > 5. 看**右下角**，有个 🎨 按钮，点开就能逐个开关十三个外观片段——文件夹图标、彩虹引导线、代码块行号、废弃内容突出这些，看着不顺眼随手关掉，立刻生效不用重启。
 > 6. 笔记正文已经是**霞鹜文楷**（屏幕阅读版，四款阅读字体已一并装进你的系统）。想换口味：设置 → 外观 → 正文字体，下拉里还备着思源宋体 CN（书卷衬线）、朱雀仿宋（民国铅字）、霞鹜新晰黑＋（清爽黑体）。
 
