@@ -6,7 +6,7 @@
  *        全部函数无副作用、只吐字符串，既不碰 App 也不碰文件系统——因此建项目与开荒共用同一套骨架，
  *        库里所有 MOC 的 YAML 与 base 视图才可能长期同构；日后改版式只需动这一个文件。
  *        MOC 的 base 块只读 this.file 的实时位置与身份，不接收、不冻结项目路径；
- *        项目、领域、书籍与手动 MOC 因此共用同一块数据库代码，整个容器搬移后零改写自适应。
+ *        项目、领域、资源、书籍与手动 MOC 因此共用同一块数据库代码，整个容器搬移后零改写自适应。
  *        它把直属笔记、up 归属笔记、递归附件与全部内容分成三个视图，
  *        并在全局排除当前 MOC 与 90-system 整棵系统目录树。
  *        书籍只在 YAML 与正文小节上增量，不再分叉 MOC 内的 base 视图；
@@ -15,7 +15,7 @@
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { BOOK_FIELDS, CARD_FIELDS } from '../../core/constants';
+import { BOOK_FIELDS, CARD_FIELDS, MOC_PREFIX } from '../../core/constants';
 
 // ============================================================
 // 模板骨架的字段与视图定义
@@ -70,26 +70,28 @@ const NAV_VIEWS: readonly NavigationView[] = [
         type: 'table',
         name: '正在进行中',
         filter: 'status == "active"',
-        columns: ['file.name', 'description', 'formula.status_icon'],
+        // 这一表按 active 筛出，每一行的状态都是「进行中」；状态列只会重复表名
+        columns: ['formula.moc_name', 'description'],
     },
     {
         type: 'table',
         name: '项目',
         filter: 'type == "project"',
-        columns: ['file.name', 'description', 'formula.status_icon'],
+        columns: ['formula.moc_name', 'description', 'formula.status_icon'],
         sort: [{ property: 'formula.status_icon', direction: 'DESC' }],
     },
     {
         type: 'table',
         name: '领域',
         filter: 'type == "area"',
-        columns: ['file.name', 'description'],
+        columns: ['formula.moc_name', 'description'],
     },
     {
         type: 'cards',
         name: '书籍',
         filter: 'type == "book"',
-        columns: ['formula.book_title', 'description', 'formula.status_icon'],
+        // 与三张表格同一条规则：文件名去掉 MOC- 即书名（《书名》），不再读 aliases
+        columns: ['formula.moc_name', 'description', 'formula.status_icon'],
         image: 'note.cover',
         imageAspectRatio: 1.35,
         imageFit: 'contain',
@@ -115,13 +117,9 @@ export interface MocFrontmatterOptions {
      * 换号这件事只发生在调用方：本文件不认识 ISBN，只认识「这是一个数字」。
      */
     readonly uid: number;
-    /** 身份：NOTE_TYPES.project 或 NOTE_TYPES.area。它决定导航页把这篇笔记摆进哪张表 */
+    /** 身份：项目、领域、资源或书籍的 NOTE_TYPES 值。它决定导航页把这篇笔记摆进哪张表 */
     readonly type: string;
-    /**
-     * 生命周期状态。项目写 active，领域**不写**——
-     * 领域是没有终点的长期关注，给它一个「进行中」等于承诺它某天会结束，
-     * 而导航页那张「正在进行中」正是按 status 筛的，写了它就会混进去。
-     */
+    /** 活动状态。新建项目、领域、资源与书籍统一写 active。 */
     readonly status?: string;
     /**
      * 作者。只有书籍容器带它，且有值才写——空的 author 键是登记表不是索引。
@@ -252,7 +250,7 @@ export function mocFrontmatter(options: MocFrontmatterOptions): string {
         ...(tags?.length ? ['tags:', ...tags.map((tag) => `  - ${toYamlString(tag)}`)] : ['tags:']),
         `UID: ${uid}`,
         `type: ${type}`,
-        // 领域没有状态，那一行整行不写；空的 status 键会让它出现在「正在进行中」那张表里
+        // 创建流程统一传入 active；纯生成器仍允许手动模板省略状态。
         ...(status ? [`status: ${status}`] : []),
         // 只有书籍容器带作者，且学员跳过作者一问时整行不写——空键是登记表不是索引。
         // 写成单元素列表是因为 author 在 types.json 里是 multitext，理由见 MocFrontmatterOptions
@@ -289,30 +287,62 @@ function bibliographyLines(bibliography?: Bibliography): string[] {
 }
 
 /**
- * 生成全部 MOC 共用的 base 代码块。
- * this.file 在内联 base 中恒指宿主 MOC：文件夹移动只改变实时结果，不再改写查询本身。
- * 「项目文件」优先呈现直属笔记与 up 归属；「附件」递归收非 Markdown；
- * 「全部」才把容器整棵子树铺开，三个视角不互相冒充。
+ * 生成全部 MOC 共用的 base 代码块。this.file 在内联 base 中恒指宿主 MOC，
+ * 改名与移动只改变实时结果，不再改写查询本身。
+ *
+ * 一个项目由两类东西组成，判据不同（规格 §87）：
+ * - 笔记看**归属**：`up` 里有一个链接直接解析到本 MOC 的 .md 笔记，不论它住在哪个文件夹。
+ *   只认直接上级；卡片之间的渐进式披露（B 的 up 指向 A）不算。
+ * - 附件看**位置**：本 MOC 文件夹及其子文件夹里所有非 .md 文件。白板与数据库也算附件。
+ *
+ * `list(up)` 把只写了一个值的 up 也包成列表；对字符串直接 contains 会退化成大小写不敏感的子串匹配。
+ * 列表的 contains 走 looseEquals，两边都解析成文件再比，`[[路径/MOC-X|别名]]` 与 `[[MOC-X]]` 认作同一个。
+ * 「全部」排在第一个，显示名称、概述、评分三列；类型不显示，只作第一排序键（笔记在前、附件在后），
+ * 同类按评分从高到低。
  */
 export function mocBaseBlock(): string {
+    const belongs = 'list(up).contains(this.file.asLink())';
+
     return [
         '```base',
         'filters:',
         '  and:',
         '    - file.path != this.file.path',
         `    - '!file.inFolder("90-system")'`,
+        'formulas:',
+        '  kind: if(file.ext == "md", "笔记", "附件")',
         'properties:',
         '  note.description:',
         '    displayName: 概述',
         '  note.rating:',
         '    displayName: 评分',
+        '  formula.kind:',
+        '    displayName: 类型',
         'views:',
+        '  - type: table',
+        '    name: 全部',
+        '    filters:',
+        '      or:',
+        `        - ${belongs}`,
+        '        - and:',
+        '            - file.inFolder(this.file.folder)',
+        '            - file.ext != "md"',
+        '    order:',
+        '      - file.name',
+        '      - description',
+        '      - rating',
+        // 类型不显示，只作第一排序键：笔记在前、附件在后；同类按评分从高到低
+        '    sort:',
+        '      - property: formula.kind',
+        '        direction: ASC',
+        '      - property: rating',
+        '        direction: DESC',
         '  - type: table',
         '    name: 项目文件',
         '    filters:',
-        '      or:',
-        '        - up.contains(this.file.asLink())',
-        '        - file.folder == this.file.folder',
+        '      and:',
+        `        - ${belongs}`,
+        '        - file.ext == "md"',
         '    order:',
         '      - file.name',
         '      - description',
@@ -332,20 +362,6 @@ export function mocBaseBlock(): string {
         '    order:',
         '      - file.name',
         '      - file.ext',
-        '      - file.mtime',
-        '    sort:',
-        '      - property: file.mtime',
-        '        direction: DESC',
-        '  - type: table',
-        '    name: 全部',
-        '    filters:',
-        '      or:',
-        '        - up.contains(this.file.asLink())',
-        '        - file.inFolder(this.file.folder)',
-        '    order:',
-        '      - file.name',
-        '      - file.ext',
-        '      - description',
         '      - file.mtime',
         '    sort:',
         '      - property: file.mtime',
@@ -415,7 +431,8 @@ export function navContent(): string {
         `    - '!file.inFolder("90-system")'`,
         'formulas:',
         '  status_icon: if(status == "active", "🟢 进行中", if(status == "paused", "🟡 搁置", if(status == "done", "✅ 完成", if(status == "dropped", "⚫️ 弃", if(status.isEmpty(), "", "⚠️ " + status)))))',
-        '  book_title: file.asLink(if(aliases.isEmpty(), file.name, list(aliases)[0]))',
+        // 文件名的 MOC- 前缀是给文件树与容器识别的，导航只给人看名字；链接仍指向原文件
+        `  moc_name: file.asLink(if(file.name.startsWith("${MOC_PREFIX}"), file.name.slice(${MOC_PREFIX.length}), file.name))`,
         'properties:',
         '  note.description:',
         '    displayName: 概述',
@@ -423,8 +440,8 @@ export function navContent(): string {
         '    displayName: 状态',
         '  formula.status_icon:',
         '    displayName: 状态',
-        '  formula.book_title:',
-        '    displayName: 书名',
+        '  formula.moc_name:',
+        '    displayName: 名称',
         'views:',
     ];
 

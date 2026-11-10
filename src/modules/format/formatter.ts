@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 obsidian 的 Notice 与 TFile/TAbstractFile 类型；依赖 core/commands 的 FORMAT_COMMAND、
  *          core/editDebts 的编辑欠账与 isNoteInFront、core/markdownStyle 的 formatMarkdown、
- *          core/markdownViewState 的分栏滚动保护、core/types 的 ZiminosContext
+ *          core/markdownViewState 的逐处改写、core/types 的 ZiminosContext
  * [OUTPUT]: 对外提供 registerFormatter（注册整理命令与自动整理）
  * [POS]: 排版模块的全部。规则本体住在 core/markdownStyle——那是一趟纯字符串变换，
  *        本文件只回答「这次变化该不该排一次整理」与「到点之后怎么整理」，两件事分开是因为前者可测、后者只能真机验。
@@ -20,7 +20,7 @@ import type { TAbstractFile } from 'obsidian';
 import { FORMAT_COMMAND } from '../../core/commands';
 import { isNoteInFront, registerEditDebts } from '../../core/editDebts';
 import { formatMarkdown } from '../../core/markdownStyle';
-import { withPreservedMarkdownScroll } from '../../core/markdownViewState';
+import { processDisplayedNoteByHunks } from '../../core/markdownViewState';
 import type { ZiminosContext } from '../../core/types';
 
 // ============================================================
@@ -72,6 +72,7 @@ export function registerFormatter(ctx: ZiminosContext): void {
      * 写盘会触发 modify，modify 又排下一次整理，只要「没变化也照写」，这个环就永远转下去。
      * 真要写时仍走 vault.process 重算一遍，那个回调拿到的是最新内容，
      * 于是读与写之间用户敲下的字不会被这次整理吞掉。
+     * 这一篇仍显示在某个分栏里时逐处写（规格 §86）：每一步只替换一小段，编辑器不必整段重建。
      */
     const formatFile = async (
         file: TFile,
@@ -83,27 +84,17 @@ export function registerFormatter(ctx: ZiminosContext): void {
         if (formatMarkdown(current, rules) === current) return false;
         if (!mayWrite()) return false;
 
-        let changed = false;
-
-        await withPreservedMarkdownScroll(ctx.app, file, () =>
-            ctx.app.vault.process(file, (content) => {
-                // 读盘之后用户可能把这篇点回眼前；真正写盘的这一刻再问一次，人的编辑权优先
-                if (!mayWrite()) return content;
-
-                const next = formatMarkdown(content, rules);
-
-                if (next === content) return content;
-
-                changed = true;
+        // 仍显示在某个分栏里时逐处改写：整篇写一次会让宿主把首尾差异之间整段重建，版面塌缩、视口跳回文首
+        return processDisplayedNoteByHunks(ctx.app, file, {
+            transform: (content) => formatMarkdown(content, rules),
+            // 读盘之后用户可能把这篇点回眼前；每一次真正写盘的那一刻再问一次，人的编辑权优先
+            mayWrite,
+            willWrite: () => {
                 lastRun.set(file.path, Date.now());
                 // 只在确定要写时声明自写，失败或无变化不能遮掉随后真正的用户编辑
                 ctx.guard.mark(file.path);
-
-                return next;
-            }),
-        );
-
-        return changed;
+            },
+        });
     };
 
     /**

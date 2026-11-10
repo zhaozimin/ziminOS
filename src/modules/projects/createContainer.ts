@@ -1,15 +1,15 @@
 /**
  * [INPUT]: 依赖 obsidian 的 MarkdownView/Notice/normalizePath 与 App/TFile 类型，
- *          依赖 core/constants 的 FIELDS/FOLDERS/NOTE_TYPES、core/folders 的
- *          ensureFolderPath/normalizeFolderPath、core/modals 的 TextInputModal/ChoiceModal、
+ *          依赖 core/constants 的 FOLDERS/NOTE_TYPES、core/folders 的
+ *          ensureFolderPath/normalizeFolderPath、core/modals 的 TextInputModal、
  *          core/time 的 nowStampAndUid、core/types 的 ZiminosContext/ZiminosSettings，
  *          依赖同目录 moc 的 mocPathOf、nameConflict 的四根目录同名检索/同流程更名，
- *          以及 templates 的 mocContent/mocFrontmatter
- * [OUTPUT]: 对外提供 ContainerKind 契约、PROJECT_KIND/AREA_KIND/BOOK_KIND 三份规格、
+ *          projectOwnership 的统一归属问答，以及 templates 的 mocContent/mocFrontmatter
+ * [OUTPUT]: 对外提供 ContainerKind 契约、PROJECT_KIND/AREA_KIND/RESOURCE_KIND/BOOK_KIND 四份规格、
  *           CreateContainerPreset 预设契约、PersonPicker 选人能力契约、createContainer
- * [POS]: 「一个文件夹 + 一篇 MOC」这件事的唯一实现，项目、领域与书籍共用它。
- *        三者的差别全部收在 ContainerKind 那张表里：落在哪个根目录、
- *        写什么 type、问不问归属、带不带小节骨架。三者的 Base 必须同源且只读
+ * [POS]: 「一个文件夹 + 一篇 MOC」这件事的唯一实现，项目、领域、资源与书籍共用它。
+ *        四类容器的差别全部收在 ContainerKind 那张表里：落在哪个根目录、
+ *        写什么 type、问不问归属、带不带小节骨架。四类容器的 Base 必须同源且只读
  *        this.file 实时上下文，不得把命名或路径再塞回容器规格。除此之外它们连一个字的提示文案都不该分叉——
  *        分叉的代价不是重复代码，是「新建领域」某天悄悄少了一道防覆盖校验。
  *        名称合法性、目标位置防覆盖、跨 PARA 同名提醒、光标落点这些规矩因此只在此处定义一次。
@@ -17,7 +17,7 @@
  *        概述放最后，是因为前面全是点选，中途取消不至于让人白写一段话；
  *        归属必须在动土之前问完，客户委托却没选到人时中止，不留半个空文件夹。
  *        文案与流程仍逐段对照 create-project-moc.js，只有一处 V3 主动偏离并已备案：
- *        归属由两项拆成三项，「自己做」从此不再多问一句同行者（理由写在 OWNERSHIP 头上）。
+ *        归属由两项拆成三项，「自己做」从此不再多问一句同行者（理由写在 projectOwnership 的 OWNERSHIP 头上）。
  *        v0.36.0 加的 preset.quiet 是同一条流程的第二种在场形态而不是第二条流程：
  *        批量导入一次要建几十本书，没有人在看任何一本，于是不打开文件、不聚焦、不弹 Notice，
  *        撞名不改名、失败改为抛出。**建档这件事本身一个字都没有分叉**——
@@ -27,97 +27,39 @@
 
 import { MarkdownView, Notice, normalizePath } from 'obsidian';
 import type { App, TFile } from 'obsidian';
-import { BOOK_HEADINGS, FIELDS, FOLDERS, NOTE_TYPES } from '../../core/constants';
+import { BOOK_HEADINGS, FOLDERS, NOTE_TYPES } from '../../core/constants';
 import { ensureFolderPath, normalizeFolderPath } from '../../core/folders';
-import { ChoiceModal, TextInputModal } from '../../core/modals';
+import { TextInputModal } from '../../core/modals';
 import { nowStampAndUid } from '../../core/time';
 import type { ZiminosContext, ZiminosSettings } from '../../core/types';
 import { mocPathOf } from './moc';
 import { findContainerNameConflicts, requestAvailableContainerName } from './nameConflict';
 import { mocContent, mocFrontmatter } from './templates';
 import type { Bibliography, ContainerSection, ProjectRelation } from './templates';
-
-/**
- * 「从库里选一个人」这项能力，由 main 在装配时注入。
- * 建项目要问「这是谁委托的」，而候选人住在人脉模块——本文件因此不 import 那个模块，只声明这个洞。
- *
- * 它曾经还带一个「库里没人时要不要吭声」的开关，V3 随归属三选项一起拆掉了：
- * 那个开关只为「自己独做但顺口问一句同行者」那条路存在，而现在会走到这里的每一次调用，
- * 都是用户刚刚明确表示要挂一个人——库里一个档案都没有时，那句话必须说。
- */
-export type PersonPicker = (title: string) => Promise<TFile | null>;
-
-/** 一个归属选项要挂的人。「自己做」没有这一项——这正是它与另外两项的全部区别 */
-interface OwnershipLink {
-    /** 写进 frontmatter 的字段：FIELDS.client 或 FIELDS.with */
-    readonly field: string;
-    /** 选人弹窗的标题 */
-    readonly ask: string;
-    /** 没选到人时是不是就不该建这个项目 */
-    readonly required: boolean;
-}
-
-/** 一个归属选项：一句给人看的话，加上「要不要挂人、挂哪个字段」 */
-interface OwnershipOption {
-    readonly label: string;
-    readonly link?: OwnershipLink;
-}
-
-/**
- * 项目归属的三个选项。
- *
- * 这一问是整条流程里信息量最大的一步，所以选项文案直接把后果写出来。
- *
- * 三个而不是两个，是 V3 修掉的一处自相矛盾：此前只有「自己的项目」与「客户委托的」，
- * 而选了「自己的项目」之后仍会弹一次「和谁一起做？（自己独做就按 Esc 跳过）」——
- * 标签刚说完这是自己的项目，下一屏就问你还有谁，用户只能靠按 Esc 来表达「真的只有我」。
- * 一个必须靠取消才能走完的流程，是在拿取消键当确认键使。
- * 拆开之后，「要不要挂人」由用户在同一屏里一次答完：自己做就直接进下一步，
- * 而「和别人一起做」与「客户委托的」才会弹选人。
- *
- * 后两项分家的理由不是分类癖：client 是商业契约标记，写下它等于把那个人注册成客户，
- * 三张客户表全靠它过滤；「周六和张三去旅游」这类私人项目必须走 with，
- * 否则朋友会被无声注册成客户、项目会挂进「我还欠谁的交付」，结案后还会污染案例库的选题统计。
- * 两者的必答性也不同：客户委托却没选到人就不该建这个项目——一笔没有债主的交付债务毫无意义；
- * 而一起做的人没选到，项目照建，只是少挂一条 with，那不影响这个项目成立。
- */
-const OWNERSHIP: readonly OwnershipOption[] = [
-    { label: '自己做（只有我，不挂任何人）' },
-    {
-        label: '和别人一起做（写 with，不算客户）',
-        link: { field: FIELDS.with, ask: '和谁一起做？', required: false },
-    },
-    {
-        label: '客户委托的（写 client，我欠他一个交付）',
-        link: { field: FIELDS.client, ask: '这是谁委托的？', required: true },
-    },
-];
+import { requestProjectOwnership } from './projectOwnership';
+import type { PersonPicker } from './projectOwnership';
+export type { PersonPicker } from './projectOwnership';
 
 // ============================================================
-// 项目与领域的全部差别
+// 容器的规格
 // ============================================================
 
 /**
  * 一类容器的规格。
  *
- * 这张表存在的意义是把「项目和领域到底差在哪」摆成三行可读的事实，
- * 而不是散在流程里的三处 if。将来若再来第三类容器（比如「书籍」），
- * 它是这张表多一条，而不是这条流程多一个分支。
+ * 这张表集中声明各类容器的差别，不在流程中按身份分支。
+ * 资源使用固定 PARA 目录；项目、领域与书籍读取已有目录设置。
  */
 export interface ContainerKind {
     /** 中文名，出现在每一句提示里 */
     readonly label: string;
     /** 写进 frontmatter 的 type，导航页据此把它摆进哪张表 */
     readonly type: string;
-    /**
-     * 写进 frontmatter 的 status；留空表示这类容器没有生命周期。
-     * 领域正是如此：它没有终点，给它一个「进行中」等于承诺它某天会结束，
-     * 而导航页那张「正在进行中」恰恰按 status 筛。
-     */
-    readonly status?: string;
-    /** 取哪个设置项当根目录 */
-    readonly folderKey: 'projectFolder' | 'areaFolder';
-    /** 该设置项为空或写错时回落到哪个默认目录 */
+    /** 初始状态。四类容器统一写 active，与 type 的分类独立。 */
+    readonly status: string;
+    /** 根目录设置项；省略时直接使用固定目录 */
+    readonly folderKey?: 'projectFolder' | 'areaFolder';
+    /** 固定目录，或目录设置为空、写错时的回落值 */
     readonly folderFallback: string;
     /**
      * 要不要问「这是谁的」。
@@ -143,8 +85,18 @@ export const PROJECT_KIND: ContainerKind = {
 export const AREA_KIND: ContainerKind = {
     label: '领域',
     type: NOTE_TYPES.area,
+    status: 'active',
     folderKey: 'areaFolder',
     folderFallback: FOLDERS.areas,
+    asksOwnership: false,
+};
+
+/** 资源沿用领域的问答与 MOC，初始 active，固定落在 PARA 资源目录。 */
+export const RESOURCE_KIND: ContainerKind = {
+    label: '资源',
+    type: NOTE_TYPES.resource,
+    status: 'active',
+    folderFallback: FOLDERS.resources,
     asksOwnership: false,
 };
 
@@ -243,7 +195,7 @@ async function resolveContainerName(
 }
 
 /**
- * 新建一个项目或领域：建文件夹、写 MOC、打开并把光标停在正文起点。
+ * 新建一个容器：建文件夹、写 MOC、打开并把光标停在正文起点。
  * 返回新建的 MOC 文件；用户取消、名称非法、同名 MOC 已存在或过程出错时返回 null。
  * 任何一步失败都不留半成品之外的痕迹，也绝不覆盖已有文件。
  */
@@ -263,7 +215,10 @@ export async function createContainer(
         // ============================================================
 
         const settings: ZiminosSettings = ctx.settings;
-        const baseFolder = normalizeFolderPath(settings[kind.folderKey], kind.folderFallback);
+        const baseFolder = normalizeFolderPath(
+            kind.folderKey ? settings[kind.folderKey] : kind.folderFallback,
+            kind.folderFallback,
+        );
 
         // ============================================================
         // 2. 获取名称
@@ -320,39 +275,9 @@ export async function createContainer(
         let relation: ProjectRelation | undefined;
 
         if (kind.asksOwnership && !preset) {
-            const ownership = await new ChoiceModal(app, {
-                title: `这个${kind.label}是谁的？`,
-                items: OWNERSHIP,
-                labelOf: (item) => item.label,
-            }).openAndGetChoice();
-
-            if (!ownership) {
-                new Notice(`未选择${kind.label}归属，操作已取消。`);
-                return null;
-            }
-
-            // 「自己做」没有 link，因此一个字都不再问，直接进下一步——
-            // 这正是用户选它时表达的意思，不该再让他按一次 Esc 来重申
-            if (ownership.link && pickPerson) {
-                const { field, ask, required } = ownership.link;
-                const person = await pickPerson(ask);
-
-                // 客户委托却没选到人，就不该建这个项目：一笔没有债主的交付债务毫无意义，
-                // 而且此刻还没动土，中止不留半成品。一起做的人没选到则照建，
-                // 少挂一条 with 不影响这个项目成立
-                if (required && !person) {
-                    new Notice('未选择客户，操作已取消。');
-                    return null;
-                }
-
-                if (person) {
-                    relation = {
-                        field,
-                        // 全路径消除人脉与客户目录里的同名歧义，别名仍让属性面板只显示姓名
-                        target: `${person.path.replace(/\.md$/i, '')}|${person.basename}`,
-                    };
-                }
-            }
+            const ownership = await requestProjectOwnership(app, pickPerson);
+            if (!ownership) return null;
+            relation = ownership.relation;
         }
 
         // ============================================================

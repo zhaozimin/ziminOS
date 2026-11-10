@@ -682,7 +682,7 @@ test('自写守卫只登记机器的反应，替人落笔的写入不登记', ()
         'src/modules/books/importLibrary.ts': 1, // 批量导入的账目报告是插件自己的账
         'src/modules/review/periodic.ts': 4, // 周期笔记出生、空笔记套骨架、归位搬家
         'src/modules/review/dailyActivity.ts': 1, // 每日产出是插件自己的历史账本，不能被再记成用户编辑
-        'src/modules/projects/renameContainer.ts': 7, // 整棵改名及双链重写是一次机器反应，旧新路径均登记
+        'src/modules/projects/containerMutation.ts': 7, // 改名与类型转换的目录/双链事务共用守卫，旧新路径均登记
         'src/modules/inspiration/capture.ts': 1, // 灵感集第一次出生
         'src/modules/eternal/export.ts': 1, // 出库单是插件自己的账
     };

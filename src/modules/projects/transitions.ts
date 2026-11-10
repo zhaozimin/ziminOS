@@ -4,7 +4,7 @@
  *          依赖 core/constants 的 TRANSITIONS、STATUS_LABELS、FIELDS 与流转类型，依赖 core/time 的 today，
  *          依赖 core/folders 的 ensureFolderPath、normalizeFolderPath，
  *          依赖 core/types 的 ZiminosContext/DEFAULT_SETTINGS 与归档移交契约 ArchivedHook，
- *          依赖 core/frontmatter 的 Frontmatter 类型
+ *          依赖 core/frontmatter 的 Frontmatter 类型与同目录 containerLock 的目录互斥锁
  * [OUTPUT]: 对外提供 registerTransitionCommands（注册四条流转命令）与 runProjectTransition（执行单次流转），
  *           两者都收一个可选的 ArchivedHook——那是「项目刚刚完成归档」这件事的出口
  * [POS]: projects 模块的生命周期终局，与 createProject 构成项目的一生两端——
@@ -46,6 +46,7 @@ import { today } from '../../core/time';
 import { DEFAULT_SETTINGS } from '../../core/types';
 import type { ArchivedHook, ZiminosContext } from '../../core/types';
 import { resolveMocPath } from './moc';
+import { pendingContainerChanges } from './containerLock';
 
 // ============================================================
 // 模块常量
@@ -70,7 +71,7 @@ const CONFIRM_MODAL_CLASS = 'qa-project-transition-confirm';
 const ARCHIVE_HANDOVER_STATUS = TRANSITIONS.done.status;
 
 /** 对象身份不随改名变化，同一容器的确认与回滚因此共享一把锁。 */
-const pendingTransitions = new WeakSet<TFolder>();
+const pendingTransitions = pendingContainerChanges;
 
 // ============================================================
 // 流转计划：守卫全部通过后才生成，是执行阶段唯一的输入

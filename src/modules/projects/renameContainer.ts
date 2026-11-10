@@ -1,65 +1,33 @@
 /**
- * [INPUT]: 依赖 obsidian 的 Modal/ButtonComponent/MarkdownView/Notice/TFile/TFolder/Vault/normalizePath，
+ * [INPUT]: 依赖 obsidian 的 Modal/ButtonComponent/Notice/TFile/TFolder/normalizePath，
  *          core/commands 的 PROJECT_COMMANDS，core/constants 的 FIELDS/FOLDERS/NOTE_TYPES，
  *          core/folders 的路径归属，core/modals 的 TextInputModal，core/types 的 ZiminosContext，
- *          依赖同目录 containerRenameText/moc/nameConflict；日记语义记录与 Eagle 同步由 main 通过函数洞注入
+ *          依赖同目录 containerMutation/containerLock/moc/nameConflict；日记语义记录与 Eagle 同步由 main 通过函数洞注入
  * [OUTPUT]: 对外提供 EagleContainerRenamer/ContainerRenameRecorder 两个能力洞、registerContainerRenameCommand 与
  *           runContainerRename（当前项目/领域的双确认事务改名）
  * [POS]: projects 的容器身份变更编排层。从容器内任意笔记发起，第一窗预填当前名，
  *        第二窗展示整棵文件树、MOC、所有引用改写与 Eagle 影响面；确认后再次构建计划，
  *        现场与预览中受影响正文、文件对象或跨 PARA 名称占用不同就停；引用范围由公开元数据给出。
- *        本地事务包含文件夹、MOC 名、全库双链/属性/出库单，失败按磁盘事实逆序回滚，
+ *        本地目录与引用事务由 containerMutation 执行，与类型转换共用快照、提交和回滚。
  *        一项恢复失败不阻断其余恢复；Eagle 是本地提交后的可选副作用，不能反向撤销已安全落盘的笔记
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
-import { ButtonComponent, MarkdownView, Modal, Notice, TFile, TFolder, Vault, normalizePath } from 'obsidian';
-import type { App, CachedMetadata } from 'obsidian';
+import { ButtonComponent, Modal, Notice, TFile, TFolder, normalizePath } from 'obsidian';
+import type { App } from 'obsidian';
 import { PROJECT_COMMANDS } from '../../core/commands';
 import { FIELDS, FOLDERS, NOTE_TYPES } from '../../core/constants';
 import { isInFolder, normalizeFolderPath } from '../../core/folders';
 import { TextInputModal } from '../../core/modals';
 import type { ZiminosContext } from '../../core/types';
-import { rewriteContainerReferences } from './containerRenameText';
-import type { ContainerLinkSpan, ContainerRenameFacts } from './containerRenameText';
-import { mocPathOf, resolveMocPath } from './moc';
+import { resolveMocPath } from './moc';
 import { findContainerNameConflicts } from './nameConflict';
+import { buildPlan, applyPlan, saveAllDisplayedMarkdownViews, messageOf } from './containerMutation';
+import type { ContainerIdentity, RenamePlan } from './containerMutation';
+import { pendingContainerChanges as pendingRenames } from './containerLock';
 
 export type EagleContainerRenamer = (oldName: string, newName: string) => Promise<'renamed' | 'missing' | 'skipped'>;
 export type ContainerRenameRecorder = (oldName: string, newName: string, newMocPath: string) => Promise<void>;
-
-interface ContainerIdentity {
-    readonly folder: TFolder;
-    readonly moc: TFile;
-    readonly name: string;
-    readonly label: '项目' | '领域';
-    readonly root: string;
-}
-
-interface ContentSnapshot {
-    readonly file: TFile;
-    readonly pathAtPreview: string;
-    readonly before: string;
-}
-
-interface ContentEdit extends ContentSnapshot {
-    readonly after: string;
-    readonly replacements: number;
-}
-
-interface RenamePlan {
-    readonly identity: ContainerIdentity;
-    readonly newName: string;
-    readonly newFolderPath: string;
-    readonly newMocPath: string;
-    readonly pathPairs: readonly { file: TFile; oldPath: string; newPath: string }[];
-    readonly snapshots: readonly ContentSnapshot[];
-    readonly edits: readonly ContentEdit[];
-    readonly facts: ContainerRenameFacts;
-    readonly fingerprint: string;
-}
-
-const pendingRenames = new WeakSet<TFolder>();
 
 export function registerContainerRenameCommand(
     ctx: ZiminosContext,
@@ -203,165 +171,6 @@ function resolveCurrentContainer(ctx: ZiminosContext, expectedFolder?: TFolder):
     return null;
 }
 
-async function buildPlan(ctx: ZiminosContext, identity: ContainerIdentity, newName: string): Promise<RenamePlan> {
-    const conflicts = findContainerNameConflicts(ctx.app, ctx.settings, newName);
-    if (conflicts.length) throw new Error(`新名称已被占用：${conflicts.map((item) => item.path).join('、')}`);
-    if (ctx.app.vault.getAbstractFileByPath(normalizePath(`${identity.root}/${newName}`))) {
-        throw new Error(`目标位置已存在：${identity.root}/${newName}`);
-    }
-
-    const newFolderPath = normalizePath(`${identity.root}/${newName}`);
-    const newMocPath = mocPathOf(newFolderPath, newName);
-    const mocOccupant = ctx.app.vault.getAbstractFileByPath(`${identity.folder.path}/${newMocPath.split('/').pop()}`);
-    if (mocOccupant && mocOccupant !== identity.moc) throw new Error(`新 MOC 名已被占用：${mocOccupant.path}`);
-    const pairs: { file: TFile; oldPath: string; newPath: string }[] = [];
-
-    Vault.recurseChildren(identity.folder, (child) => {
-        if (child instanceof TFile) {
-            const relative = child.path.slice(identity.folder.path.length + 1);
-            const target = child === identity.moc ? newMocPath : normalizePath(`${newFolderPath}/${relative}`);
-            pairs.push({ file: child, oldPath: child.path, newPath: target });
-        }
-    });
-    pairs.sort((left, right) => left.oldPath.localeCompare(right.oldPath));
-
-    const paths = new Map(pairs.map((pair) => [pair.oldPath, pair.newPath]));
-    const facts: ContainerRenameFacts = {
-        oldName: identity.name,
-        newName,
-        oldFolderPath: identity.folder.path,
-        newFolderPath,
-        oldMocPath: identity.moc.path,
-        newMocPath,
-        paths,
-    };
-    const edits: ContentEdit[] = [];
-    const snapshots: ContentSnapshot[] = [];
-
-    for (const file of ctx.app.vault.getMarkdownFiles()) {
-        const before = await ctx.app.vault.cachedRead(file);
-        const rewritten = rewriteContainerReferences(before, file.path, facts, (linkpath, sourcePath) =>
-            ctx.app.metadataCache.getFirstLinkpathDest(linkpath, sourcePath)?.path ?? null,
-            linkSpans(ctx.app.metadataCache.getFileCache(file), before, file.path),
-        );
-        if (isInFolder(file.path, identity.folder.path) || rewritten.content !== before) {
-            snapshots.push({ file, pathAtPreview: file.path, before });
-        }
-        if (rewritten.content === before) continue;
-        edits.push({ file, pathAtPreview: file.path, before, after: rewritten.content, replacements: rewritten.replacements });
-    }
-
-    edits.sort((left, right) => left.pathAtPreview.localeCompare(right.pathAtPreview));
-    snapshots.sort((left, right) => left.pathAtPreview.localeCompare(right.pathAtPreview));
-    const fingerprint = JSON.stringify({
-        folder: identity.folder.path,
-        moc: identity.moc.path,
-        newName,
-        pairs: pairs.map((pair) => [pair.oldPath, pair.newPath]),
-        snapshots: snapshots.map((snapshot) => [snapshot.pathAtPreview, snapshot.before]),
-        edits: edits.map((edit) => [edit.pathAtPreview, edit.before, edit.after]),
-    });
-
-    return { identity, newName, newFolderPath, newMocPath, pathPairs: pairs, snapshots, edits, facts, fingerprint };
-}
-
-function linkSpans(cache: CachedMetadata | null, content: string, path: string): readonly ContainerLinkSpan[] {
-    if (!cache) throw new Error(`笔记元数据尚未就绪，请稍后重试：${path}`);
-    const spans: ContainerLinkSpan[] = [...(cache.links ?? []), ...(cache.embeds ?? [])].map((link) => ({
-        start: link.position.start.offset,
-        end: link.position.end.offset,
-        original: link.original,
-    }));
-    if (cache.frontmatterPosition) spans.push({
-        start: cache.frontmatterPosition.start.offset,
-        end: cache.frontmatterPosition.end.offset,
-    });
-    if (spans.some((span) => span.original !== undefined && content.slice(span.start, span.end) !== span.original)) {
-        throw new Error(`笔记元数据与正文尚未同步，请稍后重试：${path}`);
-    }
-    return spans;
-}
-
-async function applyPlan(ctx: ZiminosContext, plan: RenamePlan): Promise<void> {
-    const { app, guard } = ctx;
-    const applied: ContentEdit[] = [];
-
-    markPlan(ctx, plan);
-
-    try {
-        await app.vault.rename(plan.identity.folder, plan.newFolderPath);
-        const movedMocPath = normalizePath(`${plan.newFolderPath}/${plan.identity.moc.name}`);
-        if (plan.identity.moc.path !== movedMocPath || app.vault.getAbstractFileByPath(movedMocPath) !== plan.identity.moc) {
-            throw new Error('文件夹改名后 MOC 身份已改变。');
-        }
-        await app.vault.rename(plan.identity.moc, plan.newMocPath);
-
-        for (const edit of plan.edits) {
-            try {
-                const expectedPath = plan.facts.paths.get(edit.pathAtPreview) ?? edit.pathAtPreview;
-                if (edit.file.path !== expectedPath || app.vault.getAbstractFileByPath(expectedPath) !== edit.file) {
-                    throw new Error(`写入前文件身份已改变：${expectedPath}`);
-                }
-                await app.vault.process(edit.file, (content) => {
-                    if (content !== edit.before) throw new Error(`写入前内容已改变：${edit.file.path}`);
-                    guard.mark(edit.file.path);
-                    return edit.after;
-                });
-                applied.push(edit);
-            } catch (error) {
-                const current = await app.vault.cachedRead(edit.file);
-                if (current === edit.after) applied.push(edit);
-                throw error;
-            }
-        }
-    } catch (operationError) {
-        const rollbackErrors: string[] = [];
-
-        for (const edit of [...applied].reverse()) {
-            try {
-                await app.vault.process(edit.file, (content) => {
-                    if (content !== edit.after) throw new Error(`回滚时内容又被修改：${edit.file.path}`);
-                    guard.mark(edit.file.path);
-                    return edit.before;
-                });
-            } catch (error) {
-                rollbackErrors.push(messageOf(error));
-            }
-        }
-
-        try {
-            if (plan.identity.moc.path === plan.newMocPath) {
-                const oldMocName = plan.facts.oldMocPath.split('/').pop() ?? plan.identity.moc.name;
-                const oldNameAtNewFolder = normalizePath(`${plan.newFolderPath}/${oldMocName}`);
-                await app.vault.rename(plan.identity.moc, oldNameAtNewFolder);
-            }
-        } catch (error) {
-            rollbackErrors.push(messageOf(error));
-        }
-
-        try {
-            if (plan.identity.folder.path === plan.newFolderPath) {
-                await app.vault.rename(plan.identity.folder, plan.facts.oldFolderPath);
-            }
-        } catch (error) {
-            rollbackErrors.push(messageOf(error));
-        }
-
-        const rollback = rollbackErrors.length ? `；自动回滚也失败：${rollbackErrors.join('、')}` : '';
-        throw new Error(`${messageOf(operationError)}${rollback}`);
-    }
-}
-
-function markPlan(ctx: ZiminosContext, plan: RenamePlan): void {
-    ctx.guard.mark(plan.facts.oldFolderPath);
-    ctx.guard.mark(plan.newFolderPath);
-    for (const pair of plan.pathPairs) {
-        ctx.guard.mark(pair.oldPath);
-        ctx.guard.mark(pair.newPath);
-    }
-    for (const edit of plan.edits) ctx.guard.mark(edit.file.path);
-}
-
 function validateName(oldName: string, newName: string): string | null {
     if (!newName) return '新名称不能为空。';
     if (newName === oldName) return '新名称与当前名称相同，没有需要修改的内容。';
@@ -399,7 +208,7 @@ class RenamePreviewModal extends Modal {
             `${this.plan.facts.oldFolderPath} → ${this.plan.newFolderPath}`,
             ...this.plan.pathPairs.map((pair) => `${pair.oldPath} → ${pair.newPath}`),
         ]);
-        this.section('内容、属性与双链', this.plan.edits.length
+        this.section('内容、属性、双链与 MOC 查询', this.plan.edits.length
             ? this.plan.edits.map((edit) => `${edit.pathAtPreview}（${edit.replacements} 处）`)
             : ['无外部引用需要改写']);
         this.section('Eagle', [this.eagleEnabled
@@ -438,16 +247,4 @@ class RenamePreviewModal extends Modal {
         this.settled = true;
         this.resolveResult(value);
     }
-}
-
-async function saveAllDisplayedMarkdownViews(app: App): Promise<void> {
-    const saves: Promise<void>[] = [];
-    app.workspace.iterateAllLeaves((leaf) => {
-        if (leaf.view instanceof MarkdownView) saves.push(leaf.view.save());
-    });
-    await Promise.all(saves);
-}
-
-function messageOf(error: unknown): string {
-    return error instanceof Error ? error.message : String(error);
 }

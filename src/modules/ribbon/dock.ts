@@ -1,6 +1,6 @@
 /**
- * [INPUT]: 依赖 obsidian 的 Notice 与 Platform；依赖 core/types 的 ZiminosContext；
- *          依赖 ./icons 的 registerZiminosIcons
+ * [INPUT]: 依赖 obsidian 的 Notice 与 Platform；依赖 core/types 的 ZiminosContext。
+ *          main 在装配任何视图前注册共享图标，本文件只引用图标名。
  * [OUTPUT]: 对外提供 registerRibbon，返回一个「按设置重新决定哪几个图标露面」的同步函数
  * [POS]: ribbon 模块的呈现层，左侧边栏上那一列图标。
  *        它不认识任何一条具体命令——清单来自 ctx.commands 的花名册，
@@ -14,7 +14,6 @@
 import { Notice, Platform } from 'obsidian';
 import { GROUP_COLORS } from '../../core/commands';
 import type { ZiminosContext } from '../../core/types';
-import { registerZiminosIcons } from './icons';
 
 // ============================================================
 // 样式钩子
@@ -74,9 +73,6 @@ class RibbonDock {
 
     constructor(ctx: ZiminosContext) {
         this.ctx = ctx;
-
-        // 图标必须先进图标库，否则 addRibbonIcon 拿到的是一个认不出的名字，画出来是空的
-        registerZiminosIcons(ctx.plugin);
 
         this.syncVisibility();
     }

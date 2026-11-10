@@ -1,10 +1,10 @@
 /**
  * [INPUT]: 依赖 obsidian 的 Plugin 类型；依赖 ./constants 的 PeriodKey 与 TransitionAction 两个类型
  * [OUTPUT]: 对外提供命令身份契约 CommandSpec、分组名 COMMAND_GROUPS、图标名 COMMAND_ICONS，
- *           四十三条命令的规格 INIT_VAULT_COMMAND/PROJECT_COMMANDS/TRANSITION_COMMANDS（含类型
+ *           全部命令的规格 INIT_VAULT_COMMAND/PROJECT_COMMANDS/TRANSITION_COMMANDS（含类型
  *           TransitionCommand）/BOOK_COMMANDS/INSPIRATION_COMMAND/PERIOD_COMMANDS/THEME_COMMAND/
- *           OPEN_CALENDAR_COMMAND/CONTACT_COMMANDS/CLIENT_COMMANDS/APPEARANCE_COMMAND/FORMAT_COMMAND/
- *           RECENT_FILES_COMMAND/COPY_PATH_COMMAND/EXPORT_COMMAND/LEGACY_COMMANDS，
+ *           OPEN_CALENDAR_COMMAND/PLANNER_COMMANDS/CONTACT_COMMANDS/CLIENT_COMMANDS/APPEARANCE_COMMAND/FORMAT_COMMAND/
+ *           RECENT_FILES_COMMAND/COPY_PATH_COMMAND/EXPORT_COMMAND/LEGACY_COMMANDS/QUICK_ACTIONS_COMMAND，
  *           左侧边栏默认摆件 DEFAULT_RIBBON_COMMANDS
  *           与它的读取侧兜底 normalizeRibbonCommands，
  *           以及注册台 CommandRegistry 与它交出的 RegisteredCommand
@@ -29,7 +29,7 @@ import type { PeriodKey, TransitionAction } from './constants';
  * 一条命令的完整身份。
  *
  * 四个字段各有去处：id 与 name 交给命令面板，icon 同时喂给命令面板与左侧边栏，
- * group 只服务侧边栏设置页的分区。把它们收成一个结构而不是四个平列常量，
+ * group 服务侧边栏设置页与快捷操作的分区。把它们收成一个结构而不是四个平列常量，
  * 是因为「注册一条命令」从此只需递一个值——命令面板、侧边栏、设置页拿到的
  * 永远是同一份身份，不可能出现「侧边栏上的图标和命令面板里的不是一个」。
  */
@@ -56,11 +56,11 @@ export interface CommandSpec {
 }
 
 /**
- * 十一个命令分组。
+ * 十三个命令分组。
  *
- * 它不是新发明的分类，而是照着插件自己的结构切的：十个同名于 modules/ 下的目录
+ * 它不是新发明的分类，而是照着插件自己的结构切的：十二个同名于 modules/ 下的目录
  * （setup / projects / books / inspiration / review / contacts / appearance / format /
- * explorer / legacy），clients 是唯一的例外——客户不是独立目录，
+ * explorer / legacy / planner / shortcuts），clients 是唯一的例外——客户不是独立目录，
  * 是 contacts 模块里 client.ts 那一支，单列成组是因为客户与人脉在业务上本就是两个物种
  * （见 contacts 的 L2）。modules/ribbon 与 modules/editing 都不在其中：
  * 前者一条命令都不注册、只负责把别人的命令摆出来，后者是两个监听、没有可执行的入口。
@@ -71,11 +71,13 @@ export const COMMAND_GROUPS = {
     books: '读书',
     inspiration: '灵感',
     review: '复盘',
+    planner: '日程',
     contacts: '人脉',
     clients: '客户',
     appearance: '外观',
     format: '排版',
     explorer: '文件',
+    shortcuts: '快捷',
     legacy: '旧版',
 } as const;
 
@@ -97,22 +99,25 @@ export const GROUP_COLORS: Readonly<Record<CommandGroup, string>> = {
     [COMMAND_GROUPS.books]: '#C15449',       // 读书＝批注用朱笔，朱批红
     [COMMAND_GROUPS.inspiration]: '#E3A93C', // 灵感＝灯泡，琥珀黄
     [COMMAND_GROUPS.review]: '#9A6BD6',      // 复盘＝沉思，紫
+    [COMMAND_GROUPS.planner]: '#E2766B',     // 日程＝时间块，珊瑚红
     [COMMAND_GROUPS.contacts]: '#E06C8A',    // 人脉＝心，玫红
     [COMMAND_GROUPS.clients]: '#43A868',     // 客户＝生意与钱，绿
     [COMMAND_GROUPS.appearance]: '#E07B39',  // 外观＝调色盘，橙
     [COMMAND_GROUPS.format]: '#3BAFBF',      // 排版＝整洁，青
     [COMMAND_GROUPS.explorer]: '#5A6ACF',    // 文件＝找路，罗盘针的靛蓝
+    [COMMAND_GROUPS.shortcuts]: '#5A6ACF',   // 快捷＝命令入口，沿用导航色
     // 旧版这三条做的是 Obsidian 自己的事，不属于 ziminOS 的任何一摊。
     // 中性灰是这句话的视觉说法：在那一列彩色图标里，它们一眼就看得出是外来的
     [COMMAND_GROUPS.legacy]: '#7A8290',
 };
 
 /**
- * 四十三个图标名服务四十三条命令与设置页的三张非命令标签页（边栏、文件、编辑）。
+ * 四十三个图标名服务全部命令与三张设置标签页（边栏、文件、编辑）。
  *
  * 不是一一对应：三条整架导入命令共用 importLibrary 一枚。它们做的是**同一件事**——
  * 把一个来源里全部有划线的书端进来，只是来源不同，而那也正是它们共用同一个内核的原因。
  * 容器改名则复用 project 旗帜：它改的仍是当前项目/领域的身份，新画一枚反而会虚构第二种容器。
+ * 新建资源复用 explorer 文件夹，资源集合与文件页共用同一种目录图形。
  *
  * 一律带 `ziminos-` 前缀：图标名是 Obsidian 全局共享的命名空间，
  * 不加前缀就可能盖掉 lucide 里的同名图标，或者被后装的插件盖掉。
@@ -156,9 +161,9 @@ export const COMMAND_ICONS = {
     appearance: 'ziminos-appearance',
     format: 'ziminos-format',
     /**
-     * 不属于任何命令的两枚：设置页「边栏」与「文件」两张标签页的图标。
+     * 设置页「边栏」与「文件」两张标签页的图标；文件夹也用于「新建资源」。
      * 这两个模块管的都是屏幕上的一块地方而不是一件可执行的事，
-     * 没有哪条命令天然长它们的样子，图形与其余三十个同住 icons.ts，同一套画法。
+     * 图形与其余命令图标同住 icons.ts，同一套画法。
      *
      * 两枚都画那块地方本身而不画它的功能：边栏是「一块带左栏的面板」，
      * 文件浏览器是「一个文件夹」。文件夹上刻意不加数字或角标——
@@ -177,12 +182,12 @@ export const COMMAND_ICONS = {
 } as const;
 
 // ============================================================
-// 四十三条命令：顺序即它们在左侧边栏里的先后
+// 命令身份：注册顺序即它们在左侧边栏里的先后
 // ============================================================
 
 /**
  * 开荒命令。它是唯一不属于任何功能模块的命令——开荒横跨全库骨架并要收齐各模块的诉求，
- * 因此由 main.ts 直接注册；其余四十二条都由各自模块自行注册。
+ * 因此由 main.ts 直接注册；其余命令都由各自模块自行注册。
  */
 export const INIT_VAULT_COMMAND: CommandSpec = {
     id: 'init-vault',
@@ -191,8 +196,8 @@ export const INIT_VAULT_COMMAND: CommandSpec = {
     group: COMMAND_GROUPS.setup,
 };
 
-/** 项目模块的五个入口（含改名与一次性迁移）；四条状态流转另见 TRANSITION_COMMANDS */
-export const PROJECT_COMMANDS: Readonly<Record<'create' | 'area' | 'rename' | 'card' | 'migrate', CommandSpec>> = {
+/** 项目模块的七个入口（含改名、类型转换与一次性迁移）；四条状态流转另见 TRANSITION_COMMANDS */
+export const PROJECT_COMMANDS: Readonly<Record<'create' | 'area' | 'resource' | 'convert' | 'rename' | 'card' | 'migrate', CommandSpec>> = {
     create: {
         id: 'create-project',
         name: '新建项目',
@@ -207,6 +212,18 @@ export const PROJECT_COMMANDS: Readonly<Record<'create' | 'area' | 'rename' | 'c
         id: 'create-area',
         name: '新建领域',
         icon: COMMAND_ICONS.area,
+        group: COMMAND_GROUPS.projects,
+    },
+    resource: {
+        id: 'create-resource',
+        name: '新建资源',
+        icon: COMMAND_ICONS.explorer,
+        group: COMMAND_GROUPS.projects,
+    },
+    convert: {
+        id: 'convert-container',
+        name: '转换当前项目、领域或资源类型',
+        icon: COMMAND_ICONS.migrate,
         group: COMMAND_GROUPS.projects,
     },
     rename: {
@@ -402,6 +419,13 @@ export const OPEN_CALENDAR_COMMAND: CommandSpec = {
     group: COMMAND_GROUPS.review,
 };
 
+/** 大日历沿用独立试用的命令后缀，统一进入正式命令台。 */
+export const PLANNER_COMMANDS: Readonly<Record<'open' | 'range' | 'people', CommandSpec>> = {
+    open: { id: 'open-week-planner', name: '打开大日历', icon: COMMAND_ICONS.calendar, group: COMMAND_GROUPS.planner },
+    range: { id: 'calendar-display-range', name: '自定义大日历时间范围', icon: COMMAND_ICONS.calendar, group: COMMAND_GROUPS.planner },
+    people: { id: 'add-person-task-queries', name: '补齐人脉与客户的预设任务 Dataview', icon: COMMAND_ICONS.contact, group: COMMAND_GROUPS.planner },
+};
+
 /**
  * 五级复盘各自的「打开本级笔记」命令，键与 constants 的 PERIODS 同源。
  *
@@ -592,10 +616,10 @@ export const LEGACY_COMMANDS: Readonly<Record<'vault' | 'help' | 'settings', Com
 // ============================================================
 
 /**
- * 全新库默认摆进左侧边栏的七条命令。
+ * 全新库默认摆进左侧边栏的八条命令。
  *
  * 全部命令都摆上去等于把选择的负担丢回给学员——那条边栏会长成一根谁也不看的图标柱。
- * 这七条的判据是「一天里可能按不止一次」：记灵感、开日记、写主题是每天的动作，
+ * 这八条的判据是「一天里可能按不止一次」：记灵感、开日记、写主题是每天的动作，
  * 新建项目与新建人脉是每周的动作，礼尚往来发生在关系推进的当下，外观开关是刚上手时天天在调的。
  * 其余命令要么一辈子只按一次（初始化笔记库、旧库补齐客户模块、补齐客户档案检索、升级存量 MOC 数据库），
  * 要么发生在某个具体场景里（新建领域、初始化当前卡片、四条流转、读书三条、
@@ -620,6 +644,7 @@ export const LEGACY_COMMANDS: Readonly<Record<'vault' | 'help' | 'settings', Com
  */
 export const DEFAULT_RIBBON_COMMANDS: readonly string[] = [
     PROJECT_COMMANDS.create.id,
+    PLANNER_COMMANDS.open.id,
     INSPIRATION_COMMAND.id,
     PERIOD_COMMANDS.daily.id,
     THEME_COMMAND.id,
@@ -627,6 +652,14 @@ export const DEFAULT_RIBBON_COMMANDS: readonly string[] = [
     CONTACT_COMMANDS.favor.id,
     APPEARANCE_COMMAND.id,
 ];
+
+/** 右侧快捷操作页。复用面板图标，不占默认左侧按钮。 */
+export const QUICK_ACTIONS_COMMAND: CommandSpec = {
+    id: 'open-quick-actions',
+    name: '打开快捷操作',
+    icon: COMMAND_ICONS.dock,
+    group: COMMAND_GROUPS.shortcuts,
+};
 
 /**
  * 把磁盘上读到的 ribbonCommands 收敛成一份可用的清单。

@@ -86,7 +86,8 @@ const { buildInitialInspirationContent, insertInspiration } = await loadTypeScri
     'src/modules/inspiration/templates.ts',
 );
 const { setSnippetEnabled } = await loadTypeScript('src/modules/appearance/snippets.ts');
-const { withPreservedMarkdownScroll } = await loadTypeScript(
+const { diffLineHunks, hunksToOffsetChanges } = await loadTypeScript('src/core/lineDiff.ts');
+const { withPreservedMarkdownScroll, processDisplayedNoteByHunks } = await loadTypeScript(
     'src/core/markdownViewState.ts',
     {
         obsidianStub: `
@@ -341,6 +342,202 @@ test('后台写笔记后保住所有已显示分栏的滚动位置', async () =>
     }
 });
 
+test('同一篇接连两次后台写入不把塌缩后的视口当成用户位置', async () => {
+    // 真机时序：走开那一拍，排版与 updated 先后落盘；排版回推把视口塌到文首附近，
+    // updated 在下一帧恢复之前开始写。它若自己拍快照，最后恢复的就是那个塌缩值
+    const frames = [];
+    const originalWindow = globalThis.window;
+    const file = { path: 'A.md' };
+    const scroll = { value: 166 };
+    const view = {
+        isMarkdownView: true,
+        file: { path: file.path },
+        getMode: () => 'source',
+        currentMode: {
+            getScroll: () => scroll.value,
+            applyScroll: (next) => {
+                scroll.value = next;
+            },
+        },
+    };
+    const app = { workspace: { iterateAllLeaves: (callback) => callback({ view }) } };
+
+    globalThis.window = {
+        requestAnimationFrame(callback) {
+            frames.push(callback);
+            return frames.length;
+        },
+    };
+
+    try {
+        // 排版：写完立即恢复，但宿主随后的重排又把视口塌掉，延后那一帧还没轮到
+        await withPreservedMarkdownScroll(app, file, async () => {
+            scroll.value = 0;
+        });
+        scroll.value = 3;
+
+        // updated：在那一帧之前开始写
+        await withPreservedMarkdownScroll(app, file, async () => {
+            scroll.value = 0;
+        });
+        assert.equal(scroll.value, 166);
+
+        scroll.value = 3;
+        while (frames.length > 0) frames.shift()(0);
+        assert.equal(scroll.value, 166);
+
+        // 写入期结束之后，下一次写入重新拍快照：用户此后自己滚动的位置要被认
+        scroll.value = 40;
+        await withPreservedMarkdownScroll(app, file, async () => {
+            scroll.value = 0;
+        });
+        assert.equal(scroll.value, 40);
+        while (frames.length > 0) frames.shift()(0);
+    } finally {
+        if (originalWindow === undefined) delete globalThis.window;
+        else globalThis.window = originalWindow;
+    }
+});
+
+test('逐行差异只圈出真正变化的行，且按坐标替换后逐字还原新文本', () => {
+    const apply = (a, b) => {
+        const before = a.split('\n');
+        const after = b.split('\n');
+        const changes = hunksToOffsetChanges(before, after, diffLineHunks(before, after));
+        let text = a;
+
+        for (const change of [...changes].reverse()) {
+            text = text.slice(0, change.from) + change.text + text.slice(change.to);
+        }
+
+        return { text, changes };
+    };
+    const base = Array.from({ length: 500 }, (_, index) => `第 ${index} 行 ![](https://img/${index}.png)`);
+    const edited = [...base];
+
+    edited[10] = '第 10 行 已整理';
+    edited.splice(400, 0, '');
+
+    const spread = apply(base.join('\n'), edited.join('\n'));
+
+    assert.equal(spread.text, edited.join('\n'));
+    // 第 10 行与第 400 行两处改动，中间几百行不在任何替换区间里
+    assert.equal(spread.changes.length, 2);
+    assert.ok(spread.changes.every((change) => change.to - change.from < 200));
+
+    // 边界：文首、文末、增删、CRLF、空文本、末尾换行
+    const cases = [
+        ['a\nb\nc', 'x\nb\nc'],
+        ['a\nb\nc', 'a\nb\nz'],
+        ['a\nb\nc', 'a\nb\nc\nd'],
+        ['a\nb\nc\n', 'a\nb\nc'],
+        ['a\nb\nc', 'a\nc'],
+        ['a\nb\nc', 'b\nc'],
+        ['', 'a\nb'],
+        ['a\nb', ''],
+        ['a\r\nb\r\nc\r\n', 'a\r\n\r\nb\r\nc\r\n'],
+        ['# 标题\n正文\n- 列表', '# 标题\n\n正文\n\n- 列表\n'],
+    ];
+
+    for (const [a, b] of cases) assert.equal(apply(a, b).text, b, JSON.stringify([a, b]));
+
+    // 随机：任意增删改都还原
+    let seed = 7;
+    const random = () => {
+        seed = (seed * 48271) % 2147483647;
+        return seed / 2147483647;
+    };
+
+    for (let round = 0; round < 200; round += 1) {
+        const lines = Array.from({ length: Math.floor(random() * 30) }, () => String(Math.floor(random() * 5)));
+        const next = [];
+
+        for (const line of lines) {
+            const roll = random();
+
+            if (roll < 0.1) continue;
+            if (roll < 0.2) next.push('新');
+            next.push(roll < 0.3 ? `${line}改` : line);
+        }
+
+        assert.equal(apply(lines.join('\n'), next.join('\n')).text, next.join('\n'));
+    }
+
+    assert.deepEqual(diffLineHunks(['a', 'b'], ['a', 'b']), []);
+});
+
+test('仍显示着的笔记按差异块自下而上逐处写，每次回推只替换一小段', async () => {
+    const lines = Array.from({ length: 300 }, (_, index) => `line ${index}`);
+    const original = lines.join('\n');
+    const formatted = lines.map((line, index) => (index === 5 || index === 250 ? `${line} ✓` : line)).join('\n');
+    const disk = { value: original };
+    const writes = [];
+    let displayed = true;
+    const view = { isMarkdownView: true, file: { path: 'A.md' } };
+    const app = {
+        workspace: { iterateAllLeaves: (callback) => { if (displayed) callback({ view }); } },
+        vault: {
+            async process(_file, fn) {
+                const next = fn(disk.value);
+
+                if (next !== disk.value) {
+                    writes.push(next);
+                    disk.value = next;
+                }
+
+                return next;
+            },
+        },
+    };
+    let marks = 0;
+    const plan = {
+        transform: (content) => (content === original ? formatted : content),
+        mayWrite: () => true,
+        willWrite: () => { marks += 1; },
+    };
+
+    assert.equal(await processDisplayedNoteByHunks(app, { path: 'A.md' }, plan), true);
+    assert.equal(disk.value, formatted);
+    // 两处改动两次写盘，先写下方那一处
+    assert.equal(writes.length, 2);
+    assert.equal(marks, 2);
+    assert.ok(writes[0].includes('line 250 ✓') && !writes[0].includes('line 5 ✓'));
+
+    // 中途磁盘被别人改过：剩下的放弃，不覆盖新内容
+    disk.value = original;
+    writes.length = 0;
+    const realProcess = app.vault.process;
+    app.vault.process = async (file, fn) => {
+        const result = await realProcess(file, fn);
+
+        if (writes.length === 1) disk.value = `${disk.value}\n用户刚敲的`;
+
+        return result;
+    };
+    await processDisplayedNoteByHunks(app, { path: 'A.md' }, plan);
+    assert.equal(writes.length, 1);
+    assert.ok(disk.value.endsWith('用户刚敲的'));
+    app.vault.process = realProcess;
+
+    // 没有分栏显示：整篇一次写完
+    displayed = false;
+    disk.value = original;
+    writes.length = 0;
+    await processDisplayedNoteByHunks(app, { path: 'A.md' }, plan);
+    assert.equal(writes.length, 1);
+    assert.equal(disk.value, formatted);
+
+    // 闸门关着：一个字节都不写
+    displayed = true;
+    disk.value = original;
+    writes.length = 0;
+    assert.equal(
+        await processDisplayedNoteByHunks(app, { path: 'A.md' }, { ...plan, mayWrite: () => false }),
+        false,
+    );
+    assert.equal(writes.length, 0);
+});
+
 test('光标记忆同时覆盖换文件与分栏间换焦点', () => {
     const source = readFileSync(path.join(ROOT, 'src/modules/editing/cursorMemory.ts'), 'utf8');
     const formatter = readFileSync(path.join(ROOT, 'src/modules/format/formatter.ts'), 'utf8');
@@ -351,7 +548,7 @@ test('光标记忆同时覆盖换文件与分栏间换焦点', () => {
 
     assert.ok(source.includes("on('file-open', switchTrackedView)"));
     assert.ok(source.includes("on('active-leaf-change', switchTrackedView)"));
-    assert.ok(formatter.includes('withPreservedMarkdownScroll(ctx.app, file'));
+    assert.ok(formatter.includes('processDisplayedNoteByHunks(ctx.app, file'));
     assert.ok(updated.includes('withPreservedMarkdownScroll(ctx.app, file'));
 });
 
@@ -1211,7 +1408,7 @@ const HOST_VIEW_MEMBERS = new Set([
 ]);
 
 test('ItemView 子类不占用宿主自己的成员名', () => {
-    const files = ['src/modules/calendar/view.ts', 'src/modules/explorer/recentFiles.ts'];
+    const files = ['src/modules/calendar/view.ts', 'src/modules/explorer/recentFiles.ts', 'src/modules/shortcuts/view.ts'];
     let classesChecked = 0;
 
     for (const relative of files) {

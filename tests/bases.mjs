@@ -43,7 +43,8 @@ const {
     planNavigationBaseUpgrade,
 } = await loadModule('src/modules/projects/baseMigration.ts');
 
-const MOC_BASE = `\`\`\`base
+/** v0.22.7–v0.40.0 的 MOC 模板：项目文件与全部混入了位置判据 */
+const PREVIOUS_MOC_BASE = `\`\`\`base
 filters:
   and:
     - file.path != this.file.path
@@ -100,9 +101,85 @@ views:
 
 \`\`\``;
 
+const MOC_BASE = `\`\`\`base
+filters:
+  and:
+    - file.path != this.file.path
+    - '!file.inFolder("90-system")'
+formulas:
+  kind: if(file.ext == "md", "笔记", "附件")
+properties:
+  note.description:
+    displayName: 概述
+  note.rating:
+    displayName: 评分
+  formula.kind:
+    displayName: 类型
+views:
+  - type: table
+    name: 全部
+    filters:
+      or:
+        - list(up).contains(this.file.asLink())
+        - and:
+            - file.inFolder(this.file.folder)
+            - file.ext != "md"
+    order:
+      - file.name
+      - description
+      - rating
+    sort:
+      - property: formula.kind
+        direction: ASC
+      - property: rating
+        direction: DESC
+  - type: table
+    name: 项目文件
+    filters:
+      and:
+        - list(up).contains(this.file.asLink())
+        - file.ext == "md"
+    order:
+      - file.name
+      - description
+      - rating
+    sort:
+      - property: rating
+        direction: DESC
+    columnSize:
+      file.name: 170
+      note.description: 421
+  - type: table
+    name: 附件
+    filters:
+      and:
+        - file.inFolder(this.file.folder)
+        - file.ext != "md"
+    order:
+      - file.name
+      - file.ext
+      - file.mtime
+    sort:
+      - property: file.mtime
+        direction: DESC
+
+\`\`\``;
+
 test('MOC 用一份相对上下文查询展示笔记、附件与全部内容', () => {
     assert.equal(mocBaseBlock(), MOC_BASE);
     assert.doesNotMatch(MOC_BASE, /01-projects|04-archives|link\("MOC-/);
+
+    // 笔记看归属（up 直接指向本 MOC），附件看位置（文件夹树里的非 .md）；全部排第一个
+    const views = [...MOC_BASE.matchAll(/^    name: (.+)$/gm)].map((match) => match[1]);
+    assert.deepEqual(views, ['全部', '项目文件', '附件']);
+    assert.doesNotMatch(MOC_BASE, /file\.folder == this\.file\.folder/);
+    assert.doesNotMatch(MOC_BASE, /(?<!list\()up\.contains/);
+    assert.match(MOC_BASE, /kind: if\(file\.ext == "md", "笔记", "附件"\)/);
+
+    // 全部只显示名称、概述、评分；类型只作第一排序键，不进列
+    const allView = MOC_BASE.slice(MOC_BASE.indexOf('    name: 全部'), MOC_BASE.indexOf('    name: 项目文件'));
+    assert.match(allView, /    order:\n      - file\.name\n      - description\n      - rating\n    sort:/);
+    assert.doesNotMatch(allView, /      - formula\.kind\n|file\.mtime/);
 });
 
 test('自动建容器与手动 MOC 模板共用同一个 Base 事实源', () => {
@@ -127,18 +204,25 @@ test('导航用 Emoji 翻译状态，书籍以 aliases 封面卡片展示', () =
     assert.match(navigation, /status == "paused", "🟡 搁置"/);
     assert.match(navigation, /status == "done", "✅ 完成"/);
     assert.match(navigation, /status == "dropped", "⚫️ 弃"/);
-    assert.equal((navigation.match(/formula\.status_icon/g) ?? []).length, 5);
+    assert.equal((navigation.match(/formula\.status_icon/g) ?? []).length, 4);
+    // 名称去掉 MOC- 前缀但仍链接原文件；三张表格与书籍卡片都用它
     assert.match(
         navigation,
-        /book_title: file\.asLink\(if\(aliases\.isEmpty\(\), file\.name, list\(aliases\)\[0\]\)\)/,
+        /moc_name: file\.asLink\(if\(file\.name\.startsWith\("MOC-"\), file\.name\.slice\(4\), file\.name\)\)/,
     );
-    assert.match(navigation, /formula\.book_title:\n    displayName: 书名/);
+    assert.match(navigation, /formula\.moc_name:\n    displayName: 名称/);
+    assert.equal((navigation.match(/      - formula\.moc_name/g) ?? []).length, 4);
 
+    // 正在进行中按 active 筛出，状态列只会重复表名
+    const activeView = navigation.slice(navigation.indexOf('    name: 正在进行中'), navigation.indexOf('    name: 项目'));
+    assert.doesNotMatch(activeView, /formula\.status_icon/);
+    // 书籍卡片与表格同一条规则：去 MOC- 前缀的文件名，不再读 aliases
+    assert.doesNotMatch(navigation, /book_title|aliases/);
     const bookView = navigation.slice(navigation.indexOf('  - type: cards\n    name: 书籍'));
 
     assert.match(bookView, /^    name: 书籍/m);
     assert.match(bookView, /  - type: cards/);
-    assert.match(bookView, /      - formula\.book_title/);
+    assert.match(bookView, /      - formula\.moc_name/);
     assert.doesNotMatch(bookView, /      - file\.name/);
     assert.match(bookView, /    image: note\.cover/);
     assert.match(bookView, /    imageAspectRatio: 1\.35/);
@@ -191,7 +275,54 @@ test('项目流转只移动容器与更新状态，不改写 MOC Base 代码', (
     assert.doesNotMatch(source, /没有找到需要更新的 file\.folder/);
 });
 
-test('存量硬编码 MOC Base 只在逐字吻合旧模板时升级', () => {
+test('上一版 MOC 模板升级为归属/位置分开的检索，用户拖过的列宽跟着视图名走', () => {
+    const widened = PREVIOUS_MOC_BASE
+        .replace('      file.name: 170\n      note.description: 421', '      file.name: 145\n      note.description: 412');
+    const result = planMocBaseUpgrade(`---\ntype: project\n---\n\n${widened}\n`);
+
+    assert.equal(result.status, 'change');
+    assert.equal(result.action, '替换旧 Base');
+    assert.equal(result.afterBlock, MOC_BASE.replace('      file.name: 170\n      note.description: 421', '      file.name: 145\n      note.description: 412'));
+
+    // 当前模板只动了显示偏好：视为已是最新，不碰
+    const tweaked = MOC_BASE
+        .replace('      file.name: 170', '      file.name: 200')
+        .replace('      - property: rating\n        direction: DESC', '      - property: file.name\n        direction: ASC');
+    assert.deepEqual(planMocBaseUpgrade(tweaked), { status: 'unchanged' });
+
+    // 全部视图也被拖过列宽时，补在那一视图末尾
+    const allSized = PREVIOUS_MOC_BASE.replace(
+        '      - property: file.mtime\n        direction: DESC\n\n```',
+        '      - property: file.mtime\n        direction: DESC\n    columnSize:\n      file.name: 300\n\n```',
+    );
+    const allResult = planMocBaseUpgrade(allSized);
+    assert.match(allResult.afterBlock, /    name: 全部[\s\S]*?    columnSize:\n      file\.name: 300\n  - type: table\n    name: 项目文件/);
+});
+
+test('§87 首版的全部视图：仍是模板默认显示就跟着更新，用户调过就不动', () => {
+    // §87 首版：检索与当前相同，全部显示类型与修改时间、按修改时间排
+    const firstDisplay = MOC_BASE.replace(
+        '      - file.name\n      - description\n      - rating\n    sort:\n      - property: formula.kind\n        direction: ASC\n      - property: rating\n        direction: DESC',
+        '      - file.name\n      - formula.kind\n      - description\n      - file.mtime\n    sort:\n      - property: formula.kind\n        direction: ASC\n      - property: file.mtime\n        direction: DESC',
+    );
+
+    assert.notEqual(firstDisplay, MOC_BASE);
+
+    const sized = firstDisplay.replace('      file.name: 170', '      file.name: 145');
+    const upgraded = planMocBaseUpgrade(sized);
+
+    assert.equal(upgraded.status, 'change');
+    assert.equal(upgraded.afterBlock, MOC_BASE.replace('      file.name: 170', '      file.name: 145'));
+
+    // 用户在首版上自己改过排序：显示偏好是他的，不覆盖
+    const userSorted = firstDisplay.replace(
+        '      - property: file.mtime\n        direction: DESC\n  - type: table\n    name: 项目文件',
+        '      - property: file.name\n        direction: ASC\n  - type: table\n    name: 项目文件',
+    );
+    assert.deepEqual(planMocBaseUpgrade(userSorted), { status: 'unchanged' });
+});
+
+test('存量硬编码 MOC Base 只在检索条件吻合旧模板时升级', () => {
     const legacy = `\`\`\`base
 filters:
   and:
@@ -227,12 +358,23 @@ views:
     assert.ok(result.content.includes(MOC_BASE));
     assert.doesNotMatch(result.content, /01-projects\/写本书|up == link/);
 
-    const custom = planMocBaseUpgrade(legacy.replace('direction: DESC', 'direction: ASC'));
+    // 排序、列顺序、列宽只是显示偏好：改过它们的旧模板照样升级
+    const resorted = planMocBaseUpgrade(
+        legacy
+            .replace('    sort:\n      - property: rating', '    sort:\n      - property: file.name\n        direction: DESC\n      - property: rating')
+            .replace('      - rating\n', '')
+            .replace('file.name: 170', 'file.name: 138'),
+    );
+    assert.equal(resorted.status, 'change');
+    assert.match(resorted.content, /    name: 项目文件[\s\S]*?      file\.name: 138/);
+
+    // 检索条件改过才是自定义
+    const custom = planMocBaseUpgrade(legacy.replace('        - file.folder == "01-projects/写本书"', '        - file.inFolder("01-projects/写本书")'));
     assert.deepEqual(custom, { status: 'conflict', reason: 'Base 含有自定义内容，不会自动覆盖' });
 });
 
 test('单视图相对 Base 可升级，无 Base 的 CRLF MOC 只追加代码块并保留行尾', () => {
-    const oneView = MOC_BASE.replace(/\n  - type: table\n    name: 附件[\s\S]*\n\n\`\`\`$/, '\n\n```');
+    const oneView = PREVIOUS_MOC_BASE.replace(/\n  - type: table\n    name: 附件[\s\S]*\n\n\`\`\`$/, '\n\n```');
     const replaceResult = planMocBaseUpgrade(oneView);
 
     assert.equal(replaceResult.status, 'change');
@@ -294,7 +436,29 @@ views:
 
 \`\`\``;
     const migrated = planNavigationBaseUpgrade(`自定义导语\n\n${legacyNavBase}\n`);
-    const fileNameTableNavigation = navContent()
+    // v0.40.0 去前缀那一版：表格已用 moc_name，书籍卡片仍读 aliases
+    const mocNameNavigation = navContent()
+        .replace('  moc_name:', '  book_title: file.asLink(if(aliases.isEmpty(), file.name, list(aliases)[0]))\n  moc_name:')
+        .replace(
+            '  formula.moc_name:\n    displayName: 名称\n',
+            '  formula.book_title:\n    displayName: 书名\n  formula.moc_name:\n    displayName: 名称\n',
+        )
+        .replace(
+            '        - type == "book"\n    order:\n      - formula.moc_name\n',
+            '        - type == "book"\n    order:\n      - formula.book_title\n',
+        );
+    const mocNameMigration = planNavigationBaseUpgrade(mocNameNavigation);
+    // v0.34.1–v0.40.0 的导航：表格陈列带 MOC- 前缀的文件名，正在进行中带状态列
+    const bookTitleNavigation = mocNameNavigation
+        .replace(/  moc_name: .*\n/, '')
+        .replace('  formula.moc_name:\n    displayName: 名称\n', '')
+        .replaceAll('      - formula.moc_name\n', '      - file.name\n')
+        .replace(
+            '        - status == "active"\n    order:\n      - file.name\n      - description\n',
+            '        - status == "active"\n    order:\n      - file.name\n      - description\n      - formula.status_icon\n',
+        );
+    const bookTitleMigration = planNavigationBaseUpgrade(bookTitleNavigation);
+    const fileNameTableNavigation = bookTitleNavigation
         .replace('  book_title: file.asLink(if(aliases.isEmpty(), file.name, list(aliases)[0]))\n', '')
         .replace('  formula.book_title:\n    displayName: 书名\n', '')
         .replace('  - type: cards\n    name: 书籍', '  - type: table\n    name: 书籍')
@@ -366,9 +530,14 @@ views:
     assert.equal(migrated.action, '升级导航 Base');
     assert.ok(migrated.content.startsWith('自定义导语\n\n'));
     assert.ok(migrated.content.includes('formula.status_icon'));
+    assert.equal(mocNameMigration.status, 'change');
+    assert.equal(mocNameMigration.content, navContent());
+    assert.notEqual(bookTitleNavigation, navContent());
+    assert.equal(bookTitleMigration.status, 'change');
+    assert.equal(bookTitleMigration.content, navContent());
     assert.equal(tableMigration.status, 'change');
     assert.equal(cardMigration.status, 'change');
-    assert.ok(cardMigration.content.includes('formula.book_title'));
+    assert.ok(cardMigration.content.includes('formula.moc_name'));
     assert.ok(cardMigration.content.includes('  - type: cards\n    name: 书籍'));
     assert.ok(cardMigration.content.includes('    imageAspectRatio: 1.35'));
     assert.deepEqual(planNavigationBaseUpgrade(navContent()), { status: 'unchanged' });

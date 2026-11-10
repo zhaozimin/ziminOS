@@ -7,7 +7,7 @@
  *        不认识 Obsidian、文件路径、弹窗或磁盘。旧模板、当前模板与冲突三种身份在此唯一判定，
  *        编排层因此没有机会用模糊替换覆盖用户自定义的 Base；两张内建领域总控台即使
  *        名称与 type 符合普通容器，也在身份层明确排除。导航历史模板按版本白名单递进，
- *        因此旧书可显式升级为 aliases 书名卡片，自定义视图仍原封不动
+ *        因此旧导航可显式升级为「去 MOC- 前缀的文件名」版，自定义视图仍原封不动
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
@@ -247,11 +247,278 @@ const LEGACY_FILE_NAME_CARD_NAV_BASE = [
     '```',
 ].join('\n');
 
+/** v0.34.1–v0.40.0 的导航：书籍走 aliases，表格仍陈列带 MOC- 前缀的文件名，正在进行中仍带状态列 */
+const LEGACY_BOOK_TITLE_NAV_BASE = [
+    '```base',
+    'filters:',
+    '  and:',
+    '    - \'!file.inFolder("90-system")\'',
+    'formulas:',
+    '  status_icon: if(status == "active", "🟢 进行中", if(status == "paused", "🟡 搁置", if(status == "done", "✅ 完成", if(status == "dropped", "⚫️ 弃", if(status.isEmpty(), "", "⚠️ " + status)))))',
+    '  book_title: file.asLink(if(aliases.isEmpty(), file.name, list(aliases)[0]))',
+    'properties:',
+    '  note.description:',
+    '    displayName: 概述',
+    '  note.status:',
+    '    displayName: 状态',
+    '  formula.status_icon:',
+    '    displayName: 状态',
+    '  formula.book_title:',
+    '    displayName: 书名',
+    'views:',
+    '  - type: table',
+    '    name: 正在进行中',
+    '    filters:',
+    '      and:',
+    '        - status == "active"',
+    '    order:',
+    '      - file.name',
+    '      - description',
+    '      - formula.status_icon',
+    '  - type: table',
+    '    name: 项目',
+    '    filters:',
+    '      and:',
+    '        - type == "project"',
+    '    order:',
+    '      - file.name',
+    '      - description',
+    '      - formula.status_icon',
+    '    sort:',
+    '      - property: formula.status_icon',
+    '        direction: DESC',
+    '  - type: table',
+    '    name: 领域',
+    '    filters:',
+    '      and:',
+    '        - type == "area"',
+    '    order:',
+    '      - file.name',
+    '      - description',
+    '  - type: cards',
+    '    name: 书籍',
+    '    filters:',
+    '      and:',
+    '        - type == "book"',
+    '    order:',
+    '      - formula.book_title',
+    '      - description',
+    '      - formula.status_icon',
+    '    image: note.cover',
+    '    imageAspectRatio: 1.35',
+    '    imageFit: contain',
+    '    cardSize: 200',
+    '',
+    '```',
+].join('\n');
+
+/** v0.40.0 导航去前缀那一版：表格用 moc_name，书籍卡片仍读 aliases */
+const LEGACY_MOC_NAME_NAV_BASE = [
+    '```base',
+    'filters:',
+    '  and:',
+    '    - \'!file.inFolder("90-system")\'',
+    'formulas:',
+    '  status_icon: if(status == "active", "🟢 进行中", if(status == "paused", "🟡 搁置", if(status == "done", "✅ 完成", if(status == "dropped", "⚫️ 弃", if(status.isEmpty(), "", "⚠️ " + status)))))',
+    '  book_title: file.asLink(if(aliases.isEmpty(), file.name, list(aliases)[0]))',
+    '  moc_name: file.asLink(if(file.name.startsWith("MOC-"), file.name.slice(4), file.name))',
+    'properties:',
+    '  note.description:',
+    '    displayName: 概述',
+    '  note.status:',
+    '    displayName: 状态',
+    '  formula.status_icon:',
+    '    displayName: 状态',
+    '  formula.book_title:',
+    '    displayName: 书名',
+    '  formula.moc_name:',
+    '    displayName: 名称',
+    'views:',
+    '  - type: table',
+    '    name: 正在进行中',
+    '    filters:',
+    '      and:',
+    '        - status == "active"',
+    '    order:',
+    '      - formula.moc_name',
+    '      - description',
+    '  - type: table',
+    '    name: 项目',
+    '    filters:',
+    '      and:',
+    '        - type == "project"',
+    '    order:',
+    '      - formula.moc_name',
+    '      - description',
+    '      - formula.status_icon',
+    '    sort:',
+    '      - property: formula.status_icon',
+    '        direction: DESC',
+    '  - type: table',
+    '    name: 领域',
+    '    filters:',
+    '      and:',
+    '        - type == "area"',
+    '    order:',
+    '      - formula.moc_name',
+    '      - description',
+    '  - type: cards',
+    '    name: 书籍',
+    '    filters:',
+    '      and:',
+    '        - type == "book"',
+    '    order:',
+    '      - formula.book_title',
+    '      - description',
+    '      - formula.status_icon',
+    '    image: note.cover',
+    '    imageAspectRatio: 1.35',
+    '    imageFit: contain',
+    '    cardSize: 200',
+    '',
+    '```',
+].join('\n');
+
 const LEGACY_NAV_BASES = new Set<string>([
     LEGACY_NAV_BASE,
     LEGACY_FILE_NAME_TABLE_NAV_BASE,
     LEGACY_FILE_NAME_CARD_NAV_BASE,
+    LEGACY_BOOK_TITLE_NAV_BASE,
+    LEGACY_MOC_NAME_NAV_BASE,
 ]);
+
+/** v0.22.7–v0.40.0 的 MOC 模板：项目文件与全部都混入了位置判据（同文件夹 / 整棵子树） */
+const LEGACY_FOLDER_MIXED_MOC_BASE = [
+    '```base',
+    'filters:',
+    '  and:',
+    '    - file.path != this.file.path',
+    '    - \'!file.inFolder("90-system")\'',
+    'properties:',
+    '  note.description:',
+    '    displayName: 概述',
+    '  note.rating:',
+    '    displayName: 评分',
+    'views:',
+    '  - type: table',
+    '    name: 项目文件',
+    '    filters:',
+    '      or:',
+    '        - up.contains(this.file.asLink())',
+    '        - file.folder == this.file.folder',
+    '    order:',
+    '      - file.name',
+    '      - description',
+    '      - rating',
+    '    sort:',
+    '      - property: rating',
+    '        direction: DESC',
+    '    columnSize:',
+    '      file.name: 170',
+    '      note.description: 421',
+    '  - type: table',
+    '    name: 附件',
+    '    filters:',
+    '      and:',
+    '        - file.inFolder(this.file.folder)',
+    '        - file.ext != "md"',
+    '    order:',
+    '      - file.name',
+    '      - file.ext',
+    '      - file.mtime',
+    '    sort:',
+    '      - property: file.mtime',
+    '        direction: DESC',
+    '  - type: table',
+    '    name: 全部',
+    '    filters:',
+    '      or:',
+    '        - up.contains(this.file.asLink())',
+    '        - file.inFolder(this.file.folder)',
+    '    order:',
+    '      - file.name',
+    '      - file.ext',
+    '      - description',
+    '      - file.mtime',
+    '    sort:',
+    '      - property: file.mtime',
+    '        direction: DESC',
+    '',
+    '```',
+].join('\n');
+
+/**
+ * v0.40.0 §87 首版：检索条件与当前相同，「全部」仍显示类型与修改时间、按修改时间排序。
+ * 它的显示偏好还是模板默认，所以随模板一起更新；用户自己调过的显示偏好不在此列。
+ */
+const PREVIOUS_DISPLAY_MOC_BASES = [
+    [
+        '```base',
+        'filters:',
+        '  and:',
+        '    - file.path != this.file.path',
+        '    - \'!file.inFolder("90-system")\'',
+        'formulas:',
+        '  kind: if(file.ext == "md", "笔记", "附件")',
+        'properties:',
+        '  note.description:',
+        '    displayName: 概述',
+        '  note.rating:',
+        '    displayName: 评分',
+        '  formula.kind:',
+        '    displayName: 类型',
+        'views:',
+        '  - type: table',
+        '    name: 全部',
+        '    filters:',
+        '      or:',
+        '        - list(up).contains(this.file.asLink())',
+        '        - and:',
+        '            - file.inFolder(this.file.folder)',
+        '            - file.ext != "md"',
+        '    order:',
+        '      - file.name',
+        '      - formula.kind',
+        '      - description',
+        '      - file.mtime',
+        '    sort:',
+        '      - property: formula.kind',
+        '        direction: ASC',
+        '      - property: file.mtime',
+        '        direction: DESC',
+        '  - type: table',
+        '    name: 项目文件',
+        '    filters:',
+        '      and:',
+        '        - list(up).contains(this.file.asLink())',
+        '        - file.ext == "md"',
+        '    order:',
+        '      - file.name',
+        '      - description',
+        '      - rating',
+        '    sort:',
+        '      - property: rating',
+        '        direction: DESC',
+        '    columnSize:',
+        '      file.name: 170',
+        '      note.description: 421',
+        '  - type: table',
+        '    name: 附件',
+        '    filters:',
+        '      and:',
+        '        - file.inFolder(this.file.folder)',
+        '        - file.ext != "md"',
+        '    order:',
+        '      - file.name',
+        '      - file.ext',
+        '      - file.mtime',
+        '    sort:',
+        '      - property: file.mtime',
+        '        direction: DESC',
+        '',
+        '```',
+    ].join('\n'),
+];
 
 /** 用户确认 v0.22.7 方案前使用过的“相对上下文但只有一张表”形态 */
 const LEGACY_RELATIVE_MOC_BASE = [
@@ -285,6 +552,18 @@ const LEGACY_RELATIVE_MOC_BASE = [
     '',
     '```',
 ].join('\n');
+
+/** 可升级的旧模板，按检索条件比对（已剥掉显示偏好）；首次用到时才算，剥离器的常量定义在文件后部 */
+let legacyMocRetrievals: ReadonlySet<string> | null = null;
+
+function isLegacyMocRetrieval(retrieval: string): boolean {
+    legacyMocRetrievals ??= new Set([
+        stripPresentation(LEGACY_FOLDER_MIXED_MOC_BASE),
+        stripPresentation(LEGACY_RELATIVE_MOC_BASE),
+    ]);
+
+    return legacyMocRetrievals.has(retrieval);
+}
 
 /** v0.22.6 及更早的硬编码 MOC Base；三个动态值先换成占位符再与骨架逐字比较 */
 const LEGACY_HARDCODED_MOC_SKELETON = [
@@ -345,13 +624,26 @@ export function planMocBaseUpgrade(content: string): BaseContentUpgrade {
     const block = scan.blocks[0];
     const normalized = normalizeLineEndings(block.text);
 
-    if (normalized === CURRENT_MOC_BASE) return { status: 'unchanged' };
+    // 列宽永远是用户的；剥掉它之后与当前模板一字不差，就是最新版
+    const layout = stripColumnSize(normalized);
 
-    if (normalized !== LEGACY_RELATIVE_MOC_BASE && !isLegacyHardcodedMocBase(normalized)) {
+    if (layout === stripColumnSize(CURRENT_MOC_BASE)) return { status: 'unchanged' };
+
+    // 检索条件与当前相同时，只有「显示偏好仍是旧模板默认值」才跟着模板走；用户自己调过的保持原样
+    const retrieval = stripPresentation(normalized);
+    const previousDisplay = PREVIOUS_DISPLAY_MOC_BASES.some((base) => stripColumnSize(base) === layout);
+
+    if (!previousDisplay && retrieval === stripPresentation(CURRENT_MOC_BASE)) return { status: 'unchanged' };
+
+    if (!previousDisplay && !isLegacyMocRetrieval(retrieval) && !isLegacyHardcodedMocBase(normalized)) {
         return { status: 'conflict', reason: 'Base 含有自定义内容，不会自动覆盖' };
     }
 
-    const afterBlock = withDocumentLineEnding(CURRENT_MOC_BASE, content);
+    // 用户拖过的列宽按视图名带进新版；列顺序与排序回到模板
+    const afterBlock = withDocumentLineEnding(
+        withColumnSizes(CURRENT_MOC_BASE, columnSizesByView(normalized)),
+        content,
+    );
 
     return {
         status: 'change',
@@ -467,19 +759,161 @@ function currentNavigationBase(): string {
 }
 
 function isLegacyHardcodedMocBase(block: string): boolean {
+    const lines = stripPresentation(block).split('\n');
+    const skeleton = stripPresentation(LEGACY_HARDCODED_MOC_SKELETON).split('\n');
+
+    if (lines.length !== skeleton.length) return false;
+
+    return lines.every((line, index) => {
+        const expected = skeleton[index];
+
+        if (expected === '    name: <view>') return /^    name: (项目文件|读书卡片)$/.test(line);
+        if (expected === '        - up == link(<moc>)') {
+            return isJsonStringExpression(line, '        - up == link(', ')');
+        }
+        if (expected === '        - file.folder == <folder>') {
+            return isJsonStringExpression(line, '        - file.folder == ', '');
+        }
+
+        return line === expected;
+    });
+}
+
+// ============================================================
+// 显示偏好：列顺序、排序、列宽
+// ============================================================
+
+/** 视图里只管「怎么显示」的三段；识别模板时剥掉，升级时只把列宽带过去 */
+const PRESENTATION_KEYS = new Set(['order', 'sort', 'columnSize']);
+
+const VIEW_START = /^  - type: /;
+const VIEW_KEY = /^    ([A-Za-z]+):/;
+const VIEW_NAME = /^    name: (.+)$/;
+/** 视图子段的内容行至少缩进六格；遇到缩进更浅的行，这一段就结束了 */
+const SECTION_BODY = /^      /;
+
+interface ViewSection {
+    readonly view: string | null;
+    readonly key: string;
+    readonly lines: readonly string[];
+}
+
+/**
+ * 把 Base 切成「普通行」与「视图子段」。只在 views: 之后切，顶层 filters/properties 原样保留。
+ * 视图名可能写在子段之后，因此先切完、再回填每一段所属的视图名。
+ */
+function splitViewSections(block: string): (string | ViewSection)[] {
     const lines = block.split('\n');
+    const out: (string | ViewSection)[] = [];
+    let inViews = false;
+    let viewIndex = -1;
+    const names: string[] = [];
+    const owners: number[] = [];
 
-    if (lines.length !== LEGACY_HARDCODED_MOC_SKELETON.split('\n').length) return false;
-    if (!/^    name: (项目文件|读书卡片)$/.test(lines[11] ?? '')) return false;
-    if (!isJsonStringExpression(lines[14] ?? '', '        - up == link(', ')')) return false;
-    if (!isJsonStringExpression(lines[15] ?? '', '        - file.folder == ', '')) return false;
+    for (let index = 0; index < lines.length; index += 1) {
+        const line = lines[index];
 
-    const normalized = [...lines];
-    normalized[11] = '    name: <view>';
-    normalized[14] = '        - up == link(<moc>)';
-    normalized[15] = '        - file.folder == <folder>';
+        if (line === 'views:') inViews = true;
+        if (inViews && VIEW_START.test(line)) viewIndex += 1;
 
-    return normalized.join('\n') === LEGACY_HARDCODED_MOC_SKELETON;
+        const name = inViews ? VIEW_NAME.exec(line) : null;
+
+        if (name && viewIndex >= 0) names[viewIndex] = name[1];
+
+        const key = inViews && viewIndex >= 0 ? VIEW_KEY.exec(line) : null;
+
+        if (key && PRESENTATION_KEYS.has(key[1])) {
+            const body = [line];
+
+            while (index + 1 < lines.length && SECTION_BODY.test(lines[index + 1])) {
+                index += 1;
+                body.push(lines[index]);
+            }
+
+            owners.push(viewIndex);
+            out.push({ view: null, key: key[1], lines: body });
+            continue;
+        }
+
+        out.push(line);
+    }
+
+    let cursor = 0;
+
+    return out.map((part) => {
+        if (typeof part === 'string') return part;
+
+        const owner = owners[cursor];
+
+        cursor += 1;
+
+        return { ...part, view: names[owner] ?? null };
+    });
+}
+
+/** 只剥掉列宽：判断「显示偏好是不是模板默认」时，列宽不参与 */
+function stripColumnSize(block: string): string {
+    return splitViewSections(block)
+        .flatMap((part) => (typeof part === 'string' ? [part] : part.key === 'columnSize' ? [] : [...part.lines]))
+        .join('\n');
+}
+
+function stripPresentation(block: string): string {
+    return splitViewSections(block)
+        .filter((part): part is string => typeof part === 'string')
+        .join('\n');
+}
+
+/** 视图名 → 用户的 columnSize 子段 */
+function columnSizesByView(block: string): Map<string, readonly string[]> {
+    const sizes = new Map<string, readonly string[]>();
+
+    for (const part of splitViewSections(block)) {
+        if (typeof part !== 'string' && part.key === 'columnSize' && part.view) sizes.set(part.view, part.lines);
+    }
+
+    return sizes;
+}
+
+/** 在模板里按视图名换上用户的列宽；模板这一视图没有列宽段时，补在这一视图末尾 */
+function withColumnSizes(template: string, sizes: ReadonlyMap<string, readonly string[]>): string {
+    if (sizes.size === 0) return template;
+
+    const parts = splitViewSections(template);
+    const out: string[] = [];
+    const placed = new Set<string>();
+    let currentView: string | null = null;
+
+    const flush = (): void => {
+        if (currentView && sizes.has(currentView) && !placed.has(currentView)) {
+            out.push(...(sizes.get(currentView) ?? []));
+            placed.add(currentView);
+        }
+    };
+
+    for (const part of parts) {
+        if (typeof part === 'string') {
+            if (VIEW_START.test(part) || part === '' || part === '```') flush();
+            if (VIEW_START.test(part)) currentView = null;
+
+            const name = VIEW_NAME.exec(part);
+
+            if (name) currentView = name[1];
+
+            out.push(part);
+            continue;
+        }
+
+        if (part.key === 'columnSize' && part.view && sizes.has(part.view)) {
+            out.push(...(sizes.get(part.view) ?? []));
+            placed.add(part.view);
+            continue;
+        }
+
+        out.push(...part.lines);
+    }
+
+    return out.join('\n');
 }
 
 /** 动态值必须是合法 JSON 字符串；只像旧模板还不够，不能把任意表达式当模板覆盖 */
